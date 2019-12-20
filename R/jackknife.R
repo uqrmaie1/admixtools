@@ -1,0 +1,238 @@
+
+bj_arr_lo_mean_nomissing = function(arr, block_lengths, verbose=TRUE) {
+  # twice as fast as bj_arr_lo_mean, but doesn't handle missing data
+  # returns leave-one-block-out array means
+  # arr is 3d
+  # group over third dimension
+
+  blockids = rep(seq_along(block_lengths), block_lengths)
+  numblocks = length(block_lengths)
+  tot = apply(arr, 1:2, sum)
+  parts = array(NA, c(dim(arr)[1], dim(arr)[2], numblocks))
+  for(i in 1:numblocks) {
+    if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
+    parts[,,i] = apply(arr[,, which(blockids == i), drop=F], 1:2, sum)
+  }
+  if(verbose) cat('\n')
+  sums = rray(tot) - rray(parts)
+  out = sums / rray(length(blockids)-block_lengths, c(1, 1, numblocks))
+  if(!is.null(dimnames(arr)[[1]])) dimnames(out)[[1]] = dimnames(arr)[[1]]
+  if(!is.null(dimnames(arr)[[2]])) dimnames(out)[[2]] = dimnames(arr)[[2]]
+  out
+}
+
+#' @export
+bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
+  # returns leave-one-block-out array means
+  # arr is 3d
+  # group over third dimension
+  # used to return rray
+
+  blockids = rep(seq_along(block_lengths), block_lengths)
+  numblocks = length(block_lengths)
+  tot = apply(arr, 1:2, sum, na.rm=TRUE)
+  tot_nonmiss = apply(arr, 1:2, function(x) sum(!is.na(x)))
+  parts = parts_nonmiss = array(NA, c(dim(arr)[1], dim(arr)[2], numblocks))
+  for(i in 1:numblocks) {
+    if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
+    bid = which(blockids == i)
+    parts[,,i] = apply(arr[,, bid, drop=F], 1:2, sum, na.rm=TRUE)
+    parts_nonmiss[,,i] = apply(arr[,, bid, drop=F], 1:2, function(x) sum(!is.na(x)))
+  }
+  if(verbose) cat('\n')
+  sums = rray(tot) - rray(parts)
+  nonmiss = rray(tot_nonmiss) - rray(parts_nonmiss)
+  out = as.array(sums/nonmiss)
+  if(!is.null(dimnames(arr)[[1]])) dimnames(out)[[1]] = dimnames(arr)[[1]]
+  if(!is.null(dimnames(arr)[[2]])) dimnames(out)[[2]] = dimnames(arr)[[2]]
+  out
+}
+
+
+
+#' @export
+bj_mat_stats = function(bj_lo_mat, block_lengths) {
+  # input is matrix (one block per column)
+  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+  # lengths normalization used to have -1, removed this because it resulted in negative values; where did this come from?
+  numblocks = length(block_lengths)
+  jest = rowMeans(bj_lo_mat)
+  mnc = t(jest - bj_lo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks)
+  jvar = crossprod(mnc)
+  namedList(jest, jvar)
+}
+
+#' @export
+bj_arr_stats = function(bj_lo_arr, block_lengths) {
+  # input is 3d array (n x n x m)
+  # output is list with jackknife means and jackknife variances
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+  numblocks = length(block_lengths)
+  jest = apply(bj_lo_arr, 1:2, mean)
+  xtau = (rray(jest) - bj_lo_arr)^2 * rray(sum(block_lengths)/block_lengths-1, c(1, 1, numblocks))
+  jvar = apply(xtau, 1:2, mean)
+  namedList(jest, jvar)
+}
+
+#' @export
+bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
+  # input is 3d array (m x n x p)
+  # output is list with jackknife means and jackknife covariances
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+  numblocks = length(block_lengths)
+  jest = c(t(apply(bj_lo_arr, 1:2, mean)))
+  bj_lo_mat = bj_lo_arr %>% aperm(c(2,1,3)) %>% arr3d_to_mat
+  mnc = t(jest - bj_lo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks)
+  jvar = crossprod(mnc)
+  jest = t(matrix(jest, dim(bj_lo_arr)[2]))
+  rownames(jest) = dimnames(bj_lo_arr)[[1]]
+  colnames(jest) = dimnames(bj_lo_arr)[[2]]
+  namedList(jest, jvar)
+}
+
+
+#' Computes all pairwise f2 statistics from allele frequencies
+#' @export
+#' @param afs data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.
+#' @param popcounts named vector with number of samples for each population.
+#' @param block_lengths vector with lengths of each jackknife block. sum has to match nrow(afs).
+#' @param snpweights weighting factor for each SNP. sometimes set to inverse of outgroup heterozygosity.
+#' @param fstscale scales f2-statistics to be on the same scale as FST. Not well tested, and probably not necessary.
+#' @param maxmem split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.
+#' @return a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time
+#' @examples
+#' \dontrun{
+#' f2_blocks = afs_to_f2_blocks(afs, popcounts, block_lengths)
+#' }
+afs_to_f2_blocks = function(afs, popcounts, block_lengths, snpweights = 1, fstscale=3.6, maxmem=1e3,
+                            infocols = 6, write_to_disk = NA, verbose = TRUE) {
+
+  if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
+  popcounts = as.vector(popcounts[colnames(afs)])
+
+  mem1 = lobstr::obj_size(afs)
+  mem2 = mem1*ncol(afs)
+  numsplits = ceiling(mem2/1e6/maxmem)
+  width = ceiling(ncol(afs)/numsplits)
+  starts = seq(1, ncol(afs), width)
+  numsplits2 = length(starts)
+  ends = c(lead(starts)[-numsplits2]-1, ncol(afs))
+
+  if(verbose) {
+    alert_info(paste0('allele frequency matrix for ', nrow(afs), ' SNPs and ', ncol(afs), ' populations is ', round(mem1/1e6), ' MB\n'))
+    alert_warning(paste0('matrix of pairwise f2 for all SNPs and population pairs will require ', round(mem2/1e6), ' MB\n'))
+    if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ', width, ' populations and up to ', maxmem, ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
+  }
+
+  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, snpweights, starts=starts, ends=ends, write_to_disk = write_to_disk, verbose = verbose)
+  f2_blocks * fstscale
+}
+
+#' @export
+set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
+
+  sb = function(cumpos, CHR, POS) {
+    o = cumpos
+    cumpos[3] = POS
+    cumpos[1] = o[2]
+    cumpos[2] = pmax(0, POS-o[3]+o[2])
+    if(o[2] %% dist < o[1] %% dist && o[2] > dist) cumpos[2] = POS-o[3]
+    cumpos
+  }
+
+  newdat = do.call(rbind,
+                   accumulate2(.x=dat$CHR, .y=dat[[distcol]], .f=sb,
+                               .init=c(0, 0, dat[[distcol]][1]))) %>% as_tibble(.name_repair = NULL)
+  dat %<>% bind_cols(newdat %>% slice(-1))
+  dat %>% mutate(newblock = .data$V2 > lead(.data$V2, default=0) &
+                   .data$CHR == lead(.data$CHR, default=0) |
+                   .data$CHR > lag(.data$CHR, default=0),
+                 block=cumsum(.data$newblock))
+
+}
+
+#' Finds LD-independent blocks.
+#'
+#' starts new block at the SNP after the first SNP which is not within dist of the last block start
+#' afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+#' @export
+#' @param afdat data frame with columns 'CHR' and either 'POS' or 'cm'
+#' @param dist minimum distance between blocks
+#' @param distcol which column should be used as distance column
+#' @return a numeric vector where the ith element lists the number of SNPs in the ith block.
+get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
+  afdat %>%
+    set_blocks(dist = dist, distcol = 'cm') %$% block %>%
+    rle %$% lengths
+}
+
+get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, starts, ends, write_to_disk = NA, verbose = TRUE) {
+  # splits afmat into blocks by column, computes lo jackknife blocks on each pair of blocks, and combines into 3d array
+  numsplits2 = length(starts)
+  cmb = combn(0:numsplits2, 2)+(1:0)
+  arrlist = replicate(numsplits2, list())
+  nsnp = nrow(afmat)
+
+  for(i in 1:ncol(cmb)) {
+    if(numsplits2 > 1 & verbose) cat(paste0('pop combination ', i, ' out of ', ncol(cmb), '\n'))
+    c1 = cmb[1,i]
+    c2 = cmb[2,i]
+    s1 = starts[c1]:ends[c1]
+    s2 = starts[c2]:ends[c2]
+    b1 = afmat[,s1,drop=F]
+    b2 = afmat[,s2,drop=F]
+    afrr1 = rray(t(b1), dim=c(ncol(b1), 1, nsnp))
+    afrr2 = rray(t(b2), dim=c(1, ncol(b2), nsnp))
+    pqarr = afrr1*(1-afrr1)/(2*popcounts[s1]-1) + afrr2*(1-afrr2)/t(2*popcounts[s2]-1)
+    numer = (afrr1 - afrr2)^2 - pqarr
+    dimnames(numer)[[1]] = colnames(b1)
+    dimnames(numer)[[2]] = colnames(b2)
+    f2_subblock = bj_arr_lo_mean(numer*snpweights, block_lengths)
+    if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
+    if(!is.na(write_to_disk)) {
+      write_f2(f2_subblock, path = write_to_disk)
+    } else {
+      arrlist[[c1]][[c2]] = f2_subblock
+      arrlist[[c2]][[c1]] = aperm(arrlist[[c1]][[c2]], c(2,1,3))
+    }
+  }
+  if(!is.na(write_to_disk)) {
+    f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
+    #for(i in 1:dim(f2_blocks)[1]) f2_blocks[i,i,] = 0
+    return(f2_blocks)
+  }
+}
+
+#' @export
+write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, snpweights=1, verbose = TRUE) {
+  # reads two afmat blocks, computes f2 jackknife blocks, and writes output to outdir
+
+  load(paste0(afmatprefix, block1, '.RData'))
+  b1 = afs
+  load(paste0(afmatprefix, block2, '.RData'))
+  b2 = afs
+  rm(afs)
+  nam1 = colnames(b1)
+  nam2 = colnames(b2)
+  nsnp = nrow(b1)
+  filenames = expand_grid(nam1, nam2) %>%
+    transmute(nam = paste0('f2blocks_v41.1/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.RData')) %$% nam
+  if(all(file.exists(filenames))) return()
+
+  afrr1 = rray::rray(t(b1), dim=c(ncol(b1), 1, nsnp))
+  afrr2 = rray::rray(t(b2), dim=c(1, ncol(b2), nsnp))
+  pqarr = afrr1*(1-afrr1)/(2*c(popcounts[nam1])-1) + afrr2*(1-afrr2)/t(2*c(popcounts[nam2])-1)
+  numer = as.array((afrr1 - afrr2)^2 - pqarr)
+  rm(afrr1, afrr2, pqarr)
+  f2_subblock = bj_arr_lo_mean(numer*snpweights, block_lengths, verbose = verbose)
+  rm(numer)
+  dimnames(f2_subblock)[[1]] = nam1
+  dimnames(f2_subblock)[[2]] = nam2
+  if(block1 == block2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
+  write_f2(f2_subblock, path = outdir)
+}
+
+
+
+

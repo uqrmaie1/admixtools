@@ -1,0 +1,52 @@
+---
+title: "Plotting"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+---
+
+
+```{r, include=FALSE}
+library(admixtools)
+library(ggplot2)
+```
+
+
+## Plot admixturegraph
+
+```{r}
+plot_graph(igraph1)
+```
+
+
+## Admixturegraph on a map
+
+```{r}
+## basic example code
+plot_graph_map(igraph1, anno_v41)
+```
+
+
+```{r}
+## basic example code
+#plot_graph_map2(igraph1, anno_v41, 1)
+#plot_graph_map2(igraph1, anno_v41, 2)
+```
+
+## All samples on a map
+
+```{r, out.height = "115%", out.width = "115%", fig.align='center'}
+plot_map(anno_v41, map_layout = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
