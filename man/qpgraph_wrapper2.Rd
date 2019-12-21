@@ -38,13 +38,19 @@ qpgraph_wrapper2(graph, bin, pref, outpop = "NULL", outdir = ".",
 }
 \value{
 a list with parsed qpGraph output
-
-\code{edges}: data frame
-
-\code{score}: scalar
-
-\code{f2}: data frame
+\enumerate{
+\item \code{edges}: data frame
+\item \code{score}: scalar
+\item \code{f2}: data frame
+}
 }
 \description{
 A wrapper around qpGraph which creates 'parfile' and 'graphfile'
+}
+\examples{
+\dontrun{
+qpgraph_wrapper2(graph1,
+                 bin = 'path/to/qpGraph',
+                 pref = 'path/to/packedancestrymap_prefix')
+}
 }

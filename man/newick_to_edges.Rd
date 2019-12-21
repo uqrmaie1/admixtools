@@ -21,5 +21,6 @@ Turn a newick format tree to a matrix of edges
 }
 \examples{
 newick = random_newick(c('a', 'b', 'c', 'd'))
+newick
 newick_to_edges(newick)
 }

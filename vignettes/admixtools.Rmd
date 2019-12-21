@@ -10,9 +10,9 @@ output:
 For the examples below the following R packages need to be loaded.
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
-library("admixtools")
-library("magrittr")
-library("tidyverse")
+library(admixtools)
+library(magrittr)
+library(tidyverse)
 ```
 
 <br>
@@ -35,7 +35,9 @@ qpadm(target, left, right, f2_dir = f2_dir)
 qpadm(target, left, right, f2_blocks, block_lengths)
 ```
 
-Note that this only reports `qpAdm` admixture weights, and doesn't determine the number of independent source populations. The `qpadm` function also hasn't been tested as much as the `qpgraph` function, so the results may be wrong.
+### Caveats
+
+This function only reports `qpAdm` admixture weights, and doesn't determine the number of independent source populations. The `qpadm` function also hasn't been tested as much as the `qpgraph` function, and the results are sometimes not very accurate. In addition to that, results may be different due to the scaling of f-statistics. However, the relative weights and standard errors should still be consistent.
 
 <br>
 
@@ -57,7 +59,7 @@ Here, `graph1` is a specific graph included in this R package, but it can be any
 2. A two column matrix of edges, where the first column is the source of each edge, and the second column is the target.
 3. The location of a `qpGraph` graph file, which will be read and parsed.
 
-The only requirements for the input graph are that the graph is a valid admixturegraph - a DAG with one outgroup edge connecting the root to a leaf node - and that f2-statistics exist for all leaf nodes.
+The only requirements for the input graph are that the graph is a valid admixturegraph -- a DAG with one outgroup edge connecting the root to a leaf node -- and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.
 
 <br>
 
@@ -80,38 +82,43 @@ This works for any populations for which there are precomputed f2-statistics.
 ```{r, eval = FALSE}
 allpops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
 rand_pops = sample(allpops, 20)
-rand_graph = random_admixturegraph(rand_pops, numadmix = 5)
-rand_results = qpgraph(rand_graph, f2_dir = f2_dir)
+rand_graph = random_admixturegraph(rand_pops, numadmix = 3)
+rand_results = qpgraph(rand_graph, f2_dir = f2_dir, verbose = TRUE)
 ```
 
 <br>
 
 
-## Comparing results to AdmixTools
+## Compare results to AdmixTools
 
 There are wrapper function which call the origial `AdmixTools` programs and read the results. This can be used to check if the results of `qpgraph` are correct.
 
 ```{r, eval = FALSE}
-bin = 'path/to/qpGraph'
+qpgraph_bin = '/home/np29/o2bin/qpGraph'
+qpadm_bin = '/home/np29/o2bin/qpAdm'
 env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/n/app/openblas/0.2.19/lib/:/n/app/gsl/2.3/lib/;'
-bin = paste(bin, env)
-ref_results = qpgraph_wrapper2(graph1, bin, pref)
+
+qpadm_wrapper(target, left, right, paste(env, qpadm_bin), prefix)
+qpgraph_ref_results = qpgraph_wrapper2(graph1, paste(env, qpgraph_bin), prefix)
 ```
+**Unless `outdir` is specified in these wrapper functions, files in the working directory may be overwritten!**
+
 <br>
 
-The following function makes it easy to compare the results.
+The following function makes it easy to compare qpGraph results.
 
 ```{r}
-plot_comparison(qpg_results, ref_results)
+plot_comparison(qpg_results, qpgraph_ref_results)
 ```
 <br>
+
+Currently the f2-statistics are not scaled, which may cause the absolute values to differ. However, the relative values should not be very different.
 
 There is at least one example where the results are pretty similar. Please let me know if you find examples where the results are different!
 
-
 <br>
 
-## Compute your own f2-statistics
+## Compute f2-statistics
 
 If you're not on O2, or want use different f-statistics, you first have to compute allele frequencies for your populations of interest from data in `packedancestrymap` format.
 
@@ -124,8 +131,9 @@ pops = c('Denisova.DG',
          'Mbuti.DG',
          'Russia_Ust_Ishim.DG',
          'Switzerland_Bichon.SG')
-prefix = '/n/groups/reich/DAVID/V41/V41.1/v41.1'
-afdat = packedancestrymap_to_aftable(prefix, pops)
+#prefix = '/n/groups/reich/DAVID/V41/V41.1/v41.1'
+prefix = '/n/groups/reich/robert/projects/admixprograms/v41.0_small'
+afdat = packedancestrymap_to_aftable(prefix, pops, na.action='remove')
 ```
 
 <br>
@@ -133,7 +141,7 @@ afdat = packedancestrymap_to_aftable(prefix, pops)
 We also need to keep track of the number of samples in each population.
 
 ```{r, eval = FALSE}
-indfile = read_table2(paste0(pref, '.ind'), col_names = c('iid', 'sex', 'group'))
+indfile = read_table2(paste0(prefix, '.ind'), col_names = c('iid', 'sex', 'group'))
 popcounts = indfile %>% filter(group %in% pops) %$% table(group)
 ```
 
@@ -142,7 +150,7 @@ popcounts = indfile %>% filter(group %in% pops) %$% table(group)
 Reading the genotype data is rather slow, so it's a good idea to save the output.
 
 ```{r, eval = FALSE}
-save(afdat, popcounts, 'my_afdat.RData')
+save(afdat, popcounts, file = 'my_afdat.RData')
 ```
 
 <br>
@@ -164,7 +172,7 @@ f2_blocks = afs_to_f2_blocks(afs = afdat, popcounts = popcounts, block_lengths =
 This also takes a while, so you should also save it.
 
 ```{r, eval = FALSE}
-save(f2_blocks, block_lengths, 'my_f2_blocks.RData')
+save(f2_blocks, block_lengths, file = 'my_f2_blocks.RData')
 ```
 <br>
 
@@ -187,8 +195,8 @@ qpg_results = qpgraph(graph1, f2_blocks, block_lengths)
 
 This plots the `qpgraph` results.
 
-```{r, out.height = "130%", out.width = "130%", fig.align="center"}
-plot_graph(qpg_results$edges, color=TRUE)
+```{r, fig.width = 9, fig.align="center"}
+plot_graph(qpg_results$edges)
 ```
 
 
@@ -205,7 +213,7 @@ Since evaluating one graph doesn't take long once the f-statistics are pre-compu
 In order for that to be as fast as possible, we can precompute and reuse f3-statistics and the inverse of the f3-statistic covariance matrix.
 
 ```{r, eval = FALSE}
-precomp = qpgraph_precompute(pops, f2_blocks, blockids)
+precomp = qpgraph_precompute(pops, f2_blocks, block_lengths)
 f3_jest = precomp[[1]]
 ppinv = precomp[[2]]
 ```
@@ -215,12 +223,29 @@ The function `optimize_admixturegraph` generates and evaluates `numgraphs` admix
 
 ```{r, eval = FALSE}
 opt_results = optimize_admixturegraph(pops, f3_jest, ppinv,
-                                      numrep=200, numgraphs=100, numgen=20,
-                                      numsel=5, numadmix=3)
+                                      numrep = 200, numgraphs = 100, numgen = 20,
+                                      numsel = 5, numadmix = 3)
 ```
 <br>
 
-Depending on the input parameters, `optimize_admixturegraph` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [`future_map`](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [`furrr`](https://github.com/DavisVaughan/furrr) package it can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across cpu cores or across nodes on a compute cluster.
+Once that is done (and the results are loaded), the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.
+
+```{r, eval = FALSE}
+winner = opt_results %>% top_n(1, -jitter(score))
+winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
+```
+
+```{r, fig.width = 9, fig.align="center"}
+winner$score[[1]]
+plot_graph(winner$edges[[1]], fix = FALSE)
+```
+<br>
+
+
+
+## Parallelization
+
+Depending on the input parameters, `optimize_admixturegraph` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [`future_map`](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [`furrr`](https://github.com/DavisVaughan/furrr) package this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
 
 Setting it up like this will make it run multithreaded:
 ```{r, eval = FALSE}
@@ -231,11 +256,11 @@ future::plan('multiprocess')
 On the O2 cluster, the following command will parallelize across compute nodes.
 
 ```{r, eval = FALSE}
-future::plan(tweak(batchtools_slurm, workers=50,
-                   resources=list(ncpus = 1, memory=1024,
-                                  walltime=10*60*60, partition='short')))
+future::plan(tweak(batchtools_slurm, workers = 50,
+                   resources=list(ncpus = 1, memory = 1024,
+                                  walltime = 10*60*60, partition = 'short')))
 ```
-This specifies that up to 50 jobs should be run at a time, with each one requesting one cpu, 1024 MB of memory, and 10 hours on the `short` partition.
+This specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the `short` partition.
 
 This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as this one: `/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl`.
 
@@ -275,23 +300,14 @@ Rscript opt_graphs.Rscript
 <br>
 
 
-Once that is done (and the results are loaded), the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.
 
-```{r, eval = FALSE}
-winner = opt_results %>% top_n(1, -jitter(score))
-winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
-```
-```{r, out.height = "130%", out.width = "130%", fig.align="center"}
-plot_graph(winner$edges[[1]])
-```
-<br>
 
 ## Summarize graphs
 
-For any set of populations there may be many graphs which can explain the data well. The following function attempts to summarize a set of graphs by counting how often each population triple occurs in which configuration across all graphs.
+For any set of populations there may be many graphs which can explain the data about equally well. The following function attempts to summarize a set of graphs by counting how often each population triple occurs in which configuration across all graphs.
 
 ```{r, eval = FALSE}
-trip = summarize_triples(sel)
+trip = summarize_triples(winners)
 ```
 ```{r}
 trip %>% arrange(-clade) %>% slice(1)
@@ -318,11 +334,14 @@ The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read
 
 Every admixturegraph maps to a specific set of valid qpAdm models. This function lists the valid qpAdm models for each graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
 
-```{r, out.height = "130%", out.width = "130%", fig.align="center"}
+```{r, fig.width = 9, fig.align="center"}
 mygraph = winners %>% slice(6) %$% igraph %>% pluck(1)
 plot_graph(mygraph)
 qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3)
 ```
+
+The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations.
+
 
 Valid qpAdm models need to satisfy the following criteria:
 
@@ -330,7 +349,6 @@ Valid qpAdm models need to satisfy the following criteria:
 * The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative outgroup, but it can be included anyway, with `add_outgroup`.
 * Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that's correct and if it can be stated in a better way.)
 
-The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations.
 
 
 

@@ -2,11 +2,9 @@
 % Please edit documentation in R/qpadm.R
 \name{qpadm_wrapper}
 \alias{qpadm_wrapper}
-\title{Wrapper function around the original qpAdm program.}
+\title{Wrapper function around the original qpAdm program}
 \usage{
-qpadm_wrapper(target, left, right,
-  bin = "/Users/robert/Downloads/AdmixTools-master/bin/qpAdm",
-  pref = "/Users/robert/Downloads/v37.2_HO_subs3", outdir = ".",
+qpadm_wrapper(target, left, right, bin, pref, outdir = ".",
   printonly = FALSE, env = "")
 }
 \arguments{
@@ -35,6 +33,8 @@ This requires a working installation of qpAdm, which will be called using \code{
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-qpadm(target, left, right)
+qpadm_wrapper(target, left, right,
+  bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
+  env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 }
 }

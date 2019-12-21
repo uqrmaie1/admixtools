@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{simplify_graph}
 \alias{simplify_graph}
-\title{Removes redundant edges from graph.}
+\title{Remove redundant edges}
 \usage{
 simplify_graph(grph)
 }
@@ -13,7 +13,7 @@ simplify_graph(grph)
 Nodes with in and out degree of one will be removed.
 }
 \examples{
-simple = simplify_graph(igraph)
-plot_graph2(igraph)
-plot_graph2(simple)
+simple = simplify_graph(igraph1)
+plot_graph(igraph1)
+plot_graph(simple)
 }

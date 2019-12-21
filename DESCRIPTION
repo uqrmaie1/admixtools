@@ -6,40 +6,38 @@ Authors@R: as.person(c(
     "Robert Maier <rmaier@broadinstitute.org> [aut, cre]", 
     "Nick Patterson <nickp@broadinstitute.org> [aut]"
   ))
-Description: An R-version of AdmixTools, which pre-computes block-jackknife f-statistics.
+Description: An R version of AdmixTools, which takes advantage of precomputed block-jackknife f-statistics.
+Depends: R (>= 3.3.3)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-LinkingTo: Rcpp, RcppArmadillo, roptim
-Imports: 
+LinkingTo: Rcpp, RcppArmadillo
+Imports:
+    abind,
+    cli,
+    crayon,
+    digest,
     dplyr,
-    readr,
-    magrittr,
-    stringr,
-    tidyr,
-    purrr,
     furrr,
     future,
-    tibble,
     ggplot2,
-    plotly,
-    rray,
+    grDevices,
     igraph,
     lobstr,
-    digest,
-    crayon,
-    cli,
-    pracma,
-    roptim,
-    abind,
-    rlang,
-    grDevices,
-    utils,
-    stats,
+    magrittr,
+    quadprog,
+    plotly,
+    purrr,
     Rcpp,
     RcppArmadillo,
-    quadprogpp
-Remotes: github::fnoorian/quadprogpp
+    readr,
+    rlang,
+    rray,
+    stats,
+    stringr,
+    tibble,
+    tidyr,
+    utils
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 

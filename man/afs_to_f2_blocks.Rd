@@ -2,11 +2,11 @@
 % Please edit documentation in R/jackknife.R
 \name{afs_to_f2_blocks}
 \alias{afs_to_f2_blocks}
-\title{Computes all pairwise f2 statistics from allele frequencies}
+\title{Compute all pairwise f2 statistics}
 \usage{
 afs_to_f2_blocks(afs, popcounts, block_lengths, snpweights = 1,
-  fstscale = 3.6, maxmem = 1000, infocols = 6, write_to_disk = NA,
-  verbose = TRUE)
+  fstscale = 3.6, maxmem = 1000, infocols = 6,
+  write_to_disk = NULL, verbose = TRUE)
 }
 \arguments{
 \item{afs}{data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.}
@@ -25,7 +25,7 @@ afs_to_f2_blocks(afs, popcounts, block_lengths, snpweights = 1,
 a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time
 }
 \description{
-Computes all pairwise f2 statistics from allele frequencies
+Compute all pairwise f2 statistics
 }
 \examples{
 \dontrun{

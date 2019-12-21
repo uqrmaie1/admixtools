@@ -1,10 +1,7 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::depends(roptim)]]
 #include <RcppArmadillo.h>
-#include <roptim.h>
 using namespace Rcpp;
-using namespace roptim;
 using namespace arma;
 
 // [[Rcpp::export]]
@@ -23,7 +20,7 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
   arma::vec q1 = -(pppp * f3_jest);
   arma::mat CI(nc, nc, arma::fill::eye);
   arma::vec ci0 = arma::zeros<arma::vec>(nc);
-  return as<arma::vec>(qpsolve(cc, q1, CI, ci0));
+  return -as<arma::vec>(qpsolve(cc, q1, -CI, ci0));
 }
 
 
@@ -91,10 +88,12 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
 }
 
 
-
-
-
 // Rcpp optimization using Roptim (cpp_lbfgsb / Optimfunctor in c++) is not actually faster than using R optim.
+
+/*
+// [[Rcpp::depends(roptim)]]
+#include <roptim.h>
+using namespace roptim;
 
 class Optimfunctor : public Functor {
 
@@ -169,6 +168,7 @@ List cpp_lbfgsb(arma::vec weights, const arma::mat &pwts, const arma::mat &ppinv
   return Rcpp::List::create(_["value"] = opt.value(), _["par"] = opar);
 }
 
+*/
 
 
 

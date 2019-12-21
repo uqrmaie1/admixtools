@@ -7,6 +7,13 @@
 #' @param outfile output file.
 #' @param printonly should output be executed or the command just be printed?
 #' @return a list of qpGraph output data.
+#' @examples
+#' \dontrun{
+#' qpgraph_wrapper(bin = 'path/to/qpGraph',
+#'                 pref = 'path/to/packedancestrymap_prefix',
+#'                 parfile = 'path/to/parfile',
+#'                 graphfile = 'path/to/graphfile')
+#' }
 qpgraph_wrapper = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile', outfile='./out', printonly=FALSE) {
   # wrapper around AdmixTools qpGraph
   # input is locations of parfile and graphfile
@@ -39,12 +46,17 @@ qpgraph_wrapper = function(bin='./qpGraph', parfile='./parfile', graphfile='./gr
 #' @param allsnps allsnps
 #' @param bigiter bigiter
 #' @return a list with parsed qpGraph output
-#'
-#' \code{edges}: data frame
-#'
-#' \code{score}: scalar
-#'
-#' \code{f2}: data frame
+#' \enumerate{
+#' \item \code{edges}: data frame
+#' \item \code{score}: scalar
+#' \item \code{f2}: data frame
+#' }
+#' @examples
+#' \dontrun{
+#' qpgraph_wrapper2(graph1,
+#'                  bin = 'path/to/qpGraph',
+#'                  pref = 'path/to/packedancestrymap_prefix')
+#' }
 qpgraph_wrapper2 = function(graph, bin, pref, outpop='NULL', outdir='.', printonly=FALSE, lambdascale=-1, lsqmode='NO', diag=0.0001, hires='NO', forcezmode='NO', allsnps='NO', bigiter=100) {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
@@ -226,8 +238,8 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_jest) {
   # very slow, don't use (takes 10 times as long):
   # pracma::quadprog(cc, q1, A=-diag(nc), b=rep(0, nc))$xmin
   # as fast as quadprogpp::QP.Solve, and on CRAN. switch to this maybe:
-  # quadprog::solve.QP(cc, q1, -diag(nc), rep(0, nc))$solution
-  quadprogpp::QP.Solve(cc, q1, CI = diag(nc), ci0 = rep(0, nc))
+  -quadprog::solve.QP(cc, q1, -diag(nc), rep(0, nc))$solution
+  #quadprogpp::QP.Solve(cc, q1, CI = diag(nc), ci0 = rep(0, nc))
 }
 
 #' @export
@@ -258,7 +270,7 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @examples
 #' qpgraph(graph, f2_blocks, block_lengths)
 #' plot_graph(qpgraph(graph, f2_blocks, block_lengths)$edges)
-qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, fnscale=1e-6, fudge=1e-5, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
+qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
@@ -327,8 +339,8 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
-
-    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, quadprogpp::QP.Solve)
+    #arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, quadprogpp::QP.Solve); # need to change sign of third argument in qpsolve, if switching back to this
+    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, function(...) quadprog::solve.QP(...)$solution)
     if(cpp) optimweightsfun = cpp_optimweightsfun
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                      lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
@@ -412,7 +424,7 @@ qpgraph_slim = function(grph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, s
 
 
 #' @export
-qpgraph_precompute = function(pops, f2_blocks, block_lengths, lsqmode=FALSE, fudge=1e-5) {
+qpgraph_precompute = function(pops, f2_blocks, block_lengths, lsqmode=FALSE, fudge=1e-3) {
   # returns list of f3_jest and ppinv for subset of populations.
   # f3_jest and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph

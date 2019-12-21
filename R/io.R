@@ -29,6 +29,10 @@ TRUE
 #' @param blocksize number of SNPs read in each block.
 #' @param na.action what to do with missing SNPs. \code{none} output table will have missing data. \code{impute} allele frequencies will be imputed from other populations. \code{remove} SNPs with missing data will be removed.
 #' @return a tibble with allele frequency data. first six columns are snpfile, remaining columns are allele frequencies for reach population.
+#' @examples
+#' \dontrun{
+#' afdat = packedancestrymap_to_aftable(prefix, pops)
+#' }
 packedancestrymap_to_aftable = function(pref, pops=NULL, inds=NULL, blocksize=1000, na.action='none', return_matrix=FALSE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
@@ -235,6 +239,11 @@ parse_qpadm_output = function(outfile) {
 #' @param path directory into which to write the files.
 #' @param overwrite should existing \code{.RData} files be overwritten?
 #' @return NULL
+#' @seealso \code{\link{read_f2}}
+#' @examples
+#' \dontrun{
+#' write_f2(f2_block, path = 'path/to/f2stats/')
+#' }
 write_f2 = function(f2_block, path, overwrite=FALSE) {
 
   if(!dir.exists(path)) dir.create(path)
@@ -255,7 +264,18 @@ write_f2 = function(f2_block, path, overwrite=FALSE) {
   }
 }
 
+#' Read f2 block jackknife estimates from disk
+#'
+#' This function reads f2 block jackknife estimates which were writtend to disk by \code{\link{write_f2}} and returns a 3d array of f2 block jackknife estimates.
 #' @export
+#' @param path directory from which to read files
+#' @param pops the populations for which f2 statistics should be read. Defaults to all populations, which may require a lot of memory.
+#' @return a 3d array of block jackknife estimates
+#' @seealso \code{\link{write_f2}}
+#' @examples
+#' \dontrun{
+#' read_f2(f2_dir, pops = c('Zerg', 'Terran', 'Protoss'))
+#' }
 read_f2 = function(path, pops = NULL) {
   # reads f2 block jackknife .RData files and returns 3d array
   # pops is vector of populations which should be read. defaults to all populations.

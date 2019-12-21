@@ -65,7 +65,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001) {
 }
 
 
-#' qpAdm function for estimating admixture weights
+#' Estimate admixture weights
 #'
 #' Models target as a mixture of left populations, and outgroup right populations.
 #' @export
@@ -129,7 +129,7 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 }
 
 
-#' Wrapper function around the original qpAdm program.
+#' Wrapper function around the original qpAdm program
 #'
 #' This requires a working installation of qpAdm, which will be called using \code{\link{system}}
 #'
@@ -147,9 +147,11 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm(target, left, right)
+#' qpadm_wrapper(target, left, right,
+#'   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
+#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 #' }
-qpadm_wrapper = function(target, left, right, bin='/Users/robert/Downloads/AdmixTools-master/bin/qpAdm', pref='/Users/robert/Downloads/v37.2_HO_subs3', outdir='.', printonly=FALSE, env='') {
+qpadm_wrapper = function(target, left, right, bin, pref, outdir='.', printonly=FALSE, env='') {
 
   parfile = paste0('genotypename: ', pref, '.geno\n',
                    'snpname: ', pref, '.snp\n',

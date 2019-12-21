@@ -24,3 +24,11 @@ a list of qpGraph output data.
 \description{
 A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'
 }
+\examples{
+\dontrun{
+qpgraph_wrapper(bin = 'path/to/qpGraph',
+                pref = 'path/to/packedancestrymap_prefix',
+                parfile = 'path/to/parfile',
+                graphfile = 'path/to/graphfile')
+}
+}

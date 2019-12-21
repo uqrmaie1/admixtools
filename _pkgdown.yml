@@ -24,3 +24,24 @@ reference:
   - title: "Plotting functions"
     contents:
       - starts_with("plot")
+  - title: "Jackknife functions"
+    contents:
+      - get_block_lengths
+      - afs_to_f2_blocks
+  - title: "Reading and writing"
+    contents:
+      - packedancestrymap_to_aftable
+      - read_f2
+      - write_f2
+  - title: "Graph topology"
+    contents:
+      - random_newick
+      - newick_to_edges
+      - random_admixturegraph
+      - optimize_admixturegraph
+      - summarize_triples
+      - qpadm_models
+
+
+
+

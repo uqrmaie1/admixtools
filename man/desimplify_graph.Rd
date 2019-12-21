@@ -2,16 +2,19 @@
 % Please edit documentation in R/toposearch.R
 \name{desimplify_graph}
 \alias{desimplify_graph}
-\title{Adds two nodes before each admixture node.}
+\title{Add two nodes before each admixture node}
 \usage{
 desimplify_graph(grph)
+}
+\arguments{
+\item{grph}{an admixture graph}
 }
 \description{
 This is used to revert simplify_graph.
 }
 \examples{
-simple = simplify_graph(igraph)
+simple = simplify_graph(igraph1)
 desimple = desimplify_graph(simple)
-plot_graph2(simple)
-plot_graph2(desimple)
+plot_graph(simple)
+plot_graph(desimple)
 }

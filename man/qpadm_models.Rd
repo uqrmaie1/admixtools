@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{qpadm_models}
 \alias{qpadm_models}
-\title{Return all valid qpAdm models for an admixturegraph.}
+\title{Return all valid qpAdm models for an admixturegraph}
 \usage{
 qpadm_models(grph, add_outgroup = FALSE, nested = TRUE, abbr = -1)
 }

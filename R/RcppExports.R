@@ -29,7 +29,3 @@ cpp_optimweightsfun <- function(weights, args) {
     .Call('_admixtools_cpp_optimweightsfun', PACKAGE = 'admixtools', weights, args)
 }
 
-cpp_lbfgsb <- function(weights, pwts, ppinv, f3_jest, path_edge_table, path_admixedge_table, numpaths, qpsolve) {
-    .Call('_admixtools_cpp_lbfgsb', PACKAGE = 'admixtools', weights, pwts, ppinv, f3_jest, path_edge_table, path_admixedge_table, numpaths, qpsolve)
-}
-

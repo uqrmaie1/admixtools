@@ -74,11 +74,11 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
   plt
 }
 
-#' Plots an admixture graph.
+#' Plot an admixture graph
 #' @export
-#' @param edges a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
+#' @param edges an admixture graph. If it's an edge list matrix or data frame with a \code{label} column, those values will displayed on the edges
 #' @param title plot title
-#' @return a ggplot object.
+#' @return a ggplot object
 #' @examples
 #' plot_graph(graph1)
 plot_graph = function(edges, fix = TRUE, title = '', color = TRUE) {
@@ -96,8 +96,8 @@ plot_graph = function(edges, fix = TRUE, title = '', color = TRUE) {
   pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
   eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  #if(fix) eg = fix_layout(eg, grph)
-  # need to update fix to work here; fix assumes that eg has node rows in the end
+  if(fix) eg = fix_layout(eg, grph)
+  # need to update fix to work here; fix assumes that eg has node rows in the end; only relevant in fix_layout2?
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
@@ -151,7 +151,8 @@ fix_layout = function(coord, grph) {
     }
     coord
   }
-  for(node in names(subcomponent(grph, V(grph)[1]))) {
+  inner_bf = setdiff(names(subcomponent(grph, V(grph)[1])), get_leafnames(grph))
+  for(node in inner_bf) {
     d1 = totdist(coord$x, coord$xend)
     g2 = swap_subtree(grph, coord, node)
     d2 = totdist(g2$x, g2$xend)
@@ -321,7 +322,7 @@ plot_map = function(leafcoords, map_layout = 1) {
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
   if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3)), xaxis=ax, yaxis=ax)
-  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', zoom = 1, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
+  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 1, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
   plotly::plot_ly(leafcoords %>% filter(yearsbp > 0), type = 'scattermapbox', mode='markers', hoverinfo = 'text', x = ~lon, y = ~lat, color = ~log10(yearsbp), hovertext = ~group) %>% lo
 

@@ -16,3 +16,11 @@ write_f2(f2_block, path, overwrite = FALSE)
 \description{
 This function takes a 3d array of f2 block jackknife estimates, splits it by population pair, and writes each pair to a separate \code{.RData} file.
 }
+\examples{
+\dontrun{
+write_f2(f2_block, path = 'path/to/f2stats/')
+}
+}
+\seealso{
+\code{\link{read_f2}}
+}

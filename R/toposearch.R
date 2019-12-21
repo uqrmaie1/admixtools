@@ -21,22 +21,18 @@ numadmixplacements = function(numedges, nadmix) {
 }
 
 
-#' @export
 numadmix = function(grph) {
   sum(degree(grph, mode='in') == 2)
 }
 
-#' @export
 get_leafnames = function(grph) {
   grph %>% V %>% {names(which(degree(grph, ., mode='out') == 0))}
 }
 
-#' @export
 get_leaves = function(grph) {
   grph %>% V %>% {.[degree(grph, ., mode='out') == 0]}
 }
 
-#' @export
 get_leaves2 = function(grph) {
   # uses 'subcomponent' to return leaves in a consistent order
   grph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(grph))
@@ -93,8 +89,18 @@ unify_vertex_names = function(grph, keep_unique=TRUE) {
 }
 
 
+#' Generate a random admixture graph
+#'
+#' This function randomly generates an admixture graph for a given set of leaf nodes
 #' @export
-random_admixturegraph = function(leaves=5, numadmix=2, simple=FALSE, outpop = NA) {
+#' @param leaves the names of the leaf nodes, or a number specifying how many leaf nodes there should be
+#' @param numadmix the number of admixture events
+#' @param simple should edges leading to admixture nodes consist of separate admix edges and normal edges
+#' @param outpop the outgroup population
+#' @examples
+#' rand_graph = random_admixturegraph(10, numadmix = 5)
+#' plot_graph(rand_graph)
+random_admixturegraph = function(leaves = 5, numadmix = 2, simple = FALSE, outpop = NA) {
   # makes a random admixture graph
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
@@ -109,15 +115,15 @@ random_admixturegraph = function(leaves=5, numadmix=2, simple=FALSE, outpop = NA
 }
 
 
-#' Removes redundant edges from graph.
+#' Remove redundant edges
 #'
 #' Nodes with in and out degree of one will be removed.
 #' @param grph an igraph object
 #' @export
 #' @examples
-#' simple = simplify_graph(igraph)
-#' plot_graph2(igraph)
-#' plot_graph2(simple)
+#' simple = simplify_graph(igraph1)
+#' plot_graph(igraph1)
+#' plot_graph(simple)
 simplify_graph = function(grph) {
   # removes redundant nodes
   convmat = FALSE
@@ -137,15 +143,16 @@ simplify_graph = function(grph) {
   grph
 }
 
-#' Adds two nodes before each admixture node.
+#' Add two nodes before each admixture node
 #'
 #' This is used to revert simplify_graph.
 #' @export
+#' @param grph an admixture graph
 #' @examples
-#' simple = simplify_graph(igraph)
+#' simple = simplify_graph(igraph1)
 #' desimple = desimplify_graph(simple)
-#' plot_graph2(simple)
-#' plot_graph2(desimple)
+#' plot_graph(simple)
+#' plot_graph(desimple)
 desimplify_graph = function(grph) {
   # adds two nodes before each admixture node
   convmat = FALSE
@@ -167,7 +174,6 @@ desimplify_graph = function(grph) {
   grph
 }
 
-#' @export
 split_graph = function(grph) {
   # removes admixture nodes from an admixturegraph
   # returns a tree and a list of edges that can be used to reconstruct the original admixturegraph
@@ -236,6 +242,7 @@ random_newick_named = function(names, start='', end='') {
 #' @return tree as two column matrix of edges (adjacency list)
 #' @examples
 #' newick = random_newick(c('a', 'b', 'c', 'd'))
+#' newick
 #' newick_to_edges(newick)
 newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
   # turns binary tree in newick format into matrix of edges (adjacency list)
@@ -268,42 +275,6 @@ newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
   rbind(c(node, nodel), edgesleft, c(node, noder), edgesright, edgemat)
 }
 
-#' Insert random admixture nodes
-#'
-#' First edge should be R -> outgroup.
-#' Does not always result in correct graphs. Check topology before using them!
-#'
-#' @export
-#' @param edges an admixture graph.
-#' @param n the number of admixture nodes to insert.
-#' @return a new graph with inserted admixture nodes.
-insert_admix = function(edges, n=1) {
-  # inserts admixture node and edges at random location
-  # currently doesn't always working properly when n > 1
-  # assumes earlier edges are not downstream of later edges
-  # assumes first edge is R -> outpop
-
-  if(n < 1) return(edges)
-  edges = as.matrix(edges)
-  admixedges = which(edges[,2] %in% names(which(table(edges[,2]) > 1)))
-  cnt = length(admixedges)/2+1
-  eg = sort(sample(setdiff(2:nrow(edges), admixedges), 2))
-  o1 = edges[eg[1], ]
-  o2 = edges[eg[2], ]
-  newv11 = paste0(o1[1], 'x', cnt)
-  newv12 = paste0(o1[1], 'xx', cnt)
-  newv21 = paste0(o2[1], 'x', cnt)
-  newv22 = paste0('admix', cnt)
-  enew = rbind(edges[1:(eg[1]-1),], c(o1[1], newv11), c(newv11, newv12), c(newv11, o1[2]))
-  if(eg[2]-eg[1] > 1) enew = rbind(enew, edges[(eg[1]+1):(eg[2]-1),])
-  enew = rbind(enew, c(o2[1], newv21), c(newv21, newv22), c(newv22, o2[2]), c(newv12, newv22))
-  if(nrow(edges) - eg[2] > 1) enew = rbind(enew, edges[(eg[2]+1):nrow(edges),])
-  if(n == 1) return(enew)
-  return(insert_admix(enew, n-1))
-}
-
-
-#' @export
 insert_admix_igraph = function(grph, admixedges, substitute_missing=FALSE) {
   # inverse of 'split_graph'
   # only uses 'fromedge2' and 'toedge2' (2nd and 4th elements of admixedges)
@@ -344,7 +315,6 @@ insert_admix_igraph = function(grph, admixedges, substitute_missing=FALSE) {
 }
 
 
-#' @export
 insert_admix_igraph_random = function(grph, nadmix) {
   # grph should be simplified
   for(i in seq_len(nadmix)) {
@@ -381,7 +351,6 @@ insert_admix_igraph_random = function(grph, nadmix) {
 }
 
 
-#' @export
 subtree_prune_and_regraft = function(grph, only_leaves=FALSE) {
   # cuts of a parts of the tree and attaches it at a random location
   # root -> outgroup stays fixed
@@ -419,7 +388,6 @@ subtree_prune_and_regraft = function(grph, only_leaves=FALSE) {
 }
 
 
-#' @export
 admixturegraph_prune_and_regraft = function(grph, desimplify=TRUE, only_leaves = FALSE) {
   # 1. remove admixture edges (one randomly selected from each admixture node)
   # 2. runs subtree_prune_and_regraft on resulting tree
@@ -434,7 +402,6 @@ admixturegraph_prune_and_regraft = function(grph, desimplify=TRUE, only_leaves =
 }
 
 
-#' @export
 move_admixedge_once = function(grph, desimplify=TRUE) {
   # selects random admixture edge, and moves it to next closest possible spot
   # if not possible, select other admix node
@@ -472,7 +439,6 @@ move_admixedge_once = function(grph, desimplify=TRUE) {
   return(grph)
 }
 
-#' @export
 permute_leaves = function(grph, fix_outgroup=TRUE) {
 
   leaves = V(grph)[degree(grph, v = V(grph), mode = c('out')) == 0]
@@ -481,7 +447,6 @@ permute_leaves = function(grph, fix_outgroup=TRUE) {
   igraph::set_vertex_attr(grph, 'name', leaves, sample(nam))
 }
 
-#' @export
 swap_leaves = function(grph, fix_outgroup=TRUE) {
 
   leaves = V(grph)[degree(grph, v = V(grph), mode = c('out')) == 0]
@@ -492,7 +457,6 @@ swap_leaves = function(grph, fix_outgroup=TRUE) {
 }
 
 
-#' @export
 add_generation = function(models, numsel, qpgfun) {
 
   lastgen = max(models$generation)
@@ -510,7 +474,6 @@ add_generation = function(models, numsel, qpgfun) {
   models %>% bind_rows(newmodels)
 }
 
-#' @export
 sample_mutations = function(n) {
   # returns a random mutation function
   mutations = list(sprleaves = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = TRUE)),
@@ -521,7 +484,7 @@ sample_mutations = function(n) {
   sample(mutations, n, replace = TRUE)
 }
 
-#' @export
+
 score_to_prob = function(score, fix_best=TRUE) {
   logscore = log10(score)
   sc = 1-logscore/max(logscore)
@@ -530,8 +493,6 @@ score_to_prob = function(score, fix_best=TRUE) {
 }
 
 
-
-#' @export
 evolve_topology = function(init, numgen, numsel, qpgfun, verbose=TRUE) {
 
   out = init
@@ -578,7 +539,7 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs=50, nu
   evolve_topology(init, numgen, numsel, qpgfun, verbose=verbose)
 }
 
-#' Find a well fitting admixturegraph.
+#' Find a well fitting admixturegraph
 #'
 #' This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \link{\code{future_map}} from the \link{\code{furrr}} package to parallelize across the independent repeats. The function \link{\code{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
 #' @export
@@ -610,7 +571,6 @@ optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep=10, numgraphs=50
 }
 
 
-#' @export
 summarize_graph = function(grph, exclude_outgroup = TRUE) {
 
   leaves = V(grph)[degree(grph, v = V(grph), mode = c('out')) == 0]
@@ -647,7 +607,17 @@ summarize_graph = function(grph, exclude_outgroup = TRUE) {
   tripletopo
 }
 
+#' Summarize triples across graphs
+#'
+#' This summarizes topologies of population triples across graphs
+#'
 #' @export
+#' @param results the output of \code{optimize_admixturegraph}
+#' @param maxscore restrict summary to graphs with score not larger than \code{maxscore}
+#' @examples
+#' \dontrun{
+#' summarize_triples(opt_results)
+#' }
 summarize_triples = function(results, maxscore=NA) {
   # results is output from 'optimize_admixturegraph'
   # takes at most one graph from each independent run
@@ -729,7 +699,7 @@ isomorphism_classes2 = function(igraphlist) {
   sets
 }
 
-#' Return all valid qpAdm models for an admixturegraph.
+#' Return all valid qpAdm models for an admixturegraph
 #'
 #' For large admixturegraph, there may be a large number of valid qpAdm models!
 #'
@@ -778,18 +748,6 @@ qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 
 }
 
-
-
-
-testfun = function(x) {print(getwd()); 24}
-
-#' @export
-fbatchtest = function() {
-  print(future::plan())
-  print(getwd())
-  print('xxx')
-  furrr::future_map(as.list(seq_len(3)), possibly(testfun, otherwise=NULL))
-}
 
 
 

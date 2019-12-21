@@ -24,3 +24,8 @@ a tibble with allele frequency data. first six columns are snpfile, remaining co
 \description{
 Read allele frequencies from packedancestrymap genotype file
 }
+\examples{
+\dontrun{
+afdat = packedancestrymap_to_aftable(prefix, pops)
+}
+}

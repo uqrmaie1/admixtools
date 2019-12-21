@@ -21,7 +21,6 @@ bj_arr_lo_mean_nomissing = function(arr, block_lengths, verbose=TRUE) {
   out
 }
 
-#' @export
 bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
   # returns leave-one-block-out array means
   # arr is 3d
@@ -50,7 +49,6 @@ bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
 
 
 
-#' @export
 bj_mat_stats = function(bj_lo_mat, block_lengths) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
@@ -63,7 +61,6 @@ bj_mat_stats = function(bj_lo_mat, block_lengths) {
   namedList(jest, jvar)
 }
 
-#' @export
 bj_arr_stats = function(bj_lo_arr, block_lengths) {
   # input is 3d array (n x n x m)
   # output is list with jackknife means and jackknife variances
@@ -75,7 +72,6 @@ bj_arr_stats = function(bj_lo_arr, block_lengths) {
   namedList(jest, jvar)
 }
 
-#' @export
 bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
   # input is 3d array (m x n x p)
   # output is list with jackknife means and jackknife covariances
@@ -92,7 +88,7 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
 }
 
 
-#' Computes all pairwise f2 statistics from allele frequencies
+#' Compute all pairwise f2 statistics
 #' @export
 #' @param afs data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.
 #' @param popcounts named vector with number of samples for each population.
@@ -106,7 +102,7 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
 #' f2_blocks = afs_to_f2_blocks(afs, popcounts, block_lengths)
 #' }
 afs_to_f2_blocks = function(afs, popcounts, block_lengths, snpweights = 1, fstscale=3.6, maxmem=1e3,
-                            infocols = 6, write_to_disk = NA, verbose = TRUE) {
+                            infocols = 6, write_to_disk = NULL, verbose = TRUE) {
 
   if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
   popcounts = as.vector(popcounts[colnames(afs)])
@@ -129,7 +125,6 @@ afs_to_f2_blocks = function(afs, popcounts, block_lengths, snpweights = 1, fstsc
   f2_blocks * fstscale
 }
 
-#' @export
 set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 
   sb = function(cumpos, CHR, POS) {
@@ -167,7 +162,7 @@ get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
     rle %$% lengths
 }
 
-get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, starts, ends, write_to_disk = NA, verbose = TRUE) {
+get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, starts, ends, write_to_disk = NULL, verbose = TRUE) {
   # splits afmat into blocks by column, computes lo jackknife blocks on each pair of blocks, and combines into 3d array
   numsplits2 = length(starts)
   cmb = combn(0:numsplits2, 2)+(1:0)
@@ -190,16 +185,16 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, star
     dimnames(numer)[[2]] = colnames(b2)
     f2_subblock = bj_arr_lo_mean(numer*snpweights, block_lengths)
     if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
-    if(!is.na(write_to_disk)) {
+    if(!is.null(write_to_disk)) {
       write_f2(f2_subblock, path = write_to_disk)
     } else {
       arrlist[[c1]][[c2]] = f2_subblock
       arrlist[[c2]][[c1]] = aperm(arrlist[[c1]][[c2]], c(2,1,3))
     }
   }
-  if(!is.na(write_to_disk)) {
+  if(is.null(write_to_disk)) {
     f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
-    #for(i in 1:dim(f2_blocks)[1]) f2_blocks[i,i,] = 0
+    dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = colnames(afmat)
     return(f2_blocks)
   }
 }

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Adds two nodes before each admixture node. — desimplify_graph • admixtools</title>
+<title>Add two nodes before each admixture node — desimplify_graph • admixtools</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -38,7 +38,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Adds two nodes before each admixture node. — desimplify_graph" />
+<meta property="og:title" content="Add two nodes before each admixture node — desimplify_graph" />
 
 <meta property="og:description" content="This is used to revert simplify_graph." />
 <meta name="twitter:card" content="summary" />
@@ -125,7 +125,7 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Adds two nodes before each admixture node.</h1>
+    <h1>Add two nodes before each admixture node</h1>
     
     <div class="hidden name"><code>desimplify_graph.Rd</code></div>
     </div>
@@ -137,14 +137,26 @@
     </div>
 
     <pre class="usage"><span class='fu'>desimplify_graph</span>(<span class='no'>grph</span>)</pre>
-        
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>grph</th>
+      <td><p>an admixture graph</p></td>
+    </tr>
+    </table>
+    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>simple</span> <span class='kw'>=</span> <span class='fu'><a href='simplify_graph.html'>simplify_graph</a></span>(<span class='no'>igraph</span>)</div><div class='output co'>#&gt; <span class='error'>Error in simplify_graph(igraph): object 'igraph' not found</span></div><div class='input'><span class='no'>desimple</span> <span class='kw'>=</span> <span class='fu'>desimplify_graph</span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in desimplify_graph(simple): object 'simple' not found</span></div><div class='input'><span class='fu'>plot_graph2</span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph2(simple): could not find function "plot_graph2"</span></div><div class='input'><span class='fu'>plot_graph2</span>(<span class='no'>desimple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph2(desimple): could not find function "plot_graph2"</span></div></pre>
+    <pre class="examples"><div class='input'><span class='no'>simple</span> <span class='kw'>=</span> <span class='fu'><a href='simplify_graph.html'>simplify_graph</a></span>(<span class='no'>igraph1</span>)
+<span class='no'>desimple</span> <span class='kw'>=</span> <span class='fu'>desimplify_graph</span>(<span class='no'>simple</span>)
+<span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>simple</span>)</div><div class='img'><img src='desimplify_graph-1.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>desimple</span>)</div><div class='img'><img src='desimplify_graph-2.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
+      <li><a href="#arguments">Arguments</a></li>
             
       <li><a href="#examples">Examples</a></li>
     </ul>

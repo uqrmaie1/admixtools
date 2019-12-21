@@ -20,7 +20,7 @@ mean_impute = function(mat, by=2) {
   out
 }
 
-#' @export
+
 arr3d_to_pairmat = function(arr, diag=TRUE) {
   # input is arr of dimension n x n x m
   # output is choose(n+1, 2) x m
@@ -32,7 +32,7 @@ arr3d_to_pairmat = function(arr, diag=TRUE) {
   matrix(as.array(arr)[indx], npair, d3)
 }
 
-#' @export
+
 arr3d_to_mat = function(arr) {
   # input is arr of dimension m x n x p
   # output is p x (m x n) (1..m, 1..m, ... times n)
@@ -50,8 +50,6 @@ gg_color_hue = function(n, l=65, c=100) {
 }
 
 
-
-#' @export
 multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, method = NULL,
                        hessian = FALSE, control = list(), verbose=TRUE, ...) {
   # same as from optimx library, but can be quiet

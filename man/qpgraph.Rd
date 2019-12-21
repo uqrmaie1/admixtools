@@ -5,7 +5,7 @@
 \title{Compute the fit of an admixturegraph.}
 \usage{
 qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
-  lsqmode = FALSE, fnscale = 1e-06, fudge = 1e-05, numstart = NULL,
+  lsqmode = FALSE, fnscale = 1e-06, fudge = 0.001, numstart = NULL,
   seed = NULL, verbose = FALSE, cpp = TRUE)
 }
 \arguments{

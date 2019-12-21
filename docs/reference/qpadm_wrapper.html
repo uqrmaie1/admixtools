@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Wrapper function around the original qpAdm program. — qpadm_wrapper • admixtools</title>
+<title>Wrapper function around the original qpAdm program — qpadm_wrapper • admixtools</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -38,7 +38,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Wrapper function around the original qpAdm program. — qpadm_wrapper" />
+<meta property="og:title" content="Wrapper function around the original qpAdm program — qpadm_wrapper" />
 
 <meta property="og:description" content="This requires a working installation of qpAdm, which will be called using system" />
 <meta name="twitter:card" content="summary" />
@@ -125,7 +125,7 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Wrapper function around the original qpAdm program.</h1>
+    <h1>Wrapper function around the original qpAdm program</h1>
     
     <div class="hidden name"><code>qpadm_wrapper.Rd</code></div>
     </div>
@@ -136,9 +136,7 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>,
-  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"/Users/robert/Downloads/AdmixTools-master/bin/qpAdm"</span>,
-  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>"/Users/robert/Downloads/v37.2_HO_subs3"</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
+    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>bin</span>, <span class='no'>pref</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
   <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -184,7 +182,9 @@
 <span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'><a href='qpadm.html'>qpadm</a></span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)
+<span class='fu'>qpadm_wrapper</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>,
+  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpAdm'</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>,
+  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/'</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

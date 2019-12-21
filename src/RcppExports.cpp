@@ -102,24 +102,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_lbfgsb
-List cpp_lbfgsb(arma::vec weights, const arma::mat& pwts, const arma::mat& ppinv, const arma::vec& f3_jest, const arma::mat& path_edge_table, const arma::mat& path_admixedge_table, int numpaths, Function qpsolve);
-RcppExport SEXP _admixtools_cpp_lbfgsb(SEXP weightsSEXP, SEXP pwtsSEXP, SEXP ppinvSEXP, SEXP f3_jestSEXP, SEXP path_edge_tableSEXP, SEXP path_admixedge_tableSEXP, SEXP numpathsSEXP, SEXP qpsolveSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type pwts(pwtsSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type ppinv(ppinvSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type f3_jest(f3_jestSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type path_edge_table(path_edge_tableSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type path_admixedge_table(path_admixedge_tableSEXP);
-    Rcpp::traits::input_parameter< int >::type numpaths(numpathsSEXP);
-    Rcpp::traits::input_parameter< Function >::type qpsolve(qpsolveSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_lbfgsb(weights, pwts, ppinv, f3_jest, path_edge_table, path_admixedge_table, numpaths, qpsolve));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 4},
@@ -129,7 +111,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 4},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
-    {"_admixtools_cpp_lbfgsb", (DL_FUNC) &_admixtools_cpp_lbfgsb, 8},
     {NULL, NULL, 0}
 };
 

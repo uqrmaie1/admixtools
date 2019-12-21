@@ -151,7 +151,7 @@
         <td>
           <p><code><a href="qpadm.html">qpadm()</a></code> </p>
         </td>
-        <td><p>qpAdm function for estimating admixture weights</p></td>
+        <td><p>Estimate admixture weights</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -165,7 +165,7 @@
         <td>
           <p><code><a href="qpadm_wrapper.html">qpadm_wrapper()</a></code> </p>
         </td>
-        <td><p>Wrapper function around the original qpAdm program.</p></td>
+        <td><p>Wrapper function around the original qpAdm program</p></td>
       </tr><tr>
         
         <td>
@@ -229,7 +229,7 @@
         <td>
           <p><code><a href="plot_graph.html">plot_graph()</a></code> </p>
         </td>
-        <td><p>Plots an admixture graph.</p></td>
+        <td><p>Plot an admixture graph</p></td>
       </tr><tr>
         
         <td>
@@ -255,6 +255,96 @@
         </td>
         <td><p>Plots samples on a map.</p></td>
       </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-jackknife-functions" class="hasAnchor"><a href="#section-jackknife-functions" class="anchor"></a>Jackknife functions</h2>
+          <p class="section-desc"></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="get_block_lengths.html">get_block_lengths()</a></code> </p>
+        </td>
+        <td><p>Finds LD-independent blocks.</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="afs_to_f2_blocks.html">afs_to_f2_blocks()</a></code> </p>
+        </td>
+        <td><p>Compute all pairwise f2 statistics</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-reading-and-writing" class="hasAnchor"><a href="#section-reading-and-writing" class="anchor"></a>Reading and writing</h2>
+          <p class="section-desc"></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="packedancestrymap_to_aftable.html">packedancestrymap_to_aftable()</a></code> </p>
+        </td>
+        <td><p>Read allele frequencies from packedancestrymap genotype file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="read_f2.html">read_f2()</a></code> </p>
+        </td>
+        <td><p>Read f2 block jackknife estimates from disk</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="write_f2.html">write_f2()</a></code> </p>
+        </td>
+        <td><p>Write f2 block jackknife estimates to disk</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-graph-topology" class="hasAnchor"><a href="#section-graph-topology" class="anchor"></a>Graph topology</h2>
+          <p class="section-desc"></p>
+        </th>
+      </tr>
+      <tr>
+        
+        <td>
+          <p><code><a href="random_newick.html">random_newick()</a></code> </p>
+        </td>
+        <td><p>Generate a random, binary graph with n terminal nodes</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="newick_to_edges.html">newick_to_edges()</a></code> </p>
+        </td>
+        <td><p>Turn a newick format tree to a matrix of edges</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="random_admixturegraph.html">random_admixturegraph()</a></code> </p>
+        </td>
+        <td><p>Generate a random admixture graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="optimize_admixturegraph.html">optimize_admixturegraph()</a></code> </p>
+        </td>
+        <td><p>Find a well fitting admixturegraph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="summarize_triples.html">summarize_triples()</a></code> </p>
+        </td>
+        <td><p>Summarize triples across graphs</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpadm_models.html">qpadm_models()</a></code> </p>
+        </td>
+        <td><p>Return all valid qpAdm models for an admixturegraph</p></td>
+      </tr>
     </tbody>
     </table>
   </div>
@@ -266,6 +356,9 @@
       <li><a href="#section-wrapper-functions">Wrapper functions</a></li>
       <li><a href="#section-parsing-functions">Parsing functions</a></li>
       <li><a href="#section-plotting-functions">Plotting functions</a></li>
+      <li><a href="#section-jackknife-functions">Jackknife functions</a></li>
+      <li><a href="#section-reading-and-writing">Reading and writing</a></li>
+      <li><a href="#section-graph-topology">Graph topology</a></li>
     </ul>
   </div>
 </div>

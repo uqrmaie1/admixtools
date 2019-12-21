@@ -2,7 +2,7 @@
 % Please edit documentation in R/qpadm.R
 \name{qpadm}
 \alias{qpadm}
-\title{qpAdm function for estimating admixture weights}
+\title{Estimate admixture weights}
 \usage{
 qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
   f2_dir = NULL, fudge = 1e-04, getcov = TRUE, cpp = TRUE)

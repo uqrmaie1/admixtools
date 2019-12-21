@@ -2,20 +2,20 @@
 % Please edit documentation in R/plotting.R
 \name{plot_graph}
 \alias{plot_graph}
-\title{Plots an admixture graph.}
+\title{Plot an admixture graph}
 \usage{
 plot_graph(edges, fix = TRUE, title = "", color = TRUE)
 }
 \arguments{
-\item{edges}{a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.}
+\item{edges}{an admixture graph. If it's an edge list matrix or data frame with a \code{label} column, those values will displayed on the edges}
 
 \item{title}{plot title}
 }
 \value{
-a ggplot object.
+a ggplot object
 }
 \description{
-Plots an admixture graph.
+Plot an admixture graph
 }
 \examples{
 plot_graph(graph1)
