@@ -5,7 +5,10 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export]]
-arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv, const arma::vec& f3_jest, Function qpsolve) {
+arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d,
+                               const arma::mat& ppinv,
+                               const arma::vec& f3_jest,
+                               Function qpsolve) {
   arma::mat pppp = ppwts_2d.t() * ppinv;
   arma::mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
@@ -25,7 +28,9 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
 
 
 // [[Rcpp::export]]
-void cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights, const arma::mat& path_edge_table, const arma::mat& path_admixedge_table, int numpaths) {
+void cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
+                   const arma::mat& path_edge_table,
+                   const arma::mat& path_admixedge_table, int numpaths) {
   // puts weights onto pwts, using index matrix and vectors
 
   if(weights.n_elem == 0) return;

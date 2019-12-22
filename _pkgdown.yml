@@ -28,11 +28,14 @@ reference:
     contents:
       - get_block_lengths
       - afs_to_f2_blocks
+      - qpgraph_precompute_f3
   - title: "Reading and writing"
     contents:
       - packedancestrymap_to_aftable
       - read_f2
       - write_f2
+      - write_split_f2_block
+      - split_afmat
   - title: "Graph topology"
     contents:
       - random_newick

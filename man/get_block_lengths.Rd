@@ -20,3 +20,11 @@ a numeric vector where the ith element lists the number of SNPs in the ith block
 starts new block at the SNP after the first SNP which is not within dist of the last block start
 afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 }
+\examples{
+\dontrun{
+prefix = 'path/to/packedancestrymap_prefix'
+pops = c('Stark', 'Targaryen', 'Lannister')
+afdat = packedancestrymap_to_aftable(prefix, pops)
+block_lengths = get_block_lengths(afdat)
+}
+}

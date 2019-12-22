@@ -5,7 +5,8 @@
 \title{Estimate admixture weights}
 \usage{
 qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
-  f2_dir = NULL, fudge = 1e-04, getcov = TRUE, cpp = TRUE)
+  f2_dir = NULL, fstscale = 1, fudge = 1e-04, getcov = TRUE,
+  cpp = TRUE)
 }
 \arguments{
 \item{target}{the target population}
@@ -19,6 +20,8 @@ qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 \item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
 
 \item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
+
+\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
 
 \item{fudge}{value added to diagonal matrix elements before inverting}
 

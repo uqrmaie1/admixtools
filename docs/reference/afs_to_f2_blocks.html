@@ -136,9 +136,9 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afs</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>snpweights</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>infocols</span> <span class='kw'>=</span> <span class='fl'>6</span>,
-  <span class='kw'>write_to_disk</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afs</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>infocols</span> <span class='kw'>=</span> <span class='fl'>6</span>, <span class='kw'>write_to_disk</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -156,12 +156,8 @@
       <td><p>vector with lengths of each jackknife block. sum has to match nrow(afs).</p></td>
     </tr>
     <tr>
-      <th>snpweights</th>
-      <td><p>weighting factor for each SNP. sometimes set to inverse of outgroup heterozygosity.</p></td>
-    </tr>
-    <tr>
       <th>fstscale</th>
-      <td><p>scales f2-statistics to be on the same scale as FST. Not well tested, and probably not necessary.</p></td>
+      <td><p>scales f2-statistics. A value of around 3.6 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>maxmem</th>

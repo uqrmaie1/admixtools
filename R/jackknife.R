@@ -93,15 +93,14 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
 #' @param afs data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.
 #' @param popcounts named vector with number of samples for each population.
 #' @param block_lengths vector with lengths of each jackknife block. sum has to match nrow(afs).
-#' @param snpweights weighting factor for each SNP. sometimes set to inverse of outgroup heterozygosity.
-#' @param fstscale scales f2-statistics to be on the same scale as FST. Not well tested, and probably not necessary.
+#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.
 #' @return a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time
 #' @examples
 #' \dontrun{
 #' f2_blocks = afs_to_f2_blocks(afs, popcounts, block_lengths)
 #' }
-afs_to_f2_blocks = function(afs, popcounts, block_lengths, snpweights = 1, fstscale=3.6, maxmem=1e3,
+afs_to_f2_blocks = function(afs, popcounts, block_lengths, fstscale=3.6, maxmem=1e3,
                             infocols = 6, write_to_disk = NULL, verbose = TRUE) {
 
   if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
@@ -121,9 +120,10 @@ afs_to_f2_blocks = function(afs, popcounts, block_lengths, snpweights = 1, fstsc
     if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ', width, ' populations and up to ', maxmem, ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
   }
 
-  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, snpweights, starts=starts, ends=ends, write_to_disk = write_to_disk, verbose = verbose)
-  f2_blocks * fstscale
+  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, starts=starts, ends=ends, write_to_disk = write_to_disk, fstscale = fstscale, verbose = verbose)
+  f2_blocks
 }
+
 
 set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 
@@ -156,13 +156,20 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 #' @param dist minimum distance between blocks
 #' @param distcol which column should be used as distance column
 #' @return a numeric vector where the ith element lists the number of SNPs in the ith block.
+#' @examples
+#' \dontrun{
+#' prefix = 'path/to/packedancestrymap_prefix'
+#' pops = c('Stark', 'Targaryen', 'Lannister')
+#' afdat = packedancestrymap_to_aftable(prefix, pops)
+#' block_lengths = get_block_lengths(afdat)
+#' }
 get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
   afdat %>%
     set_blocks(dist = dist, distcol = 'cm') %$% block %>%
     rle %$% lengths
 }
 
-get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, starts, ends, write_to_disk = NULL, verbose = TRUE) {
+get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, write_to_disk = NULL, fstscale = 1, verbose = TRUE) {
   # splits afmat into blocks by column, computes lo jackknife blocks on each pair of blocks, and combines into 3d array
   numsplits2 = length(starts)
   cmb = combn(0:numsplits2, 2)+(1:0)
@@ -183,7 +190,7 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, star
     numer = (afrr1 - afrr2)^2 - pqarr
     dimnames(numer)[[1]] = colnames(b1)
     dimnames(numer)[[2]] = colnames(b2)
-    f2_subblock = bj_arr_lo_mean(numer*snpweights, block_lengths)
+    f2_subblock = bj_arr_lo_mean(numer * fstscale, block_lengths)
     if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
     if(!is.null(write_to_disk)) {
       write_f2(f2_subblock, path = write_to_disk)
@@ -199,8 +206,34 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, snpweights, star
   }
 }
 
+#' Compute block jackknife f2 blocks and write them to disk
+#'
+#' This is intended for computing f2-statistics for a large number of populations, which cannot be stored in memory. It assumes that the allele frequencies have already been computed and are stored in .RData files, split into consecutive blocks for a set of populations. This function calls \code{\link{write_f2}}, which takes a (sub-)block of pairwise f2-statistics, and writes to disk one pair at a time.
 #' @export
-write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, snpweights=1, verbose = TRUE) {
+#' @param afmatprefix prefix of the allele frequency \code{.RData} files created by \code{\link{split_afmat}}
+#' @param outdir directory where the f2 blocks will be stored
+#' @param block1 block number of the first block of populations
+#' @param block2 block number of the second block of populations
+#' @param popcounts named vector with number of samples for each population.
+#' @param block_lengths vector with lengths of each jackknife block. \code{sum(block_lengths)} has to match the number of SNPs.
+#' @param fstscale scaling factor applied to f2-statistics. If set to 3.6, this will be approximately equal to Fst.
+#' @param verbose print progress updates
+#' @return a numeric vector where the ith element lists the number of SNPs in the ith block.
+#' @seealso \code{\link{split_afmat}} for creating split allele frequency data, \code{\link{write_f2}} for writing split f2 block jackknife estimates
+#' @examples
+#' \dontrun{
+#' afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
+#'                                         na.action = 'none', return_matrix = TRUE)
+#' split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v41.1/afmatall_')
+#' numblocks = 180
+#' for(j in 1:numblocks) {
+#'   for(j in i:numblocks) {
+#'     write_split_f2_block('afmatall_split_v41.1/afmatall_', 'f2blocks_v41.1/',
+#'                          block1 = i, block2 = j, popcounts, block_lengths, fstscale = 3.6)
+#'     }
+#'   }
+#' }
+write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, fstscale = 1, verbose = TRUE) {
   # reads two afmat blocks, computes f2 jackknife blocks, and writes output to outdir
 
   load(paste0(afmatprefix, block1, '.RData'))
@@ -220,7 +253,7 @@ write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, 
   pqarr = afrr1*(1-afrr1)/(2*c(popcounts[nam1])-1) + afrr2*(1-afrr2)/t(2*c(popcounts[nam2])-1)
   numer = as.array((afrr1 - afrr2)^2 - pqarr)
   rm(afrr1, afrr2, pqarr)
-  f2_subblock = bj_arr_lo_mean(numer*snpweights, block_lengths, verbose = verbose)
+  f2_subblock = bj_arr_lo_mean(numer * fstscale, block_lengths, verbose = verbose)
   rm(numer)
   dimnames(f2_subblock)[[1]] = nam1
   dimnames(f2_subblock)[[2]] = nam2

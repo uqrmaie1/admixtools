@@ -298,18 +298,31 @@ read_f2 = function(path, pops = NULL) {
   f2_blocks
 }
 
-
-split_afmat = function(afmat, pops_per_block, outprefix) {
+#' Split an allele frequency matrix into blocks
+#'
+#' This function splits a large allele frequency matrix into smaller blocks with \code{pops_per_block} populations per block, and saves them as \code{.RData} files in \code{outprefix}
+#' @export
+#' @param afmat the allele frequency matrix to be split
+#' @param pops_per_block the number of populations per block
+#' @param outprefix the prefix of the output files. Directories are not created on the fly.
+#' @seealso \code{\link{packedancestrymap_to_aftable}}, \code{\link{write_split_f2_block}}
+#' @examples
+#' \dontrun{
+#' afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
+#'                                          na.action = 'none', return_matrix = TRUE)
+#' split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v41.1/afmatall_')
+#' }
+split_afmat = function(afmat, pops_per_block, outprefix, verbose = TRUE) {
   # splits afmat into numparts parts, and saves them to {outprefix}_{part}.RData
   npops = ncol(afmat)
   starts = seq(1, npops, pops_per_block)
   numparts = length(starts)
   ends = c(lead(starts)[-numparts]-1, npops)
   for(i in seq_len(numparts)) {
-    cat(paste0('\rpart ', i, ' of ', numparts))
+    if(verbose) cat(paste0('\rpart ', i, ' of ', numparts))
     afs = afmat[, starts[i]:ends[i]]
-    save(afs, file = paste0(outprefix, '_', i, '.RData'))
+    save(afs, file = paste0(outprefix, i, '.RData'))
   }
-  cat('\n')
+  if(verbose) cat('\n')
 }
 

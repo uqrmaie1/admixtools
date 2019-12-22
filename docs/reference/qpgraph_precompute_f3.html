@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Estimate admixture weights — qpadm • admixtools</title>
+<title>Compute f3-statistics from f2-statistics. — qpgraph_precompute_f3 • admixtools</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -38,9 +38,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Estimate admixture weights — qpadm" />
+<meta property="og:title" content="Compute f3-statistics from f2-statistics. — qpgraph_precompute_f3" />
 
-<meta property="og:description" content="Models target as a mixture of left populations, and outgroup right populations." />
+<meta property="og:description" content="Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population p1 and all population pairs i, j: f3(p1; p_i, p_j)" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -125,35 +125,26 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Estimate admixture weights</h1>
+    <h1>Compute f3-statistics from f2-statistics.</h1>
     
-    <div class="hidden name"><code>qpadm.Rd</code></div>
+    <div class="hidden name"><code>qpgraph_precompute_f3.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Models target as a mixture of left populations, and outgroup right populations.</p>
+    <p>Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population <code>p1</code> and all population pairs <code>i, j</code>: <code>f3(p1; p_i, p_j)</code></p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>target</th>
-      <td><p>the target population</p></td>
-    </tr>
-    <tr>
-      <th>left</th>
-      <td><p>the source population</p></td>
-    </tr>
-    <tr>
-      <th>right</th>
-      <td><p>outgroup populations</p></td>
+      <th>pops</th>
+      <td><p>populations for which to compute f3-statistics</p></td>
     </tr>
     <tr>
       <th>f2_blocks</th>
@@ -173,32 +164,31 @@
     </tr>
     <tr>
       <th>fudge</th>
-      <td><p>value added to diagonal matrix elements before inverting</p></td>
+      <td><p>try increasing this, if you get the error message <code>constraints are inconsistent, no solution!</code>.</p></td>
     </tr>
     <tr>
-      <th>getcov</th>
-      <td><p>should standard errors be returned? Setting this to FALSE makes this function much faster.</p></td>
-    </tr>
-    <tr>
-      <th>cpp</th>
-      <td><p>should optimization be done using C++ or R function? cpp = TRUE is much faster.</p></td>
+      <th>lsqmode</th>
+      <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a data frame with weights and standard errors for each left population</p>
+    <p>a list with four items</p><ol>
+<li><p><code>f3_jest</code> a matrix with f3-statistics for all population pairs with the output</p></li>
+<li><p><code>ppinv</code> a matrix with the inverse of the f3-statistic covariance matrix</p></li>
+<li><p><code>f2out</code> a data frame with f2 estimates</p></li>
+<li><p><code>f3out</code> a data frame with f3 estimates</p></li>
+</ol>
+
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
-<span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
-<span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>qpadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 4</span><span>
-#&gt;   target      left                 weight    se
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   43.4  17.7
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>42.4</span><span>  17.7</div></span></pre>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>igraph1</span>)
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>)
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>)
+}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

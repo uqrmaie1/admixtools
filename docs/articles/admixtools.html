@@ -106,7 +106,7 @@
 <a class="sourceLine" id="cb2-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
 <a class="sourceLine" id="cb2-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>, <span class="st">'Switzerland_Bichon.SG'</span>)</a></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">f2_dir =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/f2blocks_v41.1/'</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw"><a href="../reference/qpadm.html">qpadm</a></span>(target, left, right, <span class="dt">f2_dir =</span> f2_dir)</a></code></pre></div>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw"><a href="../reference/qpadm.html">qpadm</a></span>(target, left, right, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">fstscale =</span> <span class="fl">3.6</span>)</a></code></pre></div>
 <pre><code>## # A tibble: 2 x 4
 ##   target      left                 weight    se
 ##   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt;
@@ -115,14 +115,14 @@
 <div id="caveats" class="section level3">
 <h3 class="hasAnchor">
 <a href="#caveats" class="anchor"></a>Caveats</h3>
-<p>This function only reports <code>qpAdm</code> admixture weights, and doesn’t determine the number of independent source populations. The <code>qpadm</code> function also hasn’t been tested as much as the <code>qpgraph</code> function, and the results are sometimes not very accurate. In addition to that, results may be different due to the scaling of f-statistics. However, the relative weights and standard errors should still be consistent.</p>
+<p>This function only reports <code>qpAdm</code> admixture weights, and doesn’t determine the number of independent source populations. The <code>qpadm</code> function also hasn’t been tested as much as the <code>qpgraph</code> function, and the results are sometimes not very accurate, in particular when the weights are outside the range of [0, 1], like in this example.</p>
 <p><br></p>
 </div>
 </div>
 <div id="qpgraph" class="section level2">
 <h2 class="hasAnchor">
 <a href="#qpgraph" class="anchor"></a>qpGraph</h2>
-<p>The f2-statistics can also be used to fit an admixturegraph to the data.</p>
+<p>The f2-statistics can also be used to fit an admixture graph to the data.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(graph1, <span class="dt">f2_dir =</span> f2_dir)</a></code></pre></div>
 <p>Here, <code>graph1</code> is a specific graph included in this R package, but it can be any other graph in one of three formats.</p>
 <ol style="list-style-type: decimal">
@@ -130,7 +130,7 @@
 <li>A two column matrix of edges, where the first column is the source of each edge, and the second column is the target.</li>
 <li>The location of a <code>qpGraph</code> graph file, which will be read and parsed.</li>
 </ol>
-<p>The only requirements for the input graph are that the graph is a valid admixturegraph – a DAG with one outgroup edge connecting the root to a leaf node – and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.</p>
+<p>The only requirements for the input graph are that the graph is a valid admixture graph – a DAG with one outgroup edge connecting the root to a leaf node – and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.</p>
 <p><br></p>
 <p>The <code>qpgraph</code> output is a list with five items:</p>
 <ol style="list-style-type: decimal">
@@ -149,7 +149,7 @@
 ##  3 N0N   Altai_Neanderthal.DG edge  0.00766  0.01
 ##  4 N0N   N3N0                 edge  0.0293   0.03
 ##  5 N1N   N0N                  edge  0.234    0.23
-##  6 N1N   N3N1                 edge  0.0981   0.1 
+##  6 N1N   N3N1                 edge  0.0982   0.1 
 ##  7 N2N0  N1N                  edge  0.106    0.11
 ##  8 N2N0  N3N6                 edge  0.0428   0.04
 ##  9 N2N1  Vindija.DG           edge  0        0   
@@ -160,8 +160,16 @@
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">allpops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/list.files.html">list.dirs</a></span>(f2_dir, <span class="dt">full.names =</span> <span class="ot">FALSE</span>, <span class="dt">recursive =</span> <span class="ot">FALSE</span>)</a>
 <a class="sourceLine" id="cb8-2" data-line-number="2">rand_pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(allpops, <span class="dv">20</span>)</a>
 <a class="sourceLine" id="cb8-3" data-line-number="3">rand_graph =<span class="st"> </span><span class="kw"><a href="../reference/random_admixturegraph.html">random_admixturegraph</a></span>(rand_pops, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">rand_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(rand_graph, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb8-4" data-line-number="4">rand_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(rand_graph, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">fstscale =</span> <span class="fl">3.6</span>, <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div id="caveats-1" class="section level3">
+<h3 class="hasAnchor">
+<a href="#caveats-1" class="anchor"></a>Caveats</h3>
+<ul>
+<li>A ‘fudge’ factor is added to the diagonal elements of the covariance matrix, to ensure that the matrix inversion is stable. This factor defaults to a relatively large value of 1e-3, to ensure that no error will be thrown in most cases. However, the original qpGraph uses 1e-5, which gives more accurate results in most cases. Increasing this factor seems to have a small effect on admixture weights and branch lengths, but a larger effect on the likelihood scores.</li>
+<li>Write something about how missing data is treated and useallsnps YES/NO</li>
+</ul>
 <p><br></p>
+</div>
 </div>
 <div id="compare-results-to-admixtools" class="section level2">
 <h2 class="hasAnchor">
@@ -170,16 +178,18 @@
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">qpgraph_bin =<span class="st"> '/home/np29/o2bin/qpGraph'</span></a>
 <a class="sourceLine" id="cb9-2" data-line-number="2">qpadm_bin =<span class="st"> '/home/np29/o2bin/qpAdm'</span></a>
 <a class="sourceLine" id="cb9-3" data-line-number="3">env =<span class="st"> 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/n/app/openblas/0.2.19/lib/:/n/app/gsl/2.3/lib/;'</span></a>
-<a class="sourceLine" id="cb9-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(target, left, right, <span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(env, qpadm_bin), prefix)</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper2.html">qpgraph_wrapper2</a></span>(graph1, <span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(env, qpgraph_bin), prefix)</a></code></pre></div>
-<p><strong>Unless <code>outdir</code> is specified in these wrapper functions, files in the working directory may be overwritten!</strong></p>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="co">#prefix = '/n/groups/reich/DAVID/V41/V41.1/v41.1'</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">prefix =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/v41.0_small'</span></a>
+<a class="sourceLine" id="cb9-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb9-7" data-line-number="7"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(target, left, right, <span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(env, qpadm_bin), prefix)</a>
+<a class="sourceLine" id="cb9-8" data-line-number="8">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper2.html">qpgraph_wrapper2</a></span>(graph1, <span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste</a></span>(env, qpgraph_bin), prefix)</a></code></pre></div>
+<p><strong>Unless <code>outdir</code> is specified, calling these wrapper functions may overwrite files in the working directory!</strong></p>
 <p><br></p>
 <p>The following function makes it easy to compare qpGraph results.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="../reference/plot_comparison.html">plot_comparison</a></span>(qpg_results, qpgraph_ref_results)</a></code></pre></div>
 <p><img src="admixtools_files/figure-html/unnamed-chunk-10-1.png" width="700"><br></p>
-<p>Currently the f2-statistics are not scaled, which may cause the absolute values to differ. However, the relative values should not be very different.</p>
-<p>There is at least one example where the results are pretty similar. Please let me know if you find examples where the results are different!</p>
+<p>Currently the precomputed f2-statistics are not scaled, which it why it is necessary to set <code>fstscale</code> to <code>3.6</code> to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.</p>
+<p>There are at least a few examples where the results seem to be approximately correct. Please let me know if you find examples where the results are different!</p>
 <p><br></p>
 </div>
 <div id="compute-f2-statistics" class="section level2">
@@ -193,9 +203,8 @@
 <a class="sourceLine" id="cb11-5" data-line-number="5">         <span class="st">'Mbuti.DG'</span>,</a>
 <a class="sourceLine" id="cb11-6" data-line-number="6">         <span class="st">'Russia_Ust_Ishim.DG'</span>,</a>
 <a class="sourceLine" id="cb11-7" data-line-number="7">         <span class="st">'Switzerland_Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#prefix = '/n/groups/reich/DAVID/V41/V41.1/v41.1'</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9">prefix =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/v41.0_small'</span></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10">afdat =<span class="st"> </span><span class="kw"><a href="../reference/packedancestrymap_to_aftable.html">packedancestrymap_to_aftable</a></span>(prefix, pops, <span class="dt">na.action=</span><span class="st">'remove'</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb11-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb11-9" data-line-number="9">afdat =<span class="st"> </span><span class="kw"><a href="../reference/packedancestrymap_to_aftable.html">packedancestrymap_to_aftable</a></span>(prefix, pops, <span class="dt">na.action=</span><span class="st">'remove'</span>)</a></code></pre></div>
 <p><br></p>
 <p>We also need to keep track of the number of samples in each population.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">indfile =<span class="st"> </span><span class="kw">read_table2</span>(<span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(prefix, <span class="st">'.ind'</span>), <span class="dt">col_names =</span> <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'iid'</span>, <span class="st">'sex'</span>, <span class="st">'group'</span>))</a>
@@ -205,10 +214,13 @@
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/save.html">save</a></span>(afdat, popcounts, <span class="dt">file =</span> <span class="st">'my_afdat.RData'</span>)</a></code></pre></div>
 <p><br></p>
 <p>Then you can use these allele frequencies to compute block-jackknife estimates of f2-statistics.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="co">## This assigns each SNP to a jackknife block, based on a 5 centimorgan genomic distance</span></a>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="co"># This assigns each SNP to a jackknife block, based on a 5 centimorgan genomic distance</span></a>
 <a class="sourceLine" id="cb14-2" data-line-number="2">block_lengths =<span class="st"> </span><span class="kw"><a href="../reference/get_block_lengths.html">get_block_lengths</a></span>(afdat)</a></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="co">## This computes the f2-statistics</span></a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/afs_to_f2_blocks.html">afs_to_f2_blocks</a></span>(<span class="dt">afs =</span> afdat, <span class="dt">popcounts =</span> popcounts, <span class="dt">block_lengths =</span> block_lengths)</a></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="co"># This computes the f2-statistics. By default, f2 is scaled by a factor of 3.6 which</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="co"># makes it approximately equal to Fst. In contrast, the f2-statistics in</span></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3"><span class="co"># /n/groups/reich/robert/projects/admixprograms/f2blocks_v41.1/ are not scaled,</span></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="co"># and so the scaling is applied in the qpadm and qpgraph functions when using those f2-statistics.</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/afs_to_f2_blocks.html">afs_to_f2_blocks</a></span>(<span class="dt">afs =</span> afdat, <span class="dt">popcounts =</span> popcounts, <span class="dt">block_lengths =</span> block_lengths)</a></code></pre></div>
 <p><br></p>
 <p>This also takes a while, so you should also save it.</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/save.html">save</a></span>(f2_blocks, block_lengths, <span class="dt">file =</span> <span class="st">'my_f2_blocks.RData'</span>)</a></code></pre></div>
@@ -234,16 +246,16 @@
 <p>Since evaluating one graph doesn’t take long once the f-statistics are pre-computed, we can evaluate many graphs and find graph topologies with good fits.</p>
 <p><br></p>
 <p>In order for that to be as fast as possible, we can precompute and reuse f3-statistics and the inverse of the f3-statistic covariance matrix.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1">precomp =<span class="st"> </span><span class="kw">qpgraph_precompute</span>(pops, f2_blocks, block_lengths)</a>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1">precomp =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_precompute_f3.html">qpgraph_precompute_f3</a></span>(pops, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">fstscale =</span> <span class="fl">3.6</span>)</a>
 <a class="sourceLine" id="cb20-2" data-line-number="2">f3_jest =<span class="st"> </span>precomp[[<span class="dv">1</span>]]</a>
 <a class="sourceLine" id="cb20-3" data-line-number="3">ppinv =<span class="st"> </span>precomp[[<span class="dv">2</span>]]</a></code></pre></div>
 <p><br></p>
-<p>The function <code>optimize_admixturegraph</code> generates and evaluates <code>numgraphs</code> admixturegraphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats to find well fitting admixturegraphs.</p>
+<p>The function <code>optimize_admixturegraph</code> generates and evaluates <code>numgraphs</code> admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats to find well fitting admixture graphs.</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" data-line-number="1">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/optimize_admixturegraph.html">optimize_admixturegraph</a></span>(pops, f3_jest, ppinv,</a>
 <a class="sourceLine" id="cb21-2" data-line-number="2">                                      <span class="dt">numrep =</span> <span class="dv">200</span>, <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numgen =</span> <span class="dv">20</span>,</a>
 <a class="sourceLine" id="cb21-3" data-line-number="3">                                      <span class="dt">numsel =</span> <span class="dv">5</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a></code></pre></div>
 <p><br></p>
-<p>Once that is done (and the results are loaded), the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.</p>
+<p>Once that is done, the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" data-line-number="1">winner =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score))</a>
 <a class="sourceLine" id="cb22-2" data-line-number="2">winners =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(run) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score)) <span class="op">%&gt;%</span><span class="st"> </span>ungroup</a></code></pre></div>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" data-line-number="1">winner<span class="op">$</span>score[[<span class="dv">1</span>]]</a></code></pre></div>
@@ -254,11 +266,11 @@
 <div id="parallelization" class="section level2">
 <h2 class="hasAnchor">
 <a href="#parallelization" class="anchor"></a>Parallelization</h2>
-<p>Depending on the input parameters, <code>optimize_admixturegraph</code> can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function <a href="https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map"><code>future_map</code></a> from the <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a> package this can be sped up by parallelizing across the independent repeats. The function <a href="https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan"><code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code></a> can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.</p>
+<p>Depending on the input parameters, <code>optimize_admixturegraph</code> can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function <a href="https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map"><code>future_map</code></a> from the <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a> package, this can be sped up by parallelizing across the independent repeats. The function <a href="https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan"><code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code></a> can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.</p>
 <p>Setting it up like this will make it run multithreaded:</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</a></code></pre></div>
 <p><br></p>
-<p>On the O2 cluster, the following command will parallelize across compute nodes.</p>
+<p>On the O2 cluster, the following command will set up parallelization across compute nodes.</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers =</span> <span class="dv">50</span>,</a>
 <a class="sourceLine" id="cb27-2" data-line-number="2">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory =</span> <span class="dv">1024</span>,</a>
 <a class="sourceLine" id="cb27-3" data-line-number="3">                                  <span class="dt">walltime =</span> <span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition =</span> <span class="st">'short'</span>)))</a></code></pre></div>
@@ -330,7 +342,7 @@
 <div id="find-valid-qpadm-models" class="section level2">
 <h2 class="hasAnchor">
 <a href="#find-valid-qpadm-models" class="anchor"></a>Find valid qpAdm models</h2>
-<p>Every admixturegraph maps to a specific set of valid qpAdm models. This function lists the valid qpAdm models for each graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.</p>
+<p>Every admixture graph maps to a specific set of valid qpAdm models. The function <code>qpadm_models</code> lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.</p>
 <div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" data-line-number="1">mygraph =<span class="st"> </span>winners <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">6</span>) <span class="op">%$%</span><span class="st"> </span>igraph <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pluck</span>(<span class="dv">1</span>)</a>
 <a class="sourceLine" id="cb34-2" data-line-number="2"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(mygraph)</a></code></pre></div>
 <p><img src="admixtools_files/figure-html/unnamed-chunk-31-1.png" width="864" style="display: block; margin: auto;"></p>
@@ -345,7 +357,7 @@
 <p>Valid qpAdm models need to satisfy the following criteria:</p>
 <ul>
 <li>There have to be more right populations than left populations</li>
-<li>The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative outgroup, but it can be included anyway, with <code>add_outgroup</code>.</li>
+<li>The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative right population, but it can be included anyway, with <code>add_outgroup</code>.</li>
 <li>Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that’s correct and if it can be stated in a better way.)</li>
 </ul>
 </div>

@@ -7,30 +7,32 @@
 using namespace Rcpp;
 
 // cpp_opt_A
-arma::mat cpp_opt_A(const arma::mat& B, const arma::mat& xmat, const arma::mat& qinv, double fudge);
-RcppExport SEXP _admixtools_cpp_opt_A(SEXP BSEXP, SEXP xmatSEXP, SEXP qinvSEXP, SEXP fudgeSEXP) {
+arma::mat cpp_opt_A(const arma::mat& B, const arma::mat& xvec, const arma::mat& qinv, int nr, double fudge);
+RcppExport SEXP _admixtools_cpp_opt_A(SEXP BSEXP, SEXP xvecSEXP, SEXP qinvSEXP, SEXP nrSEXP, SEXP fudgeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type B(BSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type xmat(xmatSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type xvec(xvecSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type qinv(qinvSEXP);
+    Rcpp::traits::input_parameter< int >::type nr(nrSEXP);
     Rcpp::traits::input_parameter< double >::type fudge(fudgeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_opt_A(B, xmat, qinv, fudge));
+    rcpp_result_gen = Rcpp::wrap(cpp_opt_A(B, xvec, qinv, nr, fudge));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_opt_B
-arma::mat cpp_opt_B(const arma::mat& A, const arma::mat& xmat, const arma::mat& qinv, double fudge);
-RcppExport SEXP _admixtools_cpp_opt_B(SEXP ASEXP, SEXP xmatSEXP, SEXP qinvSEXP, SEXP fudgeSEXP) {
+arma::mat cpp_opt_B(const arma::mat& A, const arma::vec& xvec, const arma::mat& qinv, int nc, double fudge);
+RcppExport SEXP _admixtools_cpp_opt_B(SEXP ASEXP, SEXP xvecSEXP, SEXP qinvSEXP, SEXP ncSEXP, SEXP fudgeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type A(ASEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type xmat(xmatSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type xvec(xvecSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type qinv(qinvSEXP);
+    Rcpp::traits::input_parameter< int >::type nc(ncSEXP);
     Rcpp::traits::input_parameter< double >::type fudge(fudgeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_opt_B(A, xmat, qinv, fudge));
+    rcpp_result_gen = Rcpp::wrap(cpp_opt_B(A, xvec, qinv, nc, fudge));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -104,8 +106,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 4},
-    {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 4},
+    {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
+    {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 5},
     {"_admixtools_cpp_get_weights_covariance", (DL_FUNC) &_admixtools_cpp_get_weights_covariance, 3},
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 4},

@@ -75,6 +75,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001) {
 #' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
 #' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
 #' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
+#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
 #' @param fudge value added to diagonal matrix elements before inverting
 #' @param getcov should standard errors be returned? Setting this to FALSE makes this function much faster.
 #' @param cpp should optimization be done using C++ or R function? cpp = TRUE is much faster.
@@ -84,7 +85,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001) {
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' qpadm(target, left, right, f2_blocks, block_lengths)
-qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
+qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, fstscale = 1, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
 
   allpops = c(target, left, right)
 
@@ -103,6 +104,7 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 
   nam = intersect(f2nam, allpops)
   f2_blocks = rray::rray(f2_blocks[nam,nam,], dim_names = list(nam, nam, NULL))
+  f2_blocks = f2_blocks * fstscale
 
   f4_blocks = (f2_blocks[target, right[-1], ] +
                  f2_blocks[left, right[1], ] -

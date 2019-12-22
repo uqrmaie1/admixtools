@@ -261,16 +261,19 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
 #' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
+#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
 #' @param fnscale try increasing or decreasing this, if optimization does not converge.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
 #' @param seed seed for generating starting weights.
 #' @param verbose print optimization iterations
+#' @param cpp should optimization be run in C++ or in R? C++ is faster.
 #' @return a list of qpGraph output data
+#' @seealso \code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 #' @examples
-#' qpgraph(graph, f2_blocks, block_lengths)
-#' plot_graph(qpgraph(graph, f2_blocks, block_lengths)$edges)
-qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
+#' out = qpgraph(graph1, f2_blocks, block_lengths)
+#' plot_graph(out$edges)
+qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, fstscale = 1, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
@@ -301,6 +304,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
 
   popind = match(pops, dimnames(f2_blocks)[[1]])
+  f2_blocks = f2_blocks * fstscale
   f2_blocks = rray(f2_blocks)
   npop = length(pops)
   npair = choose(npop, 2)
@@ -333,6 +337,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   weight = rep(NA, nedges)
   pwts = graph_to_pwts(grph)
   opt = NULL
+  qpsolve = function(...) quadprog::solve.QP(...)$solution
 
   if(nadmix > 0) {
     if(is.null(numstart)) numstart = 10*nadmix
@@ -340,7 +345,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
     #arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, quadprogpp::QP.Solve); # need to change sign of third argument in qpsolve, if switching back to this
-    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, function(...) quadprog::solve.QP(...)$solution)
+    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
     if(cpp) optimweightsfun = cpp_optimweightsfun
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                      lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
@@ -355,7 +360,8 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
+  if(cpp) q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  else q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
   edges = as_tibble(edges) %>% set_colnames(c('from', 'to')) %>%
@@ -364,21 +370,44 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   namedList(edges, score, f2=f2out, f3=f3out, opt)
 }
 
+#' Compute the fit of an admixturegraph.
+#'
+#' Computes the fit of an admixture graph for a given graph topology given f3 estimates and an inverted covariance matrix.
 #' @export
-qpgraph_slim = function(grph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, seed=NULL, verbose=FALSE, cpp=TRUE) {
+#' @param graph an admixture graph represented as an \code{\link{igraph}} object
+#' @param f3_jest matrix of f3 estimates. output of \code{\link{qpgraph_precompute_f3}}
+#' @param ppinv inverted covariance matrix of f3-statistics
+#' @param pops populations in \code{f3_jest} and \code{ppinv}
+#' @param fnscale try increasing or decreasing this, if optimization does not converge.
+#' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
+#' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
+#' @param seed seed for generating starting weights.
+#' @param verbose print optimization iterations
+#' @param cpp should optimization be run in C++ or in R? C++ is faster.
+#' @return a list of qpGraph output data
+#' @seealso \code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
+#' @examples
+#' \dontrun{
+#' precomp = qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
+#' f3_jest = precomp[[1]]
+#' ppinv = precomp[[2]]
+#' out = qpgraph_slim(igraph1, f3_jest, ppinv, pops)
+#' plot_graph(out$edges)
+#' }
+qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
   # optimised for testing many topologies for a given set of populations
   # graph is igraph
 
-  nedges = length(E(grph))
-  admixnodes = which(degree(grph, mode='in')==2)
+  nedges = length(E(graph))
+  admixnodes = which(degree(graph, mode='in')==2)
   nadmix = length(admixnodes)
-  admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(grph, admixnodes, mode='in')[[i]][1:2])
+  admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(graph, admixnodes, mode='in')[[i]][1:2])
   normedges = setdiff(1:nedges, admixedgesfull)
 
   npop = length(pops)
   cmb = combn(0:(npop-1), 2)+(1:0)
-  graphpops = V(grph)$name[degree(grph, v = V(grph), mode = c('out')) == 0]
+  graphpops = V(graph)$name[degree(graph, v = V(graph), mode = c('out')) == 0]
   popind = setdiff(match(graphpops, pops), 1)
   orig_order = apply(cmb+1, 2, paste0, collapse='')
   new_order = apply(matrix(popind[c(cmb)], 2), 2, function(x) paste0(sort(x), collapse=''))
@@ -387,16 +416,17 @@ qpgraph_slim = function(grph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, s
   ppinv = ppinv[pairmatch, pairmatch]
   stopifnot(all(!is.na(ppinv)))
 
-  weightind = graph_to_weightind(grph)
+  weightind = graph_to_weightind(graph)
   weight = rep(NA, nedges)
-  pwts = graph_to_pwts(grph)
+  pwts = graph_to_pwts(graph)
   opt = NULL
+  qpsolve = function(...) quadprog::solve.QP(...)$solution
 
   if(nadmix > 0) {
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
 
-    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, quadprogpp::QP.Solve)
+    arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
     if(cpp) optimweightsfun = cpp_optimweightsfun
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                           lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
@@ -412,32 +442,61 @@ qpgraph_slim = function(grph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, s
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  #q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, quadprogpp::QP.Solve)
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
+  if(cpp) q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  else q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
-  edges = as_tibble(igraph::as_edgelist(grph)) %>% set_colnames(c('from', 'to')) %>%
+  edges = as_tibble(igraph::as_edgelist(graph)) %>% set_colnames(c('from', 'to')) %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight=weight, label=round(weight, 2))
 
   namedList(edges, score, opt)
 }
 
 
+#' Compute f3-statistics from f2-statistics.
+#'
+#' Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population \code{p1} and all population pairs \code{i, j}: \code{f3(p1; p_i, p_j)}
 #' @export
-qpgraph_precompute = function(pops, f2_blocks, block_lengths, lsqmode=FALSE, fudge=1e-3) {
+#' @param pops populations for which to compute f3-statistics
+#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
+#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
+#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
+#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
+#' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
+#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
+#' @return a list with four items
+#' \enumerate{
+#' \item \code{f3_jest} a matrix with f3-statistics for all population pairs with the output
+#' \item \code{ppinv} a matrix with the inverse of the f3-statistic covariance matrix
+#' \item \code{f2out} a data frame with f2 estimates
+#' \item \code{f3out} a data frame with f3 estimates
+#' }
+#' @examples
+#' \dontrun{
+#' pops = get_leafnames(igraph1)
+#' qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
+#' qpgraph_precompute_f3(pops, f2_dir = f2_dir, fstscale = 3.6)
+#' }
+qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, fstscale = 1, fudge=1e-3, lsqmode=FALSE) {
   # returns list of f3_jest and ppinv for subset of populations.
   # f3_jest and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
   # f2_blocks input here should be subset which is used by qpgraph function
 
+  if(is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) stop('You have to provide an f2_dir argument, or f2_blocks and block_lengths!')
+  if(!is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) {
+    f2_blocks = read_f2(f2_dir, pops = pops)
+    load(paste0(f2_dir, '/block_lengths.RData'))
+  }
   stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
+
+  f2_blocks = f2_blocks * fstscale
   f2_blocks = rray(f2_blocks[pops, pops, ])
 
   npop = length(pops)
   npair = choose(npop, 2)
   cmb = combn(0:(npop-1), 2)+(1:0)
 
-  # process f-stats
   f2 = bj_arr_stats(f2_blocks, block_lengths)
   f2out = tibble(pop1=combn(pops, 2)[1,],
                  pop2=combn(pops, 2)[2,],
@@ -456,8 +515,6 @@ qpgraph_precompute = function(pops, f2_blocks, block_lengths, lsqmode=FALSE, fud
   # in qpGraph fudge is 1e-5; sometimes quadprog doesn't converge unless this is larger; has large effect on magnitude of likelihood score
   if(lsqmode) ppinv = diag(1/diag(f3_jvar))
   else ppinv = solve(f3_jvar)
-  #pairnam = apply(matrix(pops[cmb+1], 2), 2, paste0, collapse=' ')
-  #names(f3_jest) = colnames(ppinv) = rownames(ppinv) = pairnam
 
   namedList(f3_jest, ppinv, f2out, f3out)
 }

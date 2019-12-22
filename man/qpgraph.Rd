@@ -5,8 +5,8 @@
 \title{Compute the fit of an admixturegraph.}
 \usage{
 qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
-  lsqmode = FALSE, fnscale = 1e-06, fudge = 0.001, numstart = NULL,
-  seed = NULL, verbose = FALSE, cpp = TRUE)
+  lsqmode = FALSE, fstscale = 1, fnscale = 1e-06, fudge = 0.001,
+  numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE)
 }
 \arguments{
 \item{graph}{an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
@@ -19,6 +19,8 @@ qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 
 \item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
+\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
+
 \item{fnscale}{try increasing or decreasing this, if optimization does not converge.}
 
 \item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
@@ -28,6 +30,8 @@ qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 \item{seed}{seed for generating starting weights.}
 
 \item{verbose}{print optimization iterations}
+
+\item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
 }
 \value{
 a list of qpGraph output data
@@ -36,6 +40,9 @@ a list of qpGraph output data
 Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics. f2-block-jackknife statistics can be provided via the arguments \code{f2_blocks} and \code{block_lengths}, or via \code{f2_dir}.
 }
 \examples{
-qpgraph(graph, f2_blocks, block_lengths)
-plot_graph(qpgraph(graph, f2_blocks, block_lengths)$edges)
+out = qpgraph(graph1, f2_blocks, block_lengths)
+plot_graph(out$edges)
+}
+\seealso{
+\code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 }

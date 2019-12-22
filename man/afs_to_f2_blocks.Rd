@@ -4,9 +4,9 @@
 \alias{afs_to_f2_blocks}
 \title{Compute all pairwise f2 statistics}
 \usage{
-afs_to_f2_blocks(afs, popcounts, block_lengths, snpweights = 1,
-  fstscale = 3.6, maxmem = 1000, infocols = 6,
-  write_to_disk = NULL, verbose = TRUE)
+afs_to_f2_blocks(afs, popcounts, block_lengths, fstscale = 3.6,
+  maxmem = 1000, infocols = 6, write_to_disk = NULL,
+  verbose = TRUE)
 }
 \arguments{
 \item{afs}{data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.}
@@ -15,9 +15,7 @@ afs_to_f2_blocks(afs, popcounts, block_lengths, snpweights = 1,
 
 \item{block_lengths}{vector with lengths of each jackknife block. sum has to match nrow(afs).}
 
-\item{snpweights}{weighting factor for each SNP. sometimes set to inverse of outgroup heterozygosity.}
-
-\item{fstscale}{scales f2-statistics to be on the same scale as FST. Not well tested, and probably not necessary.}
+\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 }
