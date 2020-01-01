@@ -157,7 +157,7 @@
 <h2 class="hasAnchor">
 <a href="#qpgraph" class="anchor"></a>qpGraph</h2>
 <p>The f2-statistics can also be used to fit an admixture graph to the data.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(graph1, <span class="dt">f2_dir =</span> f2_dir)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(graph1, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
 <p>Here, <code>graph1</code> is a specific graph included in this R package, but <code>graph1</code> can be any other graph in one of three formats.</p>
 <ol style="list-style-type: decimal">
 <li>An <a href="https://igraph.org/r/"><code>igraph</code></a> object.</li>
@@ -165,6 +165,8 @@
 <li>The location of a <code>qpGraph</code> graph file, which will be read and parsed.</li>
 </ol>
 <p>The only requirements for the input graph are that the graph is a valid admixture graph – a DAG with one outgroup edge connecting the root to a leaf node – and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.</p>
+<p><br></p>
+<p>The precomputed f2-statistics are not scaled, which it why it is necessary to set <code>f2_denom</code> to <code>0.278</code> to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.</p>
 <p><br></p>
 <p>The <code>qpgraph</code> output is a list with five items:</p>
 <ol style="list-style-type: decimal">
@@ -232,11 +234,9 @@
 <p><strong>Unless <code>outdir</code> is specified, calling these wrapper functions may overwrite files in the working directory!</strong></p>
 <p><br></p>
 <p>The following function makes it easy to compare qpGraph results.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(graph1, qpgraph_bin, prefix,</a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">                                      <span class="dt">outdir =</span> outdir, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(graph1, qpgraph_bin, prefix, <span class="dt">outdir =</span> outdir)</a></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw"><a href="../reference/plot_comparison.html">plot_comparison</a></span>(qpg_results, qpgraph_ref_results)</a></code></pre></div>
 <p><img src="admixtools_files/figure-html/unnamed-chunk-17-1.png" width="700"><br></p>
-<p>The precomputed f2-statistics are not scaled, which it why it is necessary to set <code>f2_denom</code> to <code>0.278</code> to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.</p>
 <p>There are at least a few examples where the results seem to be approximately correct.</p>
 <p><strong>Please let me know if you find examples where the results are different!</strong></p>
 <p><br></p>
