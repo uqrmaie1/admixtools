@@ -157,8 +157,8 @@
 <h2 class="hasAnchor">
 <a href="#qpgraph" class="anchor"></a>qpGraph</h2>
 <p>The f2-statistics can also be used to fit an admixture graph to the data.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(graph1, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
-<p>Here, <code>graph1</code> is a specific graph included in this R package, but you can provide any other graph in one of three formats.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(example_graph, <span class="dt">f2_dir =</span> f2_dir, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
+<p>Here, <code>example_graph</code> is a specific graph included in this R package, but you can provide any other graph in one of three formats.</p>
 <ol style="list-style-type: decimal">
 <li>An <a href="https://igraph.org/r/"><code>igraph</code></a> object.</li>
 <li>A two column matrix, where each row is an edge, the first column is the source of the edge, and the second column is the target.</li>
@@ -229,7 +229,7 @@
 <a class="sourceLine" id="cb15-16" data-line-number="16">                qpdstat_bin, prefix, outdir)</a>
 <a class="sourceLine" id="cb15-17" data-line-number="17"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(target, left, right,</a>
 <a class="sourceLine" id="cb15-18" data-line-number="18">              qpadm_bin, prefix, outdir)</a>
-<a class="sourceLine" id="cb15-19" data-line-number="19"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(graph1,</a>
+<a class="sourceLine" id="cb15-19" data-line-number="19"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph,</a>
 <a class="sourceLine" id="cb15-20" data-line-number="20">                qpgraph_bin, prefix, outdir)</a></code></pre></div>
 <p><strong>Unless <code>outdir</code> is specified, calling these wrapper functions may overwrite files in the working directory!</strong></p>
 <p>If you already have existing parameter files and population or graph files, you can run the wrapper functions like this (though the different programs will require different parfiles and popfiles):</p>
@@ -245,9 +245,9 @@
 <a class="sourceLine" id="cb16-10" data-line-number="10"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(<span class="st">'graphfile.txt'</span>, <span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpgraph_bin)</a></code></pre></div>
 <p><br></p>
 <p>The following function makes it easy to compare qpGraph results.</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(graph1, qpgraph_bin, prefix)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph, qpgraph_bin, prefix)</a></code></pre></div>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw"><a href="../reference/plot_comparison.html">plot_comparison</a></span>(qpg_results, qpgraph_ref_results)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-18-1.png" width="700"><br></p>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-19-1.png" width="700"><br></p>
 <p>There are at least a few examples where the results seem to be approximately correct.</p>
 <p><strong>Please let me know if you find examples where the results are different!</strong></p>
 <p><br></p>
@@ -284,9 +284,9 @@
 ## 1 Denisova.DG Altai_Neanderthal.DG   43.4  17.7
 ## 2 Denisova.DG Vindija.DG            -42.4  17.7</code></pre>
 <p><br></p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(graph1, f2_blocks, block_lengths)</a></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(example_graph, f2_blocks, block_lengths)</a></code></pre></div>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(qpg_results<span class="op">$</span>edges)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-25-1.png" width="864" style="display: block; margin: auto;"></p>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-27-1.png" width="864" style="display: block; margin: auto;"></p>
 <p><br></p>
 </div>
 <div id="finding-graphs-with-good-fits" class="section level2">
@@ -310,7 +310,7 @@
 <div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" data-line-number="1">winner<span class="op">$</span>score[[<span class="dv">1</span>]]</a></code></pre></div>
 <pre><code>## [1] 4.009599</code></pre>
 <div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(winner<span class="op">$</span>edges[[<span class="dv">1</span>]])</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-29-1.png" width="864" style="display: block; margin: auto;"><br></p>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-32-1.png" width="864" style="display: block; margin: auto;"><br></p>
 <div id="parallelization" class="section level3">
 <h3 class="hasAnchor">
 <a href="#parallelization" class="anchor"></a>Parallelization</h3>
@@ -346,7 +346,7 @@
 <a class="sourceLine" id="cb36-15" data-line-number="15"><span class="kw"><a href="https://rdrr.io/r/base/save.html">save</a></span>(opt_results, <span class="dt">file=</span><span class="st">'opt_results.RData'</span>)</a></code></pre></div>
 <p>It could be in a file called <code>opt_graphs.Rscript</code> and be run like this, or submitted as a job.</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" data-line-number="1">Rscript opt_graphs.Rscript</a></code></pre></div>
-<p>It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It’s probably a good idea to start with a small number of repeats, generations, and graphs per generation, to get a sense of the runtime, before scaling it up.</p>
+<p>It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It’s probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.</p>
 <p><br></p>
 </div>
 </div>
@@ -404,7 +404,7 @@
 <p>Every admixture graph maps to a specific set of valid qpAdm models. The function <code>qpadm_models</code> lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.</p>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" data-line-number="1">mygraph =<span class="st"> </span>winners <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">6</span>) <span class="op">%$%</span><span class="st"> </span>igraph <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pluck</span>(<span class="dv">1</span>)</a>
 <a class="sourceLine" id="cb41-2" data-line-number="2"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(mygraph)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-37-1.png" width="864" style="display: block; margin: auto;"></p>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-41-1.png" width="864" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb42-1" data-line-number="1"><span class="kw"><a href="../reference/qpadm_models.html">qpadm_models</a></span>(mygraph, <span class="dt">add_outgroup =</span> <span class="ot">TRUE</span>, <span class="dt">nested =</span> <span class="ot">FALSE</span>, <span class="dt">abbr =</span> <span class="dv">3</span>)</a></code></pre></div>
 <pre><code>## # A tibble: 3 x 3
 ##   target left    right      

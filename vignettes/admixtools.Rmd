@@ -31,7 +31,7 @@ f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
 qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
 ```
 ```{r, echo = FALSE}
-qp3pop(pop1, pop2, pop3, f2_blocks, block_lengths)
+qp3pop(pop1, pop2, pop3, example_f2_blocks, example_block_lengths)
 ```
 
 
@@ -46,7 +46,7 @@ pop4 = 'Switzerland_Bichon.SG'
 qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
 ```
 ```{r, echo = FALSE}
-qpdstat(pop1, pop2, pop3, pop4, f2_blocks, block_lengths)
+qpdstat(pop1, pop2, pop3, pop4, example_f2_blocks, example_block_lengths)
 ```
 
 
@@ -63,7 +63,7 @@ right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG
 qpadm(target, left, right, f2_dir = f2_dir)
 ```
 ```{r, echo = FALSE}
-qpadm(target, left, right, f2_blocks, block_lengths)
+qpadm(target, left, right, example_f2_blocks, example_block_lengths)
 ```
 
 ### Caveats
@@ -78,13 +78,13 @@ This function only reports `qpAdm` admixture weights, and doesn't determine the 
 The f2-statistics can also be used to fit an admixture graph to the data.
 
 ```{r, eval = FALSE}
-qpg_results = qpgraph(graph1, f2_dir = f2_dir, f2_denom = 0.278)
+qpg_results = qpgraph(example_graph, f2_dir = f2_dir, f2_denom = 0.278)
 ```
-```{r, eval = TRUE, echo = FALSE}
-qpg_results = qpgraph(graph1, f2_blocks, block_lengths, f2_denom = 0.278)
+```{r, echo = FALSE}
+qpg_results = qpgraph(example_graph, example_f2_blocks, example_block_lengths, f2_denom = 0.278)
 ```
 
-Here, `graph1` is a specific graph included in this R package, but you can provide any other graph in one of three formats.
+Here, `example_graph` is a specific graph included in this R package, but you can provide any other graph in one of three formats.
 
 1. An [`igraph`](https://igraph.org/r/) object.
 2. A two column matrix, where each row is an edge, the first column is the source of the edge, and the second column is the target.
@@ -154,7 +154,7 @@ qpdstat_wrapper(pop1, pop2, pop3, pop4,
                 qpdstat_bin, prefix, outdir)
 qpadm_wrapper(target, left, right,
               qpadm_bin, prefix, outdir)
-qpgraph_wrapper(graph1,
+qpgraph_wrapper(example_graph,
                 qpgraph_bin, prefix, outdir)
 ```
 **Unless `outdir` is specified, calling these wrapper functions may overwrite files in the working directory!**
@@ -180,8 +180,12 @@ qpgraph_wrapper('graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
 The following function makes it easy to compare qpGraph results.
 
 ```{r, eval = FALSE}
-qpgraph_ref_results = qpgraph_wrapper(graph1, qpgraph_bin, prefix)
+qpgraph_ref_results = qpgraph_wrapper(example_graph, qpgraph_bin, prefix)
 ```
+```{r, echo = FALSE}
+qpgraph_ref_results = example_qpgraph_ref_results
+```
+
 ```{r}
 plot_comparison(qpg_results, qpgraph_ref_results)
 ```
@@ -237,15 +241,17 @@ f2_blocks = read_f2(my_f2_dir, pops)
 print(load(paste0(my_f2_dir, 'block_lengths.RData'))) # This loads block_lengths
 ```
 
-
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 qpadm(target, left, right, f2_blocks, block_lengths)
+```
+```{r, echo = FALSE}
+qpadm(target, left, right, example_f2_blocks, example_block_lengths)
 ```
 <br>
 
 
 ```{r, eval = FALSE}
-qpg_results = qpgraph(graph1, f2_blocks, block_lengths)
+qpg_results = qpgraph(example_graph, f2_blocks, block_lengths)
 ```
 ```{r, fig.width = 9, fig.align="center"}
 plot_graph(qpg_results$edges)
@@ -283,6 +289,10 @@ Once that is done, the following commands will extract the best fitting model ov
 ```{r, eval = FALSE}
 winner = opt_results %>% top_n(1, -jitter(score))
 winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
+```
+```{r, echo = FALSE}
+winner = example_winner
+winners = example_winners
 ```
 
 ```{r, fig.width = 9, fig.align="center"}
@@ -347,7 +357,7 @@ It could be in a file called `opt_graphs.Rscript` and be run like this, or submi
 Rscript opt_graphs.Rscript
 ```
 
-It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation, to get a sense of the runtime, before scaling it up. 
+It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up. 
 
 <br>
 
@@ -370,6 +380,10 @@ For any set of populations there may be many graphs which can explain the data a
 ```{r, eval = FALSE}
 triples = summarize_triples(winners)
 ```
+```{r, echo = FALSE}
+triples = example_triples
+```
+
 ```{r}
 triples %>% arrange(-clade) %>% slice(1)
 ```

@@ -17,6 +17,15 @@ devtools::install_url(pkg, dependencies='Imports', upgrade='never')
 library('admixtools')
 ```
 
+Or, if you don’t want to install it, the following might work instead if
+you use R 3.5 on
+O2:
+
+``` r
+.libPaths(c(.libPaths(), '/home/rm360/R/x86_64-pc-linux-gnu-library/3.5/'))
+library('admixtools')
+```
+
 ## Usage
 
 If you already have precomputed f2-statistics, you can fit an admixture
@@ -24,7 +33,7 @@ graph like this:
 
 ``` r
 f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
-fit = qpgraph(graph1, f2_dir = f2_dir)
+fit = qpgraph(example_graph, f2_dir = f2_dir)
 plot_graph(fit$edges)
 ```
 
@@ -32,14 +41,23 @@ plot_graph(fit$edges)
 
 <br>
 
-You can also use these f2-statistics to estimate admixture weights:
+You can also use the f2-statistics to estimate admixture weights:
 
 ``` r
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+```
+
+``` r
 qpadm(target, left, right, f2_dir = f2_dir)
 ```
+
+    #> # A tibble: 2 x 4
+    #>   target      left                 weight    se
+    #>   <chr>       <chr>                 <dbl> <dbl>
+    #> 1 Denisova.DG Altai_Neanderthal.DG   43.4  17.7
+    #> 2 Denisova.DG Vindija.DG            -42.4  17.7
 
 More documentation
 [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html).

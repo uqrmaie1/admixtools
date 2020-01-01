@@ -367,7 +367,7 @@ plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 
 
 # Plot an admixture graph on a map
-# @param grph an admixturegraph as an igraph object.
+# @param grph an admixture graph as an igraph object.
 # @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
 # @param map_layout 1 or 2
 # @return a ggplot object.
@@ -408,11 +408,8 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 #' @return a plotly object.
 #' @examples
 #' \dontrun{
-<<<<<<< HEAD
 #' plot_map(anno, 1)
-=======
 #' p1 = plot_map(anno, 1)
->>>>>>> 2703cf439d97e7f876fe15c748c0724e1754a61b
 #' }
 plot_map = function(leafcoords, map_layout = 1) {
 

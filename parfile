@@ -1,7 +1,0 @@
-genotypename: /Users/robert/Downloads/v42.1_small.geno
-snpname: /Users/robert/Downloads/v42.1_small.snp
-indivname: /Users/robert/Downloads/v42.1_small.ind
-popleft: ./leftlist
-popright: ./rightlist
-details: YES
-hashcheck: NO

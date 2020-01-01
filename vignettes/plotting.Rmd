@@ -13,24 +13,24 @@ library(ggplot2)
 ```
 
 
-## Plot admixturegraph
+## Plot admixture graph
 
 ```{r}
-plot_graph(igraph1)
+plot_graph(example_igraph)
 ```
 
 
-## Admixturegraph on a map
+## Admixture graph on a map
 
 ```{r}
-plot_graph_map(igraph1, anno)
+plot_graph_map(example_igraph, example_anno)
 ```
 
 
 ## All samples on a map
 
 ```{r, out.height = "115%", out.width = "115%", fig.align='center'}
-plot_map(anno, map_layout = 2)
+plot_map(example_anno, map_layout = 2)
 ```
 
 

@@ -19,6 +19,7 @@ Plot samples on a map
 }
 \examples{
 \dontrun{
+plot_map(anno, 1)
 p1 = plot_map(anno, 1)
 }
 }

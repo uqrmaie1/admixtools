@@ -118,8 +118,8 @@ packedancestrymap_to_aftable = function(pref, pops=NULL, inds=NULL, blocksize=10
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_aftable = function(pref, pops=NULL, inds=NULL, na.action='none',
-                            return_matrix=FALSE, verbose=FALSE) {
+plink_to_aftable = function(pref, pops = NULL, inds = NULL, na.action = 'none',
+                            return_matrix = FALSE, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -141,7 +141,7 @@ plink_to_aftable = function(pref, pops=NULL, inds=NULL, na.action='none',
   rownames(afmatrix) = rownames(countmatrix) = bim[[2]]
   colnames(afmatrix) = colnames(countmatrix) = keep
 
-  outdat = treat_missing(afmatrix, countmatrix, snpfile, na.action = na.action, verbose = verbose)
+  outdat = treat_missing(afmatrix, countmatrix, bim, na.action = na.action, verbose = verbose)
   outlist = list(afs = outdat$afmatrix, counts = outdat$countmatrix)
   if(!return_matrix) outlist = map(outlist, ~bind_cols(outdat$snpfile, as_tibble(.)))
   outlist$snpfile = outdat$snpfile
@@ -167,7 +167,7 @@ pop_indices = function(famdat, pops=NULL, inds=NULL) {
 
 treat_missing = function(afmatrix, countmatrix = NULL, snpfile = NULL,
                          na.action = 'none', verbose = TRUE) {
-
+  discard = FALSE
   if(na.action == 'impute') {
     afmatrix = mean_impute(afmatrix, by=1)
     isnan = is.nan(afmatrix)

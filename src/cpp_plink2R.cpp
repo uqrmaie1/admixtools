@@ -14,20 +14,20 @@
 using namespace Rcpp;
 using namespace Eigen;
 
-#include <fcntl.h>
-#include <stdexcept>
+//#include <fcntl.h>
+//#include <stdexcept>
 //#pragma once
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <algorithm>
+//#include <iostream>
+//#include <fstream>
+//#include <vector>
+//#include <algorithm>
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/Eigen>
-#include <Eigen/SVD>
-#include <Eigen/Sparse>
+//#include <Eigen/Core>
+//#include <Eigen/Dense>
+//#include <Eigen/Eigen>
+//#include <Eigen/SVD>
+//#include <Eigen/Sparse>
 
 #define PACK_DENSITY 4
 #define PLINK_NA 3
