@@ -33,6 +33,7 @@ This function generates and evaluates admixturegraphs in \code{numgen} iteration
 }
 \examples{
 \dontrun{
-optimize_admixturegraph(pops, f3_jest, ppinv, numrep=200, numgraphs=100, numgen=20, numsel=5, numadmix=3)
+optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
+                        numgen = 20, numsel = 5, numadmix = 3)
 }
 }

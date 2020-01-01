@@ -68,7 +68,7 @@ qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./g
 #' }
 qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
                            printonly=FALSE, lambdascale=-1, diag=0.0001, outpop='NULL',
-                           lsqmode='NO', hires='NO', forcezmode='NO', allsnps='NO', bigiter=100) {
+                           lsqmode='NO', hires='NO', forcezmode='NO', allsnps='NO', bigiter=100, env='') {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
   stopifnot(!is.null(parfile) | !is.null(pref))
@@ -122,8 +122,8 @@ qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
     gf = graph
   }
 
-  qpgraph_wrapper2(bin=bin, parfile=pf, graphfile=gf,
-                   outfile=paste0(outdir, '/out'), printonly=printonly)
+  qpgraph_wrapper2(bin = paste0(env,' ', bin), parfile = pf, graphfile = gf,
+                   outfile = paste0(outdir, '/out'), printonly = printonly)
 }
 
 

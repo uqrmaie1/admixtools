@@ -136,23 +136,24 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>bin</span>, <span class='no'>pref</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
-  <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
+    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>bin</span>,
+  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"./"</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>target</th>
-      <td><p>the target population</p></td>
+      <td><p>target population</p></td>
     </tr>
     <tr>
       <th>left</th>
-      <td><p>the source population</p></td>
+      <td><p>source populations (or leftlist file)</p></td>
     </tr>
     <tr>
       <th>right</th>
-      <td><p>outgroup populations</p></td>
+      <td><p>outgroup populations (or rightlist file)</p></td>
     </tr>
     <tr>
       <th>bin</th>

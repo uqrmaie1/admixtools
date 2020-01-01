@@ -7,7 +7,7 @@
 qpgraph_wrapper(graph, bin, pref = NULL, parfile = NULL,
   outdir = ".", printonly = FALSE, lambdascale = -1, diag = 1e-04,
   outpop = "NULL", lsqmode = "NO", hires = "NO", forcezmode = "NO",
-  allsnps = "NO", bigiter = 100)
+  allsnps = "NO", bigiter = 100, env = "")
 }
 \arguments{
 \item{graph}{an admixture graph or qpGraph graph file}

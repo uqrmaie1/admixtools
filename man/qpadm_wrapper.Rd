@@ -4,15 +4,16 @@
 \alias{qpadm_wrapper}
 \title{Wrapper function around the original qpAdm program}
 \usage{
-qpadm_wrapper(target, left, right, bin, pref, outdir = ".",
-  printonly = FALSE, env = "")
+qpadm_wrapper(target = NULL, left = NULL, right = NULL, bin,
+  pref = NULL, outdir = "./", parfile = NULL, printonly = FALSE,
+  env = "")
 }
 \arguments{
-\item{target}{the target population}
+\item{target}{target population}
 
-\item{left}{the source population}
+\item{left}{source populations (or leftlist file)}
 
-\item{right}{outgroup populations}
+\item{right}{outgroup populations (or rightlist file)}
 
 \item{bin}{path to the qpAdm binary file}
 

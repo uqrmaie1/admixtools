@@ -373,8 +373,8 @@ plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 # @return a ggplot object.
 # @examples
 # \dontrun{
-# p1 = plot_graph_map2(igraph1, anno, 1)
-# p2 = plot_graph_map2(igraph1, anno, 2)
+# plot_graph_map2(igraph1, anno, 1)
+# plot_graph_map2(igraph1, anno, 2)
 # }
 plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 
@@ -405,10 +405,10 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 #' @export
 #' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
 #' @param map_layout 1 or 2
-#' @return a ggplot object.
+#' @return a plotly object.
 #' @examples
 #' \dontrun{
-#' p1 = plot_map(igraph1, anno, 1)
+#' plot_map(anno, 1)
 #' }
 plot_map = function(leafcoords, map_layout = 1) {
 
@@ -421,7 +421,7 @@ plot_map = function(leafcoords, map_layout = 1) {
   if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3)), xaxis=ax, yaxis=ax)
   if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 1, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
-  plotly::plot_ly(leafcoords %>% filter(yearsbp > 0), type = 'scattermapbox', mode='markers', hoverinfo = 'text', x = ~lon, y = ~lat, color = ~log10(yearsbp), hovertext = ~group) %>% lo
+  plotly::plot_ly(leafcoords %>% filter(between(lat, -90, 90), between(lon, -180, 180), yearsbp > 0), type = 'scattermapbox', mode='markers', hoverinfo = 'text', x = ~lon, y = ~lat, color = ~log10(yearsbp), hovertext = ~group) %>% lo
 
 }
 

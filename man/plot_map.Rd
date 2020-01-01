@@ -12,13 +12,13 @@ plot_map(leafcoords, map_layout = 1)
 \item{map_layout}{1 or 2}
 }
 \value{
-a ggplot object.
+a plotly object.
 }
 \description{
 Plot samples on a map
 }
 \examples{
 \dontrun{
-p1 = plot_map(igraph1, anno, 1)
+p1 = plot_map(anno, 1)
 }
 }

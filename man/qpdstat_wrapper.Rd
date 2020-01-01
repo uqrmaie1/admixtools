@@ -5,7 +5,7 @@
 \title{Wrapper function around the original qpDstat program}
 \usage{
 qpdstat_wrapper(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-  bin = "./qpDstat", pref = NULL, parfile = NULL, outdir = ".",
+  bin = "./qpDstat", pref = NULL, outdir = ".", parfile = NULL,
   f4mode = "YES", printonly = FALSE, env = "")
 }
 \arguments{
@@ -27,9 +27,9 @@ qpdstat_wrapper(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 
 \item{pref}{path to and prefix of the packedancestrymap genotype files}
 
-\item{parfile}{qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3}, and \code{pop4} will be ignored.}
-
 \item{outdir}{the output directory. files \code{out}, \code{parfile}, \code{poplistname}, \code{popfilename} may be overwritten}
+
+\item{parfile}{qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3}, and \code{pop4} will be ignored.}
 
 \item{printonly}{should the command be printed or executed?}
 }

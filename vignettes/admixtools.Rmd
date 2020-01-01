@@ -84,7 +84,7 @@ qpg_results = qpgraph(graph1, f2_dir = f2_dir, f2_denom = 0.278)
 qpg_results = qpgraph(graph1, f2_blocks, block_lengths, f2_denom = 0.278)
 ```
 
-Here, `graph1` is a specific graph included in this R package, but `graph1` can be any other graph in one of three formats.
+Here, `graph1` is a specific graph included in this R package, but you can provide any other graph in one of three formats.
 
 1. An [`igraph`](https://igraph.org/r/) object.
 2. A two column matrix, where each row is an edge, the first column is the source of the edge, and the second column is the target.
@@ -131,7 +131,7 @@ rand_results = qpgraph(rand_graph, f2_dir = f2_dir, f2_denom = 0.278, verbose = 
 <br>
 
 
-## Compare results to AdmixTools
+## Comparing results to AdmixTools
 
 There are wrapper function which call the origial `AdmixTools` programs and read the results. This can be used to check if the results of `qpgraph` are correct.
 
@@ -149,22 +149,38 @@ prefix = '/n/groups/reich/robert/projects/admixprograms/v42.1_small'
 outdir = 'write/files/here/'
 
 qp3pop_wrapper(source1 = pop2, source2 = pop3, target = pop1,
-               qp3pop_bin, prefix, outdir = outdir)
+               qp3pop_bin, prefix, outdir)
 qpdstat_wrapper(pop1, pop2, pop3, pop4,
-                qpdstat_bin, prefix, outdir = outdir)
+                qpdstat_bin, prefix, outdir)
 qpadm_wrapper(target, left, right,
-              qpadm_bin, prefix, outdir = outdir)
+              qpadm_bin, prefix, outdir)
 qpgraph_wrapper(graph1,
-                qpgraph_bin, prefix, outdir = outdir)
+                qpgraph_bin, prefix, outdir)
 ```
 **Unless `outdir` is specified, calling these wrapper functions may overwrite files in the working directory!**
+
+If you already have existing parameter files and population or graph files, you can run the wrapper functions like this (though the different programs will require different parfiles and popfiles):
+
+```{r, eval = FALSE}
+qp3pop_wrapper (parfile = 'parfile.txt', bin = qp3pop_bin)
+qpdstat_wrapper(parfile = 'parfile.txt', bin = qpdstat_bin)
+qpadm_wrapper  (parfile = 'parfile.txt', bin = qpadm_bin)
+
+qp3pop_wrapper ('popfile.txt', bin = qp3pop_bin,  pref = prefix)
+qpdstat_wrapper('popfile.txt', bin = qpdstat_bin, pref = prefix)
+
+qpadm_wrapper(left = 'left.txt', right = 'right.txt', bin = qpadm_bin, pref = prefix)
+
+qpgraph_wrapper('graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
+```
+
 
 <br>
 
 The following function makes it easy to compare qpGraph results.
 
 ```{r, eval = FALSE}
-qpgraph_ref_results = qpgraph_wrapper(graph1, qpgraph_bin, prefix, outdir = outdir)
+qpgraph_ref_results = qpgraph_wrapper(graph1, qpgraph_bin, prefix)
 ```
 ```{r}
 plot_comparison(qpg_results, qpgraph_ref_results)
@@ -179,7 +195,7 @@ There are at least a few examples where the results seem to be approximately cor
 
 <br>
 
-## Compute f2-statistics
+## Computing f2-statistics
 
 If you're not on O2, or want use different samples or populations, you first have to compute f2 block jackknife statistics from genotype data.
 
@@ -194,11 +210,11 @@ pops = c('Denisova.DG',
          'Russia_Ust_Ishim.DG',
          'Switzerland_Bichon.SG')
 
-extract_data(prefix, my_f2_dir, pops = pops)
+extract_data(prefix, outdir = my_f2_dir, pops = pops)
 ```
-This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `f2_dir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
+This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `outdir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
 
-If `f2_dir` is not specified, the f2 data is returned rather than written to disk. 
+If `outdir` is not specified, the f2 data is returned rather than written to disk. 
 
 ```{r, eval = FALSE}
 data = extract_data(prefix, pops = pops)
@@ -213,11 +229,20 @@ Now you should be able to run the same examples as before using your own f2 stat
 ```{r, eval = FALSE}
 qpadm(target, left, right, f2_dir = my_f2_dir)
 ```
-or
+
+The example above will read the f2 data from `my_f2_dir`. It can be faster to load it into memory first, like so:
+
+```{r, eval = FALSE}
+f2_blocks = read_f2(my_f2_dir, pops)
+print(load(paste0(my_f2_dir, 'block_lengths.RData'))) # This loads block_lengths
+```
+
+
 ```{r, eval = TRUE}
 qpadm(target, left, right, f2_blocks, block_lengths)
 ```
 <br>
+
 
 ```{r, eval = FALSE}
 qpg_results = qpgraph(graph1, f2_blocks, block_lengths)
@@ -229,7 +254,7 @@ plot_graph(qpg_results$edges)
 
 <br>
 
-## Find graphs with good fits
+## Finding graphs with good fits
 
 Since evaluating one graph doesn't take long once the f-statistics are pre-computed, we can evaluate many graphs and find graph topologies with good fits.
 
@@ -238,7 +263,7 @@ Since evaluating one graph doesn't take long once the f-statistics are pre-compu
 In order for that to be as fast as possible, we can precompute and reuse f3-statistics and the inverse of the f3-statistic covariance matrix.
 
 ```{r, eval = FALSE}
-precomp = qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
+precomp = qpgraph_precompute_f3(pops, f2_dir = my_f2_dir, f2_denom = 0.278)
 f3_jest = precomp$f3_jest
 ppinv = precomp$ppinv
 ```
@@ -322,23 +347,21 @@ It could be in a file called `opt_graphs.Rscript` and be run like this, or submi
 Rscript opt_graphs.Rscript
 ```
 
-<br>
-
-
-
-## Summarize graphs
+It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation, to get a sense of the runtime, before scaling it up. 
 
 <br>
 
-> *All models are wrong, but some are useful.*
 
---- George Box
+
+## Summarizing graphs
 
 <br>
 
-> *All good models are alike; each bad model is bad in its own way.*
+> *All models are wrong, but some are useful.*   --- George Box
 
---- Leo Tolstoy
+<br>
+
+> *All good models are alike; each bad model is bad in its own way.*   --- Leo Tolstoy
 
 <br>
 
@@ -368,7 +391,7 @@ The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read
 
 
 
-## Find valid qpAdm models
+## Finding valid qpAdm models
 
 Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
 

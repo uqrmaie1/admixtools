@@ -1,17 +1,29 @@
-/Users/robert/Downloads/admixtoools_hub_reldec19/bin/qpDstat: parameter file: ./parfile
+/Users/robert/Downloads/admixtoools_hub_reldec19/bin/qpAdm: parameter file: ./parfile
 ### THE INPUT PARAMETERS
 ##PARAMETER NAME: VALUE
 genotypename: /Users/robert/Downloads/v42.1_small.geno
 snpname: /Users/robert/Downloads/v42.1_small.snp
 indivname: /Users/robert/Downloads/v42.1_small.ind
-popfilename: ./popfilename
-f4mode: YES
+popleft: ./leftlist
+popright: ./rightlist
 details: YES
 hashcheck: NO
-## qpDstat version: 900
+## qpAdm version: 1000
+seed: -1508758644
 packed geno read OK
 end of inpack
-number of quadruples 6
+
+left pops:
+Denisova.DG
+Altai_Neanderthal.DG
+Vindija.DG
+
+right pops:
+Chimp.REF
+Mbuti.DG
+Russia_Ust_Ishim.DG
+Switzerland_Bichon.SG
+
   0          Denisova.DG    1
   1 Altai_Neanderthal.DG    1
   2           Vindija.DG    1
@@ -22,11 +34,84 @@ number of quadruples 6
 jackknife block size:     0.050
 snps: 1150369  indivs: 10
 number of blocks for block jackknife: 713
-nrows, ncols: 10 1150369
-result: Denisova.DG Altai_Neanderthal.DG  Chimp.REF Switzerland_Bichon.SG      0.011590     31.574   35486  23704 1016651 
-result: Denisova.DG Altai_Neanderthal.DG   Mbuti.DG Switzerland_Bichon.SG      0.001590      5.828   24068  22410 1042561 
-result: Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.DG Switzerland_Bichon.SG     -0.000157     -0.532   19328  19493 1057023 
-result: Denisova.DG Vindija.DG  Chimp.REF Switzerland_Bichon.SG      0.011913     31.608   35938  23827 1016579 
-result: Denisova.DG Vindija.DG   Mbuti.DG Switzerland_Bichon.SG      0.001812      6.490   24397  22507 1042467 
-result: Denisova.DG Vindija.DG Russia_Ust_Ishim.DG Switzerland_Bichon.SG     -0.000196     -0.644   19544  19752 1056937 
-##end of qpDstat:        7.719 seconds cpu        0.000 Mbytes in use
+## ncols: 1150369
+coverage:          Denisova.DG 1061350
+coverage: Altai_Neanderthal.DG 1061534
+coverage:           Vindija.DG 1061414
+coverage:            Chimp.REF 1102442
+coverage:             Mbuti.DG 1121438
+coverage:  Russia_Ust_Ishim.DG 1062044
+coverage: Switzerland_Bichon.SG 1145593
+dof (jackknife):   616.358
+numsnps used: 1051513
+codimension 1
+f4info: 
+f4rank: 1 dof:      2 chisq:     6.897 tail:          0.031787095 dofdiff:      4 chisqdiff:    -6.897 taildiff:                    1
+B:
+          scale     1.000 
+       Mbuti.DG     0.892 
+Russia_Ust_Ishim.DG     1.055 
+Switzerland_Bichon.SG     1.044 
+A:
+          scale    92.592 
+Altai_Neanderthal.DG     0.989 
+     Vindija.DG     1.011 
+
+
+full rank
+f4info: 
+f4rank: 2 dof:      0 chisq:     0.000 tail:                    1 dofdiff:      2 chisqdiff:     6.897 taildiff:          0.031787095
+B:
+          scale    93.552    91.395 
+       Mbuti.DG     0.899     0.886 
+Russia_Ust_Ishim.DG     1.055     1.060 
+Switzerland_Bichon.SG     1.040     1.044 
+A:
+          scale     1.414     1.414 
+Altai_Neanderthal.DG     1.414     0.000 
+     Vindija.DG     0.000     1.414 
+
+
+best coefficients:    46.338   -45.338 
+Jackknife mean:     37.103273985   -36.103273985 
+      std. errors:    20.531    20.531 
+
+error covariance (* 1,000,000)
+ 421541294 -421541294 
+-421541294  421541294 
+
+
+summ: Denisova.DG    2      0.031787    37.103   -36.103  421541294 -421541294  421541294 
+
+    fixed pat  wt  dof     chisq       tail prob
+           00  0     2     6.897       0.0317871    46.338   -45.338  infeasible
+           01  1     3  1418.052               0     1.000     0.000 
+           10  1     3  1462.258               0     0.000     1.000 
+best pat:           00        0.0317871              -  -
+best pat:           01     3.56459e-307  chi(nested):  1411.155 p-value for nested model:    7.92171e-309
+
+coeffs:    46.338   -45.338 
+
+## dscore:: f_4(Base, Fit, Rbase, right2)
+## genstat:: f_4(Base, Fit, right1, right2)
+
+details: Altai_Neanderthal.DG             Mbuti.DG     0.009604   34.636419
+details:           Vindija.DG             Mbuti.DG     0.009696   34.906908
+dscore:             Mbuti.DG f4:     0.005439 Z:     1.141938
+
+details: Altai_Neanderthal.DG  Russia_Ust_Ishim.DG     0.011272   33.235907
+details:           Vindija.DG  Russia_Ust_Ishim.DG     0.011602   33.923952
+dscore:  Russia_Ust_Ishim.DG f4:    -0.003689 Z:    -0.658113
+
+details: Altai_Neanderthal.DG Switzerland_Bichon.SG     0.011112   31.821069
+details:           Vindija.DG Switzerland_Bichon.SG     0.011424   31.766467
+dscore: Switzerland_Bichon.SG f4:    -0.003074 Z:    -0.525329
+
+gendstat:            Chimp.REF             Mbuti.DG     1.142
+gendstat:            Chimp.REF  Russia_Ust_Ishim.DG    -0.658
+gendstat:            Chimp.REF Switzerland_Bichon.SG    -0.525
+gendstat:             Mbuti.DG  Russia_Ust_Ishim.DG    -2.310
+gendstat:             Mbuti.DG Switzerland_Bichon.SG    -1.896
+gendstat:  Russia_Ust_Ishim.DG Switzerland_Bichon.SG     0.130
+
+##end of qpAdm:        7.034 seconds cpu        0.000 Mbytes in use

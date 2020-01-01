@@ -5,7 +5,7 @@
 \title{Wrapper function around the original qp3Pop program}
 \usage{
 qp3pop_wrapper(source1, source2 = NULL, target = NULL,
-  bin = "./qp3Pop", pref = NULL, parfile = NULL, outdir = ".",
+  bin = "./qp3Pop", pref = NULL, outdir = ".", parfile = NULL,
   inbreed = "NO", outgroupmode = "YES", printonly = FALSE,
   env = "")
 }
@@ -26,9 +26,9 @@ qp3pop_wrapper(source1, source2 = NULL, target = NULL,
 
 \item{pref}{path to and prefix of the packedancestrymap genotype files}
 
-\item{parfile}{qp3Pop parameter file. If this is specified, \code{source1}, \code{source2}, \code{target} will be ignored.}
-
 \item{outdir}{the output directory. files \code{out}, \code{parfile}, \code{poplistname}, \code{popfilename} may be overwritten}
+
+\item{parfile}{qp3Pop parameter file. If this is specified, \code{source1}, \code{source2}, \code{target} will be ignored.}
 
 \item{printonly}{should the command be printed or executed?}
 }
