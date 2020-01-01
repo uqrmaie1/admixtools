@@ -2,10 +2,25 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
 
+// read_plink_afs_cpp
+List read_plink_afs_cpp(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool verbose);
+RcppExport SEXP _admixtools_read_plink_afs_cpp(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type bedfile(bedfileSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type indvec(indvecSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type indvec2(indvec2SEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(read_plink_afs_cpp(bedfile, indvec, indvec2, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_opt_A
 arma::mat cpp_opt_A(const arma::mat& B, const arma::mat& xvec, const arma::mat& qinv, int nr, double fudge);
 RcppExport SEXP _admixtools_cpp_opt_A(SEXP BSEXP, SEXP xvecSEXP, SEXP qinvSEXP, SEXP nrSEXP, SEXP fudgeSEXP) {
@@ -106,6 +121,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_admixtools_read_plink_afs_cpp", (DL_FUNC) &_admixtools_read_plink_afs_cpp, 4},
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
     {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 5},

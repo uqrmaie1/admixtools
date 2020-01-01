@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plot_map}
 \alias{plot_map}
-\title{Plots samples on a map.}
+\title{Plot samples on a map}
 \usage{
 plot_map(leafcoords, map_layout = 1)
 }
@@ -15,10 +15,10 @@ plot_map(leafcoords, map_layout = 1)
 a ggplot object.
 }
 \description{
-Plots samples on a map.
+Plot samples on a map
 }
 \examples{
 \dontrun{
-p1 = plot_map(igraph1, anno_v41, 1)
+p1 = plot_map(igraph1, anno, 1)
 }
 }

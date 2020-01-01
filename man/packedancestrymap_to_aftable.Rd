@@ -5,21 +5,29 @@
 \title{Read allele frequencies from packedancestrymap genotype file}
 \usage{
 packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
-  blocksize = 1000, na.action = "none", return_matrix = FALSE)
+  blocksize = 1000, na.action = "none", return_matrix = FALSE,
+  verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap files (has to end in .geno, .ind, .snp).}
+\item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
 
 \item{pops}{vector of populations from which to compute allele frequencies.}
 
-\item{inds}{vector of samples from which to compute allele frequencies. \code{pops} or \code{inds} have to be specified.}
+\item{inds}{vector of samples from which to compute allele frequencies. \code{pops} and \code{inds} cannot be specified at the same time. If none are specified, populations will be extracted from the third column in the \code{.ind} file}
 
 \item{blocksize}{number of SNPs read in each block.}
 
-\item{na.action}{what to do with missing SNPs. \code{none} output table will have missing data. \code{impute} allele frequencies will be imputed from other populations. \code{remove} SNPs with missing data will be removed.}
+\item{na.action}{what to do with SNPs with missing data.
+\itemize{
+\item \code{none} (default) output table will have missing data
+\item \code{impute} allele frequencies will be imputed from other populations
+\item \code{remove} SNPs with missing data will be removed
+}}
+
+\item{return_matrix}{return data as list of matrices}
 }
 \value{
-a tibble with allele frequency data. first six columns are snpfile, remaining columns are allele frequencies for reach population.
+a list with two items: allele frequency data and individual counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
 }
 \description{
 Read allele frequencies from packedancestrymap genotype file
@@ -27,5 +35,7 @@ Read allele frequencies from packedancestrymap genotype file
 \examples{
 \dontrun{
 afdat = packedancestrymap_to_aftable(prefix, pops)
+afs = afdat$afs
+counts = afdat$counts
 }
 }

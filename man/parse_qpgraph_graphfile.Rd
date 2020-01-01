@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{parse_qpgraph_graphfile}
 \alias{parse_qpgraph_graphfile}
-\title{Reads graph in qpGraph format}
+\title{Read qpGraph graph file}
 \usage{
 parse_qpgraph_graphfile(graphfile)
 }
@@ -13,5 +13,5 @@ parse_qpgraph_graphfile(graphfile)
 graph represented as two column edge matrix.
 }
 \description{
-Reads graph in qpGraph format
+Read qpGraph graph file
 }

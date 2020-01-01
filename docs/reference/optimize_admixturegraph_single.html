@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find a well fitting admixturegraph. — optimize_admixturegraph_single • admixtools</title>
+<title>Find well fitting admixturegraphs — optimize_admixturegraph_single • admixtools</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -38,7 +38,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Find a well fitting admixturegraph. — optimize_admixturegraph_single" />
+<meta property="og:title" content="Find well fitting admixturegraphs — optimize_admixturegraph_single" />
 
 <meta property="og:description" content="This function generates and evaluates admixturegraphs in numgen iterations to find well fitting admixturegraphs." />
 <meta name="twitter:card" content="summary" />
@@ -125,7 +125,7 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Find a well fitting admixturegraph.</h1>
+    <h1>Find well fitting admixturegraphs</h1>
     
     <div class="hidden name"><code>optimize_admixturegraph_single.Rd</code></div>
     </div>
@@ -183,7 +183,8 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>igraph1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in get_leafnames(igraph1): could not find function "get_leafnames"</span></div><div class='input'><span class='fu'>optimize_admixturegraph_single</span>(<span class='no'>igraph1</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='kw'>numgraphs</span><span class='kw'>=</span><span class='fl'>10</span>, <span class='kw'>numgen</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>numsel</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>numadmix</span><span class='kw'>=</span><span class='fl'>1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in random_admixturegraph(pops, numadmix, outpop = outpop): class(leaves)[1] %in% c("numeric", "character") is not TRUE</span></div></pre>
+    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>igraph1</span>)
+<span class='fu'>optimize_admixturegraph_single</span>(<span class='no'>igraph1</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='kw'>numgraphs</span><span class='kw'>=</span><span class='fl'>10</span>, <span class='kw'>numgen</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>numsel</span><span class='kw'>=</span><span class='fl'>2</span>, <span class='kw'>numadmix</span><span class='kw'>=</span><span class='fl'>1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in random_admixturegraph(pops, numadmix, outpop = outpop): class(leaves)[1] %in% c("numeric", "character") is not TRUE</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

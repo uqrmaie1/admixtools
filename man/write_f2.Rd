@@ -4,12 +4,12 @@
 \alias{write_f2}
 \title{Write f2 block jackknife estimates to disk}
 \usage{
-write_f2(f2_block, path, overwrite = FALSE)
+write_f2(f2_block, outdir, overwrite = FALSE)
 }
 \arguments{
-\item{f2_block}{3d array with f2 block jackknife estimates. The first two dimensions of \code{f2_block} have to have population names. Each file will be stored under \code{{path}/{pop1}/{pop2}.RData}.}
+\item{f2_block}{3d array with f2 block jackknife estimates. The first two dimensions of \code{f2_block} have to have population names. Each file will be stored under \code{{outdir}/{pop1}/{pop2}.RData}.}
 
-\item{path}{directory into which to write the files.}
+\item{outdir}{directory into which to write the files.}
 
 \item{overwrite}{should existing \code{.RData} files be overwritten?}
 }
@@ -18,7 +18,7 @@ This function takes a 3d array of f2 block jackknife estimates, splits it by pop
 }
 \examples{
 \dontrun{
-write_f2(f2_block, path = 'path/to/f2stats/')
+write_f2(f2_block, outdir = 'path/to/f2stats/')
 }
 }
 \seealso{

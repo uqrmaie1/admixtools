@@ -1,26 +1,4 @@
 
-bj_arr_lo_mean_nomissing = function(arr, block_lengths, verbose=TRUE) {
-  # twice as fast as bj_arr_lo_mean, but doesn't handle missing data
-  # returns leave-one-block-out array means
-  # arr is 3d
-  # group over third dimension
-
-  blockids = rep(seq_along(block_lengths), block_lengths)
-  numblocks = length(block_lengths)
-  tot = apply(arr, 1:2, sum)
-  parts = array(NA, c(dim(arr)[1], dim(arr)[2], numblocks))
-  for(i in 1:numblocks) {
-    if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
-    parts[,,i] = apply(arr[,, which(blockids == i), drop=F], 1:2, sum)
-  }
-  if(verbose) cat('\n')
-  sums = rray(tot) - rray(parts)
-  out = sums / rray(length(blockids)-block_lengths, c(1, 1, numblocks))
-  if(!is.null(dimnames(arr)[[1]])) dimnames(out)[[1]] = dimnames(arr)[[1]]
-  if(!is.null(dimnames(arr)[[2]])) dimnames(out)[[2]] = dimnames(arr)[[2]]
-  out
-}
-
 bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
   # returns leave-one-block-out array means
   # arr is 3d
@@ -33,12 +11,12 @@ bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
   tot_nonmiss = apply(arr, 1:2, function(x) sum(!is.na(x)))
   parts = parts_nonmiss = array(NA, c(dim(arr)[1], dim(arr)[2], numblocks))
   for(i in 1:numblocks) {
-    if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
+    #if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
     bid = which(blockids == i)
     parts[,,i] = apply(arr[,, bid, drop=F], 1:2, sum, na.rm=TRUE)
     parts_nonmiss[,,i] = apply(arr[,, bid, drop=F], 1:2, function(x) sum(!is.na(x)))
   }
-  if(verbose) cat('\n')
+  #if(verbose) cat('\n')
   sums = rray(tot) - rray(parts)
   nonmiss = rray(tot_nonmiss) - rray(parts_nonmiss)
   out = as.array(sums/nonmiss)
@@ -87,21 +65,29 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
   namedList(jest, jvar)
 }
 
-
 #' Compute all pairwise f2 statistics
+#'
+#' This function takes a data frame with allele frequencies (see \code{\link{packedancestrymap_to_aftable}}) and computes block jackknife f2 statistics for all population pairs. \eqn{f2} for each SNP is computed as \eqn{(P_1 - P_2)^2 - P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)}, where \eqn{P_1} and \eqn{P_2} are allele frequencies in populations \eqn{1} and \eqn{2}, and \eqn{C_1} and \eqn{C_2} is the average number of non-missing individuals in populations \eqn{1} and \eqn{2}. See \code{details}
 #' @export
-#' @param afs data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.
+#' @param afs data frame of allele frequencies for each population. column 1 to \code{infocols} are SNP annotation columns, the other columns are allele frequencies.
 #' @param popcounts named vector with number of samples for each population.
-#' @param block_lengths vector with lengths of each jackknife block. sum has to match nrow(afs).
-#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
+#' @param block_lengths vector with lengths of each jackknife block. \code{sum(block_lengths)} has to match \code{nrow(afs)}. See \code{\link{get_block_lengths}}
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.
+#' @param infocols number of initil columns with meta data
+#' @param outdir directory into which to write f2 data (if \code{NULL}, data is returned instead)
+#' @param overwrite should existing files be overwritten? only relevant if \code{outdir} is not \code{NULL}
+#' @param verbose print progress updates
+#' @details For each population pair, each of the \eqn{i = 1, \ldots, n} resutling values (\eqn{n} is around 700 in practice) is the mean \eqn{f2} estimate across all SNPs except the ones in block \eqn{i}.
+#'
+#' \eqn{- P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)} is a correction term which makes the estimates unbiased at low sample sizes.
 #' @return a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time
 #' @examples
 #' \dontrun{
 #' f2_blocks = afs_to_f2_blocks(afs, popcounts, block_lengths)
 #' }
-afs_to_f2_blocks = function(afs, popcounts, block_lengths, fstscale=3.6, maxmem=1e3,
-                            infocols = 6, write_to_disk = NULL, verbose = TRUE) {
+afs_to_f2_blocks = function(afs, popcounts, block_lengths, f2_denom=1, maxmem=1e3,
+                            infocols = 6, outdir = NULL, overwrite = FALSE, verbose = TRUE) {
 
   if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
   popcounts = as.vector(popcounts[colnames(afs)])
@@ -116,11 +102,11 @@ afs_to_f2_blocks = function(afs, popcounts, block_lengths, fstscale=3.6, maxmem=
 
   if(verbose) {
     alert_info(paste0('allele frequency matrix for ', nrow(afs), ' SNPs and ', ncol(afs), ' populations is ', round(mem1/1e6), ' MB\n'))
-    alert_warning(paste0('matrix of pairwise f2 for all SNPs and population pairs will require ', round(mem2/1e6), ' MB\n'))
+    alert_warning(paste0('matrix of pairwise f2 for all SNPs and population pairs requires ', round(mem2/1e6), ' MB\n'))
     if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ', width, ' populations and up to ', maxmem, ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
   }
 
-  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, starts=starts, ends=ends, write_to_disk = write_to_disk, fstscale = fstscale, verbose = verbose)
+  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, starts=starts, ends=ends, outdir = outdir, overwrite = overwrite, f2_denom = f2_denom, verbose = verbose)
   f2_blocks
 }
 
@@ -138,7 +124,8 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 
   newdat = do.call(rbind,
                    accumulate2(.x=dat$CHR, .y=dat[[distcol]], .f=sb,
-                               .init=c(0, 0, dat[[distcol]][1]))) %>% as_tibble(.name_repair = NULL)
+                               .init=c(0, 0, dat[[distcol]][1]))) %>%
+    as_tibble(.name_repair = NULL)
   dat %<>% bind_cols(newdat %>% slice(-1))
   dat %>% mutate(newblock = .data$V2 > lead(.data$V2, default=0) &
                    .data$CHR == lead(.data$CHR, default=0) |
@@ -169,7 +156,7 @@ get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
     rle %$% lengths
 }
 
-get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, write_to_disk = NULL, fstscale = 1, verbose = TRUE) {
+get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, outdir = NULL, overwrite = FALSE, f2_denom = 1, verbose = TRUE) {
   # splits afmat into blocks by column, computes lo jackknife blocks on each pair of blocks, and combines into 3d array
   numsplits2 = length(starts)
   cmb = combn(0:numsplits2, 2)+(1:0)
@@ -177,7 +164,7 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, wr
   nsnp = nrow(afmat)
 
   for(i in 1:ncol(cmb)) {
-    if(numsplits2 > 1 & verbose) cat(paste0('pop combination ', i, ' out of ', ncol(cmb), '\n'))
+    if(numsplits2 > 1 & verbose) cat(paste0('\rpop combination ', i, ' out of ', ncol(cmb)))
     c1 = cmb[1,i]
     c2 = cmb[2,i]
     s1 = starts[c1]:ends[c1]
@@ -190,16 +177,17 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, wr
     numer = (afrr1 - afrr2)^2 - pqarr
     dimnames(numer)[[1]] = colnames(b1)
     dimnames(numer)[[2]] = colnames(b2)
-    f2_subblock = bj_arr_lo_mean(numer * fstscale, block_lengths)
+    f2_subblock = bj_arr_lo_mean(numer / f2_denom, block_lengths)
     if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
-    if(!is.null(write_to_disk)) {
-      write_f2(f2_subblock, path = write_to_disk)
+    if(!is.null(outdir)) {
+      write_f2(f2_subblock, outdir = outdir, overwrite = overwrite)
     } else {
       arrlist[[c1]][[c2]] = f2_subblock
       arrlist[[c2]][[c1]] = aperm(arrlist[[c1]][[c2]], c(2,1,3))
     }
   }
-  if(is.null(write_to_disk)) {
+  if(numsplits2 > 1 & verbose) cat('\n')
+  if(is.null(outdir)) {
     f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
     dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = colnames(afmat)
     return(f2_blocks)
@@ -216,7 +204,7 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, wr
 #' @param block2 block number of the second block of populations
 #' @param popcounts named vector with number of samples for each population.
 #' @param block_lengths vector with lengths of each jackknife block. \code{sum(block_lengths)} has to match the number of SNPs.
-#' @param fstscale scaling factor applied to f2-statistics. If set to 3.6, this will be approximately equal to Fst.
+#' @param f2_denom scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.
 #' @param verbose print progress updates
 #' @return a numeric vector where the ith element lists the number of SNPs in the ith block.
 #' @seealso \code{\link{split_afmat}} for creating split allele frequency data, \code{\link{write_f2}} for writing split f2 block jackknife estimates
@@ -224,16 +212,16 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, wr
 #' \dontrun{
 #' afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
 #'                                         na.action = 'none', return_matrix = TRUE)
-#' split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v41.1/afmatall_')
-#' numblocks = 180
+#' split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v42.1/afmatall_')
+#' numblocks = 185 # this should be the number of split allele frequency files
 #' for(j in 1:numblocks) {
 #'   for(j in i:numblocks) {
-#'     write_split_f2_block('afmatall_split_v41.1/afmatall_', 'f2blocks_v41.1/',
-#'                          block1 = i, block2 = j, popcounts, block_lengths, fstscale = 3.6)
+#'     write_split_f2_block('afmatall_split_v42.1/afmatall_', 'f2blocks_v42.1/',
+#'                          block1 = i, block2 = j, popcounts, block_lengths)
 #'     }
 #'   }
 #' }
-write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, fstscale = 1, verbose = TRUE) {
+write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, f2_denom = 1, verbose = TRUE) {
   # reads two afmat blocks, computes f2 jackknife blocks, and writes output to outdir
 
   load(paste0(afmatprefix, block1, '.RData'))
@@ -245,7 +233,7 @@ write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, 
   nam2 = colnames(b2)
   nsnp = nrow(b1)
   filenames = expand_grid(nam1, nam2) %>%
-    transmute(nam = paste0('f2blocks_v41.1/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.RData')) %$% nam
+    transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.RData')) %$% nam
   if(all(file.exists(filenames))) return()
 
   afrr1 = rray::rray(t(b1), dim=c(ncol(b1), 1, nsnp))
@@ -253,12 +241,12 @@ write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, 
   pqarr = afrr1*(1-afrr1)/(2*c(popcounts[nam1])-1) + afrr2*(1-afrr2)/t(2*c(popcounts[nam2])-1)
   numer = as.array((afrr1 - afrr2)^2 - pqarr)
   rm(afrr1, afrr2, pqarr)
-  f2_subblock = bj_arr_lo_mean(numer * fstscale, block_lengths, verbose = verbose)
+  f2_subblock = bj_arr_lo_mean(numer / f2_denom, block_lengths, verbose = verbose)
   rm(numer)
   dimnames(f2_subblock)[[1]] = nam1
   dimnames(f2_subblock)[[2]] = nam2
   if(block1 == block2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
-  write_f2(f2_subblock, path = outdir)
+  write_f2(f2_subblock, outdir = outdir)
 }
 
 

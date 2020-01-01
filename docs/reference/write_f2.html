@@ -136,17 +136,17 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>write_f2</span>(<span class='no'>f2_block</span>, <span class='no'>path</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>write_f2</span>(<span class='no'>f2_block</span>, <span class='no'>outdir</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_block</th>
-      <td><p>3d array with f2 block jackknife estimates. The first two dimensions of <code>f2_block</code> have to have population names. Each file will be stored under <code>{path}/{pop1}/{pop2}.RData</code>.</p></td>
+      <td><p>3d array with f2 block jackknife estimates. The first two dimensions of <code>f2_block</code> have to have population names. Each file will be stored under <code>{outdir}/{pop1}/{pop2}.RData</code>.</p></td>
     </tr>
     <tr>
-      <th>path</th>
+      <th>outdir</th>
       <td><p>directory into which to write the files.</p></td>
     </tr>
     <tr>
@@ -162,7 +162,7 @@
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>write_f2</span>(<span class='no'>f2_block</span>, <span class='kw'>path</span> <span class='kw'>=</span> <span class='st'>'path/to/f2stats/'</span>)
+<span class='fu'>write_f2</span>(<span class='no'>f2_block</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>'path/to/f2stats/'</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

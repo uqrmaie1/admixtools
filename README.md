@@ -23,7 +23,7 @@ If you already have precomputed f2-statistics, you can fit an admixture
 graph like this:
 
 ``` r
-f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v41.1/'
+f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
 fit = qpgraph(graph1, f2_dir = f2_dir)
 plot_graph(fit$edges)
 ```

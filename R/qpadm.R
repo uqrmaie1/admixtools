@@ -36,7 +36,7 @@ opt_B = function(A, xmat, qinv, fudge = 0.0001) {
   matrix(B2, ncol = ncol(xmat), byrow = TRUE)
 }
 
-
+# todo: this need to incorporate block_lengths; cpp version too
 get_weights_covariance = function(f4_blocks, qinv, cpp = FALSE, fudge = 0.0001) {
 
   rnk = dim(f4_blocks)[1]-1
@@ -64,28 +64,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001) {
   w/sum(w)
 }
 
-
-#' Estimate admixture weights
-#'
-#' Models target as a mixture of left populations, and outgroup right populations.
-#' @export
-#' @param target the target population
-#' @param left the source population
-#' @param right outgroup populations
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
-#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
-#' @param fudge value added to diagonal matrix elements before inverting
-#' @param getcov should standard errors be returned? Setting this to FALSE makes this function much faster.
-#' @param cpp should optimization be done using C++ or R function? cpp = TRUE is much faster.
-#' @return a data frame with weights and standard errors for each left population
-#' @examples
-#' target = 'Denisova.DG'
-#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
-#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm(target, left, right, f2_blocks, block_lengths)
-qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, fstscale = 1, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
+qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1) {
 
   allpops = c(target, left, right)
 
@@ -104,16 +83,48 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 
   nam = intersect(f2nam, allpops)
   f2_blocks = rray::rray(f2_blocks[nam,nam,], dim_names = list(nam, nam, NULL))
-  f2_blocks = f2_blocks * fstscale
+  f2_blocks = f2_blocks / f2_denom
+  namedList(f2_blocks, block_lengths)
+}
+
+#' Estimate admixture weights
+#'
+#' Models target as a mixture of left populations, and outgroup right populations.
+#' @export
+#' @param target target population
+#' @param left source populations
+#' @param right outgroup populations
+#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}
+#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
+#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
+#' @param fudge value added to diagonal matrix elements before inverting
+#' @param getcov should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.
+#' @param cpp should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.
+#' @return a data frame with weights and standard errors for each left population
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 10)
+#' @seealso \code{\link{lazadm}}
+#' @examples
+#' target = 'Denisova.DG'
+#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+#' qpadm(target, left, right, f2_blocks, block_lengths)
+qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
+
+  #----------------- prepare f4 stats -----------------
+  f2dat = qpadm_f2(target, left, right, f2_blocks, block_lengths, f2_dir, f2_denom)
+  f2_blocks = f2dat$f2_blocks
+  block_lengths = f2dat$block_lengths
 
   f4_blocks = (f2_blocks[target, right[-1], ] +
-                 f2_blocks[left, right[1], ] -
-                 f2_blocks[target, right[1], ] -
-                 f2_blocks[left, right[-1], ])/2
+               f2_blocks[left, right[1], ] -
+               f2_blocks[target, right[1], ] -
+               f2_blocks[left, right[-1], ])/2
 
-  sts = bj_pairarr_stats(f4_blocks, block_lengths)
-  f4_jest = sts[[1]]
-  f4_jvar = sts[[2]]
+  f4dat = bj_pairarr_stats(f4_blocks, block_lengths)
+  f4_jest = f4dat$jest
+  f4_jvar = f4dat$jvar
 
   #----------------- compute admixture weights -----------------
   diag(f4_jvar) = diag(f4_jvar) + fudge
@@ -155,6 +166,7 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 #' }
 qpadm_wrapper = function(target, left, right, bin, pref, outdir='.', printonly=FALSE, env='') {
 
+  pref = normalizePath(pref, mustWork = FALSE)
   parfile = paste0('genotypename: ', pref, '.geno\n',
                    'snpname: ', pref, '.snp\n',
                    'indivname: ', pref, '.ind\n',
@@ -178,3 +190,70 @@ qpadm_wrapper = function(target, left, right, bin, pref, outdir='.', printonly=F
 }
 
 
+#' Estimate admixture weights
+#'
+#' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method based non-negative least squares of f4 matrix.
+#' @export
+#' @param target target population
+#' @param left source populations
+#' @param right outgroup populations
+#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}
+#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
+#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
+#' @param getcov should standard errors be returned? Currently not implemented.
+#' @param constrained if \code{TRUE} (default), admixture weights will all be positive. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}
+#' @return a data frame with weights and standard errors for each left population
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 9)
+#' @seealso \code{\link{qpadm}}
+#' @examples
+#' target = 'Denisova.DG'
+#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+#' lazadm(target, left, right, f2_blocks, block_lengths)
+#' lazadm(target, left, right, f2_blocks, block_lengths, constrained = FALSE)
+lazadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
+                  f2_dir = NULL, f2_denom = 1, getcov = FALSE, constrained = TRUE) {
+
+  #----------------- prepare f4 stats -----------------
+  f2dat = qpadm_f2(target, left, right, f2_blocks, block_lengths, f2_dir, f2_denom)
+  f2_blocks = f2dat$f2_blocks
+  block_lengths = f2dat$block_lengths
+
+  f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
+
+  ri = 1:length(right)
+  og_indices = expand.grid(ri, ri, ri) %>%
+    filter(Var1 != Var2, Var1 != Var3, Var2 < Var3)
+
+  pos1 = target
+  pos2 = right[og_indices[,1]]
+  pos3 = right[og_indices[,2]]
+  pos4 = right[og_indices[,3]]
+
+  y = f2_mat[cbind(pos1, pos4)] +
+      f2_mat[cbind(pos2, pos3)] -
+      f2_mat[cbind(pos1, pos3)] -
+      f2_mat[cbind(pos2, pos4)]
+
+  x = f2_mat[pos4, left] +
+      f2_mat[cbind(pos2, pos3)] -
+      f2_mat[pos3, left] -
+      f2_mat[cbind(pos2, pos4)]
+
+  #----------------- compute admixture weights -----------------
+  lhs = crossprod(x, y)
+  rhs = crossprod(x)
+  nc = length(left)
+
+  if(constrained) weight = -quadprog::solve.QP(rhs, lhs, -diag(nc), rep(0, nc))$solution
+  else weight = solve(rhs, lhs)[,1]
+  weight = weight/sum(weight)
+
+  # todo: implement this
+  if(getcov) se = rep(NA, length(weight))
+  else se = rep(NA, length(weight))
+
+  tibble(target, left, weight, se)
+}

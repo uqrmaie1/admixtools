@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plot_graph_map}
 \alias{plot_graph_map}
-\title{Plots an admixture graph on a map.}
+\title{Plot an admixture graph on a map}
 \usage{
 plot_graph_map(grph, leafcoords, shapedata = NULL)
 }
@@ -15,10 +15,8 @@ plot_graph_map(grph, leafcoords, shapedata = NULL)
 a plotly object.
 }
 \description{
-Plots an admixture graph on a map.
+Plot an admixture graph on a map
 }
 \examples{
-\dontrun{
-plot_graph_map(igraph1, anno_v41)
-}
+plot_graph_map(igraph1, anno)
 }

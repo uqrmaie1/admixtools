@@ -137,7 +137,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -159,8 +159,8 @@
       <td><p>a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.</p></td>
     </tr>
     <tr>
-      <th>fstscale</th>
-      <td><p>scales f2-statistics. A value of around 3.6 converts F2 to Fst.</p></td>
+      <th>f2_denom</th>
+      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>fudge</th>
@@ -187,7 +187,7 @@
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>igraph1</span>)
 <span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>)
-<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>)
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>0.278</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

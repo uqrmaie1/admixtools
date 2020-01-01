@@ -5,7 +5,7 @@
 \title{Compute block jackknife f2 blocks and write them to disk}
 \usage{
 write_split_f2_block(afmatprefix, outdir, block1, block2, popcounts,
-  block_lengths, fstscale = 1, verbose = TRUE)
+  block_lengths, f2_denom = 1, verbose = TRUE)
 }
 \arguments{
 \item{afmatprefix}{prefix of the allele frequency \code{.RData} files created by \code{\link{split_afmat}}}
@@ -20,7 +20,7 @@ write_split_f2_block(afmatprefix, outdir, block1, block2, popcounts,
 
 \item{block_lengths}{vector with lengths of each jackknife block. \code{sum(block_lengths)} has to match the number of SNPs.}
 
-\item{fstscale}{scaling factor applied to f2-statistics. If set to 3.6, this will be approximately equal to Fst.}
+\item{f2_denom}{scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
 
 \item{verbose}{print progress updates}
 }
@@ -34,12 +34,12 @@ This is intended for computing f2-statistics for a large number of populations, 
 \dontrun{
 afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
                                         na.action = 'none', return_matrix = TRUE)
-split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v41.1/afmatall_')
-numblocks = 180
+split_afmat(afmatall, pops_per_block = 20, outprefix = 'afmatall_split_v42.1/afmatall_')
+numblocks = 185 # this should be the number of split allele frequency files
 for(j in 1:numblocks) {
   for(j in i:numblocks) {
-    write_split_f2_block('afmatall_split_v41.1/afmatall_', 'f2blocks_v41.1/',
-                         block1 = i, block2 = j, popcounts, block_lengths, fstscale = 3.6)
+    write_split_f2_block('afmatall_split_v42.1/afmatall_', 'f2blocks_v42.1/',
+                         block1 = i, block2 = j, popcounts, block_lengths)
     }
   }
 }

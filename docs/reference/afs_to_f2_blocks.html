@@ -40,7 +40,7 @@
 
 <meta property="og:title" content="Compute all pairwise f2 statistics — afs_to_f2_blocks" />
 
-<meta property="og:description" content="Compute all pairwise f2 statistics" />
+<meta property="og:description" content="This function takes a data frame with allele frequencies (see packedancestrymap_to_aftable) and computes block jackknife f2 statistics for all population pairs. \(f2\) for each SNP is computed as \((P_1 - P_2)^2 - P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)\), where \(P_1\) and \(P_2\) are allele frequencies in populations \(1\) and \(2\), and \(C_1\) and \(C_2\) is the average number of non-missing individuals in populations \(1\) and \(2\). See details" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -132,12 +132,12 @@
 
     <div class="ref-description">
     
-    <p>Compute all pairwise f2 statistics</p>
+    <p>This function takes a data frame with allele frequencies (see <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code>) and computes block jackknife f2 statistics for all population pairs. \(f2\) for each SNP is computed as \((P_1 - P_2)^2 - P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)\), where \(P_1\) and \(P_2\) are allele frequencies in populations \(1\) and \(2\), and \(C_1\) and \(C_2\) is the average number of non-missing individuals in populations \(1\) and \(2\). See <code>details</code></p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afs</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>,
-  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>infocols</span> <span class='kw'>=</span> <span class='fl'>6</span>, <span class='kw'>write_to_disk</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afs</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>infocols</span> <span class='kw'>=</span> <span class='fl'>6</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -145,7 +145,7 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>afs</th>
-      <td><p>data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.</p></td>
+      <td><p>data frame of allele frequencies for each population. column 1 to <code>infocols</code> are SNP annotation columns, the other columns are allele frequencies.</p></td>
     </tr>
     <tr>
       <th>popcounts</th>
@@ -153,21 +153,42 @@
     </tr>
     <tr>
       <th>block_lengths</th>
-      <td><p>vector with lengths of each jackknife block. sum has to match nrow(afs).</p></td>
+      <td><p>vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to match <code><a href='https://rdrr.io/r/base/nrow.html'>nrow(afs)</a></code>. See <code><a href='get_block_lengths.html'>get_block_lengths</a></code></p></td>
     </tr>
     <tr>
-      <th>fstscale</th>
-      <td><p>scales f2-statistics. A value of around 3.6 converts F2 to Fst.</p></td>
+      <th>f2_denom</th>
+      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>maxmem</th>
       <td><p>split up allele frequency data into blocks, if memory requirements exceed <code>maxmem</code> MB.</p></td>
+    </tr>
+    <tr>
+      <th>infocols</th>
+      <td><p>number of initil columns with meta data</p></td>
+    </tr>
+    <tr>
+      <th>outdir</th>
+      <td><p>directory into which to write f2 data (if <code>NULL</code>, data is returned instead)</p></td>
+    </tr>
+    <tr>
+      <th>overwrite</th>
+      <td><p>should existing files be overwritten? only relevant if <code>outdir</code> is not <code>NULL</code></p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time</p>
+    
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>For each population pair, each of the \(i = 1, \ldots, n\) resutling values (\(n\) is around 700 in practice) is the mean \(f2\) estimate across all SNPs except the ones in block \(i\).</p>
+<p>\(- P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)\) is a correction term which makes the estimates unbiased at low sample sizes.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -181,6 +202,8 @@
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#details">Details</a></li>
       
       <li><a href="#examples">Examples</a></li>
     </ul>

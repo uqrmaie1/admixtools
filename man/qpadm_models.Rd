@@ -15,6 +15,8 @@ qpadm_models(grph, add_outgroup = FALSE, nested = TRUE, abbr = -1)
 For large admixturegraph, there may be a large number of valid qpAdm models!
 }
 \examples{
+\dontrun{
 qpadm_models(igraph2, add_outgroup = TRUE)
 qpadm_models(igraph2, add_outgroup = TRUE) \%>\% slice(1) \%$\% list(target, left, right)
+}
 }

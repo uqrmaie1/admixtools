@@ -15,12 +15,44 @@ library(magrittr)
 library(tidyverse)
 ```
 
+If you have access to pre-computed f2-statistics, you can use them to compute f3 and f4 statistics, admixture weights, and to fit admixture graphs. The following examples should work on O2. The examples are just there to illustrate the principle, the models themselves don't make too much sense.
+
+<br>
+
+## qp3Pop
+
+```{r}
+pop1 = 'Denisova.DG'
+pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
+pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
+```
+```{r, eval = FALSE}
+f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
+qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
+```
+```{r, echo = FALSE}
+qp3pop(pop1, pop2, pop3, f2_blocks, block_lengths)
+```
+
+
+<br>
+
+## qpDstat
+
+```{r}
+pop4 = 'Switzerland_Bichon.SG'
+```
+```{r, eval = FALSE}
+qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
+```
+```{r, echo = FALSE}
+qpdstat(pop1, pop2, pop3, pop4, f2_blocks, block_lengths)
+```
+
+
 <br>
 
 ## qpAdm
-
-
-If you have access to pre-computed f2-statistics, you use them to compute admixture weights. The following should work on O2.
 
 ```{r}
 target = 'Denisova.DG'
@@ -28,8 +60,7 @@ left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 ```
 ```{r, eval = FALSE}
-f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v41.1/'
-qpadm(target, left, right, f2_dir = f2_dir, fstscale = 3.6)
+qpadm(target, left, right, f2_dir = f2_dir)
 ```
 ```{r, echo = FALSE}
 qpadm(target, left, right, f2_blocks, block_lengths)
@@ -50,13 +81,13 @@ The f2-statistics can also be used to fit an admixture graph to the data.
 qpg_results = qpgraph(graph1, f2_dir = f2_dir)
 ```
 ```{r, eval = TRUE, echo = FALSE}
-qpg_results = qpgraph(graph1, f2_blocks, block_lengths)
+qpg_results = qpgraph(graph1, f2_blocks, block_lengths, f2_denom = 0.278)
 ```
 
-Here, `graph1` is a specific graph included in this R package, but it can be any other graph in one of three formats.
+Here, `graph1` is a specific graph included in this R package, but `graph1` can be any other graph in one of three formats.
 
 1. An [`igraph`](https://igraph.org/r/) object.
-2. A two column matrix of edges, where the first column is the source of each edge, and the second column is the target.
+2. A two column matrix, where each row is an edge, the first column is the source of the edge, and the second column is the target.
 3. The location of a `qpGraph` graph file, which will be read and parsed.
 
 The only requirements for the input graph are that the graph is a valid admixture graph -- a DAG with one outgroup edge connecting the root to a leaf node -- and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.
@@ -83,13 +114,13 @@ This works for any populations for which there are precomputed f2-statistics.
 allpops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
 rand_pops = sample(allpops, 20)
 rand_graph = random_admixturegraph(rand_pops, numadmix = 3)
-rand_results = qpgraph(rand_graph, f2_dir = f2_dir, fstscale = 3.6, verbose = TRUE)
+rand_results = qpgraph(rand_graph, f2_dir = f2_dir, f2_denom = 0.278, verbose = TRUE)
 ```
 
 ### Caveats
 
 * A 'fudge' factor is added to the diagonal elements of the covariance matrix, to ensure that the matrix inversion is stable. This factor defaults to a relatively large value of 1e-3, to ensure that no error will be thrown in most cases. However, the original qpGraph uses 1e-5, which gives more accurate results in most cases. Increasing this factor seems to have a small effect on admixture weights and branch lengths, but a larger effect on the likelihood scores. 
-* Write something about how missing data is treated and useallsnps YES/NO
+* There may be differences in the results that originate in how missing data is treated. The precomputed f2 statistics on O2 use all SNPs, similar to `useallsnps YES`, while the examples here were computed on f2 statistics based only on SNPs with non-missing data in all populations (`na.action = 'remove'`), similar to `useallsnps NO`.
 
 
 <br>
@@ -100,14 +131,26 @@ rand_results = qpgraph(rand_graph, f2_dir = f2_dir, fstscale = 3.6, verbose = TR
 There are wrapper function which call the origial `AdmixTools` programs and read the results. This can be used to check if the results of `qpgraph` are correct.
 
 ```{r, eval = FALSE}
-qpgraph_bin = '/home/np29/o2bin/qpGraph'
-qpadm_bin = '/home/np29/o2bin/qpAdm'
+binpath = '/home/np29/o2bin/'
 env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/n/app/openblas/0.2.19/lib/:/n/app/gsl/2.3/lib/;'
-#prefix = '/n/groups/reich/DAVID/V41/V41.1/v41.1'
-prefix = '/n/groups/reich/robert/projects/admixprograms/v41.0_small'
 
-qpadm_wrapper(target, left, right, paste(env, qpadm_bin), prefix)
-qpgraph_ref_results = qpgraph_wrapper2(graph1, paste(env, qpgraph_bin), prefix)
+qp3pop_bin  = paste0(env, binpath, 'qp3pop')
+qpdstat_bin = paste0(env, binpath, 'qpDstat')
+qpadm_bin   = paste0(env, binpath, 'qpAdm')
+qpgraph_bin = paste0(env, binpath, 'qpGraph')
+
+#prefix = '/n/groups/reich/DAVID/V42/V42.1/v42.1'
+prefix = '/n/groups/reich/robert/projects/admixprograms/v42.1_small'
+outdir = 'write/files/here/'
+
+qp3pop_wrapper(source1 = pop2, source2 = pop3, target = pop1,
+               qp3pop_bin, prefix, outdir = outdir)
+qpdstat_wrapper(pop1, pop2, pop3, pop4,
+                qpdstat_bin, prefix, outdir = outdir)
+qpadm_wrapper(target, left, right,
+              qpadm_bin, prefix, outdir = outdir)
+qpgraph_wrapper(graph1,
+                qpgraph_bin, prefix, outdir = outdir)
 ```
 **Unless `outdir` is specified, calling these wrapper functions may overwrite files in the working directory!**
 
@@ -115,14 +158,20 @@ qpgraph_ref_results = qpgraph_wrapper2(graph1, paste(env, qpgraph_bin), prefix)
 
 The following function makes it easy to compare qpGraph results.
 
+```{r, eval = FALSE}
+qpgraph_ref_results = qpgraph_wrapper(graph1, qpgraph_bin, prefix,
+                                      outdir = outdir, f2_denom = 0.278)
+```
 ```{r}
 plot_comparison(qpg_results, qpgraph_ref_results)
 ```
 <br>
 
-Currently the precomputed f2-statistics are not scaled, which it why it is necessary to set `fstscale` to `3.6` to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.
+The precomputed f2-statistics are not scaled, which it why it is necessary to set `f2_denom` to `0.278` to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.
 
-There are at least a few examples where the results seem to be approximately correct. Please let me know if you find examples where the results are different!
+There are at least a few examples where the results seem to be approximately correct.
+
+**Please let me know if you find examples where the results are different!**
 
 
 
@@ -130,10 +179,11 @@ There are at least a few examples where the results seem to be approximately cor
 
 ## Compute f2-statistics
 
-If you're not on O2, or want use different f-statistics, you first have to compute allele frequencies for your populations of interest from data in `packedancestrymap` format.
+If you're not on O2, or want use different samples or populations, you first have to compute f2 block jackknife statistics from genotype data.
 
 
 ```{r, eval = FALSE}
+my_f2_dir = 'store/f2data/here/'
 pops = c('Denisova.DG',
          'Altai_Neanderthal.DG',
          'Vindija.DG',
@@ -142,76 +192,37 @@ pops = c('Denisova.DG',
          'Russia_Ust_Ishim.DG',
          'Switzerland_Bichon.SG')
 
-afdat = packedancestrymap_to_aftable(prefix, pops, na.action='remove')
+extract_data(prefix, my_f2_dir, pops = pops)
+```
+This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `f2_dir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
+
+If `f2_dir` is not specified, the f2 data is returned rather than written to disk. 
+
+```{r, eval = FALSE}
+data = extract_data(prefix, pops = pops)
+f2_blocks = data$f2_blocks
+block_lengths = data$block_lengths
 ```
 
 <br>
 
-We also need to keep track of the number of samples in each population.
+Now you should be able to run the same examples as before using your own f2 statistics.
 
 ```{r, eval = FALSE}
-indfile = read_table2(paste0(prefix, '.ind'), col_names = c('iid', 'sex', 'group'))
-popcounts = indfile %>% filter(group %in% pops) %$% table(group)
+qpadm(target, left, right, f2_dir = my_f2_dir)
 ```
-
-<br>
-
-Reading the genotype data is rather slow, so it's a good idea to save the output.
-
-```{r, eval = FALSE}
-save(afdat, popcounts, file = 'my_afdat.RData')
-```
-
-<br>
-
-Then you can use these allele frequencies to compute block-jackknife estimates of f2-statistics.
-
-```{r, eval = FALSE}
-# This assigns each SNP to a jackknife block, based on a 5 centimorgan genomic distance
-block_lengths = get_block_lengths(afdat)
-```
-
-```{r, eval = FALSE}
-# This computes the f2-statistics. By default, f2 is scaled by a factor of 3.6 which
-# makes it approximately equal to Fst. In contrast, the f2-statistics in
-# /n/groups/reich/robert/projects/admixprograms/f2blocks_v41.1/ are not scaled,
-# and so the scaling is applied in the qpadm and qpgraph functions when using those f2-statistics.
-f2_blocks = afs_to_f2_blocks(afs = afdat, popcounts = popcounts, block_lengths = block_lengths)
-```
-
-<br>
-
-This also takes a while, so you should also save it.
-
-```{r, eval = FALSE}
-save(f2_blocks, block_lengths, file = 'my_f2_blocks.RData')
-```
-<br>
-
-Now we can use this to compute admixture weights.
-
-```{r, eval = FALSE}
+or
+```{r, eval = TRUE}
 qpadm(target, left, right, f2_blocks, block_lengths)
 ```
 <br>
 
-We can use the same f2-statistics as input for qpGraph.
-
 ```{r, eval = FALSE}
 qpg_results = qpgraph(graph1, f2_blocks, block_lengths)
 ```
-
-<br>
-
-## Plot qpgraph results
-
-This plots the `qpgraph` results.
-
 ```{r, fig.width = 9, fig.align="center"}
 plot_graph(qpg_results$edges)
 ```
-
-
 
 
 <br>
@@ -225,9 +236,9 @@ Since evaluating one graph doesn't take long once the f-statistics are pre-compu
 In order for that to be as fast as possible, we can precompute and reuse f3-statistics and the inverse of the f3-statistic covariance matrix.
 
 ```{r, eval = FALSE}
-precomp = qpgraph_precompute_f3(pops, f2_dir = f2_dir, fstscale = 3.6)
-f3_jest = precomp[[1]]
-ppinv = precomp[[2]]
+precomp = qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
+f3_jest = precomp$f3_jest
+ppinv = precomp$ppinv
 ```
 <br>
 
@@ -249,13 +260,13 @@ winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
 
 ```{r, fig.width = 9, fig.align="center"}
 winner$score[[1]]
-plot_graph(winner$edges[[1]], fix = FALSE)
+plot_graph(winner$edges[[1]])
 ```
 <br>
 
 
 
-## Parallelization
+### Parallelization
 
 Depending on the input parameters, `optimize_admixturegraph` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [`future_map`](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [`furrr`](https://github.com/DavisVaughan/furrr) package, this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
 
@@ -313,16 +324,29 @@ Rscript opt_graphs.Rscript
 
 
 
-
 ## Summarize graphs
 
-For any set of populations there may be many graphs which can explain the data about equally well. The following function attempts to summarize a set of graphs by counting how often each population triple occurs in which configuration across all graphs.
+<br>
+
+> *All models are wrong, but some are useful.*
+
+--- George Box
+
+<br>
+
+> *All good models are alike; each bad model is bad in its own way.*
+
+--- Leo Tolstoy
+
+<br>
+
+For any set of populations there may be many graphs which can explain the data about equally well. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs.
 
 ```{r, eval = FALSE}
-trip = summarize_triples(winners)
+triples = summarize_triples(winners)
 ```
 ```{r}
-trip %>% arrange(-clade) %>% slice(1)
+triples %>% arrange(-clade) %>% slice(1)
 ```
 
 The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read like this:

@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{parse_qpgraph_parfile}
 \alias{parse_qpgraph_parfile}
-\title{Reads qpGraph parameter file}
+\title{Read qpGraph parameter file}
 \usage{
 parse_qpgraph_parfile(parfile)
 }
@@ -13,5 +13,5 @@ parse_qpgraph_parfile(parfile)
 named list of qpGraph parameters.
 }
 \description{
-Reads qpGraph parameter file
+Read qpGraph parameter file
 }

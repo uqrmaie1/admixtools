@@ -1,112 +1,4 @@
 
-#' A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'
-#' @export
-#' @param bin location of the qpGraph binary file.
-#' @param parfile qpGraph parameter file.
-#' @param graphfile qpGraph graph file.
-#' @param outfile output file.
-#' @param printonly should output be executed or the command just be printed?
-#' @return a list of qpGraph output data.
-#' @examples
-#' \dontrun{
-#' qpgraph_wrapper(bin = 'path/to/qpGraph',
-#'                 pref = 'path/to/packedancestrymap_prefix',
-#'                 parfile = 'path/to/parfile',
-#'                 graphfile = 'path/to/graphfile')
-#' }
-qpgraph_wrapper = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile', outfile='./out', printonly=FALSE) {
-  # wrapper around AdmixTools qpGraph
-  # input is locations of parfile and graphfile
-  # output is parsed output
-
-  cmd = paste0(bin, ' -p ', parfile, ' -g ', graphfile, ' > ', outfile)
-  if(printonly) {
-    print(cmd)
-  } else{
-    system(cmd)
-    return(parse_qpgraph_output(outfile))
-  }
-}
-
-
-
-#' A wrapper around qpGraph which creates 'parfile' and 'graphfile'
-#' @export
-#' @param graph a graph as two column edge matrix .
-#' @param outpop an outgroup population.
-#' @param bin location of the qpGraph binary file.
-#' @param pref prefix of the packedancestrymap format genotype files.
-#' @param outdir output directory
-#' @param printonly should output be executed or the command just be printed?
-#' @param lambdascale lambdascale
-#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
-#' @param diag diag
-#' @param hires hires
-#' @param forcezmode forcezmode
-#' @param allsnps allsnps
-#' @param bigiter bigiter
-#' @return a list with parsed qpGraph output
-#' \enumerate{
-#' \item \code{edges}: data frame
-#' \item \code{score}: scalar
-#' \item \code{f2}: data frame
-#' }
-#' @examples
-#' \dontrun{
-#' qpgraph_wrapper2(graph1,
-#'                  bin = 'path/to/qpGraph',
-#'                  pref = 'path/to/packedancestrymap_prefix')
-#' }
-qpgraph_wrapper2 = function(graph, bin, pref, outpop='NULL', outdir='.', printonly=FALSE, lambdascale=-1, lsqmode='NO', diag=0.0001, hires='NO', forcezmode='NO', allsnps='NO', bigiter=100) {
-  # wrapper around AdmixTools qpGraph
-  # makes parfile and graphfile
-
-  parfile = paste0('indivname:       ', pref, '.ind\n',
-                   'snpname:         ', pref, '.snp\n',
-                   'genotypename:    ', pref, '.geno\n',
-                   'outpop:         ', outpop, '\n',
-                   'blgsize: 0.05\n',
-                   'details: YES\n',
-                   'fstdetails: YES\n',
-                   'diag: ', diag, '\n',
-                   'lsqmode: ', lsqmode, '\n',
-                   'hires: ', hires, '\n',
-                   'forcezmode: ', forcezmode, '\n',
-                   'allsnps: ', allsnps, '\n',
-                   'lambdascale: ', lambdascale, '\n',
-                   'bigiter: ', bigiter, '\n')
-
-  if(class(graph)[1] == 'igraph') graph = igraph::as_edgelist(graph)
-  edg = as_tibble(graph) %>% set_colnames(c('from', 'to'))
-  edg %<>% group_by(.data$to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
-  e1 = (edg %>% filter(.data$type == 'edge'))$from
-  e2 = (edg %>% filter(.data$type == 'edge'))$to
-  a1 = (edg %>% filter(.data$type == 'admix'))$from
-  a2 = (edg %>% filter(.data$type == 'admix'))$to
-  leaves = setdiff(edg$to, edg$from)
-  admix = tibble()
-  for(m in unique(a2)) {
-    admix %<>% bind_rows(tibble(v1='admix', v2=m, v3=(edg %>% filter(.data$to == m))$from[1], v4=(edg %>% filter(.data$to == m))$from[2]))
-  }
-
-  pops = union(edg[[1]], edg[[2]])
-  simfile = tibble(v1 = c('root'), v2 = c('R'), v3='', v4='') %>%
-    bind_rows(tibble(v1 = 'label', v2=leaves, v3=leaves, v4='')) %>%
-    bind_rows(tibble(v1='edge', v2=paste0('e', 1:length(e1)), v3=e1, v4=e2)) %>%
-    bind_rows(admix)
-
-  pf = paste0(outdir, '/parfile')
-  gf = paste0(outdir, '/graphfile')
-  of = paste0(outdir, '/out')
-
-  write(parfile, pf)
-  simfile %>% write_tsv(gf, col_names=F)
-
-  qpgraph_wrapper(bin=bin, parfile=pf, graphfile=gf, outfile=of, printonly=printonly)
-}
-
-
-
 f2_qpgraph = function(p1, p2, c1, c2) {
   # c1, c2: counts of individuals
   (p1-p2)^2 - p1*(1-p1)/(2*c1-1) - p2*(1-p2)/(2*c2-1)
@@ -124,6 +16,114 @@ fst_qpgraph = function(p1, p2, c1, c2) {
   num = (p1-p2)^2 - p1*(1-p1)/(2*c1-1) - p2*(1-p2)/(2*c2-1)
   denom = p1 + p2 - 2*p1*p2
   num/denom
+}
+
+
+qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile', outfile='./out', printonly=FALSE) {
+  # wrapper around AdmixTools qpGraph
+  # input is locations of parfile and graphfile
+  # output is parsed output
+
+  cmd = paste0(bin, ' -p ', parfile, ' -g ', graphfile, ' > ', outfile)
+  if(printonly) {
+    print(cmd)
+  } else{
+    system(cmd)
+    return(parse_qpgraph_output(outfile))
+  }
+}
+
+
+
+#' Wrapper function around the original qpGraph program
+#' @export
+#' @param graph an admixture graph or qpGraph graph file
+#' @param bin location of the qpGraph binary
+#' @param pref prefix of the packedancestrymap format genotype files.
+#' @param parfile qpGraph parameter file
+#' @param outdir output directory
+#' @param printonly should output be executed or the command just be printed?
+#' @param lambdascale lambdascale
+#' @param diag diag
+#' @param outpop outgroup population
+#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
+#' @param hires hires
+#' @param forcezmode forcezmode
+#' @param allsnps allsnps
+#' @param bigiter bigiter
+#' @return a list with parsed qpGraph output
+#' \enumerate{
+#' \item \code{edges}: data frame
+#' \item \code{score}: scalar
+#' \item \code{f2}: data frame
+#' }
+#' @examples
+#' \dontrun{
+#' qpgraph_wrapper(graph1,
+#'                  bin = 'path/to/qpGraph',
+#'                  pref = 'path/to/packedancestrymap_prefix')
+#' qpgraph_wrapper('path/to/graphfile',
+#'                 bin = 'path/to/qpGraph',
+#'                 parfile = 'path/to/parfile')
+#' }
+qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
+                           printonly=FALSE, lambdascale=-1, diag=0.0001, outpop='NULL',
+                           lsqmode='NO', hires='NO', forcezmode='NO', allsnps='NO', bigiter=100) {
+  # wrapper around AdmixTools qpGraph
+  # makes parfile and graphfile
+  stopifnot(!is.null(parfile) | !is.null(pref))
+
+  if(is.null(parfile)) {
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('indivname:       ', pref, '.ind\n',
+                     'snpname:         ', pref, '.snp\n',
+                     'genotypename:    ', pref, '.geno\n',
+                     'outpop:         ', outpop, '\n',
+                     'blgsize: 0.05\n',
+                     'details: YES\n',
+                     'fstdetails: YES\n',
+                     'diag: ', diag, '\n',
+                     'lsqmode: ', lsqmode, '\n',
+                     'hires: ', hires, '\n',
+                     'forcezmode: ', forcezmode, '\n',
+                     'allsnps: ', allsnps, '\n',
+                     'lambdascale: ', lambdascale, '\n',
+                     'bigiter: ', bigiter, '\n')
+    pf = paste0(outdir, '/parfile')
+    write(parfile, pf)
+  } else {
+    pf = parfile
+  }
+
+  if(class(graph) != 'character') {
+
+    if(class(graph)[1] == 'igraph') graph = igraph::as_edgelist(graph)
+    edg = as_tibble(graph) %>% set_colnames(c('from', 'to'))
+    edg %<>% group_by(.data$to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
+    e1 = (edg %>% filter(.data$type == 'edge'))$from
+    e2 = (edg %>% filter(.data$type == 'edge'))$to
+    a1 = (edg %>% filter(.data$type == 'admix'))$from
+    a2 = (edg %>% filter(.data$type == 'admix'))$to
+    leaves = setdiff(edg$to, edg$from)
+    admix = tibble()
+    for(m in unique(a2)) {
+      admix %<>% bind_rows(tibble(v1='admix', v2=m, v3=(edg %>% filter(.data$to == m))$from[1], v4=(edg %>% filter(.data$to == m))$from[2]))
+    }
+
+    simfile = tibble(v1 = c('root'), v2 = c('R'), v3='', v4='') %>%
+      bind_rows(tibble(v1 = 'label', v2=leaves, v3=leaves, v4='')) %>%
+      bind_rows(tibble(v1='edge', v2=paste0('e', 1:length(e1)), v3=e1, v4=e2)) %>%
+      bind_rows(admix)
+
+    gf = paste0(outdir, '/graphfile')
+    simfile %>% write_tsv(gf, col_names=F)
+  } else {
+    stopifnot(file.exists(graph))
+    gf = graph
+  }
+
+  qpgraph_wrapper2(bin=bin, parfile=pf, graphfile=gf,
+                   outfile=paste0(outdir, '/out'), printonly=printonly)
 }
 
 
@@ -257,23 +257,24 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics. f2-block-jackknife statistics can be provided via the arguments \code{f2_blocks} and \code{block_lengths}, or via \code{f2_dir}.
 #' @export
 #' @param graph an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
+#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}.
 #' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
 #' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
-#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fnscale try increasing or decreasing this, if optimization does not converge.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
 #' @param seed seed for generating starting weights.
 #' @param verbose print optimization iterations
-#' @param cpp should optimization be run in C++ or in R? C++ is faster.
+#' @param cpp should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.
 #' @return a list of qpGraph output data
-#' @seealso \code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @seealso \code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 #' @examples
 #' out = qpgraph(graph1, f2_blocks, block_lengths)
 #' plot_graph(out$edges)
-qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, fstscale = 1, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
+qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, f2_denom = 1, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
@@ -304,7 +305,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
 
   popind = match(pops, dimnames(f2_blocks)[[1]])
-  f2_blocks = f2_blocks * fstscale
+  f2_blocks = f2_blocks / f2_denom
   f2_blocks = rray(f2_blocks)
   npop = length(pops)
   npair = choose(npop, 2)
@@ -320,9 +321,9 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 
   f3_blocks = (f2_blocks[, popind[1],] + f2_blocks[popind[1],,] - f2_blocks)/2
   f3_blocks_2d = arr3d_to_pairmat(f3_blocks[popind[-1], popind[-1],])
-  sts = bj_mat_stats(f3_blocks_2d, block_lengths)
-  f3_jest = sts[[1]]
-  f3_jvar = sts[[2]]
+  f3dat = bj_mat_stats(f3_blocks_2d, block_lengths)
+  f3_jest = f3dat$jest
+  f3_jvar = f3dat$jvar
   f3out = tibble(pop1=pops[cmb[1,]],
                  pop2=pops[cmb[2,]],
                  f3est = f3_jest, se = sqrt(diag(f3_jvar)))
@@ -385,12 +386,12 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 #' @param verbose print optimization iterations
 #' @param cpp should optimization be run in C++ or in R? C++ is faster.
 #' @return a list of qpGraph output data
-#' @seealso \code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
+#' @seealso \code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
 #' @examples
 #' \dontrun{
 #' precomp = qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
-#' f3_jest = precomp[[1]]
-#' ppinv = precomp[[2]]
+#' f3_jest = precomp$f3_jest
+#' ppinv = precomp$ppinv
 #' out = qpgraph_slim(igraph1, f3_jest, ppinv, pops)
 #' plot_graph(out$edges)
 #' }
@@ -461,7 +462,7 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
 #' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
 #' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
 #' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
-#' @param fstscale scales f2-statistics. A value of around 3.6 converts F2 to Fst.
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @return a list with four items
@@ -475,9 +476,9 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
 #' \dontrun{
 #' pops = get_leafnames(igraph1)
 #' qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
-#' qpgraph_precompute_f3(pops, f2_dir = f2_dir, fstscale = 3.6)
+#' qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 #' }
-qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, fstscale = 1, fudge=1e-3, lsqmode=FALSE) {
+qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge=1e-3, lsqmode=FALSE) {
   # returns list of f3_jest and ppinv for subset of populations.
   # f3_jest and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
@@ -490,7 +491,7 @@ qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f
   }
   stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
 
-  f2_blocks = f2_blocks * fstscale
+  f2_blocks = f2_blocks / f2_denom
   f2_blocks = rray(f2_blocks[pops, pops, ])
 
   npop = length(pops)
@@ -505,9 +506,9 @@ qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f
 
   f3_blocks = (f2_blocks[,1,] + f2_blocks[1,,] - f2_blocks)/2
   f3_blocks_2d = arr3d_to_pairmat(f3_blocks[-1,-1,])
-  sts = bj_mat_stats(f3_blocks_2d, block_lengths)
-  f3_jest = sts[[1]]
-  f3_jvar = sts[[2]]
+  f3dat = bj_mat_stats(f3_blocks_2d, block_lengths)
+  f3_jest = f3dat$jest
+  f3_jvar = f3dat$jvar
   f3out = tibble(pop1=pops[cmb[1,]],
                  pop2=pops[cmb[2,]],
                  f3est = f3_jest, se = sqrt(diag(f3_jvar)))

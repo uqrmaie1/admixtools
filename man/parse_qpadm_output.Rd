@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{parse_qpadm_output}
 \alias{parse_qpadm_output}
-\title{Reads qpAdm output file}
+\title{Read qpAdm output file}
 \usage{
 parse_qpadm_output(outfile)
 }
@@ -13,5 +13,5 @@ parse_qpadm_output(outfile)
 tibble with output data.
 }
 \description{
-Reads qpAdm output file
+Read qpAdm output file
 }

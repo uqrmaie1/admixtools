@@ -4,10 +4,10 @@
 \alias{read_f2}
 \title{Read f2 block jackknife estimates from disk}
 \usage{
-read_f2(path, pops = NULL)
+read_f2(f2_dir, pops = NULL)
 }
 \arguments{
-\item{path}{directory from which to read files}
+\item{f2_dir}{directory from which to read files}
 
 \item{pops}{the populations for which f2 statistics should be read. Defaults to all populations, which may require a lot of memory.}
 }

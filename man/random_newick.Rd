@@ -23,5 +23,6 @@ Generate a random, binary graph with n terminal nodes
 }
 \examples{
 random_newick(5)
-random_newick(c('a', 'b', 'c', 'd'))
+random_newick(c('a', 'b', 'c', 'd')) # toplogy random, but pop order fixed
+random_newick(sample(c('a', 'b', 'c', 'd'))) # toplogy and pop order random
 }

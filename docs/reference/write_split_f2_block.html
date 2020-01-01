@@ -137,7 +137,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>write_split_f2_block</span>(<span class='no'>afmatprefix</span>, <span class='no'>outdir</span>, <span class='no'>block1</span>, <span class='no'>block2</span>, <span class='no'>popcounts</span>,
-  <span class='no'>block_lengths</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='no'>block_lengths</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -167,8 +167,8 @@
       <td><p>vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to match the number of SNPs.</p></td>
     </tr>
     <tr>
-      <th>fstscale</th>
-      <td><p>scaling factor applied to f2-statistics. If set to 3.6, this will be approximately equal to Fst.</p></td>
+      <th>f2_denom</th>
+      <td><p>scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -189,12 +189,12 @@
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>afmatall</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='st'>'path/to/packedancestrymap_prefix'</span>, <span class='no'>allpopulations</span>,
                                         <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>'none'</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='fu'><a href='split_afmat.html'>split_afmat</a></span>(<span class='no'>afmatall</span>, <span class='kw'>pops_per_block</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>outprefix</span> <span class='kw'>=</span> <span class='st'>'afmatall_split_v41.1/afmatall_'</span>)
-<span class='no'>numblocks</span> <span class='kw'>=</span> <span class='fl'>180</span>
+<span class='fu'><a href='split_afmat.html'>split_afmat</a></span>(<span class='no'>afmatall</span>, <span class='kw'>pops_per_block</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>outprefix</span> <span class='kw'>=</span> <span class='st'>'afmatall_split_v42.1/afmatall_'</span>)
+<span class='no'>numblocks</span> <span class='kw'>=</span> <span class='fl'>185</span> <span class='co'># this should be the number of split allele frequency files</span>
 <span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='fl'>1</span>:<span class='no'>numblocks</span>) {
   <span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='no'>i</span>:<span class='no'>numblocks</span>) {
-    <span class='fu'>write_split_f2_block</span>(<span class='st'>'afmatall_split_v41.1/afmatall_'</span>, <span class='st'>'f2blocks_v41.1/'</span>,
-                         <span class='kw'>block1</span> <span class='kw'>=</span> <span class='no'>i</span>, <span class='kw'>block2</span> <span class='kw'>=</span> <span class='no'>j</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>3.6</span>)
+    <span class='fu'>write_split_f2_block</span>(<span class='st'>'afmatall_split_v42.1/afmatall_'</span>, <span class='st'>'f2blocks_v42.1/'</span>,
+                         <span class='kw'>block1</span> <span class='kw'>=</span> <span class='no'>i</span>, <span class='kw'>block2</span> <span class='kw'>=</span> <span class='no'>j</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>)
     }
   }
 }</div></pre>

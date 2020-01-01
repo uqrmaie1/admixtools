@@ -13,8 +13,10 @@ articles:
 reference:
   - title: "Admixtools programs"
     contents:
-      - qpgraph
+      - qp3pop
+      - qpdstat
       - qpadm
+      - qpgraph
   - title: "Wrapper functions"
     contents:
       - contains("wrapper")
@@ -31,11 +33,11 @@ reference:
       - qpgraph_precompute_f3
   - title: "Reading and writing"
     contents:
+      - extract_data
       - packedancestrymap_to_aftable
+      - plink_to_aftable
       - read_f2
       - write_f2
-      - write_split_f2_block
-      - split_afmat
   - title: "Graph topology"
     contents:
       - random_newick

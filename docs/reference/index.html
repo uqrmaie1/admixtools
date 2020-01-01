@@ -143,15 +143,27 @@
       <tr>
         
         <td>
-          <p><code><a href="qpgraph.html">qpgraph()</a></code> </p>
+          <p><code><a href="qp3pop.html">qp3pop()</a></code> </p>
         </td>
-        <td><p>Compute the fit of an admixturegraph.</p></td>
+        <td><p>Estimate f3 statistics</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpdstat.html">qpdstat()</a></code> </p>
+        </td>
+        <td><p>Estimate f4 statistics</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="qpadm.html">qpadm()</a></code> </p>
         </td>
         <td><p>Estimate admixture weights</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpgraph.html">qpgraph()</a></code> </p>
+        </td>
+        <td><p>Compute the fit of an admixturegraph.</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -163,21 +175,27 @@
       <tr>
         
         <td>
+          <p><code><a href="qp3pop_wrapper.html">qp3pop_wrapper()</a></code> </p>
+        </td>
+        <td><p>Wrapper function around the original qp3Pop program</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="qpadm_wrapper.html">qpadm_wrapper()</a></code> </p>
         </td>
         <td><p>Wrapper function around the original qpAdm program</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="qpgraph_wrapper.html">qpgraph_wrapper()</a></code> </p>
+          <p><code><a href="qpdstat_wrapper.html">qpdstat_wrapper()</a></code> </p>
         </td>
-        <td><p>A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'</p></td>
+        <td><p>Wrapper function around the original qpDstat program</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="qpgraph_wrapper2.html">qpgraph_wrapper2()</a></code> </p>
+          <p><code><a href="qpgraph_wrapper.html">qpgraph_wrapper()</a></code> </p>
         </td>
-        <td><p>A wrapper around qpGraph which creates 'parfile' and 'graphfile'</p></td>
+        <td><p>Wrapper function around the original qpGraph program</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -189,27 +207,45 @@
       <tr>
         
         <td>
+          <p><code><a href="parse_qp3pop_output.html">parse_qp3pop_output()</a></code> </p>
+        </td>
+        <td><p>Read qp3Pop output file</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="parse_qpadm_output.html">parse_qpadm_output()</a></code> </p>
         </td>
-        <td><p>Reads qpAdm output file</p></td>
+        <td><p>Read qpAdm output file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="parse_qpdstat_output.html">parse_qpdstat_output()</a></code> </p>
+        </td>
+        <td><p>Read qpDstat output file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="parse_qpdstat_parfile.html">parse_qpdstat_parfile()</a></code> </p>
+        </td>
+        <td><p>Read qpDstat parameter file</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="parse_qpgraph_graphfile.html">parse_qpgraph_graphfile()</a></code> </p>
         </td>
-        <td><p>Reads graph in qpGraph format</p></td>
+        <td><p>Read qpGraph graph file</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="parse_qpgraph_output.html">parse_qpgraph_output()</a></code> </p>
         </td>
-        <td><p>Reads qpGraph output file</p></td>
+        <td><p>Read qpGraph output file</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="parse_qpgraph_parfile.html">parse_qpgraph_parfile()</a></code> </p>
         </td>
-        <td><p>Reads qpGraph parameter file</p></td>
+        <td><p>Read qpGraph parameter file</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -235,25 +271,13 @@
         <td>
           <p><code><a href="plot_graph_map.html">plot_graph_map()</a></code> </p>
         </td>
-        <td><p>Plots an admixture graph on a map.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plot_graph_map2.html">plot_graph_map2()</a></code> </p>
-        </td>
-        <td><p>Plots an admixture graph on a map.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="plot_graph_old.html">plot_graph_old()</a></code> </p>
-        </td>
-        <td><p>Plots an admixture graph.</p></td>
+        <td><p>Plot an admixture graph on a map</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="plot_map.html">plot_map()</a></code> </p>
         </td>
-        <td><p>Plots samples on a map.</p></td>
+        <td><p>Plot samples on a map</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -291,9 +315,21 @@
       <tr>
         
         <td>
+          <p><code><a href="extract_data.html">extract_data()</a></code> </p>
+        </td>
+        <td><p>Extract subset of genotype data</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="packedancestrymap_to_aftable.html">packedancestrymap_to_aftable()</a></code> </p>
         </td>
         <td><p>Read allele frequencies from packedancestrymap genotype file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plink_to_aftable.html">plink_to_aftable()</a></code> </p>
+        </td>
+        <td><p>Read allele frequencies from PLINK files</p></td>
       </tr><tr>
         
         <td>
@@ -306,18 +342,6 @@
           <p><code><a href="write_f2.html">write_f2()</a></code> </p>
         </td>
         <td><p>Write f2 block jackknife estimates to disk</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="write_split_f2_block.html">write_split_f2_block()</a></code> </p>
-        </td>
-        <td><p>Compute block jackknife f2 blocks and write them to disk</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="split_afmat.html">split_afmat()</a></code> </p>
-        </td>
-        <td><p>Split an allele frequency matrix into blocks</p></td>
       </tr>
     </tbody><tbody>
       <tr>

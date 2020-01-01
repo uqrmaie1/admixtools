@@ -38,12 +38,12 @@ plot_comparison = function(out1, out2) {
 }
 
 
-#' Plots an admixture graph.
-#' @export
-#' @param edges a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
-#' @param layout argument passed to \code{\link[ggdag]{tidy_dagitty}} to modify plot layout.
-#' @return a ggplot object.
+# Plot an admixture graph
+# @param edges a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
+# @param layout argument passed to \code{\link[ggdag]{tidy_dagitty}} to modify plot layout.
+# @return a ggplot object.
 plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
+
   if (!requireNamespace('ggdag', quietly = TRUE)) {
     stop('Package "ggdag" needed for this function to work. Please install it.', call. = FALSE)
   }
@@ -57,7 +57,7 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
   if(layout == 'tree' && fix) dat$data = fix_layout(dat$data, igraph::graph_from_edgelist(as.matrix(edges)[,1:2]))
   dat %<>% group_by(.data$to) %>% mutate(cnt = n()) %>% ungroup %>%
     mutate(admix = (.data$cnt > 1)*2+1) %>% ungroup %>%
-    select(-.data$type) %>%
+    #select(-.data$type) %>%
     mutate(type = ifelse(.data$name == 'R', 'root',
                          ifelse(!.data$name %in% edges[[1]], 'leaf',
                                 ifelse(.data$name %in% admixnodes, 'admix', 'normal'))))
@@ -142,21 +142,56 @@ fix_layout = function(coord, grph) {
   }
   swap_subtree = function(grph, coord, node) {
     center = coord$x[match(node, coord$name)[1]]
-    children = names(subcomponent(grph, node, mode='out'))
+    offspring = names(subcomponent(grph, node, mode='out'))
     dst2 = igraph::distances(grph, node, mode='out')[1,]
-    for(n in children) {
+    for(n in offspring) {
       if(dst[node] + dst2[n] <= dst[n])
         coord %<>% mutate(x = ifelse(name == n, 2*center-x, x),
                           xend = ifelse(to == n, 2*center-xend, xend))
     }
     coord
   }
+  swap_subtree2 = function(grph, coord, node) {
+    center = coord$x[match(node, coord$name)[1]]
+    children = names(neighbors(grph, node, mode='out'))
+    dst2 = igraph::distances(grph, node, mode='out')[1,]
+    if(length(children) == 2) {
+      for(child in children) {
+        offspring = names(subcomponent(grph, child, mode='out'))
+        xx = coord %>% filter(name == node, to == child) %$% xend
+        shift = 2 * (xx - center)
+        for(n in offspring) {
+          if(dst[node] + dst2[n] <= dst[n])
+            coord %<>% mutate(x = ifelse(name == n, x-shift, x),
+                              xend = ifelse(to == n, xend-shift, xend))
+        }
+      }
+    }
+    coord
+  }
   inner_bf = setdiff(names(subcomponent(grph, V(grph)[1])), get_leafnames(grph))
-  for(node in inner_bf) {
+  for(node in rep(inner_bf, 1)) {
+
     d1 = totdist(coord$x, coord$xend)
-    g2 = swap_subtree(grph, coord, node)
-    d2 = totdist(g2$x, g2$xend)
-    if(d2 < d1) coord = g2
+    n1 = num_intersecting(coord)
+    s1 = num_samepos(coord)
+    c2 = swap_subtree(grph, coord, node)
+    d2 = totdist(c2$x, c2$xend)
+    n2 = num_intersecting(c2)
+    s2 = num_samepos(c2)
+    if((n2 < n1 | n2 == n1 & d2 < d1) & s2 <= s1) coord = c2
+  }
+
+  for(node in rep(inner_bf, 1)) {
+    #if(node == 'Rrrlx') browser()
+    d1 = totdist(coord$x, coord$xend)
+    n1 = num_intersecting(coord)
+    s1 = num_samepos(coord)
+    c2 = swap_subtree2(grph, coord, node)
+    d2 = totdist(c2$x, c2$xend)
+    n2 = num_intersecting(c2)
+    s2 = num_samepos(c2)
+    if((n2 < n1 | n2 == n1 & d2 < d1) & s2 <= s1) coord = c2
   }
   #fix_layout2(coord)
   coord
@@ -177,6 +212,69 @@ fix_layout2 = function(coord) {
   }
   bind_rows(edges, leaves)
 }
+
+intersecting = function(x1, y1, x2, y2, x3, y3, x4, y4) {
+  # returns TRUE iff segment 12 intersects with segment 34
+  # extends segments by small amounts, jitters x3, x4 to prevent singularity
+  eps = 1e-3
+  xd1 = x1-x2
+  yd1 = y1-y2
+  xd2 = x3-x4
+  yd2 = y3-y4
+
+  x1 = x1 + xd1*eps
+  x2 = x2 - xd1*eps
+  y1 = y1 + yd1*eps
+  y2 = y2 - yd1*eps
+  x3 = x3 + xd2*eps
+  x4 = x4 - xd2*eps
+  y3 = y3 + yd2*eps
+  y4 = y4 - yd2*eps
+
+  if(x1 == x2 & x3 == x4) return(x1 == x3 & max(y1, y2) > min(y3, y4) & min(y1, y2) < max(y3, y4))
+
+  if(x1 == x2) {
+    sl = (y4-y3)/(x4-x3)
+    inters = max(y1, y2) > min(y3, y4) & min(y1, y2) < max(y3, y4)
+    inters = inters & between(x1, min(x3, x4), max(x3, x4))
+    inters = inters & between(sl * x1 + (y3 - sl*x3), min(y1, y2), max(y1, y2))
+    return(inters)
+  }
+  if(x3 == x4) {
+    sl = (y2-y1)/(x2-x1)
+    inters = max(y3, y4) > min(y1, y2) & min(y3, y4) < max(y1, y2)
+    inters = inters & between(x3, min(x1, x2), max(x1, x2))
+    inters = inters & between(sl * x3 + (y1 - sl*x1), min(y3, y4), max(y3, y4))
+    return(inters)
+  }
+
+  A1 = (y1-y2)/(x1-x2)
+  A2 = (y3-y4)/(x3-x4)
+  b1 = y1 - A1*x1
+  b2 = y3 - A2*x3
+  denom = A1 - A2
+  Xa = (b2 - b1) / denom
+  isTRUE(Xa > max(min(x1,x2), min(x3,x4)) & Xa < min(max(x1,x2), max(x3,x4)))
+}
+
+num_intersecting = function(dat) {
+  # counts the number of intersecting segments
+  # dat has x, xend, y, yend
+  pairs = combn(seq_len(nrow(dat)), 2)
+  fun = function(r1, r2) {dat %$% {intersecting(x[r1], y[r1], xend[r1], yend[r1], x[r2], y[r2], xend[r2], yend[r2]) & (length(unique(c(name[r1], to[r1], name[r2], to[r2]))) == 4)}}
+  sum(map2_lgl(pairs[1,], pairs[2,], fun))
+
+}
+
+num_samepos = function(dat) {
+  # counts the number of nodes at the same position
+  dat %<>% select(to, xend, yend) %>% distinct
+  nnodes = dat %>% nrow
+  dat %<>% select(-to) %>% distinct
+  samepos = nnodes - nrow(dat)
+  samepos
+}
+
 
 #' @export
 collapse_edges = function(edges, below=0) {
@@ -228,15 +326,15 @@ plot_graph_pcs = function(grph, pcs) {
 
 
 
-#' Plots an admixture graph on a map.
+#' Plot an admixture graph on a map
 #' @export
 #' @param grph a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
 #' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
 #' @return a plotly object.
 #' @examples
-#' \dontrun{
-#' plot_graph_map(igraph1, anno_v41)
-#' }
+# #' \dontrun{
+#' plot_graph_map(igraph1, anno)
+# #' }
 plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
@@ -268,17 +366,16 @@ plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 }
 
 
-#' Plots an admixture graph on a map.
-#' @export
-#' @param grph an admixturegraph as an igraph object.
-#' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
-#' @param map_layout 1 or 2
-#' @return a ggplot object.
-#' @examples
-#' \dontrun{
-#' p1 = plot_graph_map2(igraph1, anno_v41, 1)
-#' p2 = plot_graph_map2(igraph1, anno_v41, 2)
-#' }
+# Plot an admixture graph on a map
+# @param grph an admixturegraph as an igraph object.
+# @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
+# @param map_layout 1 or 2
+# @return a ggplot object.
+# @examples
+# \dontrun{
+# p1 = plot_graph_map2(igraph1, anno, 1)
+# p2 = plot_graph_map2(igraph1, anno, 2)
+# }
 plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
@@ -304,14 +401,14 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 
 }
 
-#' Plots samples on a map.
+#' Plot samples on a map
 #' @export
 #' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
 #' @param map_layout 1 or 2
 #' @return a ggplot object.
 #' @examples
 #' \dontrun{
-#' p1 = plot_map(igraph1, anno_v41, 1)
+#' p1 = plot_map(igraph1, anno, 1)
 #' }
 plot_map = function(leafcoords, map_layout = 1) {
 

@@ -5,29 +5,29 @@
 \title{Estimate admixture weights}
 \usage{
 qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
-  f2_dir = NULL, fstscale = 1, fudge = 1e-04, getcov = TRUE,
+  f2_dir = NULL, f2_denom = 1, fudge = 1e-04, getcov = TRUE,
   cpp = TRUE)
 }
 \arguments{
-\item{target}{the target population}
+\item{target}{target population}
 
-\item{left}{the source population}
+\item{left}{source populations}
 
 \item{right}{outgroup populations}
 
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.}
+\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}}
 
 \item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
 
-\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
+\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.}
 
-\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
+\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fudge}{value added to diagonal matrix elements before inverting}
 
-\item{getcov}{should standard errors be returned? Setting this to FALSE makes this function much faster.}
+\item{getcov}{should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.}
 
-\item{cpp}{should optimization be done using C++ or R function? cpp = TRUE is much faster.}
+\item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
 }
 \value{
 a data frame with weights and standard errors for each left population
@@ -40,4 +40,12 @@ target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 qpadm(target, left, right, f2_blocks, block_lengths)
+}
+\references{
+Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+
+Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 10)
+}
+\seealso{
+\code{\link{lazadm}}
 }

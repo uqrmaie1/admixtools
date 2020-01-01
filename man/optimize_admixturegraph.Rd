@@ -29,7 +29,7 @@ optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 10,
 a nested data frame with one model per line
 }
 \description{
-This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \link{\code{future_map}} from the \link{\code{furrr}} package to parallelize across the independent repeats. The function \link{\code{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
+This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
 }
 \examples{
 \dontrun{

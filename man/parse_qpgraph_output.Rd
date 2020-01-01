@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{parse_qpgraph_output}
 \alias{parse_qpgraph_output}
-\title{Reads qpGraph output file}
+\title{Read qpGraph output file}
 \usage{
 parse_qpgraph_output(outfile)
 }
@@ -13,5 +13,5 @@ parse_qpgraph_output(outfile)
 list of output data.
 }
 \description{
-Reads qpGraph output file
+Read qpGraph output file
 }

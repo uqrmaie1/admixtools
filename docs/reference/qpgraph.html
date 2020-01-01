@@ -137,7 +137,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpgraph</span>(<span class='no'>graph</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>,
+  <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>,
   <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -149,7 +149,7 @@
     </tr>
     <tr>
       <th>f2_blocks</th>
-      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.</p></td>
+      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p></td>
     </tr>
     <tr>
       <th>block_lengths</th>
@@ -164,8 +164,8 @@
       <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
     </tr>
     <tr>
-      <th>fstscale</th>
-      <td><p>scales f2-statistics. A value of around 3.6 converts F2 to Fst.</p></td>
+      <th>f2_denom</th>
+      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>fnscale</th>
@@ -189,7 +189,7 @@
     </tr>
     <tr>
       <th>cpp</th>
-      <td><p>should optimization be run in C++ or in R? C++ is faster.</p></td>
+      <td><p>should optimization be done using C++ or R function? <code>cpp = TRUE</code> is much faster.</p></td>
     </tr>
     </table>
     
@@ -197,9 +197,13 @@
 
     <p>a list of qpGraph output data</p>
     
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
+    
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> and <code><a href='qpgraph_wrapper2.html'>qpgraph_wrapper2</a></code> for a wrapper functions which call the original qpGraph program; <code><a href='qpgraph_slim.html'>qpgraph_slim</a></code> for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.</p></div>
+    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> for a wrapper functions which call the original qpGraph program; <code><a href='qpgraph_slim.html'>qpgraph_slim</a></code> for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -212,6 +216,8 @@
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#references">References</a></li>
 
       <li><a href="#see-also">See also</a></li>
       

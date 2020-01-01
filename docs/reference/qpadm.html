@@ -137,7 +137,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fstscale</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -145,11 +145,11 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>target</th>
-      <td><p>the target population</p></td>
+      <td><p>target population</p></td>
     </tr>
     <tr>
       <th>left</th>
-      <td><p>the source population</p></td>
+      <td><p>source populations</p></td>
     </tr>
     <tr>
       <th>right</th>
@@ -157,7 +157,7 @@
     </tr>
     <tr>
       <th>f2_blocks</th>
-      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.</p></td>
+      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code></p></td>
     </tr>
     <tr>
       <th>block_lengths</th>
@@ -165,11 +165,11 @@
     </tr>
     <tr>
       <th>f2_dir</th>
-      <td><p>a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.</p></td>
+      <td><p>a directory with f2 statistics for each population pair in the graph. must contain <code>block_lengths.RData</code>.</p></td>
     </tr>
     <tr>
-      <th>fstscale</th>
-      <td><p>scales f2-statistics. A value of around 3.6 converts F2 to Fst.</p></td>
+      <th>f2_denom</th>
+      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>fudge</th>
@@ -177,17 +177,26 @@
     </tr>
     <tr>
       <th>getcov</th>
-      <td><p>should standard errors be returned? Setting this to FALSE makes this function much faster.</p></td>
+      <td><p>should standard errors be returned? Setting this to <code>FALSE</code> makes this function much faster.</p></td>
     </tr>
     <tr>
       <th>cpp</th>
-      <td><p>should optimization be done using C++ or R function? cpp = TRUE is much faster.</p></td>
+      <td><p>should optimization be done using C++ or R function? <code>cpp = TRUE</code> is much faster.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>a data frame with weights and standard errors for each left population</p>
+    
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
+<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European languages in Europe.</em> Nature (SI 10)</p>
+    
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='lazadm.html'>lazadm</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -206,6 +215,10 @@
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#references">References</a></li>
+
+      <li><a href="#see-also">See also</a></li>
       
       <li><a href="#examples">Examples</a></li>
     </ul>

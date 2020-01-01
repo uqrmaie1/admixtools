@@ -4,26 +4,39 @@
 \alias{afs_to_f2_blocks}
 \title{Compute all pairwise f2 statistics}
 \usage{
-afs_to_f2_blocks(afs, popcounts, block_lengths, fstscale = 3.6,
-  maxmem = 1000, infocols = 6, write_to_disk = NULL,
+afs_to_f2_blocks(afs, popcounts, block_lengths, f2_denom = 1,
+  maxmem = 1000, infocols = 6, outdir = NULL, overwrite = FALSE,
   verbose = TRUE)
 }
 \arguments{
-\item{afs}{data.frame of allele frequencies for each population. column 1 to 6 are SNP annotation columns, the other columns are allele frequencies.}
+\item{afs}{data frame of allele frequencies for each population. column 1 to \code{infocols} are SNP annotation columns, the other columns are allele frequencies.}
 
 \item{popcounts}{named vector with number of samples for each population.}
 
-\item{block_lengths}{vector with lengths of each jackknife block. sum has to match nrow(afs).}
+\item{block_lengths}{vector with lengths of each jackknife block. \code{sum(block_lengths)} has to match \code{nrow(afs)}. See \code{\link{get_block_lengths}}}
 
-\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
+\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
+
+\item{infocols}{number of initil columns with meta data}
+
+\item{outdir}{directory into which to write f2 data (if \code{NULL}, data is returned instead)}
+
+\item{overwrite}{should existing files be overwritten? only relevant if \code{outdir} is not \code{NULL}}
+
+\item{verbose}{print progress updates}
 }
 \value{
 a 3d array of dimensions npop x npop x nblocks with all pairwise leave-one-out f2 stats, leaving each block out at a time
 }
 \description{
-Compute all pairwise f2 statistics
+This function takes a data frame with allele frequencies (see \code{\link{packedancestrymap_to_aftable}}) and computes block jackknife f2 statistics for all population pairs. \eqn{f2} for each SNP is computed as \eqn{(P_1 - P_2)^2 - P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)}, where \eqn{P_1} and \eqn{P_2} are allele frequencies in populations \eqn{1} and \eqn{2}, and \eqn{C_1} and \eqn{C_2} is the average number of non-missing individuals in populations \eqn{1} and \eqn{2}. See \code{details}
+}
+\details{
+For each population pair, each of the \eqn{i = 1, \ldots, n} resutling values (\eqn{n} is around 700 in practice) is the mean \eqn{f2} estimate across all SNPs except the ones in block \eqn{i}.
+
+\eqn{- P_1 (1 - P_1)/(2 C_1 - 1) - P_2 (1 - P_2)/(2 C_2 - 1)} is a correction term which makes the estimates unbiased at low sample sizes.
 }
 \examples{
 \dontrun{

@@ -5,7 +5,7 @@
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
 qpgraph_precompute_f3(pops, f2_blocks = NULL, block_lengths = NULL,
-  f2_dir = NULL, fstscale = 1, fudge = 0.001, lsqmode = FALSE)
+  f2_dir = NULL, f2_denom = 1, fudge = 0.001, lsqmode = FALSE)
 }
 \arguments{
 \item{pops}{populations for which to compute f3-statistics}
@@ -16,7 +16,7 @@ qpgraph_precompute_f3(pops, f2_blocks = NULL, block_lengths = NULL,
 
 \item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
 
-\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
+\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
 
@@ -38,6 +38,6 @@ Takes a 3d array of f2 block jackknife estimates and computes f3-statistics betw
 \dontrun{
 pops = get_leafnames(igraph1)
 qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
-qpgraph_precompute_f3(pops, f2_dir = f2_dir, fstscale = 3.6)
+qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 }
 }

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile' — qpgraph_wrapper • admixtools</title>
+<title>Wrapper function around the original qpGraph program — qpgraph_wrapper • admixtools</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -38,9 +38,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile' — qpgraph_wrapper" />
+<meta property="og:title" content="Wrapper function around the original qpGraph program — qpgraph_wrapper" />
 
-<meta property="og:description" content="A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'" />
+<meta property="og:description" content="Wrapper function around the original qpGraph program" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -125,56 +125,101 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'</h1>
+    <h1>Wrapper function around the original qpGraph program</h1>
     
     <div class="hidden name"><code>qpgraph_wrapper.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'</p>
+    <p>Wrapper function around the original qpGraph program</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph_wrapper</span>(<span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"./qpGraph"</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='st'>"./parfile"</span>,
-  <span class='kw'>graphfile</span> <span class='kw'>=</span> <span class='st'>"./graphfile"</span>, <span class='kw'>outfile</span> <span class='kw'>=</span> <span class='st'>"./out"</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_wrapper</span>(<span class='no'>graph</span>, <span class='no'>bin</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>lambdascale</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>diag</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='st'>"NULL"</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>hires</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>forcezmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>allsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>bigiter</span> <span class='kw'>=</span> <span class='fl'>100</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>graph</th>
+      <td><p>an admixture graph or qpGraph graph file</p></td>
+    </tr>
+    <tr>
       <th>bin</th>
-      <td><p>location of the qpGraph binary file.</p></td>
+      <td><p>location of the qpGraph binary</p></td>
+    </tr>
+    <tr>
+      <th>pref</th>
+      <td><p>prefix of the packedancestrymap format genotype files.</p></td>
     </tr>
     <tr>
       <th>parfile</th>
-      <td><p>qpGraph parameter file.</p></td>
+      <td><p>qpGraph parameter file</p></td>
     </tr>
     <tr>
-      <th>graphfile</th>
-      <td><p>qpGraph graph file.</p></td>
-    </tr>
-    <tr>
-      <th>outfile</th>
-      <td><p>output file.</p></td>
+      <th>outdir</th>
+      <td><p>output directory</p></td>
     </tr>
     <tr>
       <th>printonly</th>
       <td><p>should output be executed or the command just be printed?</p></td>
     </tr>
+    <tr>
+      <th>lambdascale</th>
+      <td><p>lambdascale</p></td>
+    </tr>
+    <tr>
+      <th>diag</th>
+      <td><p>diag</p></td>
+    </tr>
+    <tr>
+      <th>outpop</th>
+      <td><p>outgroup population</p></td>
+    </tr>
+    <tr>
+      <th>lsqmode</th>
+      <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
+    </tr>
+    <tr>
+      <th>hires</th>
+      <td><p>hires</p></td>
+    </tr>
+    <tr>
+      <th>forcezmode</th>
+      <td><p>forcezmode</p></td>
+    </tr>
+    <tr>
+      <th>allsnps</th>
+      <td><p>allsnps</p></td>
+    </tr>
+    <tr>
+      <th>bigiter</th>
+      <td><p>bigiter</p></td>
+    </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list of qpGraph output data.</p>
+    <p>a list with parsed qpGraph output</p><ol>
+<li><p><code>edges</code>: data frame</p></li>
+<li><p><code>score</code>: scalar</p></li>
+<li><p><code>f2</code>: data frame</p></li>
+</ol>
+
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>qpgraph_wrapper</span>(<span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpGraph'</span>,
-                <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>,
-                <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='st'>'path/to/parfile'</span>,
-                <span class='kw'>graphfile</span> <span class='kw'>=</span> <span class='st'>'path/to/graphfile'</span>)
+<span class='fu'>qpgraph_wrapper</span>(<span class='no'>graph1</span>,
+                 <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpGraph'</span>,
+                 <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>)
+<span class='fu'>qpgraph_wrapper</span>(<span class='st'>'path/to/graphfile'</span>,
+                <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpGraph'</span>,
+                <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='st'>'path/to/parfile'</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

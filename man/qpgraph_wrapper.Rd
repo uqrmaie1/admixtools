@@ -2,33 +2,60 @@
 % Please edit documentation in R/qpgraph.R
 \name{qpgraph_wrapper}
 \alias{qpgraph_wrapper}
-\title{A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'}
+\title{Wrapper function around the original qpGraph program}
 \usage{
-qpgraph_wrapper(bin = "./qpGraph", parfile = "./parfile",
-  graphfile = "./graphfile", outfile = "./out", printonly = FALSE)
+qpgraph_wrapper(graph, bin, pref = NULL, parfile = NULL,
+  outdir = ".", printonly = FALSE, lambdascale = -1, diag = 1e-04,
+  outpop = "NULL", lsqmode = "NO", hires = "NO", forcezmode = "NO",
+  allsnps = "NO", bigiter = 100)
 }
 \arguments{
-\item{bin}{location of the qpGraph binary file.}
+\item{graph}{an admixture graph or qpGraph graph file}
 
-\item{parfile}{qpGraph parameter file.}
+\item{bin}{location of the qpGraph binary}
 
-\item{graphfile}{qpGraph graph file.}
+\item{pref}{prefix of the packedancestrymap format genotype files.}
 
-\item{outfile}{output file.}
+\item{parfile}{qpGraph parameter file}
+
+\item{outdir}{output directory}
 
 \item{printonly}{should output be executed or the command just be printed?}
+
+\item{lambdascale}{lambdascale}
+
+\item{diag}{diag}
+
+\item{outpop}{outgroup population}
+
+\item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
+
+\item{hires}{hires}
+
+\item{forcezmode}{forcezmode}
+
+\item{allsnps}{allsnps}
+
+\item{bigiter}{bigiter}
 }
 \value{
-a list of qpGraph output data.
+a list with parsed qpGraph output
+\enumerate{
+\item \code{edges}: data frame
+\item \code{score}: scalar
+\item \code{f2}: data frame
+}
 }
 \description{
-A wrapper around qpGraph which requires an existing 'parfile' and 'graphfile'
+Wrapper function around the original qpGraph program
 }
 \examples{
 \dontrun{
-qpgraph_wrapper(bin = 'path/to/qpGraph',
-                pref = 'path/to/packedancestrymap_prefix',
-                parfile = 'path/to/parfile',
-                graphfile = 'path/to/graphfile')
+qpgraph_wrapper(graph1,
+                 bin = 'path/to/qpGraph',
+                 pref = 'path/to/packedancestrymap_prefix')
+qpgraph_wrapper('path/to/graphfile',
+                bin = 'path/to/qpGraph',
+                parfile = 'path/to/parfile')
 }
 }

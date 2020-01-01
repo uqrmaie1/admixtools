@@ -25,6 +25,7 @@ numadmix = function(grph) {
   sum(degree(grph, mode='in') == 2)
 }
 
+#' @export
 get_leafnames = function(grph) {
   grph %>% V %>% {names(which(degree(grph, ., mode='out') == 0))}
 }
@@ -208,7 +209,8 @@ split_graph = function(grph) {
 #' @return tree in newick format.
 #' @examples
 #' random_newick(5)
-#' random_newick(c('a', 'b', 'c', 'd'))
+#' random_newick(c('a', 'b', 'c', 'd')) # toplogy random, but pop order fixed
+#' random_newick(sample(c('a', 'b', 'c', 'd'))) # toplogy and pop order random
 random_newick = function(n, start='', end='', outpop=NULL) {
   # recursive function which returns topology of a random, binary tree in newick format
   # redirects to 'random_newick_named' when length(n) > 1
@@ -511,7 +513,7 @@ evolve_topology = function(init, numgen, numsel, qpgfun, verbose=TRUE) {
 }
 
 
-#' Find a well fitting admixturegraph.
+#' Find well fitting admixturegraphs
 #'
 #' This function generates and evaluates admixturegraphs in \code{numgen} iterations to find well fitting admixturegraphs.
 #' @export
@@ -541,7 +543,7 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs=50, nu
 
 #' Find a well fitting admixturegraph
 #'
-#' This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \link{\code{future_map}} from the \link{\code{furrr}} package to parallelize across the independent repeats. The function \link{\code{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
+#' This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
 #' @export
 #' @param pops population names for which to fit admixturegraphs
 #' @param f3_jest 3d array with all pairwise f3 estimates with the outgroup
@@ -612,7 +614,7 @@ summarize_graph = function(grph, exclude_outgroup = TRUE) {
 #' This summarizes topologies of population triples across graphs
 #'
 #' @export
-#' @param results the output of \code{optimize_admixturegraph}
+#' @param results the output of \code{\link{optimize_admixturegraph}}
 #' @param maxscore restrict summary to graphs with score not larger than \code{maxscore}
 #' @examples
 #' \dontrun{
@@ -707,8 +709,10 @@ isomorphism_classes2 = function(igraphlist) {
 #' @param add_outgroup should the graph outgroup be added to the qpAdm right populations? Technically this shouldn't be an informative outgroup for qpAdm.
 #' @export
 #' @examples
+#' \dontrun{
 #' qpadm_models(igraph2, add_outgroup = TRUE)
 #' qpadm_models(igraph2, add_outgroup = TRUE) %>% slice(1) %$% list(target, left, right)
+#' }
 qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   # don't do this for large models
 

@@ -42,7 +42,7 @@ arr3d_to_mat = function(arr) {
 
 power_set = function(l, nmax=length(l)) purrr::flatten(purrr::map(seq_along(l[seq_len(nmax)]), ~combn(l, ., simplify=F)))
 
-
+ztop = function(z) 2*pnorm(-abs(z))
 
 gg_color_hue = function(n, l=65, c=100) {
   hues = seq(15, 375, length=n+1)

@@ -23,21 +23,14 @@ plot_graph(igraph1)
 ## Admixturegraph on a map
 
 ```{r}
-## basic example code
-plot_graph_map(igraph1, anno_v41)
+plot_graph_map(igraph1, anno)
 ```
 
-
-```{r}
-## basic example code
-#plot_graph_map2(igraph1, anno_v41, 1)
-#plot_graph_map2(igraph1, anno_v41, 2)
-```
 
 ## All samples on a map
 
 ```{r, out.height = "115%", out.width = "115%", fig.align='center'}
-plot_map(anno_v41, map_layout = 2)
+plot_map(anno, map_layout = 2)
 ```
 
 

@@ -137,14 +137,15 @@
     </div>
 
     <pre class="usage"><span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>blocksize</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>blocksize</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>prefix of packedancestrymap files (has to end in .geno, .ind, .snp).</p></td>
+      <td><p>prefix of packedancestrymap files (files have to end in <code>.geno</code>, <code>.ind</code>, <code>.snp</code>).</p></td>
     </tr>
     <tr>
       <th>pops</th>
@@ -152,7 +153,7 @@
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>vector of samples from which to compute allele frequencies. <code>pops</code> or <code>inds</code> have to be specified.</p></td>
+      <td><p>vector of samples from which to compute allele frequencies. <code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified, populations will be extracted from the third column in the <code>.ind</code> file</p></td>
     </tr>
     <tr>
       <th>blocksize</th>
@@ -160,18 +161,28 @@
     </tr>
     <tr>
       <th>na.action</th>
-      <td><p>what to do with missing SNPs. <code>none</code> output table will have missing data. <code>impute</code> allele frequencies will be imputed from other populations. <code>remove</code> SNPs with missing data will be removed.</p></td>
+      <td><p>what to do with SNPs with missing data.</p><ul>
+<li><p><code>none</code> (default) output table will have missing data</p></li>
+<li><p><code>impute</code> allele frequencies will be imputed from other populations</p></li>
+<li><p><code>remove</code> SNPs with missing data will be removed</p></li>
+</ul></td>
+    </tr>
+    <tr>
+      <th>return_matrix</th>
+      <td><p>return data as list of matrices</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a tibble with allele frequency data. first six columns are snpfile, remaining columns are allele frequencies for reach population.</p>
+    <p>a list with two items: allele frequency data and individual counts. Unless <code>return_matrix</code> is specified, first six columns are bimfile, remaining columns are data for each population.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>prefix</span>, <span class='no'>pops</span>)
+<span class='no'>afs</span> <span class='kw'>=</span> <span class='no'>afdat</span>$<span class='no'>afs</span>
+<span class='no'>counts</span> <span class='kw'>=</span> <span class='no'>afdat</span>$<span class='no'>counts</span>
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

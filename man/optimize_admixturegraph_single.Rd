@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{optimize_admixturegraph_single}
 \alias{optimize_admixturegraph_single}
-\title{Find a well fitting admixturegraph.}
+\title{Find well fitting admixturegraphs}
 \usage{
 optimize_admixturegraph_single(pops, f3_jest, ppinv, numgraphs = 50,
   numgen = 5, numsel = 5, numadmix = 0, outpop = NA,

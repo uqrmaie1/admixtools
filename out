@@ -1,0 +1,32 @@
+/Users/robert/Downloads/admixtoools_hub_reldec19/bin/qpDstat: parameter file: ./parfile
+### THE INPUT PARAMETERS
+##PARAMETER NAME: VALUE
+genotypename: /Users/robert/Downloads/v42.1_small.geno
+snpname: /Users/robert/Downloads/v42.1_small.snp
+indivname: /Users/robert/Downloads/v42.1_small.ind
+popfilename: ./popfilename
+f4mode: YES
+details: YES
+hashcheck: NO
+## qpDstat version: 900
+packed geno read OK
+end of inpack
+number of quadruples 6
+  0          Denisova.DG    1
+  1 Altai_Neanderthal.DG    1
+  2           Vindija.DG    1
+  3            Chimp.REF    1
+  4             Mbuti.DG    4
+  5  Russia_Ust_Ishim.DG    1
+  6 Switzerland_Bichon.SG    1
+jackknife block size:     0.050
+snps: 1150369  indivs: 10
+number of blocks for block jackknife: 713
+nrows, ncols: 10 1150369
+result: Denisova.DG Altai_Neanderthal.DG  Chimp.REF Switzerland_Bichon.SG      0.011590     31.574   35486  23704 1016651 
+result: Denisova.DG Altai_Neanderthal.DG   Mbuti.DG Switzerland_Bichon.SG      0.001590      5.828   24068  22410 1042561 
+result: Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.DG Switzerland_Bichon.SG     -0.000157     -0.532   19328  19493 1057023 
+result: Denisova.DG Vindija.DG  Chimp.REF Switzerland_Bichon.SG      0.011913     31.608   35938  23827 1016579 
+result: Denisova.DG Vindija.DG   Mbuti.DG Switzerland_Bichon.SG      0.001812      6.490   24397  22507 1042467 
+result: Denisova.DG Vindija.DG Russia_Ust_Ishim.DG Switzerland_Bichon.SG     -0.000196     -0.644   19544  19752 1056937 
+##end of qpDstat:        7.719 seconds cpu        0.000 Mbytes in use

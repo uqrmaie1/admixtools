@@ -5,13 +5,13 @@
 \title{Compute the fit of an admixturegraph.}
 \usage{
 qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
-  lsqmode = FALSE, fstscale = 1, fnscale = 1e-06, fudge = 0.001,
+  lsqmode = FALSE, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,
   numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE)
 }
 \arguments{
 \item{graph}{an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
 
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.}
+\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}.}
 
 \item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
 
@@ -19,7 +19,7 @@ qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 
 \item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
-\item{fstscale}{scales f2-statistics. A value of around 3.6 converts F2 to Fst.}
+\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fnscale}{try increasing or decreasing this, if optimization does not converge.}
 
@@ -31,7 +31,7 @@ qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 
 \item{verbose}{print optimization iterations}
 
-\item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
+\item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
 }
 \value{
 a list of qpGraph output data
@@ -43,6 +43,9 @@ Computes the fit of an admixturegraph for a given graph topology and empirical f
 out = qpgraph(graph1, f2_blocks, block_lengths)
 plot_graph(out$edges)
 }
+\references{
+Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+}
 \seealso{
-\code{\link{qpgraph_wrapper}} and \code{\link{qpgraph_wrapper2}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
+\code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 }
