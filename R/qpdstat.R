@@ -31,8 +31,8 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' @param target a vector of population labels
 #' @param bin path to the qp3Pop binary file
 #' @param pref path to and prefix of the packedancestrymap genotype files
-#' @param parfile qp3Pop parameter file. If this is specified, \code{source1}, \code{source2}, \code{target} will be ignored.
 #' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname}, \code{popfilename} may be overwritten
+#' @param parfile qp3Pop parameter file. If this is specified, \code{source1}, \code{source2}, \code{target} will be ignored.
 #' @param printonly should the command be printed or executed?
 #' @return If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
 #' @examples
@@ -47,7 +47,7 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' qp3pop_wrapper(bin = 'path/to/qp3Pop', parfile = 'path/to/parfile')
 #' }
 qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Pop',
-                          pref = NULL, parfile = NULL, outdir='.',
+                          pref = NULL, outdir='.', parfile = NULL,
                           inbreed = 'NO', outgroupmode = 'YES',
                           printonly=FALSE, env='') {
 
@@ -112,8 +112,8 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Po
 #' @param pop4 a vector of population labels
 #' @param bin path to the qpDstat binary file
 #' @param pref path to and prefix of the packedancestrymap genotype files
-#' @param parfile qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3}, and \code{pop4} will be ignored.
 #' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname}, \code{popfilename} may be overwritten
+#' @param parfile qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3}, and \code{pop4} will be ignored.
 #' @param printonly should the command be printed or executed?
 #' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 #' @examples
@@ -129,7 +129,7 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Po
 #' qpdstat_wrapper(bin = 'path/to/qpDstat', parfile = 'path/to/parfile')
 #' }
 qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, bin = './qpDstat',
-                           pref = NULL, parfile = NULL, outdir='.', f4mode = 'YES', printonly=FALSE, env='') {
+                           pref = NULL, outdir='.', parfile = NULL, f4mode = 'YES', printonly=FALSE, env='') {
 
   stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(pop1))
   stopifnot(file.exists(str_replace(bin, '.+ ', '')))

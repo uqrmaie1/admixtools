@@ -556,7 +556,8 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs=50, nu
 #' @return a nested data frame with one model per line
 #' @examples
 #' \dontrun{
-#' optimize_admixturegraph(pops, f3_jest, ppinv, numrep=200, numgraphs=100, numgen=20, numsel=5, numadmix=3)
+#' optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
+#'                         numgen = 20, numsel = 5, numadmix = 3)
 #' }
 optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep=10, numgraphs=50, numgen=5, numsel=5, numadmix=0, outpop=NA, verbose=TRUE, cpp=TRUE, debug=FALSE, ...) {
 

@@ -101,7 +101,7 @@ packedancestrymap_to_aftable = function(pref, pops=NULL, inds=NULL, blocksize=10
 #' Read allele frequencies from PLINK files
 #'
 #' @export
-#' @param pref prefix of PLINK files (has to end in \code{.bed}, \code{.bim}, \code{.fam}).
+#' @param pref prefix of PLINK files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).
 #' @param pops vector of populations from which to compute allele frequencies.
 #' @param inds vector of samples from which to compute allele frequencies. \code{pops} and \code{inds} cannot be specified at the same time. If none are specified, populations will be extracted from the first column in the \code{.fam} file
 #' @param na.action what to do with SNPs with missing data.
@@ -246,10 +246,10 @@ parse_qpgraph_graphfile = function(graphfile) {
     select(.data$from, .data$to) %>% as.matrix
 }
 
-#' Read qpGraph parameter file
-#' @export
-#' @param parfile parameter file for qpGraph.
-#' @return named list of qpGraph parameters.
+# Read qpGraph parameter file
+# @export
+# @param parfile parameter file for qpGraph.
+# @return named list of qpGraph parameters.
 parse_qpgraph_parfile = function(parfile) {
   # reads qpGraph parfile
   # returns named list of parameters
@@ -272,10 +272,10 @@ parse_qpgraph_parfile = function(parfile) {
     as.list
 }
 
-#' Read qpDstat parameter file
-#' @export
-#' @param parfile parameter file for qpDstat.
-#' @return named list of qpGraph parameters.
+# Read qpDstat parameter file
+# @export
+# @param parfile parameter file for qpDstat.
+# @return named list of qpGraph parameters.
 parse_qpdstat_parfile = function(parfile) {
   # reads qpGraph parfile
   # returns named list of parameters

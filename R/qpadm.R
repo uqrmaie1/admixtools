@@ -146,9 +146,9 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 #'
 #' This requires a working installation of qpAdm, which will be called using \code{\link{system}}
 #'
-#' @param target the target population
-#' @param left the source population
-#' @param right outgroup populations
+#' @param target target population
+#' @param left source populations (or leftlist file)
+#' @param right outgroup populations (or rightlist file)
 #' @param bin path to the qpAdm binary file
 #' @param pref path to and prefix of the packedancestrymap genotype files
 #' @param outdir the output directory. files \code{out}, \code{parfile}, \code{leftlist}, \code{rightlist} will be overwritten
@@ -164,22 +164,43 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
 #'   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
 #'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 #' }
-qpadm_wrapper = function(target, left, right, bin, pref, outdir='.', printonly=FALSE, env='') {
+qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = NULL,
+                         outdir = './', parfile = NULL, printonly=FALSE, env='') {
 
-  pref = normalizePath(pref, mustWork = FALSE)
-  parfile = paste0('genotypename: ', pref, '.geno\n',
-                   'snpname: ', pref, '.snp\n',
-                   'indivname: ', pref, '.ind\n',
-                   'popleft: ', outdir, '/leftlist\n',
-                   'popright: ', outdir, '/rightlist\n',
-                   'details: YES\n',
-                   'hashcheck: NO')
+  stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
+            !is.null(pref) & !is.null(left) & !is.null(right))
+  stopifnot(file.exists(str_replace(bin, '.+ ', '')))
+  stopifnot(!is.null(target) | all(file.exists(c(left, right))))
 
-  write(parfile, paste0(outdir, '/parfile'))
-  write(c(target, left), paste0(outdir, '/leftlist'))
-  write(right, paste0(outdir, '/rightlist'))
+  if(is.null(parfile)) {
 
-  cmd = paste0(env,' ', bin, ' -p ', outdir, '/parfile > ', outdir, '/out')
+    if(!is.null(target)) {
+      leftfile = paste0(outdir, '/leftlist')
+      rightfile = paste0(outdir, '/rightlist')
+      write(c(target, left), leftfile)
+      write(right, rightfile)
+    } else {
+      leftfile = left
+      rightfile = right
+    }
+
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('genotypename: ', pref, '.geno\n',
+                     'snpname: ', pref, '.snp\n',
+                     'indivname: ', pref, '.ind\n',
+                     'popleft: ', leftfile, '\n',
+                     'popright: ', rightfile, '\n',
+                     'details: YES\n',
+                     'hashcheck: NO')
+
+    parfilename = paste0(outdir, '/parfile')
+    write(parfile, parfilename)
+
+  } else {
+    parfilename = parfile
+  }
+
+  cmd = paste0(env,' ', bin, ' -p ', parfilename, ' > ', outdir, '/out')
 
   if(printonly) {
     print(cmd)

@@ -8,7 +8,7 @@ plink_to_aftable(pref, pops = NULL, inds = NULL, na.action = "none",
   return_matrix = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{pref}{prefix of PLINK files (has to end in \code{.bed}, \code{.bim}, \code{.fam}).}
+\item{pref}{prefix of PLINK files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).}
 
 \item{pops}{vector of populations from which to compute allele frequencies.}
 
