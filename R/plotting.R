@@ -408,7 +408,11 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 #' @return a plotly object.
 #' @examples
 #' \dontrun{
+<<<<<<< HEAD
 #' plot_map(anno, 1)
+=======
+#' p1 = plot_map(anno, 1)
+>>>>>>> 2703cf439d97e7f876fe15c748c0724e1754a61b
 #' }
 plot_map = function(leafcoords, map_layout = 1) {
 
