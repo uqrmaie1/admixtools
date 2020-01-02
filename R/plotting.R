@@ -457,5 +457,40 @@ node_coords_3d = function(grph, leafcoords, rootlon=NA, rootlat=NA) {
 }
 
 
+make_favicon = function() {
 
+  #g = random_admixturegraph(str_sub('       ', 1, 1:7), 1)
+
+  grph = g
+  edges = as_edgelist(g)
+
+  edges = purrr::quietly(as_tibble)(edges, .name_repair='unique')[[1]]
+  names(edges)[1:2] = c('V1', 'V2')
+  admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
+
+  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
+  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
+
+  eg = fix_layout(eg, grph)
+  edges %<>% mutate(label='')
+  eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
+  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
+
+  eg %>%
+    ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
+    geom_segment(aes_string(col = 'as.factor(y)'), size=12) +
+    # arrow=arrow(type = 'closed', angle = 20, length=unit(0.15, 'inches'))
+    theme(panel.background = element_rect(fill = "transparent"),
+          rect = element_rect(fill = "transparent"),
+          axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          legend.position = 'none', plot.margin=grid::unit(c(0,0,0,0), "mm")) +
+    xlab('') + ylab('') + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0))
+
+  ggsave('logo.svg', width=4, height=4, bg = "transparent")
+
+  pkgdown::build_favicons(overwrite = T)
+  system('mv pkgdown/favicon/* docs/')
+}
 

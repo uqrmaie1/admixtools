@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+pkgdown
+.DS_Store
+.Rbuildignore
