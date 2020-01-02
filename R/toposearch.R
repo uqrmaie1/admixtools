@@ -708,6 +708,8 @@ isomorphism_classes2 = function(igraphlist) {
 #'
 #' @param grph an admixture graph as igraph object
 #' @param add_outgroup should the graph outgroup be added to the qpAdm right populations? Technically this shouldn't be an informative outgroup for qpAdm.
+#' @param nested should a nested data frame be returned (\code{TRUE}), or should populations be concatenated into strings (\code{FALSE})?
+#' @param abbr maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
 #' @export
 #' @examples
 #' \dontrun{

@@ -36,7 +36,7 @@ Takes a 3d array of f2 block jackknife estimates and computes f3-statistics betw
 }
 \examples{
 \dontrun{
-pops = get_leafnames(igraph1)
+pops = get_leafnames(example_igraph)
 qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
 qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 }

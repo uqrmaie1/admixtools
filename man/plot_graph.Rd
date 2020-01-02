@@ -4,12 +4,16 @@
 \alias{plot_graph}
 \title{Plot an admixture graph}
 \usage{
-plot_graph(edges, fix = TRUE, title = "", color = TRUE)
+plot_graph(graph, fix = TRUE, title = "", color = TRUE)
 }
 \arguments{
-\item{edges}{an admixture graph. If it's an edge list matrix or data frame with a \code{label} column, those values will displayed on the edges}
+\item{graph}{an admixture graph. If it's an edge list with a \code{label} column, those values will displayed on the edges}
+
+\item{fix}{if \code{TRUE} (the default), there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs.}
 
 \item{title}{plot title}
+
+\item{color}{plot it in color or greyscale}
 }
 \value{
 a ggplot object
@@ -18,5 +22,5 @@ a ggplot object
 Plot an admixture graph
 }
 \examples{
-plot_graph(graph1)
+plot_graph(example_graph)
 }

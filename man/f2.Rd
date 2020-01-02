@@ -36,10 +36,10 @@ If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with par
 Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(P_1, P_2)}
 }
 \examples{
-\dontrun{
 pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
-f2(pop1, pop2, f2_blocks = f2_blocks, block_lengths = block_lengths)
+f2(pop1, pop2, example_f2_blocks, example_block_lengths)
+\dontrun{
 f2(pop1, pop2, f2_dir = f2_dir)
 }
 }

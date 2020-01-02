@@ -8,6 +8,13 @@
 
 <title>Estimate f2 statistics — f2 • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
@@ -41,6 +48,8 @@
 <meta property="og:title" content="Estimate f2 statistics — f2" />
 
 <meta property="og:description" content="Computes f2 statistics from f2 jackknife blocks of the form \(F_2(P_1, P_2)\)" />
+
+<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -184,12 +193,15 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>pop1</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
+    <pre class="examples"><div class='input'><span class='no'>pop1</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>pop2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
-<span class='fu'>f2</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='no'>f2_blocks</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='no'>block_lengths</span>)
+<span class='fu'>f2</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 6</span><span>
+#&gt;   pop1        pop2                 estimate       se     z p.value
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG    0.109 0.000</span><span style='text-decoration: underline;'>933</span><span>  117.       0
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG              0.113 0.000</span><span style='text-decoration: underline;'>938</span><span>  120.       0</div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='fu'>f2</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>)
-}</div></pre>
+}</div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

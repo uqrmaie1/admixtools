@@ -2,7 +2,7 @@
 % Please edit documentation in R/jackknife.R
 \name{get_block_lengths}
 \alias{get_block_lengths}
-\title{Finds LD-independent blocks.}
+\title{Find LD-independent blocks}
 \usage{
 get_block_lengths(afdat, dist = 0.05, distcol = "cm")
 }
@@ -17,13 +17,12 @@ get_block_lengths(afdat, dist = 0.05, distcol = "cm")
 a numeric vector where the ith element lists the number of SNPs in the ith block.
 }
 \description{
-starts new block at the SNP after the first SNP which is not within dist of the last block start
-afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+A new block begins at the SNP after the first SNP which is not within \code{dist} of the start of the last block. \code{afdat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 }
 \examples{
 \dontrun{
 prefix = 'path/to/packedancestrymap_prefix'
-pops = c('Stark', 'Targaryen', 'Lannister')
+pops = c('Zerg', 'Protoss', 'Terran')
 afdat = packedancestrymap_to_aftable(prefix, pops)
 block_lengths = get_block_lengths(afdat)
 }

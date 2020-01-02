@@ -109,7 +109,7 @@ qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm(target, left, right, f2_blocks, block_lengths)
+#' qpadm(target, left, right, example_f2_blocks, example_block_lengths)
 qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
 
   #----------------- prepare f4 stats -----------------
@@ -232,8 +232,8 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = N
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' lazadm(target, left, right, f2_blocks, block_lengths)
-#' lazadm(target, left, right, f2_blocks, block_lengths, constrained = FALSE)
+#' lazadm(target, left, right, example_f2_blocks, example_block_lengths)
+#' lazadm(target, left, right, example_f2_blocks, example_block_lengths, constrained = FALSE)
 lazadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
                   f2_dir = NULL, f2_denom = 1, getcov = FALSE, constrained = TRUE) {
 

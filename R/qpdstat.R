@@ -199,10 +199,10 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, b
 #' @param f2_denom scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.
 #' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 #' @examples
-#' \dontrun{
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
-#' f2(pop1, pop2, f2_blocks = f2_blocks, block_lengths = block_lengths)
+#' f2(pop1, pop2, example_f2_blocks, example_block_lengths)
+#' \dontrun{
 #' f2(pop1, pop2, f2_dir = f2_dir)
 #' }
 f2 = function(pop1 = NULL, pop2 = NULL,
@@ -258,12 +258,12 @@ f2 = function(pop1 = NULL, pop2 = NULL,
 #' @section Alias:
 #' \code{f3}
 #' @examples
-#' \dontrun{
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' qp3pop(pop1, pop2, pop3,
-#'   f2_blocks = f2_blocks, block_lengths = block_lengths)
+#'   example_f2_blocks, example_block_lengths)
+#' \dontrun{
 #' qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
 #' }
 qp3pop = function(pop1 = NULL, pop2 = NULL, pop3 = NULL,
@@ -326,13 +326,13 @@ f3 = qp3pop
 #' \code{f4}
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @examples
-#' \dontrun{
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' pop4 = 'Switzerland_Bichon.SG'
 #' qpdstat(pop1, pop2, pop3, pop4,
-#'   f2_blocks = f2_blocks, block_lengths = block_lengths)
+#'   example_f2_blocks, example_block_lengths)
+#' \dontrun{
 #' qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
 #' }
 qpdstat = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,

@@ -134,10 +134,9 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 
 }
 
-#' Finds LD-independent blocks.
+#' Find LD-independent blocks
 #'
-#' starts new block at the SNP after the first SNP which is not within dist of the last block start
-#' afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+#' A new block begins at the SNP after the first SNP which is not within `dist` of the start of the last block. `afdat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 #' @export
 #' @param afdat data frame with columns 'CHR' and either 'POS' or 'cm'
 #' @param dist minimum distance between blocks
@@ -146,7 +145,7 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 #' @examples
 #' \dontrun{
 #' prefix = 'path/to/packedancestrymap_prefix'
-#' pops = c('Stark', 'Targaryen', 'Lannister')
+#' pops = c('Zerg', 'Protoss', 'Terran')
 #' afdat = packedancestrymap_to_aftable(prefix, pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }

@@ -4,8 +4,8 @@
 #' @param out2 second qpgraph output.
 #' @return a ggplot object.
 #' @examples
-#' fit1 = qpgraph(graph1, f2_blocks, block_lengths, cpp = TRUE)
-#' fit2 = qpgraph(graph1, f2_blocks, block_lengths, cpp = FALSE)
+#' fit1 = qpgraph(example_graph, example_f2_blocks, example_block_lengths, cpp = TRUE)
+#' fit2 = qpgraph(example_graph, example_f2_blocks, example_block_lengths, cpp = FALSE)
 #' plot_comparison(fit1, fit2)
 plot_comparison = function(out1, out2) {
   # plots a comparison of two qpgraph outputs
@@ -76,18 +76,21 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 
 #' Plot an admixture graph
 #' @export
-#' @param edges an admixture graph. If it's an edge list matrix or data frame with a \code{label} column, those values will displayed on the edges
+#' @param graph an admixture graph. If it's an edge list with a \code{label} column, those values will displayed on the edges
+#' @param fix if \code{TRUE} (the default), there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs.
 #' @param title plot title
+#' @param color plot it in color or greyscale
 #' @return a ggplot object
 #' @examples
-#' plot_graph(graph1)
-plot_graph = function(edges, fix = TRUE, title = '', color = TRUE) {
+#' plot_graph(example_graph)
+plot_graph = function(graph, fix = TRUE, title = '', color = TRUE) {
 
-  if(class(edges)[1] == 'igraph') {
-    grph = edges
-    edges = as_edgelist(edges)
+  if(class(graph)[1] == 'igraph') {
+    grph = graph
+    edges = as_edgelist(graph)
   } else {
-    grph = igraph::graph_from_edgelist(as.matrix(edges)[,1:2])
+    grph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
+    edges = graph
   }
   edges = purrr::quietly(as_tibble)(edges, .name_repair='unique')[[1]]
   names(edges)[1:2] = c('V1', 'V2')
@@ -97,7 +100,6 @@ plot_graph = function(edges, fix = TRUE, title = '', color = TRUE) {
   eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
   if(fix) eg = fix_layout(eg, grph)
-  # need to update fix to work here; fix assumes that eg has node rows in the end; only relevant in fix_layout2?
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
@@ -333,7 +335,7 @@ plot_graph_pcs = function(grph, pcs) {
 #' @return a plotly object.
 #' @examples
 # #' \dontrun{
-#' plot_graph_map(igraph1, anno)
+#' plot_graph_map(example_igraph, example_anno)
 # #' }
 plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 
@@ -373,8 +375,7 @@ plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
 # @return a ggplot object.
 # @examples
 # \dontrun{
-# plot_graph_map2(igraph1, anno, 1)
-# plot_graph_map2(igraph1, anno, 2)
+# plot_graph_map2(example_igraph, example_anno, 1)
 # }
 plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 
@@ -389,8 +390,8 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
   ax = list(visible=FALSE)
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
-  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain'), xaxis=ax, yaxis=ax)
-  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', zoom = 1, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
+  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', zoom = 2), xaxis=ax, yaxis=ax)
+  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
   plotly::plot_ly(type = 'scattermapbox', mode='lines', hoverinfo = 'text') %>%
     plotly::add_trace(data = edge_coord %>% mutate(const='grey', lon=x, lat=y), lon = ~x, lat = ~y,
@@ -408,8 +409,7 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 #' @return a plotly object.
 #' @examples
 #' \dontrun{
-#' plot_map(anno, 1)
-#' p1 = plot_map(anno, 1)
+#' plot_map(example_anno, 1)
 #' }
 plot_map = function(leafcoords, map_layout = 1) {
 
@@ -419,8 +419,8 @@ plot_map = function(leafcoords, map_layout = 1) {
   ax = list(visible=FALSE)
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
-  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3)), xaxis=ax, yaxis=ax)
-  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 1, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
+  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3), zoom = 2), xaxis=ax, yaxis=ax)
+  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
   plotly::plot_ly(leafcoords %>% filter(between(lat, -90, 90), between(lon, -180, 180), yearsbp > 0), type = 'scattermapbox', mode='markers', hoverinfo = 'text', x = ~lon, y = ~lat, color = ~log10(yearsbp), hovertext = ~group) %>% lo
 

@@ -8,6 +8,13 @@
 
 <title>Plot a comparison of two lists of qpgraph output — plot_comparison • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
@@ -41,6 +48,8 @@
 <meta property="og:title" content="Plot a comparison of two lists of qpgraph output — plot_comparison" />
 
 <meta property="og:description" content="Plot a comparison of two lists of qpgraph output" />
+
+<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -157,7 +166,9 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>fit1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>graph1</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in "data.frame" %in% class(graph): object 'graph1' not found</span></div><div class='input'><span class='no'>fit2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>graph1</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in "data.frame" %in% class(graph): object 'graph1' not found</span></div><div class='input'><span class='fu'>plot_comparison</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_comparison(fit1, fit2): object 'fit1' not found</span></div></pre>
+    <pre class="examples"><div class='input'><span class='no'>fit1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>example_graph</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>fit2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>example_graph</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
+<span class='fu'>plot_comparison</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)</div><div class='img'><img src='plot_comparison-1.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

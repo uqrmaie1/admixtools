@@ -8,6 +8,13 @@
 
 <title>Compute the fit of an admixturegraph. — qpgraph_slim • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
@@ -41,6 +48,8 @@
 <meta property="og:title" content="Compute the fit of an admixturegraph. — qpgraph_slim" />
 
 <meta property="og:description" content="Computes the fit of an admixture graph for a given graph topology given f3 estimates and an inverted covariance matrix." />
+
+<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -194,13 +203,12 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>precomp</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>pops</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>)
+    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
+<span class='no'>precomp</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>pops</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)
 <span class='no'>f3_jest</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>f3_jest</span>
 <span class='no'>ppinv</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>ppinv</span>
-<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>igraph1</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='no'>pops</span>)
-<span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>out</span>$<span class='no'>edges</span>)
-}</div></pre>
+<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>example_igraph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='no'>pops</span>)
+<span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>out</span>$<span class='no'>edges</span>)</div><div class='img'><img src='qpgraph_slim-1.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

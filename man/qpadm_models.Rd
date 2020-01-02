@@ -10,6 +10,10 @@ qpadm_models(grph, add_outgroup = FALSE, nested = TRUE, abbr = -1)
 \item{grph}{an admixture graph as igraph object}
 
 \item{add_outgroup}{should the graph outgroup be added to the qpAdm right populations? Technically this shouldn't be an informative outgroup for qpAdm.}
+
+\item{nested}{should a nested data frame be returned (\code{TRUE}), or should populations be concatenated into strings (\code{FALSE})?}
+
+\item{abbr}{maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.}
 }
 \description{
 For large admixturegraph, there may be a large number of valid qpAdm models!

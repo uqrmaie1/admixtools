@@ -18,7 +18,7 @@ a ggplot object.
 Plot a comparison of two lists of qpgraph output
 }
 \examples{
-fit1 = qpgraph(graph1, f2_blocks, block_lengths, cpp = TRUE)
-fit2 = qpgraph(graph1, f2_blocks, block_lengths, cpp = FALSE)
+fit1 = qpgraph(example_graph, example_f2_blocks, example_block_lengths, cpp = TRUE)
+fit2 = qpgraph(example_graph, example_f2_blocks, example_block_lengths, cpp = FALSE)
 plot_comparison(fit1, fit2)
 }

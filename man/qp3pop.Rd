@@ -42,12 +42,12 @@ Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(P_1; P_2, P
 }
 
 \examples{
-\dontrun{
 pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 qp3pop(pop1, pop2, pop3,
-  f2_blocks = f2_blocks, block_lengths = block_lengths)
+  example_f2_blocks, example_block_lengths)
+\dontrun{
 qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
 }
 }

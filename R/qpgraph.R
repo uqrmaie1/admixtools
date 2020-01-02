@@ -59,7 +59,7 @@ qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./g
 #' }
 #' @examples
 #' \dontrun{
-#' qpgraph_wrapper(graph1,
+#' qpgraph_wrapper(example_graph,
 #'                  bin = 'path/to/qpGraph',
 #'                  pref = 'path/to/packedancestrymap_prefix')
 #' qpgraph_wrapper('path/to/graphfile',
@@ -272,7 +272,7 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @seealso \code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 #' @examples
-#' out = qpgraph(graph1, f2_blocks, block_lengths)
+#' out = qpgraph(example_graph, example_f2_blocks, example_block_lengths)
 #' plot_graph(out$edges)
 qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, f2_denom = 1, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
@@ -388,13 +388,12 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 #' @return a list of qpGraph output data
 #' @seealso \code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
 #' @examples
-#' \dontrun{
-#' precomp = qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
+#' pops = get_leafnames(example_igraph)
+#' precomp = qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
 #' f3_jest = precomp$f3_jest
 #' ppinv = precomp$ppinv
-#' out = qpgraph_slim(igraph1, f3_jest, ppinv, pops)
+#' out = qpgraph_slim(example_igraph, f3_jest, ppinv, pops)
 #' plot_graph(out$edges)
-#' }
 qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, seed=NULL, verbose=FALSE, cpp=TRUE) {
   # modelled after AdmixTools qpGraph
   # optimised for testing many topologies for a given set of populations
@@ -473,9 +472,9 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
 #' \item \code{f3out} a data frame with f3 estimates
 #' }
 #' @examples
+#' pops = get_leafnames(example_igraph)
+#' qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
 #' \dontrun{
-#' pops = get_leafnames(igraph1)
-#' qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
 #' qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 #' }
 qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge=1e-3, lsqmode=FALSE) {

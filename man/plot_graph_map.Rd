@@ -18,5 +18,5 @@ a plotly object.
 Plot an admixture graph on a map
 }
 \examples{
-plot_graph_map(igraph1, anno)
+plot_graph_map(example_igraph, example_anno)
 }

@@ -44,13 +44,13 @@ Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(P_1, P_2; P
 }
 
 \examples{
-\dontrun{
 pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 pop4 = 'Switzerland_Bichon.SG'
 qpdstat(pop1, pop2, pop3, pop4,
-  f2_blocks = f2_blocks, block_lengths = block_lengths)
+  example_f2_blocks, example_block_lengths)
+\dontrun{
 qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
 }
 }

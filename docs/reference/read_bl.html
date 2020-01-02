@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Wrapper function around the original qpAdm program — qpadm_wrapper • admixtools</title>
+<title>Read block_lengths from disk — read_bl • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Wrapper function around the original qpAdm program — qpadm_wrapper" />
+<meta property="og:title" content="Read block_lengths from disk — read_bl" />
 
-<meta property="og:description" content="This requires a working installation of qpAdm, which will be called using system" />
+<meta property="og:description" content="Read block_lengths from disk" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -134,67 +134,36 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Wrapper function around the original qpAdm program</h1>
+    <h1>Read block_lengths from disk</h1>
     
-    <div class="hidden name"><code>qpadm_wrapper.Rd</code></div>
+    <div class="hidden name"><code>read_bl.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This requires a working installation of qpAdm, which will be called using <code><a href='https://rdrr.io/r/base/system.html'>system</a></code></p>
+    <p>Read block_lengths from disk</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>bin</span>,
-  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"./"</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
+    <pre class="usage"><span class='fu'>read_bl</span>(<span class='no'>f2_dir</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>target</th>
-      <td><p>target population</p></td>
-    </tr>
-    <tr>
-      <th>left</th>
-      <td><p>source populations (or leftlist file)</p></td>
-    </tr>
-    <tr>
-      <th>right</th>
-      <td><p>outgroup populations (or rightlist file)</p></td>
-    </tr>
-    <tr>
-      <th>bin</th>
-      <td><p>path to the qpAdm binary file</p></td>
-    </tr>
-    <tr>
-      <th>pref</th>
-      <td><p>path to and prefix of the packedancestrymap genotype files</p></td>
-    </tr>
-    <tr>
-      <th>outdir</th>
-      <td><p>the output directory. files <code>out</code>, <code>parfile</code>, <code>leftlist</code>, <code>rightlist</code> will be overwritten</p></td>
-    </tr>
-    <tr>
-      <th>printonly</th>
-      <td><p>should the command be printed or executed?</p></td>
+      <th>f2_dir</th>
+      <td><p>directory from which to read files</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>if not printonly, a data frame with parsed qpAdm output</p>
+    <p>a vector with block_lengths</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
-<span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
-<span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>qpadm_wrapper</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>,
-  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpAdm'</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>,
-  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/'</span>)
+<span class='fu'>read_bl</span>(<span class='no'>f2_dir</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

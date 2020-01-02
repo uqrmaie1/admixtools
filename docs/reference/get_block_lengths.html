@@ -6,8 +6,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Finds LD-independent blocks. — get_block_lengths • admixtools</title>
+<title>Find LD-independent blocks — get_block_lengths • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
@@ -38,10 +45,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Finds LD-independent blocks. — get_block_lengths" />
+<meta property="og:title" content="Find LD-independent blocks — get_block_lengths" />
 
-<meta property="og:description" content="starts new block at the SNP after the first SNP which is not within dist of the last block start
-afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
+<meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within dist of the start of the last block. afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
+
+<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -126,15 +134,14 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Finds LD-independent blocks.</h1>
+    <h1>Find LD-independent blocks</h1>
     
     <div class="hidden name"><code>get_block_lengths.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>starts new block at the SNP after the first SNP which is not within dist of the last block start
-afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
+    <p>A new block begins at the SNP after the first SNP which is not within <code>dist</code> of the start of the last block. <code>afdat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
     
     </div>
 
@@ -165,7 +172,7 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>prefix</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>
-<span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Stark'</span>, <span class='st'>'Targaryen'</span>, <span class='st'>'Lannister'</span>)
+<span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Zerg'</span>, <span class='st'>'Protoss'</span>, <span class='st'>'Terran'</span>)
 <span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='no'>prefix</span>, <span class='no'>pops</span>)
 <span class='no'>block_lengths</span> <span class='kw'>=</span> <span class='fu'>get_block_lengths</span>(<span class='no'>afdat</span>)
 }</div></pre>

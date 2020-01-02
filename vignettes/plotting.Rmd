@@ -1,15 +1,20 @@
 ---
 title: "Plotting"
+contents:
 output:
   rmarkdown::html_vignette:
-    toc: true
-    toc_depth: 3
+    toc: false
 ---
 
+<style>
+  #tocnav {
+    display: none;
+  }
+</style>
+  
 
 ```{r, include=FALSE}
 library(admixtools)
-library(ggplot2)
 ```
 
 
@@ -22,17 +27,25 @@ plot_graph(example_igraph)
 
 ## Admixture graph on a map
 
-```{r}
+
+```{r, fig.height = 7, fig.align='center'}
 plot_graph_map(example_igraph, example_anno)
 ```
 
 
 ## All samples on a map
 
-```{r, out.height = "115%", out.width = "115%", fig.align='center'}
+<div class="bla">
+<style>
+.bla {
+    margin-left: -20%;
+    margin-right: -20%;
+}
+</style>
+```{r, fig.height = 8, out.width="120%", fig.align='center'}
 plot_map(example_anno, map_layout = 2)
 ```
-
+</div>
 
 
 

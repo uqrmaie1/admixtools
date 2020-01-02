@@ -130,8 +130,9 @@ plink_to_aftable = function(pref, pops = NULL, inds = NULL, na.action = 'none',
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
 
-  bim = read_table2(bimfile, col_names = FALSE, col_types = cols(), progress = FALSE)
-  fam = read_table2(famfile, col_names = FALSE, col_types = cols(), progress = FALSE)
+  nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
+  bim = purrr::quietly(read_table2)(bimfile, col_names = nam)$result
+  fam = purrr::quietly(read_table2)(famfile, col_names = FALSE)$result
   indvec = pop_indices(fam, pops, inds)
   indvec2 = which(indvec > 0)
   keep = unique(fam[[is.null(pops)+1]][indvec > 0])
@@ -409,25 +410,47 @@ write_f2 = function(f2_block, outdir, overwrite=FALSE) {
 read_f2 = function(f2_dir, pops = NULL) {
   # reads f2 block jackknife .RData files and returns 3d array
   # pops is vector of populations which should be read. defaults to all populations.
-  if(is.null(pops)) pops = list.dirs(f2_dir, full.names=FALSE, recursive=FALSE)
+  if(is.null(pops)) {
+    pops = list.dirs(f2_dir, full.names=FALSE, recursive=FALSE)
+    remove_na = TRUE
+  }
   load(paste0(f2_dir, '/', pops[1], '/', pops[1], '.RData'))
   numblocks = length(f2)
   numpops = length(pops)
-  f2_blocks = array(0, c(numpops, numpops, numblocks))
+  f2_blocks = array(NA, c(numpops, numpops, numblocks))
   dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = pops
   for(pop1 in pops) {
     for(pop2 in pops) {
       if(pop1 <= pop2) {
         fl = paste0(f2_dir, '/', pop1, '/', pop2, '.RData')
-        load(fl)
-        if(any(is.na(f2))) warn(paste0('missing values in ', pop1, ' - ', pop2, '!'))
-        f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = f2
+        if(file.exists(fl)) {
+          load(fl)
+          f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = f2
+          if(any(is.na(f2))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
+        } else warning(paste0('file ', fl, ' not found!'))
       }
     }
+  }
+  if(remove_na) {
+    keep = apply(f2_blocks, 1, function(x) sum(is.na(x)) == 0)
+    f2_blocks = f2_blocks[keep, keep, ]
   }
   f2_blocks
 }
 
+#' Read block_lengths from disk
+#'
+#' @export
+#' @param f2_dir directory from which to read files
+#' @return a vector with block_lengths
+#' @examples
+#' \dontrun{
+#' read_bl(f2_dir)
+#' }
+read_bl = function(f2_dir) {
+  load(paste0(f2_dir, '/block_lengths.RData'))
+  block_lengths
+}
 
 #' Write allele frequency estimates to disk
 #'
@@ -520,15 +543,9 @@ extract_data = function(pref, outdir = NULL, pops = NULL, inds = NULL,
   stopifnot(is.null(pops) | is.null(inds))
   if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
     geno_to_aftable = packedancestrymap_to_aftable
-    snpend = '.snp'
-    nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   } else if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
     geno_to_aftable = plink_to_aftable
-    snpend = '.bim'
-    nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
   } else stop('Genotype files not found!')
-  snpfile = read_table2(paste0(pref, snpend), col_names = nam,
-                        col_types = cols(), progress = FALSE)
   afdat = geno_to_aftable(pref, pops, inds, na.action = na.action,
                           return_matrix = TRUE, verbose = verbose)
   afs = afdat$afs

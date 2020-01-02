@@ -35,13 +35,12 @@ a list of qpGraph output data
 Computes the fit of an admixture graph for a given graph topology given f3 estimates and an inverted covariance matrix.
 }
 \examples{
-\dontrun{
-precomp = qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
+pops = get_leafnames(example_igraph)
+precomp = qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
 f3_jest = precomp$f3_jest
 ppinv = precomp$ppinv
-out = qpgraph_slim(igraph1, f3_jest, ppinv, pops)
+out = qpgraph_slim(example_igraph, f3_jest, ppinv, pops)
 plot_graph(out$edges)
-}
 }
 \seealso{
 \code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}

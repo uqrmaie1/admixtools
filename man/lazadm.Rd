@@ -36,8 +36,8 @@ Models target as a mixture of left populations, and outgroup right populations. 
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-lazadm(target, left, right, f2_blocks, block_lengths)
-lazadm(target, left, right, f2_blocks, block_lengths, constrained = FALSE)
+lazadm(target, left, right, example_f2_blocks, example_block_lengths)
+lazadm(target, left, right, example_f2_blocks, example_block_lengths, constrained = FALSE)
 }
 \references{
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics

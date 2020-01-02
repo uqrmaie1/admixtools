@@ -51,7 +51,7 @@ Wrapper function around the original qpGraph program
 }
 \examples{
 \dontrun{
-qpgraph_wrapper(graph1,
+qpgraph_wrapper(example_graph,
                  bin = 'path/to/qpGraph',
                  pref = 'path/to/packedancestrymap_prefix')
 qpgraph_wrapper('path/to/graphfile',

@@ -218,43 +218,35 @@ extract_data(prefix, outdir = my_f2_dir, pops = pops)
 ```
 This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `outdir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
 
-If `outdir` is not specified, the f2 data is returned rather than written to disk. 
-
-```{r, eval = FALSE}
-data = extract_data(prefix, pops = pops)
-f2_blocks = data$f2_blocks
-block_lengths = data$block_lengths
-```
-
 <br>
 
 Now you should be able to run the same examples as before using your own f2 statistics.
 
 ```{r, eval = FALSE}
-qpadm(target, left, right, f2_dir = my_f2_dir)
+qpg_results = qpgraph(example_graph, f2_dir = my_f2_dir)
 ```
+```{r, fig.width = 9, fig.align="center"}
+plot_graph(qpg_results$edges)
+```
+
 
 The example above will read the f2 data from `my_f2_dir`. It can be faster to load it into memory first, like so:
 
 ```{r, eval = FALSE}
 f2_blocks = read_f2(my_f2_dir, pops)
-print(load(paste0(my_f2_dir, 'block_lengths.RData'))) # This loads block_lengths
-```
+block_lengths = read_bl(my_f2_dir)
 
-```{r, eval = FALSE}
-qpadm(target, left, right, f2_blocks, block_lengths)
-```
-```{r, echo = FALSE}
-qpadm(target, left, right, example_f2_blocks, example_block_lengths)
-```
-<br>
-
-
-```{r, eval = FALSE}
 qpg_results = qpgraph(example_graph, f2_blocks, block_lengths)
 ```
-```{r, fig.width = 9, fig.align="center"}
-plot_graph(qpg_results$edges)
+
+<br>
+
+You can also skip writing data to disk altogether, by not specifying `outdir` in `extract_data`. This can be useful if the number of populations is not too large:
+
+```{r, eval = FALSE}
+data = extract_data(prefix, pops = pops)
+f2_blocks = data$f2_blocks
+block_lengths = data$block_lengths
 ```
 
 

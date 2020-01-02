@@ -8,6 +8,13 @@
 
 <title>Generate a random, binary graph with n terminal nodes — random_newick • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
@@ -41,6 +48,8 @@
 <meta property="og:title" content="Generate a random, binary graph with n terminal nodes — random_newick" />
 
 <meta property="og:description" content="Generate a random, binary graph with n terminal nodes" />
+
+<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -165,7 +174,7 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>random_newick</span>(<span class='fl'>5</span>)</div><div class='output co'>#&gt; [1] "(((,),),(,))"</div><div class='input'><span class='fu'>random_newick</span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'a'</span>, <span class='st'>'b'</span>, <span class='st'>'c'</span>, <span class='st'>'d'</span>)) <span class='co'># toplogy random, but pop order fixed</span></div><div class='output co'>#&gt; [1] "(((a,b),c),d)"</div><div class='input'><span class='fu'>random_newick</span>(<span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'a'</span>, <span class='st'>'b'</span>, <span class='st'>'c'</span>, <span class='st'>'d'</span>))) <span class='co'># toplogy and pop order random</span></div><div class='output co'>#&gt; [1] "(((d,c),b),a)"</div></pre>
+    <pre class="examples"><div class='input'><span class='fu'>random_newick</span>(<span class='fl'>5</span>)</div><div class='output co'>#&gt; [1] "(((,),(,)),)"</div><div class='input'><span class='fu'>random_newick</span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'a'</span>, <span class='st'>'b'</span>, <span class='st'>'c'</span>, <span class='st'>'d'</span>)) <span class='co'># toplogy random, but pop order fixed</span></div><div class='output co'>#&gt; [1] "(a,((b,c),d))"</div><div class='input'><span class='fu'>random_newick</span>(<span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'a'</span>, <span class='st'>'b'</span>, <span class='st'>'c'</span>, <span class='st'>'d'</span>))) <span class='co'># toplogy and pop order random</span></div><div class='output co'>#&gt; [1] "((b,a),(d,c))"</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
