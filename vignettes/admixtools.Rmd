@@ -90,11 +90,11 @@ Here, `example_graph` is a specific graph included in this R package, but you ca
 2. A two column matrix, where each row is an edge, the first column is the source of the edge, and the second column is the target.
 3. The location of a `qpGraph` graph file, which will be read and parsed.
 
-The only requirements for the input graph are that the graph is a valid admixture graph -- a DAG with one outgroup edge connecting the root to a leaf node -- and that f2-statistics exist for all leaf nodes. The first edge should go from the root to the outgroup.
+The only requirements are that the graph is a valid admixture graph: a directed acyclic graph where each node has no more than two children, no more than two parents, and no more than three incident edges in total. The first edge should start at the root and end at the outgroup. There need to be f2 statistics for all leaf nodes.
 
 <br>
 
-The precomputed f2-statistics are not scaled, which it why it is necessary to set `f2_denom` to `0.278` to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.
+The precomputed f2 statistics are not scaled, which it why it is necessary to set `f2_denom` to `0.278` to get matching results. Without that scaling, the absolute values may differ, but the relative values should still be ok.
 
 <br>
 
@@ -199,7 +199,7 @@ There are at least a few examples where the results seem to be approximately cor
 
 <br>
 
-## Computing f2-statistics
+## Computing f2 statistics
 
 If you're not on O2, or want use different samples or populations, you first have to compute f2 block jackknife statistics from genotype data.
 

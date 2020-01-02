@@ -101,7 +101,7 @@ unify_vertex_names = function(grph, keep_unique=TRUE) {
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
-random_admixturegraph = function(leaves = 5, numadmix = 2, simple = FALSE, outpop = NA) {
+random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = NA) {
   # makes a random admixture graph
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
@@ -758,7 +758,12 @@ qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 
 
 
+split_graph = function(graph) {
+  # splits an admixture graph into trees
 
+
+
+}
 
 
 

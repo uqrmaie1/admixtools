@@ -28,12 +28,13 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d,
 
 
 // [[Rcpp::export]]
-void cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
+arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
                    const arma::mat& path_edge_table,
                    const arma::mat& path_admixedge_table, int numpaths) {
   // puts weights onto pwts, using index matrix and vectors
+  // returns pwts to be consistent with R function. However, it edits pwts in place. Used to return NULL.
 
-  if(weights.n_elem == 0) return;
+  if(weights.n_elem == 0) return pwts;
 
   arma::vec pathweights(numpaths, arma::fill::ones);
   arma::vec pwtsfill(pwts.n_elem, arma::fill::zeros);
@@ -57,6 +58,7 @@ void cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
   for(int i=0; i<pwts.n_elem; i++) {
     if(pwtsfillind(i) > 0) pwts(i) = pwtsfill(i);
   }
+  return pwts;
 }
 
 

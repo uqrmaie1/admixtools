@@ -459,10 +459,11 @@ node_coords_3d = function(grph, leafcoords, rootlon=NA, rootlat=NA) {
 
 make_favicon = function() {
 
-  #g = random_admixturegraph(str_sub('       ', 1, 1:7), 1)
+  g = random_admixturegraph(str_sub('       ', 1, 1:6), 1)
 
+  g %<>% simplify_graph
   grph = g
-  edges = as_edgelist(g)
+  edges = igraph::as_edgelist(g)
 
   edges = purrr::quietly(as_tibble)(edges, .name_repair='unique')[[1]]
   names(edges)[1:2] = c('V1', 'V2')

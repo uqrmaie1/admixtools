@@ -191,7 +191,7 @@ graph_to_weightind = function(grph) {
 
 
 #' @export
-fill_pwts = function(pwts, weights, path_edge_table, path_admixedge_table) {
+fill_pwts = function(pwts, weights, path_edge_table, path_admixedge_table, numpaths = NULL) {
   # puts weights onto pwts, using index matrix and vectors
 
   if(length(weights)==0) return(pwts)
@@ -223,7 +223,7 @@ optimweightsfun = function(weights, args) {
 }
 
 #' @export
-opt_edge_lengths = function(ppwts_2d, ppinv, f3_jest) {
+opt_edge_lengths = function(ppwts_2d, ppinv, f3_jest, qpsolve) {
   # finds optimal edge lengths
   # pwts2d: npair x nedge design matrix with paths to outpop
   # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
@@ -234,11 +234,14 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_jest) {
   cc = (cc+t(cc))/2
   q1 = -(pppp %*% f3_jest)[,1]
   nc = ncol(cc)
+  -qpsolve(cc, q1, -diag(nc), rep(0, nc))
 
-  # very slow, don't use (takes 10 times as long):
+  # earlier version of qpsolve:
+  # this is very slow, don't use it (takes 10 times as long):
   # pracma::quadprog(cc, q1, A=-diag(nc), b=rep(0, nc))$xmin
-  # as fast as quadprogpp::QP.Solve, and on CRAN. switch to this maybe:
-  -quadprog::solve.QP(cc, q1, -diag(nc), rep(0, nc))$solution
+  # this is as fast as quadprogpp::QP.Solve, and on CRAN:
+  # -quadprog::solve.QP(cc, q1, -diag(nc), rep(0, nc))$solution
+  # this was used while most testing was done:
   #quadprogpp::QP.Solve(cc, q1, CI = diag(nc), ci0 = rep(0, nc))
 }
 
@@ -274,7 +277,7 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @examples
 #' out = qpgraph(example_graph, example_f2_blocks, example_block_lengths)
 #' plot_graph(out$edges)
-qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, f2_denom = 1, fnscale=1e-6, fudge=1e-3, numstart=NULL, seed=NULL, verbose=FALSE, cpp=TRUE) {
+qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
@@ -334,20 +337,25 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   if(lsqmode) ppinv = diag(1/diag(f3_jvar))
   else ppinv = solve(f3_jvar)
 
+  if(verbose) alert_info('preprocessing done')
   weightind = graph_to_weightind(grph)
   weight = rep(NA, nedges)
   pwts = graph_to_pwts(grph)
   opt = NULL
   qpsolve = function(...) quadprog::solve.QP(...)$solution
 
+  if(cpp) {
+    optimweightsfun = cpp_optimweightsfun
+    opt_edge_lengths = cpp_opt_edge_lengths
+    fill_pwts = cpp_fill_pwts
+  }
+
   if(nadmix > 0) {
     if(is.null(numstart)) numstart = 10*nadmix
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
-    #arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, quadprogpp::QP.Solve); # need to change sign of third argument in qpsolve, if switching back to this
     arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
-    if(cpp) optimweightsfun = cpp_optimweightsfun
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                      lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
 
@@ -357,12 +365,11 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
     wts = as.matrix(best[,1:nadmix])[1,]
     weight[admixedgesfull[1,]] = wts
     weight[admixedgesfull[2,]] = 1-wts
-    pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]])
+    pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  if(cpp) q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
-  else q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
+  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
   edges = as_tibble(edges) %>% set_colnames(c('from', 'to')) %>%
@@ -422,15 +429,19 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
   opt = NULL
   qpsolve = function(...) quadprog::solve.QP(...)$solution
 
+  if(cpp) {
+    optimweightsfun = cpp_optimweightsfun
+    opt_edge_lengths = cpp_opt_edge_lengths
+    fill_pwts = cpp_fill_pwts
+  }
+
   if(nadmix > 0) {
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
 
     arglist = list(pwts, ppinv, f3_jest, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
-    if(cpp) optimweightsfun = cpp_optimweightsfun
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                           lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
-
 
     best = opt %>% top_n(1, -.data$value)
     opt = data.frame(parmat, opt, stringsAsFactors = F)
@@ -438,12 +449,11 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
     wts = as.matrix(best[,1:nadmix])[1,]
     weight[admixedgesfull[1,]] = wts
     weight[admixedgesfull[2,]] = 1-wts
-    pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]])
+    pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  if(cpp) q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
-  else q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
+  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
   edges = as_tibble(igraph::as_edgelist(graph)) %>% set_colnames(c('from', 'to')) %>%

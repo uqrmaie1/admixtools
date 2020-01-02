@@ -94,17 +94,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_fill_pwts
-void cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights, const arma::mat& path_edge_table, const arma::mat& path_admixedge_table, int numpaths);
+arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights, const arma::mat& path_edge_table, const arma::mat& path_admixedge_table, int numpaths);
 RcppExport SEXP _admixtools_cpp_fill_pwts(SEXP pwtsSEXP, SEXP weightsSEXP, SEXP path_edge_tableSEXP, SEXP path_admixedge_tableSEXP, SEXP numpathsSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat& >::type pwts(pwtsSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type weights(weightsSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type path_edge_table(path_edge_tableSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type path_admixedge_table(path_admixedge_tableSEXP);
     Rcpp::traits::input_parameter< int >::type numpaths(numpathsSEXP);
-    cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths));
+    return rcpp_result_gen;
 END_RCPP
 }
 // cpp_optimweightsfun

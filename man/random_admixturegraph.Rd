@@ -4,7 +4,7 @@
 \alias{random_admixturegraph}
 \title{Generate a random admixture graph}
 \usage{
-random_admixturegraph(leaves = 5, numadmix = 2, simple = FALSE,
+random_admixturegraph(leaves, numadmix = 0, simple = FALSE,
   outpop = NA)
 }
 \arguments{

@@ -193,11 +193,137 @@
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
-<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='no'>f2_blocks</span>, <span class='no'>block_lengths</span>)
+    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)</div><div class='output co'>#&gt; $f3_jest
+#&gt;  [1] 0.17485985 0.17116794 0.09600898 0.11127524 0.09724603 0.09717553
+#&gt;  [7] 0.17760530 0.09610525 0.11103233 0.09759183 0.09750339 0.15957981
+#&gt; [13] 0.08594492 0.15026916 0.15129538 0.15717535 0.08543411 0.08553202
+#&gt; [19] 0.19965759 0.19638099 0.34035924
+#&gt; 
+#&gt; $ppinv
+#&gt;               [,1]         [,2]         [,3]          [,4]         [,5]
+#&gt;  [1,] 15341009.160  -8629845.15  -2824645.79   -251300.599  -3242426.80
+#&gt;  [2,] -8629845.150  23148218.32   -380971.73   -479336.672   -633543.99
+#&gt;  [3,] -2824645.788   -380971.73  43619562.92  -1519402.984  -8717267.55
+#&gt;  [4,]  -251300.599   -479336.67  -1519402.98  29973440.648  -1283463.23
+#&gt;  [5,] -3242426.804   -633543.99  -8717267.55  -1283463.227  36925741.86
+#&gt;  [6,] -3064410.116   -391211.94  -7374492.78   -890001.331  -8218182.77
+#&gt;  [7,] -4814930.357 -10816218.12   2044064.89    334438.749   2900410.93
+#&gt;  [8,]  2001123.199   -567798.28 -30513398.38   1117501.346   5261007.64
+#&gt;  [9,]   -55764.460  -1026689.37   1426999.32 -26623786.510   2220572.22
+#&gt; [10,]  1722094.342    375707.96   4891195.98    734746.611 -28472176.02
+#&gt; [11,]  2478500.719   -721617.03   5005283.04    496423.014   5453938.69
+#&gt; [12,]     3630.619    178472.34   -436796.19    323105.946    388815.39
+#&gt; [13,]   998813.356    274639.16  -6648193.47  -1443193.293   1145920.49
+#&gt; [14,]   -89534.968   -110310.41  -1290295.22    300041.910     21219.18
+#&gt; [15,]    34499.202    304855.75    365678.45      6332.733    109088.81
+#&gt; [16,]  -527248.909   -911337.88   -259387.33   -210033.953    -45949.30
+#&gt; [17,]   -31851.564    313180.63   2975621.59   -628154.358  -4815874.92
+#&gt; [18,]   108236.766     75690.93    520173.69   -670138.369   1690039.17
+#&gt; [19,]  -128093.924     67728.40    -26755.02      -256.245   -113610.15
+#&gt; [20,]   -23218.583    -95727.60    -37265.81    -55979.006    412943.18
+#&gt; [21,]  -197408.455    348904.88    -84680.75    399738.352   -126469.56
+#&gt;               [,6]         [,7]          [,8]         [,9]       [,10]
+#&gt;  [1,]  -3064410.12  -4814930.36  2.001123e+06    -55764.46   1722094.3
+#&gt;  [2,]   -391211.94 -10816218.12 -5.677983e+05  -1026689.37    375708.0
+#&gt;  [3,]  -7374492.78   2044064.89 -3.051340e+07   1426999.32   4891196.0
+#&gt;  [4,]   -890001.33    334438.75  1.117501e+06 -26623786.51    734746.6
+#&gt;  [5,]  -8218182.77   2900410.93  5.261008e+06   2220572.22 -28472176.0
+#&gt;  [6,]  36108598.33   1522163.97  3.867309e+06   1467804.10   5531691.3
+#&gt;  [7,]   1522163.97  16779739.33 -2.488812e+06   -350329.79  -2958293.8
+#&gt;  [8,]   3867308.54  -2488811.91  4.201596e+07  -1636719.10  -7751926.0
+#&gt;  [9,]   1467804.10   -350329.79 -1.636719e+06  31017622.15  -1020712.6
+#&gt; [10,]   5531691.31  -2958293.78 -7.751926e+06  -1020712.60  35757975.1
+#&gt; [11,] -26306495.72  -3088565.04 -7.364749e+06   -695173.31  -7688246.2
+#&gt; [12,]     43807.35   -561801.83  6.254054e+04   -820011.80  -1058756.4
+#&gt; [13,]   1508751.80    830706.22 -5.913982e+06   -864101.50   1249202.3
+#&gt; [14,]   -527887.18    -31279.69 -7.513241e+05     74712.66   2255862.8
+#&gt; [15,]   -524918.84    425889.39 -3.711365e+05    -21126.27  -1363774.6
+#&gt; [16,]    531095.32  -1929581.81  1.240552e+06  -1239846.49   1057974.7
+#&gt; [17,]   1397893.67   1076031.63  1.209656e+06   -993277.66  -5993111.2
+#&gt; [18,]  -4538708.91    478349.13  1.718205e+06     70689.36   2381423.5
+#&gt; [19,]   -185448.21     46317.55  1.069228e+04   -139590.58    354820.8
+#&gt; [20,]    291958.79    284240.03 -3.216003e+05     97240.03    145903.0
+#&gt; [21,]    -90888.03    -40371.51  7.069008e+02   -152883.44   -380970.8
+#&gt;              [,11]        [,12]       [,13]       [,14]        [,15]
+#&gt;  [1,]   2478500.72     3630.619   998813.36   -89534.97    34499.202
+#&gt;  [2,]   -721617.03   178472.339   274639.16  -110310.41   304855.748
+#&gt;  [3,]   5005283.04  -436796.193 -6648193.47 -1290295.22   365678.452
+#&gt;  [4,]    496423.01   323105.946 -1443193.29   300041.91     6332.733
+#&gt;  [5,]   5453938.69   388815.390  1145920.49    21219.18   109088.807
+#&gt;  [6,] -26306495.72    43807.347  1508751.80  -527887.18  -524918.845
+#&gt;  [7,]  -3088565.04  -561801.831   830706.22   -31279.69   425889.389
+#&gt;  [8,]  -7364749.01    62540.543 -5913982.32  -751324.10  -371136.495
+#&gt;  [9,]   -695173.31  -820011.799  -864101.50    74712.66   -21126.272
+#&gt; [10,]  -7688246.24 -1058756.450  1249202.29  2255862.83 -1363774.565
+#&gt; [11,]  33498610.77  -364724.441  1040370.88  -516107.16    76930.097
+#&gt; [12,]   -364724.44  9892773.965 -1585031.10 -3436287.69 -2862293.612
+#&gt; [13,]   1040370.88 -1585031.102 29402662.12   276982.59   868793.633
+#&gt; [14,]   -516107.16 -3436287.688   276982.59 11830239.69 -5206034.740
+#&gt; [15,]     76930.10 -2862293.612   868793.63 -5206034.74 12812190.803
+#&gt; [16,]   1125474.02    55689.640 -4898289.95  -179725.51    17123.709
+#&gt; [17,]   1243097.76   803976.117 -7272798.34 -2273467.14   915786.548
+#&gt; [18,]  -3667933.00   616164.647 -6072004.00  1221637.41 -1149801.418
+#&gt; [19,]     45065.45   -15612.148    71825.15  -313792.77    19937.742
+#&gt; [20,]   -241547.35   310815.817  -142165.26 -1388116.20    85981.253
+#&gt; [21,]    250093.07   -19242.439   463353.53   837515.09 -3439441.745
+#&gt;             [,16]       [,17]       [,18]       [,19]       [,20]         [,21]
+#&gt;  [1,]  -527248.91   -31851.56   108236.77 -128093.924   -23218.58  -197408.4551
+#&gt;  [2,]  -911337.88   313180.63    75690.93   67728.402   -95727.60   348904.8793
+#&gt;  [3,]  -259387.33  2975621.59   520173.69  -26755.020   -37265.81   -84680.7541
+#&gt;  [4,]  -210033.95  -628154.36  -670138.37    -256.245   -55979.01   399738.3519
+#&gt;  [5,]   -45949.30 -4815874.92  1690039.17 -113610.147   412943.18  -126469.5575
+#&gt;  [6,]   531095.32  1397893.67 -4538708.91 -185448.213   291958.79   -90888.0254
+#&gt;  [7,] -1929581.81  1076031.63   478349.13   46317.549   284240.03   -40371.5117
+#&gt;  [8,]  1240552.50  1209655.61  1718205.29   10692.282  -321600.29      706.9008
+#&gt;  [9,] -1239846.49  -993277.66    70689.36 -139590.582    97240.03  -152883.4407
+#&gt; [10,]  1057974.69 -5993111.24  2381423.54  354820.787   145903.04  -380970.7983
+#&gt; [11,]  1125474.02  1243097.76 -3667933.00   45065.454  -241547.35   250093.0720
+#&gt; [12,]    55689.64   803976.12   616164.65  -15612.148   310815.82   -19242.4390
+#&gt; [13,] -4898289.95 -7272798.34 -6072004.00   71825.153  -142165.26   463353.5309
+#&gt; [14,]  -179725.51 -2273467.14  1221637.41 -313792.774 -1388116.20   837515.0928
+#&gt; [15,]    17123.71   915786.55 -1149801.42   19937.742    85981.25 -3439441.7449
+#&gt; [16,]  9305421.79 -2819367.85 -2703670.80  -13786.415    11443.07  -421541.1377
+#&gt; [17,] -2819367.85 24282777.17 -7664940.23   73557.157  -314019.95   438598.8715
+#&gt; [18,] -2703670.80 -7664940.23 19812359.38   96786.278   269398.28 -1100617.9688
+#&gt; [19,]   -13786.42    73557.16    96786.28  594998.284  -502984.76   196496.3178
+#&gt; [20,]    11443.07  -314019.95   269398.28 -502984.757  2978958.32 -1677098.6507
+#&gt; [21,]  -421541.14   438598.87 -1100617.97  196496.318 -1677098.65  4523828.7218
+#&gt; 
+#&gt; $f2out
+#&gt; <span style='color: #555555;'># A tibble: 21 x 4</span><span>
+#&gt;    pop1                 pop2                   f2est       se
+#&gt;    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'> 1</span><span> Chimp.REF            Altai_Neanderthal.DG  0.175  0.000</span><span style='text-decoration: underline;'>861</span><span>
+#&gt; </span><span style='color: #555555;'> 2</span><span> Chimp.REF            Vindija.DG            0.178  0.000</span><span style='text-decoration: underline;'>881</span><span>
+#&gt; </span><span style='color: #555555;'> 3</span><span> Chimp.REF            Mbuti.DG              0.160  0.000</span><span style='text-decoration: underline;'>477</span><span>
+#&gt; </span><span style='color: #555555;'> 4</span><span> Chimp.REF            Denisova.DG           0.157  0.000</span><span style='text-decoration: underline;'>771</span><span>
+#&gt; </span><span style='color: #555555;'> 5</span><span> Chimp.REF            Russia_Ust_Ishim.DG   0.200  0.001</span><span style='text-decoration: underline;'>52</span><span> 
+#&gt; </span><span style='color: #555555;'> 6</span><span> Chimp.REF            Switzerland_Bichon.SG 0.340  0.000</span><span style='text-decoration: underline;'>744</span><span>
+#&gt; </span><span style='color: #555555;'> 7</span><span> Altai_Neanderthal.DG Vindija.DG            0.010</span><span style='text-decoration: underline;'>1</span><span> 0.000</span><span style='text-decoration: underline;'>367</span><span>
+#&gt; </span><span style='color: #555555;'> 8</span><span> Altai_Neanderthal.DG Mbuti.DG              0.142  0.000</span><span style='text-decoration: underline;'>694</span><span>
+#&gt; </span><span style='color: #555555;'> 9</span><span> Altai_Neanderthal.DG Denisova.DG           0.109  0.000</span><span style='text-decoration: underline;'>933</span><span>
+#&gt; </span><span style='color: #555555;'>10</span><span> Altai_Neanderthal.DG Russia_Ust_Ishim.DG   0.180  0.001</span><span style='text-decoration: underline;'>76</span><span> 
+#&gt; </span><span style='color: #555555;'># … with 11 more rows</span><span>
+#&gt; 
+#&gt; $f3out
+#&gt; </span><span style='color: #555555;'># A tibble: 21 x 4</span><span>
+#&gt;    pop1                 pop2                  f3est       se
+#&gt;    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'> 1</span><span> Chimp.REF            Chimp.REF            0.175  0.000</span><span style='text-decoration: underline;'>861</span><span>
+#&gt; </span><span style='color: #555555;'> 2</span><span> Chimp.REF            Altai_Neanderthal.DG 0.171  0.000</span><span style='text-decoration: underline;'>824</span><span>
+#&gt; </span><span style='color: #555555;'> 3</span><span> Chimp.REF            Vindija.DG           0.096</span><span style='text-decoration: underline;'>0</span><span> 0.000</span><span style='text-decoration: underline;'>473</span><span>
+#&gt; </span><span style='color: #555555;'> 4</span><span> Chimp.REF            Mbuti.DG             0.111  0.000</span><span style='text-decoration: underline;'>650</span><span>
+#&gt; </span><span style='color: #555555;'> 5</span><span> Chimp.REF            Denisova.DG          0.097</span><span style='text-decoration: underline;'>2</span><span> 0.000</span><span style='text-decoration: underline;'>550</span><span>
+#&gt; </span><span style='color: #555555;'> 6</span><span> Chimp.REF            Russia_Ust_Ishim.DG  0.097</span><span style='text-decoration: underline;'>2</span><span> 0.000</span><span style='text-decoration: underline;'>539</span><span>
+#&gt; </span><span style='color: #555555;'> 7</span><span> Altai_Neanderthal.DG Altai_Neanderthal.DG 0.178  0.000</span><span style='text-decoration: underline;'>881</span><span>
+#&gt; </span><span style='color: #555555;'> 8</span><span> Altai_Neanderthal.DG Vindija.DG           0.096</span><span style='text-decoration: underline;'>1</span><span> 0.000</span><span style='text-decoration: underline;'>471</span><span>
+#&gt; </span><span style='color: #555555;'> 9</span><span> Altai_Neanderthal.DG Mbuti.DG             0.111  0.000</span><span style='text-decoration: underline;'>643</span><span>
+#&gt; </span><span style='color: #555555;'>10</span><span> Altai_Neanderthal.DG Denisova.DG          0.097</span><span style='text-decoration: underline;'>6</span><span> 0.000</span><span style='text-decoration: underline;'>557</span><span>
+#&gt; </span><span style='color: #555555;'># … with 11 more rows</span><span>
+#&gt; </div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>pops</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>0.278</span>)
-}</div></pre>
+}</div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

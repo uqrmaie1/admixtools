@@ -35,9 +35,9 @@ a list with four items
 Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population \code{p1} and all population pairs \code{i, j}: \code{f3(p1; p_i, p_j)}
 }
 \examples{
-\dontrun{
 pops = get_leafnames(example_igraph)
-qpgraph_precompute_f3(pops, f2_blocks, block_lengths)
+qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
+\dontrun{
 qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 }
 }

@@ -26,7 +26,7 @@ cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_jest, qpsolve) {
 }
 
 cpp_fill_pwts <- function(pwts, weights, path_edge_table, path_admixedge_table, numpaths) {
-    invisible(.Call('_admixtools_cpp_fill_pwts', PACKAGE = 'admixtools', pwts, weights, path_edge_table, path_admixedge_table, numpaths))
+    .Call('_admixtools_cpp_fill_pwts', PACKAGE = 'admixtools', pwts, weights, path_edge_table, path_admixedge_table, numpaths)
 }
 
 cpp_optimweightsfun <- function(weights, args) {
