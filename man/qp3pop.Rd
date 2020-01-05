@@ -5,11 +5,12 @@
 \alias{f3}
 \title{Estimate f3 statistics}
 \usage{
-qp3pop(pop1 = NULL, pop2 = NULL, pop3 = NULL, f2_blocks = NULL,
-  block_lengths = NULL, f2_dir = NULL, f2_denom = 1, sure = FALSE,
-  unique_only = TRUE, verbose = FALSE)
+qp3pop(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
+  f2_denom = 1, sure = FALSE, unique_only = TRUE, verbose = FALSE)
 }
 \arguments{
+\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+
 \item{pop1}{one of the following four:
 \enumerate{
 \item \code{NULL}: all possible triples of the populations in \code{f2_blocks} will be returned
@@ -21,12 +22,6 @@ qp3pop(pop1 = NULL, pop2 = NULL, pop3 = NULL, f2_blocks = NULL,
 \item{pop2}{a vector of population labels}
 
 \item{pop3}{a vector of population labels}
-
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.}
-
-\item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
-
-\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
 
 \item{f2_denom}{scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}}
 }
@@ -45,10 +40,9 @@ Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(P_1; P_2, P
 pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
-qp3pop(pop1, pop2, pop3,
-  example_f2_blocks, example_block_lengths)
+qp3pop(example_f2_blocks, pop1, pop2, pop3)
 \dontrun{
-qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
+qp3pop(f2_dir, pop1, pop2, pop3)
 }
 }
 \references{

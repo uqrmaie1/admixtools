@@ -4,17 +4,13 @@
 \alias{qpgraph_precompute_f3}
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
-qpgraph_precompute_f3(pops, f2_blocks = NULL, block_lengths = NULL,
-  f2_dir = NULL, f2_denom = 1, fudge = 0.001, lsqmode = FALSE)
+qpgraph_precompute_f3(f2_data, pops, f2_denom = 1, fudge = 0.001,
+  lsqmode = FALSE)
 }
 \arguments{
+\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+
 \item{pops}{populations for which to compute f3-statistics}
-
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.}
-
-\item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
-
-\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
@@ -36,8 +32,8 @@ Takes a 3d array of f2 block jackknife estimates and computes f3-statistics betw
 }
 \examples{
 pops = get_leafnames(example_igraph)
-qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
+qpgraph_precompute_f3(example_f2_blocks, pops)$f3_jest
 \dontrun{
-qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
+qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
 }
 }

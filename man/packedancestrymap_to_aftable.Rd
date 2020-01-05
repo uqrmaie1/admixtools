@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{packedancestrymap_to_aftable}
 \alias{packedancestrymap_to_aftable}
-\title{Read allele frequencies from packedancestrymap genotype file}
+\title{Read allele frequencies from packedancestrymap files}
 \usage{
 packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
   blocksize = 1000, na.action = "none", return_matrix = FALSE,
@@ -30,7 +30,7 @@ packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
 a list with two items: allele frequency data and individual counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
 }
 \description{
-Read allele frequencies from packedancestrymap genotype file
+Read allele frequencies from packedancestrymap files
 }
 \examples{
 \dontrun{

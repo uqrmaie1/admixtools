@@ -6,7 +6,7 @@
 \usage{
 optimize_admixturegraph_single(pops, f3_jest, ppinv, numgraphs = 50,
   numgen = 5, numsel = 5, numadmix = 0, outpop = NA,
-  verbose = TRUE, cpp = TRUE, debug = FALSE, ...)
+  verbose = TRUE, cpp = TRUE, debug = FALSE, keep = "all", ...)
 }
 \arguments{
 \item{pops}{population names for which to fit admixturegraphs}

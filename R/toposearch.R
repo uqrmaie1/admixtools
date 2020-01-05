@@ -459,25 +459,22 @@ swap_leaves = function(grph, fix_outgroup=TRUE) {
 }
 
 
-add_generation = function(models, numsel, qpgfun, mutfuns) {
+add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns) {
 
   lastgen = max(models$generation)
-  numpergen = models %>% filter(generation == lastgen) %>% nrow
-  stopifnot(numpergen > numsel)
-  numeach = ceiling(numpergen/numsel)
+  numeach = ceiling(numgraphs/numsel)
   oldmodels = models %>% filter(generation == lastgen)
   winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob)
   winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score)))
-  sq = 1:numpergen
+  sq = 1:numgraphs
   newmodels = tibble(generation = lastgen+1, index = sq,
                      igraph = rep(winners$igraph, numeach)[sq],
                      oldscore = rep(winners$score, numeach)[sq])
   mutations = c(replicate(numsel, namedList(identity)),
-                sample(mutfuns, numpergen-numsel, replace = TRUE))
+                sample(mutfuns, numgraphs-numsel, replace = TRUE))
   newmodels %<>% mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x)))
-  #newmodels %<>% mutate(out = furrr::future_map(igraph, qpgfun)) %>% unnest_wider(out)
-  newmodels %<>% mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out)
-  models %>% bind_rows(newmodels)
+  #newmodels %>% mutate(out = furrr::future_map(igraph, qpgfun)) %>% unnest_wider(out)
+  newmodels %>% mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out)
 }
 
 # sample_mutations = function(n) {
@@ -499,18 +496,21 @@ score_to_prob = function(score, fix_best=TRUE) {
 }
 
 
-evolve_topology = function(init, numgen, numsel, qpgfun, mutfuns, verbose=TRUE) {
+evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, verbose=TRUE, keep = 'all') {
 
   out = init
   for(i in seq_len(numgen)) {
-    out = add_generation(out, numsel, qpgfun, mutfuns)
-
+    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns)
+    if(keep == 'all') out %<>% bind_rows(newmodels)
+    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>% ungroup %>% bind_rows(newmodels)
+    else out = newmodels
     if(verbose) {
-      best = out %>% filter(generation == i) %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
+      best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
       cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best), collapse=', '), paste(rep(' ', 30), collapse=''), '\r'))
     }
   }
   if(verbose) cat('\n')
+  if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>% ungroup
   out
 }
 
@@ -533,7 +533,7 @@ evolve_topology = function(init, numgen, numsel, qpgfun, mutfuns, verbose=TRUE) 
 #' optimize_admixturegraph_single(igraph1, f3_jest, ppinv, numgraphs=10, numgen=2, numsel=2, numadmix=1)
 optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, outpop = NA, verbose = TRUE,
-                                          cpp = TRUE, debug = FALSE, ...) {
+                                          cpp = TRUE, debug = FALSE, keep = 'all', ...) {
   if(numadmix == 0) {
 
     qpgfun0 = qpgraph_anorexic
@@ -559,38 +559,93 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
                 igraph = initigraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out) %>% mutate(oldscore = score)
 
-  evolve_topology(init, numgen, numsel, qpgfun, mutfuns, verbose=verbose)
+  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, verbose = verbose, keep = keep)
 }
 
-#' Find a well fitting admixturegraph
+# Find a well fitting admixturegraph
+#
+# This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
+# @export
+# @param pops population names for which to fit admixturegraphs
+# @param f3_jest 3d array with all pairwise f3 estimates with the outgroup
+# @param ppinv inverse of the f3 block jackknife covariance matrix
+# @param numgraphs number of graphs in each generation
+# @param numgen number of generations
+# @param numsel number of graphs which are selected in each generation
+# @param numadmix number of admixture events within each graph
+# @param outpop outgroup population
+# @return a nested data frame with one model per line
+# @examples
+# \dontrun{
+# optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
+#                         numgen = 20, numsel = 5, numadmix = 3)
+# }
+# optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep = 10, numgraphs = 50,
+#                                    numgen = 5, numsel = 5, numadmix = 0,
+#                                    outpop = NA, verbose = TRUE, cpp = TRUE, debug = FALSE, ...) {
+#
+#   if(is.na(outpop)) outpop = pops[1]
+#   else if(!outpop %in% pops) pops = c(outpop, pops)
+#
+#   oa = function() optimize_admixturegraph_single(pops, outpop=outpop, f3_jest, ppinv,
+#                                                  numgen = numgen, numsel = numsel,
+#                                                  numgraphs = numgraphs, numadmix = numadmix,
+#                                                  verbose = verbose, cpp = cpp, debug = debug, ...)
+#   if(!debug) {
+#     oa = possibly(oa, otherwise=NULL)
+#     res = furrr::future_map(as.list(seq_len(numrep)), oa)
+#   } else {
+#     res = list()
+#     for(i in seq_len(numrep)) {
+#       res[[i]] = oa()
+#     }
+#   }
+#   bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
+# }
+
+
+#' Find well fitting admixture graphs
 #'
-#' This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
+#' This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting \code{numadmix} to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes.
 #' @export
-#' @param pops population names for which to fit admixturegraphs
-#' @param f3_jest 3d array with all pairwise f3 estimates with the outgroup
-#' @param ppinv inverse of the f3 block jackknife covariance matrix
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
+#' @param pops populations for which to fit admixture graphs
+#' @param outpop outgroup population
+#' @param numrep number of independent repetitions (each repetition can be run in parallel)
 #' @param numgraphs number of graphs in each generation
 #' @param numgen number of generations
 #' @param numsel number of graphs which are selected in each generation
 #' @param numadmix number of admixture events within each graph
-#' @param outpop outgroup population
+#' @param keep by default, all evaluated graphs will be returned. \code{best} will only return the best fitting graph from each repeat and each generation. \code{last} will return all graphs from the last generation.
+#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
+#' @param verbose print progress updates
+#' @param cpp should optimization be run in C++ or in R? C++ is faster.
+#' @param debug if \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}). Errors will interrupt execution. This is the default if \code{numrep == 1}
 #' @return a nested data frame with one model per line
 #' @examples
 #' \dontrun{
-#' optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
-#'                         numgen = 20, numsel = 5, numadmix = 3)
+#' fit_graph(example_f2_blocks, numrep = 200, numgraphs = 100,
+#'           numgen = 20, numsel = 5, numadmix = 3)
 #' }
-optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep = 10, numgraphs = 50,
-                                   numgen = 5, numsel = 5, numadmix = 0,
-                                   outpop = NA, verbose = TRUE, cpp = TRUE, debug = FALSE, ...) {
+fit_graph = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgraphs = 50,
+                     numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
+                     f2_denom = 0.278, verbose = TRUE, cpp = TRUE, debug = numrep==1, ...) {
 
-  if(is.na(outpop)) outpop = pops[1]
+  keep = rlang::arg_match(keep)
+  if(is.null(pops)) {
+    if(is.character(f2_data)) pops = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
+    else pops = dimnames(f2_data)[[1]]
+  }
+  precomp = qpgraph_precompute_f3(pops, f2_data, f2_denom = f2_denom)
+
+  if(is.null(outpop)) outpop = pops[1]
   else if(!outpop %in% pops) pops = c(outpop, pops)
 
-  oa = function() optimize_admixturegraph_single(pops, outpop=outpop, f3_jest, ppinv,
+  oa = function() optimize_admixturegraph_single(pops, outpop=outpop, precomp$f3_jest, precomp$ppinv,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix,
-                                                 verbose = verbose, cpp = cpp, debug = debug, ...)
+                                                 verbose = verbose, cpp = cpp, debug = debug,
+                                                 keep = keep, ...)
   if(!debug) {
     oa = possibly(oa, otherwise=NULL)
     res = furrr::future_map(as.list(seq_len(numrep)), oa)
@@ -602,6 +657,8 @@ optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep = 10, numgraphs 
   }
   bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
 }
+
+
 
 
 summarize_graph = function(grph, exclude_outgroup = TRUE) {

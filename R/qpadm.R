@@ -72,39 +72,15 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001,
   w/sum(w)
 }
 
-qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1) {
-
-  allpops = c(target, left, right)
-
-  #----------------- read f-stats -----------------
-  if(is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) stop('You have to provide an f2_dir argument, or f2_blocks and block_lengths!')
-  if(!is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) {
-    f2_blocks = read_f2(f2_dir, pops = allpops)
-    load(paste0(f2_dir, '/block_lengths.RData'))
-  }
-
-  #----------------- process f-stats -----------------
-  f2nam = dimnames(f2_blocks)[[1]]
-  stopifnot(length(unique(c(target, left, right))) == length(allpops))
-  stopifnot(all(allpops %in% f2nam))
-  stopifnot(length(right) > length(left))
-
-  nam = intersect(f2nam, allpops)
-  f2_blocks = rray::rray(f2_blocks[nam,nam,], dim_names = list(nam, nam, NULL))
-  f2_blocks = f2_blocks / f2_denom
-  namedList(f2_blocks, block_lengths)
-}
 
 #' Estimate admixture weights
 #'
 #' Models target as a mixture of left populations, and outgroup right populations.
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param target target population
 #' @param left source populations
 #' @param right outgroup populations
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge value added to diagonal matrix elements before inverting
 #' @param getcov should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.
@@ -118,20 +94,26 @@ qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm(target, left, right, example_f2_blocks, example_block_lengths)
-qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge = 0.0001, getcov = TRUE, constrained = FALSE, cpp = TRUE) {
+#' qpadm(example_f2_blocks, target, left, right)
+qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
+                 f2_denom = 1, fudge = 0.0001,
+                 getcov = TRUE, constrained = FALSE, cpp = TRUE) {
 
+  stopifnot(is.null(left) && is.null(right) || length(right) > length(left))
   #----------------- prepare f4 stats -----------------
-  f2dat = qpadm_f2(target, left, right, f2_blocks, block_lengths, f2_dir, f2_denom)
+  if(is.null(target)) {
+    left %<>% readLines
+    right %<>% readLines
+  }
+  f2dat = get_f2(f2_data, unique(c(target, left, right)), f2_denom)
   f2_blocks = f2dat$f2_blocks
-  block_lengths = f2dat$block_lengths
 
   f4_blocks = (f2_blocks[target, right[-1], ] +
                f2_blocks[left, right[1], ] -
                f2_blocks[target, right[1], ] -
                f2_blocks[left, right[-1], ])/2
 
-  f4dat = bj_pairarr_stats(f4_blocks, block_lengths)
+  f4dat = bj_pairarr_stats(f4_blocks, f2dat$block_lengths)
   f4_jest = f4dat$jest
   f4_jvar = f4dat$jvar
 
@@ -227,12 +209,10 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = N
 #'
 #' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method based non-negative least squares of f4 matrix.
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param target target population
-#' @param left source populations
-#' @param right outgroup populations
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.
+#' @param left source populations (or leftlist file)
+#' @param right outgroup populations (or rightlist file)
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param getcov should standard errors be returned? Currently not implemented.
 #' @param constrained if \code{TRUE} (default), admixture weights will all be non-negative. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}
@@ -244,17 +224,18 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = N
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' lazadm(target, left, right, example_f2_blocks, example_block_lengths)
-#' lazadm(target, left, right, example_f2_blocks, example_block_lengths, constrained = FALSE)
-lazadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
-                  f2_dir = NULL, f2_denom = 1, getcov = FALSE, constrained = TRUE) {
+#' lazadm(example_f2_blocks, target, left, right)
+#' lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
+lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
+                  f2_denom = 1, getcov = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
-  f2dat = qpadm_f2(target, left, right, f2_blocks, block_lengths, f2_dir, f2_denom)
-  f2_blocks = f2dat$f2_blocks
-  block_lengths = f2dat$block_lengths
-
-  f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
+  if(is.null(target)) {
+    left %<>% readLines
+    right %<>% readLines
+  }
+  f2dat = get_f2(f2_data, unique(c(target, left, right)), f2_denom)
+  f2_mat = apply(f2dat$f2_blocks, 1:2, weighted.mean, f2dat$block_lengths)
 
   ri = 1:length(right)
   og_indices = expand.grid(ri, ri, ri) %>%

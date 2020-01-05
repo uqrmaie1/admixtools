@@ -31,7 +31,7 @@ extract_data(pref, outdir = NULL, pops = NULL, inds = NULL,
 \item{verbose}{print progress updates}
 }
 \value{
-Nothing, if \code{outdir} is specified. Otherwise a list with \code{f2_blocks} and \code{block_lengths}
+Nothing, if \code{outdir} is specified. Otherwise a 3d array with f2 statistics (\code{f2_blocks})
 }
 \description{
 Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files, and computes allele frequencies and f2 block jackknife statistics for selected populations. Data is either written to disk in files for each population and population pair, or returned as list. This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}} and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'} which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO}, use \code{na.action = 'remove'}.
@@ -39,8 +39,6 @@ Prepare data for various admixtools functions. Reads data from packedancestrymap
 \examples{
 \dontrun{
 pref = 'my/genofiles/prefix'
-data = extract_data(pref, pops = c('Protoss', 'Zerg', 'Terran'))
-f2_blocks = data$f2_blocks
-block_lengths = data$block_lengths
+f2_blocks = extract_data(pref, pops = c('Protoss', 'Zerg', 'Terran'))
 }
 }

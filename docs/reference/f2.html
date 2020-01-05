@@ -155,13 +155,16 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2</span>(<span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+    <pre class="usage"><span class='fu'>f2</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>f2_data</th>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code><a href='extract_data.html'>extract_data</a></code>.</p></td>
+    </tr>
     <tr>
       <th>pop1</th>
       <td><p>one of the following four:</p><ol>
@@ -174,18 +177,6 @@
     <tr>
       <th>pop2</th>
       <td><p>a vector of population labels</p></td>
-    </tr>
-    <tr>
-      <th>f2_blocks</th>
-      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.</p></td>
-    </tr>
-    <tr>
-      <th>block_lengths</th>
-      <td><p>the jackknife block lengths used in computing the f2 statistics. see <code><a href='get_block_lengths.html'>get_block_lengths</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>f2_dir</th>
-      <td><p>a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
@@ -205,12 +196,12 @@
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='no'>pop1</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>pop2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
-<span class='fu'>f2</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 6</span><span>
+<span class='fu'>f2</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 6</span><span>
 #&gt;   pop1        pop2                 estimate       se     z p.value
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG    0.109 0.000</span><span style='text-decoration: underline;'>933</span><span>  117.       0
 #&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG              0.113 0.000</span><span style='text-decoration: underline;'>938</span><span>  120.       0</div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>f2</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='no'>f2_dir</span>)
+<span class='fu'>f2</span>(<span class='no'>f2_dir</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>)
 }</div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

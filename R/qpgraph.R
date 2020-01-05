@@ -274,18 +274,16 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 
 
 
-#' Compute the fit of an admixturegraph
+#' Compute the fit of an admixture graph
 #'
-#' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics. f2-block-jackknife statistics can be provided via the arguments \code{f2_blocks} and \code{block_lengths}, or via \code{f2_dir}.
+#' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param graph an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
-#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fnscale try increasing or decreasing this, if optimization does not converge.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
+#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
 #' @param seed seed for generating starting weights.
 #' @param verbose print optimization iterations
@@ -294,9 +292,9 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @seealso \code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 #' @examples
-#' out = qpgraph(example_graph, example_f2_blocks, example_block_lengths)
+#' out = qpgraph(example_graph, example_f2_blocks)
 #' plot_graph(out$edges)
-qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, lsqmode=FALSE, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE) {
+qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, lsqmode=FALSE, numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
@@ -321,9 +319,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   npop = length(pops)
   cmb = combn(0:(npop-1), 2)+(1:0)
 
-  popind = match(pops, dimnames(f2_blocks)[[1]])
-
-  precomp = qpgraph_precompute_f3(pops, f2_blocks = f2_blocks, block_lengths = block_lengths, f2_dir = f2_dir, f2_denom = f2_denom, fudge = fudge, lsqmode = lsqmode)
+  precomp = qpgraph_precompute_f3(f2_data, pops, f2_denom = f2_denom, fudge = fudge, lsqmode = lsqmode)
 
   f3_jest = precomp$f3_jest
   ppinv = precomp$ppinv
@@ -389,7 +385,7 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 #' @seealso \code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
 #' @examples
 #' pops = get_leafnames(example_igraph)
-#' precomp = qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
+#' precomp = qpgraph_precompute_f3(pops, example_f2_blocks)
 #' f3_jest = precomp$f3_jest
 #' ppinv = precomp$ppinv
 #' out = qpgraph_slim(example_igraph, f3_jest, ppinv)
@@ -460,10 +456,8 @@ qpgraph_slim = function(graph, f3_jest, ppinv, fnscale = 1e-6, numstart = 10,
 #'
 #' Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population \code{p1} and all population pairs \code{i, j}: \code{f3(p1; p_i, p_j)}
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pops populations for which to compute f3-statistics
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
@@ -476,26 +470,20 @@ qpgraph_slim = function(graph, f3_jest, ppinv, fnscale = 1e-6, numstart = 10,
 #' }
 #' @examples
 #' pops = get_leafnames(example_igraph)
-#' qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
+#' qpgraph_precompute_f3(example_f2_blocks, pops)$f3_jest
 #' \dontrun{
-#' qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
+#' qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
 #' }
-qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
-                                 f2_denom = 1, fudge=1e-3, lsqmode=FALSE) {
+qpgraph_precompute_f3 = function(f2_data, pops, f2_denom = 1, fudge = 1e-3, lsqmode = FALSE) {
   # returns list of f3_jest and ppinv for subset of populations.
   # f3_jest and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
   # f2_blocks input here should be subset which is used by qpgraph function
 
-  if(is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) stop('You have to provide an f2_dir argument, or f2_blocks and block_lengths!')
-  if(!is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) {
-    f2_blocks = read_f2(f2_dir, pops = pops)
-    load(paste0(f2_dir, '/block_lengths.RData'))
-  }
-  stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
-
-  f2_blocks = f2_blocks / f2_denom
-  f2_blocks = rray(f2_blocks[pops, pops, ])
+  #----------------- read f-stats -----------------
+  f2dat = get_f2(f2_data, pops, f2_denom)
+  f2_blocks = f2dat$f2_blocks
+  block_lengths = f2dat$block_lengths
 
   npop = length(pops)
   npair = choose(npop, 2)

@@ -116,7 +116,7 @@
 <a href="#usage" class="anchor"></a>Usage</h2>
 <p>If you already have precomputed f2-statistics, you can fit an admixture graph like this:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">f2_dir =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">fit =<span class="st"> </span><span class="kw"><a href="reference/qpgraph.html">qpgraph</a></span>(example_graph, <span class="dt">f2_dir =</span> f2_dir)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">fit =<span class="st"> </span><span class="kw"><a href="reference/qpgraph.html">qpgraph</a></span>(f2_dir, example_graph)</a>
 <a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw"><a href="reference/plot_graph.html">plot_graph</a></span>(fit<span class="op">$</span>edges)</a></code></pre></div>
 <p><img src="reference/figures/graph1.png" alt="example graph"></p>
 <p><br></p>
@@ -124,7 +124,7 @@
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">target =<span class="st"> 'Denisova.DG'</span></a>
 <a class="sourceLine" id="cb4-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
 <a class="sourceLine" id="cb4-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>, <span class="st">'Switzerland_Bichon.SG'</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw"><a href="reference/qpadm.html">qpadm</a></span>(target, left, right, <span class="dt">f2_dir =</span> f2_dir)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw"><a href="reference/qpadm.html">qpadm</a></span>(f2_dir, target, left, right)</a></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">#&gt; # A tibble: 2 x 4</span></a>
 <a class="sourceLine" id="cb6-2" data-line-number="2"><span class="co">#&gt;   target      left                 weight    se</span></a>
 <a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt;</span></a>

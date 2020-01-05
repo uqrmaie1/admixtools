@@ -4,21 +4,17 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
-  f2_dir = NULL, f2_denom = 1, getcov = FALSE, constrained = TRUE)
+lazadm(f2_data, target = NULL, left = NULL, right = NULL,
+  f2_denom = 1, getcov = FALSE, constrained = TRUE)
 }
 \arguments{
+\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+
 \item{target}{target population}
 
-\item{left}{source populations}
+\item{left}{source populations (or leftlist file)}
 
-\item{right}{outgroup populations}
-
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}}
-
-\item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
-
-\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.}
+\item{right}{outgroup populations (or rightlist file)}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
@@ -36,8 +32,8 @@ Models target as a mixture of left populations, and outgroup right populations. 
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-lazadm(target, left, right, example_f2_blocks, example_block_lengths)
-lazadm(target, left, right, example_f2_blocks, example_block_lengths, constrained = FALSE)
+lazadm(example_f2_blocks, target, left, right)
+lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
 }
 \references{
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics

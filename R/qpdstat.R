@@ -184,6 +184,7 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, b
 #'
 #' Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(P_1, P_2)}
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:
 #' \enumerate{
 #' \item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
@@ -193,38 +194,29 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, b
 #' }
 #' @param pop2 a vector of population labels
 #' @param pop3 a vector of population labels
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param f2_denom scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.
 #' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 #' @examples
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
-#' f2(pop1, pop2, example_f2_blocks, example_block_lengths)
+#' f2(example_f2_blocks, pop1, pop2)
 #' \dontrun{
-#' f2(pop1, pop2, f2_dir = f2_dir)
+#' f2(f2_dir, pop1, pop2)
 #' }
-f2 = function(pop1 = NULL, pop2 = NULL,
-              f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1,
-              sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
+              f2_denom = 1, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
-  out = fstat_get_popcombs(pop1 = pop1, pop2 = pop2,
-                           f2_blocks = f2_blocks, sure = sure, unique_only = unique_only,
-                           fnum = 2)
+  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2,
+                           sure = sure, unique_only = unique_only, fnum = 2)
   pops = unique(c(out$pop1, out$pop2))
-  f2s = fstat_get_f2(pops = pops, f2_blocks = f2_blocks, block_lengths = block_lengths,
-                     f2_dir = f2_dir, f2_denom = f2_denom)
-  f2_blocks_scaled = f2s[[1]]
-  block_lengths = f2s[[2]]
-  f2nam = dimnames(f2_blocks_scaled)[[1]]
+  f2dat = get_f2(f2_data, pops, f2_denom, rray = FALSE)
 
   #----------------- compute f2 -----------------
   if(verbose) alert_info('Computing f2-statistics\n')
 
   out %<>% group_by(pop1, pop2) %>%
-    summarize(jack = list(f2_blocks_scaled[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(jack, ~bj_mat_stats(t(.), block_lengths))) %>%
+    summarize(jack = list(f2dat$f2_blocks[pop1, pop2, ])) %>% ungroup %>%
+    mutate(sts = map(jack, ~bj_mat_stats(t(.), f2dat$block_lengths))) %>%
     unnest_wider(sts) %>%
     mutate(estimate = jest, se = map_dbl(jvar[,1], sqrt), z = estimate/se, p.value = ztop(z)) %>%
     select(-jack, -jest, -jvar)
@@ -239,6 +231,7 @@ f2 = function(pop1 = NULL, pop2 = NULL,
 #'
 #' Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(P_1; P_2, P_3)}. Equivalent to  \eqn{(F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2} and to \eqn{F_4(P_1, P_2; P_1, P_3)}
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:
 #' \enumerate{
 #' \item \code{NULL}: all possible triples of the populations in \code{f2_blocks} will be returned
@@ -248,9 +241,6 @@ f2 = function(pop1 = NULL, pop2 = NULL,
 #' }
 #' @param pop2 a vector of population labels
 #' @param pop3 a vector of population labels
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param f2_denom scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @return If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
@@ -261,36 +251,30 @@ f2 = function(pop1 = NULL, pop2 = NULL,
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
-#' qp3pop(pop1, pop2, pop3,
-#'   example_f2_blocks, example_block_lengths)
+#' qp3pop(example_f2_blocks, pop1, pop2, pop3)
 #' \dontrun{
-#' qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
+#' qp3pop(f2_dir, pop1, pop2, pop3)
 #' }
-qp3pop = function(pop1 = NULL, pop2 = NULL, pop3 = NULL,
-              f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1,
-              sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
+                  f2_denom = 1, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) |
               !is.null(pop2) & !is.null(pop3))
 
-  out = fstat_get_popcombs(pop1 = pop1, pop2 = pop2, pop3 = pop3,
-                           f2_blocks = f2_blocks, sure = sure, unique_only = unique_only,
-                           fnum = 3)
+  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2, pop3 = pop3,
+                           sure = sure, unique_only = unique_only, fnum = 3)
   pops = unique(c(out$pop1, out$pop2, out$pop3))
-  f2s = fstat_get_f2(pops = pops, f2_blocks = f2_blocks, block_lengths = block_lengths,
-                     f2_dir = f2_dir, f2_denom = f2_denom)
-  f2_blocks_scaled = f2s[[1]]
-  block_lengths = f2s[[2]]
-  f2nam = dimnames(f2_blocks_scaled)[[1]]
+  f2dat = get_f2(f2_data, pops, f2_denom, rray = FALSE)
+  f2_blocks = f2dat$f2_blocks
 
   #----------------- compute f3 -----------------
   if(verbose) alert_info('Computing f3-statistics\n')
 
   out %<>% group_by(pop1, pop2, pop3) %>%
-    summarize(jack = list(f3_from_f2(f2_blocks_scaled[pop1, pop2, ],
-                                     f2_blocks_scaled[pop1, pop3, ],
-                                     f2_blocks_scaled[pop2, pop3, ]))) %>% ungroup %>%
-    mutate(sts = map(jack, ~bj_mat_stats(t(.), block_lengths))) %>%
+    summarize(jack = list(f3_from_f2(f2_blocks[pop1, pop2, ],
+                                     f2_blocks[pop1, pop3, ],
+                                     f2_blocks[pop2, pop3, ]))) %>% ungroup %>%
+    mutate(sts = map(jack, ~bj_mat_stats(t(.), f2dat$block_lengths))) %>%
     unnest_wider(sts) %>%
     mutate(estimate = jest, se = map_dbl(jvar[,1], sqrt), z = estimate/se, p.value = ztop(z)) %>%
     select(-jack, -jest, -jvar)
@@ -306,6 +290,7 @@ f3 = qp3pop
 #'
 #' Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(P_1, P_2; P_3, P_4)}. Equivalent to \eqn{(F_2(P_1, P_4) + F_2(P_2, P_3) - F_2(P_1, P_3) - F_2(P_2, P_4)) / 2}
 #' @export
+#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:
 #' \enumerate{
 #' \item \code{NULL}: all possible quadruples of the populations in \code{f2_blocks} will be returned
@@ -316,9 +301,6 @@ f3 = qp3pop
 #' @param pop2 a vector of population labels
 #' @param pop3 a vector of population labels
 #' @param pop4 a vector of population labels
-#' @param f2_blocks 3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}. they are weighted by inverse of outgroup heterozygosity, if outgroup was specified.
-#' @param block_lengths the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.
-#' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.
 #' @param f2_denom scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}
 #' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 #' @aliases f4
@@ -330,37 +312,31 @@ f3 = qp3pop
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' pop4 = 'Switzerland_Bichon.SG'
-#' qpdstat(pop1, pop2, pop3, pop4,
-#'   example_f2_blocks, example_block_lengths)
+#' qpdstat(example_f2_blocks, pop1, pop2, pop3, pop4)
 #' \dontrun{
-#' qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
+#' qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 #' }
-qpdstat = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-                   f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1,
-                   sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+                   f2_denom = 1, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
 
-  out = fstat_get_popcombs(pop1 = pop1, pop2 = pop2, pop3 = pop3, pop4 = pop4,
-                           f2_blocks = f2_blocks, sure = sure, unique_only = unique_only,
-                           fnum = 4)
+  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2, pop3 = pop3, pop4 = pop4,
+                           sure = sure, unique_only = unique_only, fnum = 4)
   pops = unique(c(out$pop1, out$pop2, out$pop3, out$pop4))
-  f2s = fstat_get_f2(pops = pops, f2_blocks = f2_blocks, block_lengths = block_lengths,
-                     f2_dir = f2_dir, f2_denom = f2_denom)
-  f2_blocks_scaled = f2s[[1]]
-  block_lengths = f2s[[2]]
-  f2nam = dimnames(f2_blocks_scaled)[[1]]
+  f2dat = get_f2(f2_data, pops, f2_denom, rray = FALSE)
+  f2_blocks = f2dat$f2_blocks
 
   #----------------- compute f4 -----------------
   if(verbose) alert_info('Computing f4-statistics\n')
 
   out %<>% group_by(pop1, pop2, pop3, pop4) %>%
-    summarize(jack = list(f4_from_f2(f2_blocks_scaled[pop1, pop4, ],
-                                     f2_blocks_scaled[pop2, pop3, ],
-                                     f2_blocks_scaled[pop1, pop3, ],
-                                     f2_blocks_scaled[pop2, pop4, ]))) %>% ungroup %>%
-    mutate(sts = map(jack, ~bj_mat_stats(t(.), block_lengths))) %>%
+    summarize(jack = list(f4_from_f2(f2_blocks[pop1, pop4, ],
+                                     f2_blocks[pop2, pop3, ],
+                                     f2_blocks[pop1, pop3, ],
+                                     f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
+    mutate(sts = map(jack, ~bj_mat_stats(t(.), f2dat$block_lengths))) %>%
     unnest_wider(sts) %>%
     mutate(estimate = jest, se = map_dbl(jvar[,1], sqrt), z = estimate/se, p.value = ztop(z)) %>%
     select(-jack, -jest, -jvar)
@@ -377,11 +353,11 @@ qpdstat = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 f4 = qpdstat
 
 
-fstat_get_popcombs = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-              f2_blocks = NULL, sure = FALSE, unique_only = TRUE, fnum = NULL) {
+fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+                              sure = FALSE, unique_only = TRUE, fnum = NULL) {
   # used by f2, f3, and f4 function
   # returns data frame 'out' with pop combs
-  stopifnot(!is.null(pop1) | !is.null(f2_blocks))
+  stopifnot(!is.null(pop1) | !is.null(f2_data))
 
   #----------------- make combinations -----------------
   out = NULL
@@ -392,7 +368,8 @@ fstat_get_popcombs = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL
     if(ncomb > maxcomb & !sure) stop(paste0('If you really want to compute ', ncomb, ' f-statistics, run this again with "sure = TRUE".'))
     out = expand_grid(pop1, pop2, pop3, pop4)
   } else if(is.null(pop1)) {
-    pop1 = dimnames(f2_blocks)[[1]]
+    if(is.character(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
+    else pop1 = dimnames(f2_data)[[1]]
   } else if(!'data.frame' %in% class(pop1)) {
     pop1 = read_table2(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
@@ -432,24 +409,23 @@ fstat_get_popcombs = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL
   out
 }
 
+# should be the only function that turns f2_data into f2_blocks
+# returns list with scaled f2_blocks (a)rray and block_lengths
+get_f2 = function(f2_data, pops, f2_denom = 1, rray = TRUE) {
 
-fstat_get_f2 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1) {
-  # used by f2, f3, and f4 function
-  # returns list with 'f2_blocks_scaled' and 'block_lengths'
-
-  #----------------- read f-stats -----------------
-  if(is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) stop('You have to provide an f2_dir argument, or f2_blocks and block_lengths!')
-  if(!is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) {
-    f2_blocks = read_f2(f2_dir, pops = pops)
-    load(paste0(f2_dir, '/block_lengths.RData'))
+  stopifnot(!is.character(f2_data) || dir.exists(f2_data))
+  if(is.character(f2_data)) {
+    f2_blocks = read_f2(f2_data, pops = pops)
+  } else {
+    f2_blocks = f2_data
   }
+  block_lengths = attr(f2_blocks, 'block_lengths')
 
-  #----------------- process f-stats -----------------
-  f2nam = dimnames(f2_blocks)[[1]]
-  stopifnot(all(pops %in% f2nam))
-  f2_blocks_scaled = f2_blocks / f2_denom
-
-  namedList(f2_blocks_scaled, block_lengths)
+  stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
+  f2_blocks = f2_blocks[pops, pops,] / f2_denom
+  if(rray) f2_blocks = rray::rray(f2_blocks, dim_names = list(pops, pops, NULL))
+  namedList(f2_blocks, block_lengths)
 
 }
+
 

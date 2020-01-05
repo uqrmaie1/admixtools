@@ -1,5 +1,5 @@
 
-#' Read allele frequencies from packedancestrymap genotype file
+#' Read allele frequencies from packedancestrymap files
 #' @export
 #' @param pref prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).
 #' @param pops vector of populations from which to compute allele frequencies.
@@ -414,10 +414,11 @@ read_f2 = function(f2_dir, pops = NULL) {
     pops = list.dirs(f2_dir, full.names=FALSE, recursive=FALSE)
     remove_na = TRUE
   }
-  load(paste0(f2_dir, '/', pops[1], '/', pops[1], '.RData'))
-  numblocks = length(f2)
+  load(paste0(f2_dir, '/block_lengths.RData'))
+  numblocks = length(block_lengths)
   numpops = length(pops)
   f2_blocks = array(NA, c(numpops, numpops, numblocks))
+  f2_blocks = structure(f2_blocks, block_lengths = block_lengths)
   dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = pops
   for(pop1 in pops) {
     for(pop2 in pops) {
@@ -438,19 +439,20 @@ read_f2 = function(f2_dir, pops = NULL) {
   f2_blocks
 }
 
-#' Read block_lengths from disk
-#'
-#' @export
-#' @param f2_dir directory from which to read files
-#' @return a vector with block_lengths
-#' @examples
-#' \dontrun{
-#' read_bl(f2_dir)
-#' }
-read_bl = function(f2_dir) {
-  load(paste0(f2_dir, '/block_lengths.RData'))
-  block_lengths
-}
+# #' Read block_lengths from disk
+# #'
+# #' @export
+# #' @param f2_dir directory from which to read files
+# #' @return a vector with block_lengths
+# #' @examples
+# #' \dontrun{
+# #' read_bl(f2_dir)
+# #' }
+# read_bl = function(f2_dir) {
+#   load(paste0(f2_dir, '/block_lengths.RData'))
+#   block_lengths
+# }
+
 
 #' Write allele frequency estimates to disk
 #'
@@ -528,13 +530,11 @@ split_afmat = function(afmat, pops_per_block, outprefix, verbose = TRUE) {
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.
 #' @param overwrite should existing files be overwritten?
 #' @param verbose print progress updates
-#' @return Nothing, if \code{outdir} is specified. Otherwise a list with \code{f2_blocks} and \code{block_lengths}
+#' @return Nothing, if \code{outdir} is specified. Otherwise a 3d array with f2 statistics (\code{f2_blocks})
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
-#' data = extract_data(pref, pops = c('Protoss', 'Zerg', 'Terran'))
-#' f2_blocks = data$f2_blocks
-#' block_lengths = data$block_lengths
+#' f2_blocks = extract_data(pref, pops = c('Protoss', 'Zerg', 'Terran'))
 #' }
 extract_data = function(pref, outdir = NULL, pops = NULL, inds = NULL,
                         na.action = 'none', maxmem = 1000, overwrite = FALSE,
@@ -554,7 +554,8 @@ extract_data = function(pref, outdir = NULL, pops = NULL, inds = NULL,
   f2_blocks = afs_to_f2_blocks(afs, pop_counts, block_lengths,
                                outdir = outdir, overwrite = overwrite,
                                maxmem = maxmem, verbose = verbose)
-  if(is.null(outdir)) return(namedList(f2_blocks, block_lengths, pop_counts))
+  f2_blocks = structure(f2_blocks, block_lengths = block_lengths)
+  if(is.null(outdir)) return(f2_blocks)
   save(block_lengths, file = paste0(outdir, '/block_lengths.RData'))
   save(pop_counts, file = paste0(outdir, '/pop_counts.RData'))
 }

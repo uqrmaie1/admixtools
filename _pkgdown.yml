@@ -41,8 +41,8 @@ reference:
       - write_f2
   - title: "Graph topology"
     contents:
+      - fit_graph
       - random_admixturegraph
-      - optimize_admixturegraph
       - summarize_triples
       - qpadm_models
 

@@ -45,7 +45,7 @@ If you already have precomputed f2-statistics, you can fit an admixture graph li
 
 ```{r, eval = FALSE}
 f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
-fit = qpgraph(example_graph, f2_dir = f2_dir)
+fit = qpgraph(f2_dir, example_graph)
 plot_graph(fit$edges)
 ```
 
@@ -61,10 +61,10 @@ left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 ```
 ```{r, eval = FALSE}
-qpadm(target, left, right, f2_dir = f2_dir)
+qpadm(f2_dir, target, left, right)
 ```
 ```{r, echo = FALSE}
-qpadm(target, left, right, example_f2_blocks, example_block_lengths)
+qpadm(example_f2_blocks, target, left, right)
 ```
 
 More documentation [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html).
