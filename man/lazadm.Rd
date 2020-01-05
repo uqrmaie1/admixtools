@@ -24,7 +24,7 @@ lazadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 
 \item{getcov}{should standard errors be returned? Currently not implemented.}
 
-\item{constrained}{if \code{TRUE} (default), admixture weights will all be positive. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
+\item{constrained}{if \code{TRUE} (default), admixture weights will all be non-negative. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
 }
 \value{
 a data frame with weights and standard errors for each left population

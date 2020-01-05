@@ -4,6 +4,20 @@
 using namespace Rcpp;
 using namespace arma;
 
+// #include "eigen-qp.hpp"
+//
+// namespace EigenQP {
+// template<typename Scalar, int NVars, int NIneq>
+// void quadprog(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c,
+//              Eigen::Matrix<Scalar,NIneq,NVars> &A, Eigen::Matrix<Scalar,NIneq,1> &b,
+//              Eigen::Matrix<Scalar,NVars,1> &x);
+//
+//
+// template<typename Scalar, int NVars, int NIneq>
+// void quadprog2(Eigen::Matrix<Scalar,NVars,NVars> &Q);
+// }
+
+
 // [[Rcpp::export]]
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d,
                                const arma::mat& ppinv,
@@ -94,6 +108,42 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   return lik(0);
 }
 
+int choose2(int k) {
+  return k*(k-1)/2;
+}
+
+// [[Rcpp::export]]
+NumericVector cpp_get_pairindex(const NumericVector perm) {
+
+  int numpop = perm.size();
+  int numpair = choose2(numpop);
+  int c, c1, c2, num, i1, i2, v1, v2;
+  NumericVector new_order(numpair);
+  NumericVector perm2(numpop-1);
+  c = 0;
+  for(int i=0; i<numpop; i++) {
+    num = perm(i);
+    if(num != 1) {
+      perm2(c) = perm(i);
+      c++;
+    }
+  }
+  c1 = 0;
+  c2 = 0;
+  for(int i=0; i<numpair; i++) {
+    if(c2 == numpop-1) {
+      c1++;
+      c2 = c1;
+    }
+    i1 = perm2(c1);
+    i2 = perm2(c2);
+    v1 = std::min(i1, i2);
+    v2 = std::max(i1, i2);
+    new_order(i) = choose2(numpop) - choose2(numpop-v1+1) + v2 - numpop;
+    c2++;
+  }
+  return new_order;
+}
 
 // Rcpp optimization using Roptim (cpp_lbfgsb / Optimfunctor in c++) is not actually faster than using R optim.
 

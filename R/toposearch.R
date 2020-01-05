@@ -21,27 +21,27 @@ numadmixplacements = function(numedges, nadmix) {
 }
 
 
-numadmix = function(grph) {
-  sum(degree(grph, mode='in') == 2)
+numadmix = function(graph) {
+  sum(degree(graph, mode='in') == 2)
 }
 
 #' @export
-get_leafnames = function(grph) {
-  grph %>% V %>% {names(which(degree(grph, ., mode='out') == 0))}
+get_leafnames = function(graph) {
+  graph %>% V %>% {names(which(degree(graph, ., mode='out') == 0))}
 }
 
-get_leaves = function(grph) {
-  grph %>% V %>% {.[degree(grph, ., mode='out') == 0]}
+get_leaves = function(graph) {
+  graph %>% V %>% {.[degree(graph, ., mode='out') == 0]}
 }
 
-get_leaves2 = function(grph) {
+get_leaves2 = function(graph) {
   # uses 'subcomponent' to return leaves in a consistent order
-  grph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(grph))
+  graph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(graph))
 }
 
-unify_vertex_names_rec = function(grph, node, vnamemap) {
+unify_vertex_names_rec = function(graph, node, vnamemap) {
   # recursive function which returns a vector of new, unique node names for all nodes which are reachable from 'node'
-  children = neighbors(grph, node, mode='out')
+  children = neighbors(graph, node, mode='out')
   oldnam = names(node)
   if(length(children) == 0) {
     vnamemap[oldnam] = oldnam
@@ -459,32 +459,36 @@ swap_leaves = function(grph, fix_outgroup=TRUE) {
 }
 
 
-add_generation = function(models, numsel, qpgfun) {
+add_generation = function(models, numsel, qpgfun, mutfuns) {
 
   lastgen = max(models$generation)
   numpergen = models %>% filter(generation == lastgen) %>% nrow
-  numeach = round(numpergen/numsel)
   stopifnot(numpergen > numsel)
+  numeach = ceiling(numpergen/numsel)
   oldmodels = models %>% filter(generation == lastgen)
   winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob)
   winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score)))
-  newmodels = tibble(generation = lastgen+1, index = 1:numpergen, igraph = rep(winners$igraph, numeach), oldscore = rep(winners$score, numeach))
-  mutations = c(replicate(numsel, namedList(identity)), sample_mutations(numpergen-numsel))
+  sq = 1:numpergen
+  newmodels = tibble(generation = lastgen+1, index = sq,
+                     igraph = rep(winners$igraph, numeach)[sq],
+                     oldscore = rep(winners$score, numeach)[sq])
+  mutations = c(replicate(numsel, namedList(identity)),
+                sample(mutfuns, numpergen-numsel, replace = TRUE))
   newmodels %<>% mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x)))
-  newmodels %<>% mutate(out = furrr::future_map(igraph, qpgfun)) %>% unnest_wider(out)
-  #newmodels %<>% mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out)
+  #newmodels %<>% mutate(out = furrr::future_map(igraph, qpgfun)) %>% unnest_wider(out)
+  newmodels %<>% mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out)
   models %>% bind_rows(newmodels)
 }
 
-sample_mutations = function(n) {
-  # returns a random mutation function
-  mutations = list(sprleaves = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = TRUE)),
-                   sprall = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = FALSE)),
-                   #permleaves = permute_leaves,
-                   swapleaves = swap_leaves,
-                   moveadmix = move_admixedge_once)
-  sample(mutations, n, replace = TRUE)
-}
+# sample_mutations = function(n) {
+#   # returns a random mutation function
+#   mutations = list(sprleaves = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = TRUE)),
+#                    sprall = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = FALSE)),
+#                    #permleaves = permute_leaves,
+#                    swapleaves = swap_leaves,
+#                    moveadmix = move_admixedge_once)
+#   sample(mutations, n, replace = TRUE)
+# }
 
 
 score_to_prob = function(score, fix_best=TRUE) {
@@ -495,20 +499,18 @@ score_to_prob = function(score, fix_best=TRUE) {
 }
 
 
-evolve_topology = function(init, numgen, numsel, qpgfun, verbose=TRUE) {
+evolve_topology = function(init, numgen, numsel, qpgfun, mutfuns, verbose=TRUE) {
 
   out = init
   for(i in seq_len(numgen)) {
-    out = add_generation(out, numsel, qpgfun)
+    out = add_generation(out, numsel, qpgfun, mutfuns)
 
     if(verbose) {
-      thisgen = out %>% filter(generation == i)
-      cat(paste0('Generation ', i, '\n'))
-      cat(paste0('  Selected scores: ', paste(round(thisgen %>% filter(index <= numsel) %>% top_n(numsel, -jitter(score)) %$% score), collapse=', '), '\n'))
-      cat(paste0('  Best new scores: ', paste(round(thisgen %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score), collapse=', '), '\n'))
-      cat(paste0('  Median score: ', round(median(thisgen$score)), '\n'))
+      best = out %>% filter(generation == i) %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
+      cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best), collapse=', '), paste(rep(' ', 30), collapse=''), '\r'))
     }
   }
+  if(verbose) cat('\n')
   out
 }
 
@@ -529,16 +531,35 @@ evolve_topology = function(init, numgen, numsel, qpgfun, verbose=TRUE) {
 #' @examples
 #' pops = get_leafnames(igraph1)
 #' optimize_admixturegraph_single(igraph1, f3_jest, ppinv, numgraphs=10, numgen=2, numsel=2, numadmix=1)
-optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs=50, numgen=5, numsel=5, numadmix=0, outpop=NA, verbose=TRUE, cpp=TRUE, debug=FALSE, ...) {
+optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, numgen = 5,
+                                          numsel = 5, numadmix = 0, outpop = NA, verbose = TRUE,
+                                          cpp = TRUE, debug = FALSE, ...) {
+  if(numadmix == 0) {
 
-  qpgfun = function(grph) qpgraph_slim(grph, f3_jest, ppinv, pops, fnscale = 1e-4, cpp=cpp, verbose=FALSE, ...)
-  if(!debug) qpgfun = possibly(qpgfun, otherwise=NULL)
+    qpgfun0 = qpgraph_anorexic
+    mutfuns = list(sprleaves = function(x) (subtree_prune_and_regraft(x, only_leaves = TRUE)),
+                   sprall = function(x) (subtree_prune_and_regraft(x, only_leaves = FALSE)),
+                   #permleaves = permute_leaves,
+                   swapleaves = swap_leaves)
+  } else {
+
+    qpgfun0 = qpgraph_slim
+    mutfuns = list(sprleaves = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = TRUE)),
+                   sprall = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = FALSE)),
+                   #permleaves = permute_leaves,
+                   swapleaves = swap_leaves,
+                   moveadmix = move_admixedge_once)
+  }
+
+  qpgfun = function(graph) qpgfun0(graph, f3_jest, ppinv, cpp = cpp, verbose = FALSE, ...)
+  if(!debug) qpgfun = possibly(qpgfun, otherwise = NULL)
 
   initigraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop=outpop), simplify = F)
-  init = tibble(generation=0, index = seq_len(numgraphs), igraph = initigraphs, mutation = 'random_admixturegraph') %>%
+  init = tibble(generation=0, index = seq_len(numgraphs),
+                igraph = initigraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out) %>% mutate(oldscore = score)
 
-  evolve_topology(init, numgen, numsel, qpgfun, verbose=verbose)
+  evolve_topology(init, numgen, numsel, qpgfun, mutfuns, verbose=verbose)
 }
 
 #' Find a well fitting admixturegraph
@@ -559,17 +580,26 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs=50, nu
 #' optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
 #'                         numgen = 20, numsel = 5, numadmix = 3)
 #' }
-optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep=10, numgraphs=50, numgen=5, numsel=5, numadmix=0, outpop=NA, verbose=TRUE, cpp=TRUE, debug=FALSE, ...) {
+optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep = 10, numgraphs = 50,
+                                   numgen = 5, numsel = 5, numadmix = 0,
+                                   outpop = NA, verbose = TRUE, cpp = TRUE, debug = FALSE, ...) {
 
   if(is.na(outpop)) outpop = pops[1]
   else if(!outpop %in% pops) pops = c(outpop, pops)
 
-  oa = function(x) optimize_admixturegraph_single(pops, outpop=outpop, f3_jest, ppinv,
-                                                  numgen = numgen, numsel = numsel,
-                                                  numgraphs = numgraphs, numadmix = numadmix,
-                                                  verbose = verbose, cpp = cpp, debug = debug, ...)
-  if(!debug) oa = possibly(oa, otherwise=NULL)
-  res = furrr::future_map(as.list(seq_len(numrep)), oa)
+  oa = function() optimize_admixturegraph_single(pops, outpop=outpop, f3_jest, ppinv,
+                                                 numgen = numgen, numsel = numsel,
+                                                 numgraphs = numgraphs, numadmix = numadmix,
+                                                 verbose = verbose, cpp = cpp, debug = debug, ...)
+  if(!debug) {
+    oa = possibly(oa, otherwise=NULL)
+    res = furrr::future_map(as.list(seq_len(numrep)), oa)
+  } else {
+    res = list()
+    for(i in seq_len(numrep)) {
+      res[[i]] = oa()
+    }
+  }
   bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
 }
 
@@ -706,11 +736,11 @@ isomorphism_classes2 = function(igraphlist) {
 #'
 #' For large admixturegraph, there may be a large number of valid qpAdm models!
 #'
+#' @export
 #' @param grph an admixture graph as igraph object
 #' @param add_outgroup should the graph outgroup be added to the qpAdm right populations? Technically this shouldn't be an informative outgroup for qpAdm.
 #' @param nested should a nested data frame be returned (\code{TRUE}), or should populations be concatenated into strings (\code{FALSE})?
 #' @param abbr maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
-#' @export
 #' @examples
 #' \dontrun{
 #' qpadm_models(igraph2, add_outgroup = TRUE)
@@ -755,15 +785,66 @@ qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 
 }
 
-
-
-
-split_graph = function(graph) {
+#' @export
+decompose_graph = function(graph) {
   # splits an admixture graph into trees
+  if(!'igraph' %in% class(graph)) {
+    graph %<>% graph_from_edgelist
+  }
+  edges = graph %>% simplify_graph %>% as_edgelist %>%
+    as_tibble(.name_repair = ~c('from', 'to'))
 
+  admixmat = edges %>% mutate(i = 1:n()) %>% group_by(to) %>% mutate(cnt = n(), j = 1:n()) %>% ungroup %>% filter(cnt == 2) %>% select(to, i, j) %>% spread(to, i) %>% select(-j) %>% as.matrix
+  nadmix = ncol(admixmat)
+  if(nadmix == 0) return(list(graph))
 
+  indices = expand.grid(replicate(ncol(admixmat), 1:2, simplify = FALSE)) %>% as.matrix
 
+  trees = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)]))
+  trees %>% map(as.matrix) %>% map(graph_from_edgelist) %>% map(simplify_graph)
 }
+
+
+#' @export
+tree_neighbors = function(tree) {
+  # returns nested data frame with all trees within edit distance 1
+  root = V(tree)[1]
+  gen1 = neighbors(tree, root, mode = 'out')
+  nodes = difference(V(tree), c(root, gen1))
+  map(nodes, ~(tree_neighbors_single(tree, .))) %>% bind_rows
+}
+
+
+tree_neighbors_single = function(tree, node) {
+  # returns nested data frame with all trees within edit distance 1
+  # that are created by cutting the edge leading to node
+  if(class(node) != 'character') node = names(node)
+  downstream = subcomponent(tree, node, mode = 'out')
+  root = V(tree)[1]
+  outgroup = V(tree)[2]
+  parent = neighbors(tree, node, mode = 'in')
+  sibling = neighbors(tree, parent, mode = 'out')
+  from = names(difference(V(tree), c(downstream, root, outgroup, parent, sibling)))
+  tibble(from) %>% mutate(to = node, itree = map2(from, to, ~replace_edge(tree, .x, .y)))
+}
+
+replace_edge = function(tree, from, to) {
+  # removes edge leading to node 'to', and adds edge beginning above node 'from'
+  parent = names(neighbors(tree, to, mode = 'in'))
+  grandparent = names(neighbors(tree, parent, mode = 'in'))
+  sibling = setdiff(names(neighbors(tree, parent, mode = 'out')), to)
+  newgrandparent = names(neighbors(tree, from, mode = 'in'))
+  tree %>%
+    add_edges(c(grandparent, sibling)) %>%
+    delete_vertices(parent) %>%
+    add_vertices(1, name = parent) %>%
+    delete_edges(paste(newgrandparent, from, sep = '|')) %>%
+    add_edges(c(parent, to, newgrandparent, parent, parent, from))
+}
+
+
+
+
 
 
 

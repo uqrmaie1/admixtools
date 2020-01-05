@@ -43,13 +43,12 @@ arma::mat cpp_opt_B(const arma::mat& A, const arma::vec& xvec, const arma::mat& 
 
 
 // [[Rcpp::export]]
-arma::vec cpp_qpadm_weights(const arma::mat& xmat,
-                            const arma::mat& qinv,
-                            int rnk, double fudge=0.0001, int iterations=20) {
+arma::vec cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv,
+                            int rnk, double fudge = 0.0001, int iterations = 20,
+                            bool constrained = false, Function qpsolve = R_NilValue) {
 
-  mat U;
+  mat U, V, x, y, rhs, lhs;
   vec s;
-  mat V;
   svd(U, s, V, xmat);
   mat B = V.cols(0, rnk-1).t();
   mat A = xmat * B.t();
@@ -60,19 +59,28 @@ arma::vec cpp_qpadm_weights(const arma::mat& xmat,
     A = cpp_opt_A(B, xvec, qinv, nr, fudge);
     B = cpp_opt_B(A, xvec, qinv, nc, fudge);
   }
-  vec w = solve(join_rows(A, ones(A.n_rows)).t(), join_cols(zeros(rnk), ones(1)));
+  //vec w = solve(join_rows(A, ones(A.n_rows)).t(), join_cols(zeros(rnk), ones(1)));
+  x = join_rows(A, ones(A.n_rows)).t();
+  y = join_cols(zeros(rnk), ones(1));
+  rhs = x.t() * x;
+  lhs = x.t() * y;
+  vec w;
+  if(constrained) w = -as<arma::vec>(qpsolve(rhs, lhs, -mat(nr, nr, fill::eye), zeros(nr)));
+  else w = solve(rhs, lhs);
   return w / sum(w);
 }
 
 
 // [[Rcpp::export]]
-arma::mat cpp_get_weights_covariance(arma::cube f4_blocks, arma::mat qinv, double fudge=0.0001) {
+arma::mat cpp_get_weights_covariance(arma::cube f4_blocks, arma::mat qinv, double fudge=0.0001,
+                                     int iterations = 20, bool constrained = false, Function qpsolve = R_NilValue) {
 
   int rnk = f4_blocks.n_rows-1;
   int numblocks = f4_blocks.n_slices;
   mat wmat(numblocks, f4_blocks.n_rows);
   for(int i=0; i<numblocks; i++) {
-      wmat.row(i) = cpp_qpadm_weights(f4_blocks.slice(i), qinv, rnk, fudge).t();
+      wmat.row(i) = cpp_qpadm_weights(f4_blocks.slice(i), qinv, rnk, fudge,
+                                      iterations, constrained, qpsolve).t();
   }
   vec jackmeans = mean(wmat, 0).t();
   mat wmat2 = -wmat.t();

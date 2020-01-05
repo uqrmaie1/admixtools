@@ -129,31 +129,50 @@ qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
 
 
 #' @export
-graph_to_pwts = function(grph) {
+graph_to_pwts = function(graph) {
   # input igraph object
-  # output: (numpops-1)*numedges matrix 'pwts' which indicates all paths from pop to outpop; admixture edges are mapped onto parent edges and weighted
+  # output: numedges*(numpops-1) matrix 'pwts' which indicates all paths from pop to outpop; admixture edges are mapped onto parent edges and weighted
   # assumes first pop is outpop, and 'R' is root
 
-  leaves = V(grph)$name[degree(grph, v = V(grph), mode = c('out')) == 0]
-  pwts = matrix(0, length(E(grph)), length(leaves))
+  leaves = get_leafnames(graph)
+  #leaves = V(graph)$name[degree(graph, v = V(graph), mode = c('out')) == 0]
+  pwts = matrix(0, length(E(graph)), length(leaves))
   colnames(pwts) = leaves
-  rownames(pwts) = attr(E(grph), 'vnames')
+  rownames(pwts) = attr(E(graph), 'vnames')
 
-  admixnodes = which(degree(grph, mode='in')==2)
-  admixedges = unlist(incident_edges(grph, admixnodes, mode='in'))
+  admixnodes = which(degree(graph, mode='in')==2)
+  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
 
-  allpaths = all_simple_paths(grph, V(grph)[1], leaves, mode='out')
+  allpaths = all_simple_paths(graph, V(graph)[1], leaves, mode='out')
   pathcounts = table(names(sapply(allpaths, function(x) tail(x,1))))
   for(i in seq_len(length(allpaths))) {
     target = names(tail(allpaths[[i]],1))
     ln = length(allpaths[[i]])
     pth2 = allpaths[[i]][c(1, 1+rep(seq_len(ln-2), each=2), ln)]
-    rowind = as.vector(E(grph)[get.edge.ids(grph, pth2)])
+    rowind = as.vector(E(graph)[get.edge.ids(graph, pth2)])
     pwts[rowind,target] = pwts[rowind,target] + 1/pathcounts[target]
   }
 
   if(!is.null(admixedges)) pwts = pwts[-admixedges,]
   pwts[,-1] - pwts[,1]
+}
+
+tree_to_pwts = function(graph) {
+  # should give same output as graph_to_pwts for trees, but faster
+  # returns numedges*(numpops-1) matrix
+  # in tree, each edge maps to one node
+
+  leaves = get_leafnames(graph)
+  pwts = matrix(0, length(E(graph))+1, length(leaves))
+  colnames(pwts) = leaves
+  rownames(pwts) = names(V(graph))
+  enames = attr(E(graph), 'vnames') %>% str_replace('.+\\|', '')
+
+  paths = shortest_paths(graph, 'R', leaves)$vpath
+  indmat = paths %>% map(as.numeric) %>% map(tail, -1) %>% imap(~cbind(.x, .y)) %>% do.call(rbind, .)
+  pwts[indmat] = 1
+  pwts = pwts[,-1] - pwts[,1]
+  pwts[enames,]
 }
 
 
@@ -166,20 +185,20 @@ expand_path = function(path) {
 }
 
 #' @export
-graph_to_weightind = function(grph) {
+graph_to_weightind = function(graph) {
   # input igraph object
   # output:
   # map (leaf, edge) -> paths
   # map path -> weights
   # ultimately: indices for weights into paths, indices for paths into pwts
 
-  leaves = V(grph)[degree(grph, v = V(grph), mode = c('out')) == 0]
-  admixnodes = which(degree(grph, mode='in')==2)
-  admixedges = unlist(incident_edges(grph, admixnodes, mode='in'))
-  normedges = setdiff(1:length(E(grph)), admixedges)
-  paths = all_simple_paths(grph, V(grph)[1], leaves[-1], mode='out')
+  leaves = get_leaves(graph)
+  admixnodes = which(degree(graph, mode='in')==2)
+  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
+  normedges = setdiff(1:length(E(graph)), admixedges)
+  paths = all_simple_paths(graph, V(graph)[1], leaves[-1], mode='out')
   ends = sapply(paths, tail, 1)
-  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(grph, .))
+  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, .))
   weight_per_path = edge_per_path %>% map(~(which(admixedges %in% .)))
 
   path_edge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)), function(i) tibble(path=i, edge=c(edge_per_path[[i]])))) %>% mutate(edge2 = match(edge, normedges)) %>% filter(!is.na(edge2)) %>% mutate(leaf = as.vector(ends[path]), leaf2 = match(leaf, leaves[-1])) %>% left_join(enframe(c(table(ends))) %>% transmute(leaf=as.numeric(name), numpaths=value), by='leaf') %>% group_by(leaf2, edge2) %>% mutate(cnt = n(), keep = cnt < numpaths) %>% filter(keep) %>% as.matrix
@@ -216,7 +235,7 @@ optimweightsfun = function(weights, args) {
   cmb = args[[7]]
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest)
+  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, args[[8]])
   w2 = (ppwts_2d %*% q2) - f3_jest
   lik = t(w2) %*% ppinv %*% w2
   lik[1,1]
@@ -255,7 +274,7 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 
 
 
-#' Compute the fit of an admixturegraph.
+#' Compute the fit of an admixturegraph
 #'
 #' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics. f2-block-jackknife statistics can be provided via the arguments \code{f2_blocks} and \code{block_lengths}, or via \code{f2_dir}.
 #' @export
@@ -288,54 +307,28 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   } else if(class(graph)[1] == 'igraph') {
     edges = igraph::as_edgelist(graph)
   } else {
-    stop('Cannot parse graph!')
+    stop(paste0('Cannot parse graph of class ', class(graph),'!'))
   }
   grph = graph_from_edgelist(edges)
+  if(class(graph)[1] == 'igraph') grph = graph
   nedges = length(E(grph))
   admixnodes = which(degree(grph, mode='in')==2)
   nadmix = length(admixnodes)
   admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(grph, admixnodes, mode='in')[[i]][1:2])
   normedges = setdiff(1:nedges, admixedgesfull)
 
-  pops = V(grph)$name[degree(grph, v = V(grph), mode = c('out')) == 0]
-
-  #----------------- read f-stats -----------------
-  if(is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) stop('You have to provide an f2_dir argument, or f2_blocks and block_lengths!')
-  if(!is.null(f2_dir) & (is.null(f2_blocks) | is.null(block_lengths))) {
-    f2_blocks = read_f2(f2_dir, pops = pops)
-    load(paste0(f2_dir, '/block_lengths.RData'))
-  }
-  stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
-
-  popind = match(pops, dimnames(f2_blocks)[[1]])
-  f2_blocks = f2_blocks / f2_denom
-  f2_blocks = rray(f2_blocks)
+  pops = get_leafnames(grph)
   npop = length(pops)
-  npair = choose(npop, 2)
   cmb = combn(0:(npop-1), 2)+(1:0)
 
-  #----------------- process f-stats -----------------
-  f2 = bj_arr_stats(f2_blocks[popind,popind,], block_lengths)
-  f2out = tibble(pop1=combn(pops, 2)[1,],
-                 pop2=combn(pops, 2)[2,],
-                 f2est = f2[[1]][lower.tri(f2[[1]])],
-                 se = sqrt(f2[[2]][lower.tri(f2[[2]])]))
-  # todo: write function to compute all pairwise fitted f2 stats from edge weights (if that's an interesting output)
+  popind = match(pops, dimnames(f2_blocks)[[1]])
 
-  f3_blocks = (f2_blocks[, popind[1],] + f2_blocks[popind[1],,] - f2_blocks)/2
-  f3_blocks_2d = arr3d_to_pairmat(f3_blocks[popind[-1], popind[-1],])
-  f3dat = bj_mat_stats(f3_blocks_2d, block_lengths)
-  f3_jest = f3dat$jest
-  f3_jvar = f3dat$jvar
-  f3out = tibble(pop1=pops[cmb[1,]],
-                 pop2=pops[cmb[2,]],
-                 f3est = f3_jest, se = sqrt(diag(f3_jvar)))
-  diag(f3_jvar) = diag(f3_jvar) + sum(diag(f3_jvar))*fudge
+  precomp = qpgraph_precompute_f3(pops, f2_blocks = f2_blocks, block_lengths = block_lengths, f2_dir = f2_dir, f2_denom = f2_denom, fudge = fudge, lsqmode = lsqmode)
 
-  #----------------- compute fit -----------------
-  # in qpGraph fudge is 1e-5; sometimes quadprog doesn't converge unless this is larger; has large effect on magnitude of likelihood score
-  if(lsqmode) ppinv = diag(1/diag(f3_jvar))
-  else ppinv = solve(f3_jvar)
+  f3_jest = precomp$f3_jest
+  ppinv = precomp$ppinv
+  f2out = precomp$f2out
+  f3out = precomp$f3out
 
   if(verbose) alert_info('preprocessing done')
   weightind = graph_to_weightind(grph)
@@ -369,10 +362,11 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
+
   q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
-  edges = as_tibble(edges) %>% set_colnames(c('from', 'to')) %>%
+  edges = as_tibble(edges, .name_repair = ~c('from', 'to')) %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight=weight, label=round(weight, 2))
 
   namedList(edges, score, f2=f2out, f3=f3out, opt)
@@ -385,7 +379,6 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 #' @param graph an admixture graph represented as an \code{\link{igraph}} object
 #' @param f3_jest matrix of f3 estimates. output of \code{\link{qpgraph_precompute_f3}}
 #' @param ppinv inverted covariance matrix of f3-statistics
-#' @param pops populations in \code{f3_jest} and \code{ppinv}
 #' @param fnscale try increasing or decreasing this, if optimization does not converge.
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
@@ -399,26 +392,30 @@ qpgraph = function(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 #' precomp = qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
 #' f3_jest = precomp$f3_jest
 #' ppinv = precomp$ppinv
-#' out = qpgraph_slim(example_igraph, f3_jest, ppinv, pops)
+#' out = qpgraph_slim(example_igraph, f3_jest, ppinv)
 #' plot_graph(out$edges)
-qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, seed=NULL, verbose=FALSE, cpp=TRUE) {
+qpgraph_slim = function(graph, f3_jest, ppinv, fnscale = 1e-6, numstart = 10,
+                        seed = NULL, verbose = FALSE, cpp = TRUE) {
   # modelled after AdmixTools qpGraph
   # optimised for testing many topologies for a given set of populations
   # graph is igraph
+
+  if(cpp) {
+    get_pairindex = cpp_get_pairindex
+    optimweightsfun = cpp_optimweightsfun
+    opt_edge_lengths = cpp_opt_edge_lengths
+    fill_pwts = cpp_fill_pwts
+  }
 
   nedges = length(E(graph))
   admixnodes = which(degree(graph, mode='in')==2)
   nadmix = length(admixnodes)
   admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(graph, admixnodes, mode='in')[[i]][1:2])
   normedges = setdiff(1:nedges, admixedgesfull)
+  graphpops = get_leafnames(graph)
+  f3pops = attr(f3_jest, 'pops')
 
-  npop = length(pops)
-  cmb = combn(0:(npop-1), 2)+(1:0)
-  graphpops = V(graph)$name[degree(graph, v = V(graph), mode = c('out')) == 0]
-  popind = setdiff(match(graphpops, pops), 1)
-  orig_order = apply(cmb+1, 2, paste0, collapse='')
-  new_order = apply(matrix(popind[c(cmb)], 2), 2, function(x) paste0(sort(x), collapse=''))
-  pairmatch = match(new_order, orig_order)
+  pairmatch = get_pairindex(match(graphpops, f3pops))
   f3_jest = f3_jest[pairmatch]
   ppinv = ppinv[pairmatch, pairmatch]
   stopifnot(all(!is.na(ppinv)))
@@ -427,13 +424,8 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
   weight = rep(NA, nedges)
   pwts = graph_to_pwts(graph)
   opt = NULL
+  cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
   qpsolve = function(...) quadprog::solve.QP(...)$solution
-
-  if(cpp) {
-    optimweightsfun = cpp_optimweightsfun
-    opt_edge_lengths = cpp_opt_edge_lengths
-    fill_pwts = cpp_fill_pwts
-  }
 
   if(nadmix > 0) {
     set.seed(seed)
@@ -453,10 +445,11 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
+
   q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
   score = get_score(ppwts_2d, ppinv, f3_jest, q2)
   weight[normedges] = q2
-  edges = as_tibble(igraph::as_edgelist(graph)) %>% set_colnames(c('from', 'to')) %>%
+  edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight=weight, label=round(weight, 2))
 
   namedList(edges, score, opt)
@@ -487,7 +480,8 @@ qpgraph_slim = function(graph, f3_jest, ppinv, pops, fnscale=1e-6, numstart=10, 
 #' \dontrun{
 #' qpgraph_precompute_f3(pops, f2_dir = f2_dir, f2_denom = 0.278)
 #' }
-qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge=1e-3, lsqmode=FALSE) {
+qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
+                                 f2_denom = 1, fudge=1e-3, lsqmode=FALSE) {
   # returns list of f3_jest and ppinv for subset of populations.
   # f3_jest and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
@@ -526,6 +520,50 @@ qpgraph_precompute_f3 = function(pops, f2_blocks = NULL, block_lengths = NULL, f
   if(lsqmode) ppinv = diag(1/diag(f3_jvar))
   else ppinv = solve(f3_jvar)
 
+  f3_jest = structure(f3_jest, pops = pops)
+  ppinv = structure(ppinv, pops = pops)
   namedList(f3_jest, ppinv, f2out, f3out)
 }
+
+get_pairindex = function(perm) {
+  # returns index vector that matches population pairs in
+  # f3_jest and ppinv (which were computed using pops) to graph populations
+  cmb = combn(0:(length(perm)-1), 2)+(1:0)
+  popind = setdiff(perm, 1)
+  orig_order = apply(cmb+1, 2, paste0, collapse='')
+  new_order = apply(matrix(popind[c(cmb)], 2), 2, function(x) paste0(sort(x), collapse=''))
+  match(new_order, orig_order)
+}
+
+#' @export
+qpgraph_anorexic = function(graph, f3_jest, ppinv, fnscale = 1e-6,
+                            numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE) {
+
+  # only works for trees at the moment, because weightind order is coupled to pwts order
+  admixnodes = which(degree(graph, mode='in')==2)
+  stopifnot(length(admixnodes) == 0)
+
+  if(cpp) {
+    opt_edge_lengths = cpp_opt_edge_lengths
+  }
+
+  graphpops = get_leafnames(graph)
+  f3pops = attr(f3_jest, 'pops')
+  pwts = tree_to_pwts(graph)
+  pwts = pwts[, match(f3pops[-1], setdiff(graphpops, f3pops[1]))]
+
+  cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
+  ppwts_2d = t(pwts[,cmb[1,]] * pwts[,cmb[2,]])
+  qpsolve = function(...) quadprog::solve.QP(...)$solution
+
+  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  score = get_score(ppwts_2d, ppinv, f3_jest, q2)
+  edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
+    mutate(type = 'edge', weight = c(q2))
+
+  namedList(edges, score, opt = NULL)
+}
+
+
+
 

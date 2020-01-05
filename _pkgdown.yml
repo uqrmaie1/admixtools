@@ -3,7 +3,8 @@ template:
   params:
     bootswatch: cosmo
     docsearch:
-      index_name: bayesplot
+      index_name: admixtools
+    ganalytics: UA-155330476-1
 
 articles:
   - title: Plotting
@@ -40,8 +41,6 @@ reference:
       - write_f2
   - title: "Graph topology"
     contents:
-      - random_newick
-      - newick_to_edges
       - random_admixturegraph
       - optimize_admixturegraph
       - summarize_triples

@@ -52,8 +52,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_qpadm_weights
-arma::vec cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv, int rnk, double fudge, int iterations);
-RcppExport SEXP _admixtools_cpp_qpadm_weights(SEXP xmatSEXP, SEXP qinvSEXP, SEXP rnkSEXP, SEXP fudgeSEXP, SEXP iterationsSEXP) {
+arma::vec cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv, int rnk, double fudge, int iterations, bool constrained, Function qpsolve);
+RcppExport SEXP _admixtools_cpp_qpadm_weights(SEXP xmatSEXP, SEXP qinvSEXP, SEXP rnkSEXP, SEXP fudgeSEXP, SEXP iterationsSEXP, SEXP constrainedSEXP, SEXP qpsolveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -62,20 +62,25 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type rnk(rnkSEXP);
     Rcpp::traits::input_parameter< double >::type fudge(fudgeSEXP);
     Rcpp::traits::input_parameter< int >::type iterations(iterationsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_qpadm_weights(xmat, qinv, rnk, fudge, iterations));
+    Rcpp::traits::input_parameter< bool >::type constrained(constrainedSEXP);
+    Rcpp::traits::input_parameter< Function >::type qpsolve(qpsolveSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_qpadm_weights(xmat, qinv, rnk, fudge, iterations, constrained, qpsolve));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_get_weights_covariance
-arma::mat cpp_get_weights_covariance(arma::cube f4_blocks, arma::mat qinv, double fudge);
-RcppExport SEXP _admixtools_cpp_get_weights_covariance(SEXP f4_blocksSEXP, SEXP qinvSEXP, SEXP fudgeSEXP) {
+arma::mat cpp_get_weights_covariance(arma::cube f4_blocks, arma::mat qinv, double fudge, int iterations, bool constrained, Function qpsolve);
+RcppExport SEXP _admixtools_cpp_get_weights_covariance(SEXP f4_blocksSEXP, SEXP qinvSEXP, SEXP fudgeSEXP, SEXP iterationsSEXP, SEXP constrainedSEXP, SEXP qpsolveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::cube >::type f4_blocks(f4_blocksSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type qinv(qinvSEXP);
     Rcpp::traits::input_parameter< double >::type fudge(fudgeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_get_weights_covariance(f4_blocks, qinv, fudge));
+    Rcpp::traits::input_parameter< int >::type iterations(iterationsSEXP);
+    Rcpp::traits::input_parameter< bool >::type constrained(constrainedSEXP);
+    Rcpp::traits::input_parameter< Function >::type qpsolve(qpsolveSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_get_weights_covariance(f4_blocks, qinv, fudge, iterations, constrained, qpsolve));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -120,16 +125,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_get_pairindex
+NumericVector cpp_get_pairindex(const NumericVector perm);
+RcppExport SEXP _admixtools_cpp_get_pairindex(SEXP permSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector >::type perm(permSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_get_pairindex(perm));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_read_plink_afs_cpp", (DL_FUNC) &_admixtools_read_plink_afs_cpp, 4},
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
     {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
-    {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 5},
-    {"_admixtools_cpp_get_weights_covariance", (DL_FUNC) &_admixtools_cpp_get_weights_covariance, 3},
+    {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 7},
+    {"_admixtools_cpp_get_weights_covariance", (DL_FUNC) &_admixtools_cpp_get_weights_covariance, 6},
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 4},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
+    {"_admixtools_cpp_get_pairindex", (DL_FUNC) &_admixtools_cpp_get_pairindex, 1},
     {NULL, NULL, 0}
 };
 

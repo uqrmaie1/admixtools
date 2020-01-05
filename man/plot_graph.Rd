@@ -4,12 +4,12 @@
 \alias{plot_graph}
 \title{Plot an admixture graph}
 \usage{
-plot_graph(graph, fix = TRUE, title = "", color = TRUE)
+plot_graph(graph, fix = NULL, title = "", color = TRUE)
 }
 \arguments{
 \item{graph}{an admixture graph. If it's an edge list with a \code{label} column, those values will displayed on the edges}
 
-\item{fix}{if \code{TRUE} (the default), there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs.}
+\item{fix}{if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs. By default this is only done for graphs with fewer than 10 leaves.}
 
 \item{title}{plot title}
 

@@ -64,6 +64,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -145,8 +155,8 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph_slim</span>(<span class='no'>graph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='no'>pops</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>,
-  <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_slim</span>(<span class='no'>graph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -162,10 +172,6 @@
     <tr>
       <th>ppinv</th>
       <td><p>inverted covariance matrix of f3-statistics</p></td>
-    </tr>
-    <tr>
-      <th>pops</th>
-      <td><p>populations in <code>f3_jest</code> and <code>ppinv</code></p></td>
     </tr>
     <tr>
       <th>fnscale</th>
@@ -207,7 +213,7 @@
 <span class='no'>precomp</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>pops</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)
 <span class='no'>f3_jest</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>f3_jest</span>
 <span class='no'>ppinv</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>ppinv</span>
-<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>example_igraph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='no'>pops</span>)
+<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>example_igraph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>)
 <span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>out</span>$<span class='no'>edges</span>)</div><div class='img'><img src='qpgraph_slim-1.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
@@ -245,7 +251,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {

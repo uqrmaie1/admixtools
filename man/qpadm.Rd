@@ -6,7 +6,7 @@
 \usage{
 qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
   f2_dir = NULL, f2_denom = 1, fudge = 1e-04, getcov = TRUE,
-  cpp = TRUE)
+  constrained = FALSE, cpp = TRUE)
 }
 \arguments{
 \item{target}{target population}
@@ -26,6 +26,8 @@ qpadm(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 \item{fudge}{value added to diagonal matrix elements before inverting}
 
 \item{getcov}{should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.}
+
+\item{constrained}{if \code{FALSE} (default), admixture weights can be negative. if \code{TRUE}, they will all be non-negative, as in \code{\link{lazadm}}}
 
 \item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
 }

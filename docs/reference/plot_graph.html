@@ -64,6 +64,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -145,7 +155,7 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plot_graph</span>(<span class='no'>graph</span>, <span class='kw'>fix</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>title</span> <span class='kw'>=</span> <span class='st'>""</span>, <span class='kw'>color</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>plot_graph</span>(<span class='no'>graph</span>, <span class='kw'>fix</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>title</span> <span class='kw'>=</span> <span class='st'>""</span>, <span class='kw'>color</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -156,7 +166,7 @@
     </tr>
     <tr>
       <th>fix</th>
-      <td><p>if <code>TRUE</code> (the default), there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs.</p></td>
+      <td><p>if <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs. By default this is only done for graphs with fewer than 10 leaves.</p></td>
     </tr>
     <tr>
       <th>title</th>
@@ -209,7 +219,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {

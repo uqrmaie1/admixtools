@@ -64,6 +64,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -147,7 +157,7 @@
 
     <pre class="usage"><span class='fu'>qpadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -187,6 +197,10 @@
     <tr>
       <th>getcov</th>
       <td><p>should standard errors be returned? Setting this to <code>FALSE</code> makes this function much faster.</p></td>
+    </tr>
+    <tr>
+      <th>constrained</th>
+      <td><p>if <code>FALSE</code> (default), admixture weights can be negative. if <code>TRUE</code>, they will all be non-negative, as in <code><a href='lazadm.html'>lazadm</a></code></p></td>
     </tr>
     <tr>
       <th>cpp</th>
@@ -255,7 +269,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {

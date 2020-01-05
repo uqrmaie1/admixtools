@@ -64,6 +64,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -199,6 +209,10 @@
 #&gt;  [7] 0.17760530 0.09610525 0.11103233 0.09759183 0.09750339 0.15957981
 #&gt; [13] 0.08594492 0.15026916 0.15129538 0.15717535 0.08543411 0.08553202
 #&gt; [19] 0.19965759 0.19638099 0.34035924
+#&gt; attr(,"pops")
+#&gt; [1] "Chimp.REF"             "Altai_Neanderthal.DG"  "Vindija.DG"           
+#&gt; [4] "Mbuti.DG"              "Denisova.DG"           "Russia_Ust_Ishim.DG"  
+#&gt; [7] "Switzerland_Bichon.SG"
 #&gt; 
 #&gt; $ppinv
 #&gt;               [,1]         [,2]         [,3]          [,4]         [,5]
@@ -289,6 +303,10 @@
 #&gt; [19,]   -13786.42    73557.16    96786.28  594998.284  -502984.76   196496.3178
 #&gt; [20,]    11443.07  -314019.95   269398.28 -502984.757  2978958.32 -1677098.6507
 #&gt; [21,]  -421541.14   438598.87 -1100617.97  196496.318 -1677098.65  4523828.7218
+#&gt; attr(,"pops")
+#&gt; [1] "Chimp.REF"             "Altai_Neanderthal.DG"  "Vindija.DG"           
+#&gt; [4] "Mbuti.DG"              "Denisova.DG"           "Russia_Ust_Ishim.DG"  
+#&gt; [7] "Switzerland_Bichon.SG"
 #&gt; 
 #&gt; $f2out
 #&gt; <span style='color: #555555;'># A tibble: 21 x 4</span><span>
@@ -358,7 +376,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {

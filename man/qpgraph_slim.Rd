@@ -4,8 +4,8 @@
 \alias{qpgraph_slim}
 \title{Compute the fit of an admixturegraph.}
 \usage{
-qpgraph_slim(graph, f3_jest, ppinv, pops, fnscale = 1e-06,
-  numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE)
+qpgraph_slim(graph, f3_jest, ppinv, fnscale = 1e-06, numstart = 10,
+  seed = NULL, verbose = FALSE, cpp = TRUE)
 }
 \arguments{
 \item{graph}{an admixture graph represented as an \code{\link{igraph}} object}
@@ -13,8 +13,6 @@ qpgraph_slim(graph, f3_jest, ppinv, pops, fnscale = 1e-06,
 \item{f3_jest}{matrix of f3 estimates. output of \code{\link{qpgraph_precompute_f3}}}
 
 \item{ppinv}{inverted covariance matrix of f3-statistics}
-
-\item{pops}{populations in \code{f3_jest} and \code{ppinv}}
 
 \item{fnscale}{try increasing or decreasing this, if optimization does not converge.}
 
@@ -39,7 +37,7 @@ pops = get_leafnames(example_igraph)
 precomp = qpgraph_precompute_f3(pops, example_f2_blocks, example_block_lengths)
 f3_jest = precomp$f3_jest
 ppinv = precomp$ppinv
-out = qpgraph_slim(example_igraph, f3_jest, ppinv, pops)
+out = qpgraph_slim(example_igraph, f3_jest, ppinv)
 plot_graph(out$edges)
 }
 \seealso{

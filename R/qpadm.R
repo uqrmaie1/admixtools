@@ -37,14 +37,16 @@ opt_B = function(A, xmat, qinv, fudge = 0.0001) {
 }
 
 # todo: this need to incorporate block_lengths; cpp version too
-get_weights_covariance = function(f4_blocks, qinv, cpp = FALSE, fudge = 0.0001) {
+get_weights_covariance = function(f4_blocks, qinv, cpp = FALSE, fudge = 0.0001,
+                                  constrained = FALSE, qpsolve = NULL) {
 
   rnk = dim(f4_blocks)[1]-1
   numblocks = dim(f4_blocks)[3]
   wmat = matrix(NA, numblocks, dim(f4_blocks)[1])
   if(cpp) qpadm_weights = cpp_qpadm_weights
   for(i in 1:numblocks) {
-    wmat[i,] = qpadm_weights(as.matrix(f4_blocks[,,i]), qinv, rnk, fudge = fudge)
+    wmat[i,] = qpadm_weights(as.matrix(f4_blocks[,,i]), qinv, rnk,
+                             fudge = fudge, constrained = constrained, qpsolve = qpsolve)
   }
   jackmeans = colMeans(wmat)
   mnc = jackmeans - t(wmat)
@@ -52,15 +54,21 @@ get_weights_covariance = function(f4_blocks, qinv, cpp = FALSE, fudge = 0.0001) 
 }
 
 
-qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001) {
+qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001,
+                         iterations = 20, constrained = FALSE, qpsolve = NULL) {
   f4svd = svd(xmat)
   B = t(f4svd$v[, 1:rnk, drop=FALSE])
   A = xmat %*% t(B)
-  for(i in 1:20) {
+  for(i in 1:iterations) {
     A = opt_A(B, xmat, qinv, fudge = fudge)
     B = opt_B(A, xmat, qinv, fudge = fudge)
   }
-  w = solve(t(cbind(A, 1)), c(rep(0, rnk), 1))
+  rhs = t(cbind(A, 1))
+  lhs = c(rep(0, rnk), 1)
+  #w = solve(t(cbind(A, 1)), c(rep(0, rnk), 1))
+  nc = ncol(rhs)
+  if(constrained) w = -qpsolve(rhs, lhs, -diag(nc), rep(0, nc))
+  else w = solve(rhs, lhs)[,1]
   w/sum(w)
 }
 
@@ -100,6 +108,7 @@ qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge value added to diagonal matrix elements before inverting
 #' @param getcov should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.
+#' @param constrained if \code{FALSE} (default), admixture weights can be negative. if \code{TRUE}, they will all be non-negative, as in \code{\link{lazadm}}
 #' @param cpp should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.
 #' @return a data frame with weights and standard errors for each left population
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
@@ -110,7 +119,7 @@ qpadm_f2 = function(target, left, right, f2_blocks = NULL, block_lengths = NULL,
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' qpadm(target, left, right, example_f2_blocks, example_block_lengths)
-qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge = 0.0001, getcov = TRUE, cpp = TRUE) {
+qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL, f2_denom = 1, fudge = 0.0001, getcov = TRUE, constrained = FALSE, cpp = TRUE) {
 
   #----------------- prepare f4 stats -----------------
   f2dat = qpadm_f2(target, left, right, f2_blocks, block_lengths, f2_dir, f2_denom)
@@ -134,8 +143,11 @@ qpadm = function(target, left, right, f2_blocks = NULL, block_lengths = NULL, f2
     qpadm_weights = cpp_qpadm_weights
     get_weights_covariance = cpp_get_weights_covariance
   }
-  weight = qpadm_weights(f4_jest, qinv, rnk, fudge = fudge) %>% c
-  if(getcov) se = sqrt(diag(get_weights_covariance(f4_blocks, qinv)))
+  qpsolve = function(...) quadprog::solve.QP(...)$solution
+  weight = qpadm_weights(f4_jest, qinv, rnk, fudge = fudge,
+                         constrained = constrained, qpsolve = qpsolve) %>% c
+  if(getcov) se = sqrt(diag(get_weights_covariance(f4_blocks, qinv, constrained = constrained,
+                                                   qpsolve = qpsolve)))
   else se = rep(NA, length(weight))
 
   tibble(target, left, weight, se)
@@ -223,7 +235,7 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = N
 #' @param f2_dir a directory with f2 statistics for each population pair in the graph. must contain \code{block_lengths.RData}.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param getcov should standard errors be returned? Currently not implemented.
-#' @param constrained if \code{TRUE} (default), admixture weights will all be positive. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}
+#' @param constrained if \code{TRUE} (default), admixture weights will all be non-negative. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}
 #' @return a data frame with weights and standard errors for each left population
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 9)

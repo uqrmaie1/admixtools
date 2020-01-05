@@ -48,13 +48,13 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
     stop('Package "ggdag" needed for this function to work. Please install it.', call. = FALSE)
   }
   if(class(edges)[1] == 'igraph') edges = as_edgelist(edges)
-  edges = as_tibble(edges, .name_repair='unique')
-  names(edges)[1:2] = c('V1', 'V2')
+  edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   x = ggdag::dag(paste(edges[[1]], edges[[2]], sep='->', collapse=' '))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
   dat = ggdag::tidy_dagitty(x, layout=layout)
-  if(layout == 'tree' && fix) dat$data = fix_layout(dat$data, igraph::graph_from_edgelist(as.matrix(edges)[,1:2]))
+  #if(layout == 'tree' && fix) dat$data = fix_layout(dat$data, igraph::graph_from_edgelist(as.matrix(edges)[,1:2]))
+  # fix doesn't work anymore after adapting it for new plotting function. need to fix fix.
   dat %<>% group_by(.data$to) %>% mutate(cnt = n()) %>% ungroup %>%
     mutate(admix = (.data$cnt > 1)*2+1) %>% ungroup %>%
     #select(-.data$type) %>%
@@ -77,29 +77,29 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 #' Plot an admixture graph
 #' @export
 #' @param graph an admixture graph. If it's an edge list with a \code{label} column, those values will displayed on the edges
-#' @param fix if \code{TRUE} (the default), there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs.
+#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs. By default this is only done for graphs with fewer than 10 leaves.
 #' @param title plot title
 #' @param color plot it in color or greyscale
 #' @return a ggplot object
 #' @examples
 #' plot_graph(example_graph)
-plot_graph = function(graph, fix = TRUE, title = '', color = TRUE) {
+plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
 
   if(class(graph)[1] == 'igraph') {
     grph = graph
-    edges = as_edgelist(graph)
+    edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
   } else {
     grph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
-    edges = graph
+    edges = graph %>% as_tibble
+    names(edges)[1:2] = c('V1', 'V2')
   }
-  edges = purrr::quietly(as_tibble)(edges, .name_repair='unique')[[1]]
-  names(edges)[1:2] = c('V1', 'V2')
+  #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
   pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
   eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(fix) eg = fix_layout(eg, grph)
+  if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = fix_layout(eg, grph)
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
@@ -126,7 +126,7 @@ plot_graph = function(graph, fix = TRUE, title = '', color = TRUE) {
           axis.ticks = element_blank(),
           legend.position = 'none') +
     xlab('') + ylab('') +
-    scale_linetype_manual(values = c(3, 1)) +
+    scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle(title) +
     scale_x_continuous(expand = c(0.15, 0.15))
 
@@ -404,26 +404,34 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
 
 #' Plot samples on a map
 #' @export
-#' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
+#' @param leafcoords data frame with columns \code{iid}, \code{lon}, \code{lat}
 #' @param map_layout 1 or 2
 #' @return a plotly object.
 #' @examples
 #' \dontrun{
 #' plot_map(example_anno, 1)
 #' }
-plot_map = function(leafcoords, map_layout = 1) {
+plot_map = function(leafcoords, map_layout = 1, color = 'yearsbp', colorscale = 'Portland', collog10 = TRUE) {
 
-  stopifnot(all(c('iid', 'lat', 'lon', 'yearsbp') %in% names(leafcoords)))
-  #leafcoords2 = leafcoords %>% group_by(group) %>% summarize(lon = mean(lon), lat = mean(lat))
+  stopifnot(all(c('iid', 'lat', 'lon', color) %in% names(leafcoords)))
+  if(!color %in% names(leafcoords)) leafcoords %<>% mutate(color = 1)
+  else leafcoords %<>% mutate(color = !!sym(color))
+  leafcoords %<>% filter(!is.na(color), between(lat, -90, 90), between(lon, -180, 180))
+  if(collog10) leafcoords %<>% filter(color > 0) %>% mutate(color = log10(color))
 
   ax = list(visible=FALSE)
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
+
   if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3), zoom = 2), xaxis=ax, yaxis=ax)
+
   if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
-  plotly::plot_ly(leafcoords %>% filter(between(lat, -90, 90), between(lon, -180, 180), yearsbp > 0), type = 'scattermapbox', mode='markers', hoverinfo = 'text', x = ~lon, y = ~lat, color = ~log10(yearsbp), hovertext = ~group) %>% lo
-
+  plotly::plot_ly(leafcoords, type = 'scattermapbox', mode='markers',
+                  marker=list(size=4, color = ~color, colorscale = colorscale, showscale = TRUE,
+                              colorbar = list(thickness=15, outlinewidth = 0,
+                                              title = paste0(ifelse(collog10, 'log10\n', ''), color))),
+                  hoverinfo = 'text', x = ~lon, y = ~lat, hovertext = ~group) %>% lo
 }
 
 
@@ -465,8 +473,7 @@ make_favicon = function() {
   grph = g
   edges = igraph::as_edgelist(g)
 
-  edges = purrr::quietly(as_tibble)(edges, .name_repair='unique')[[1]]
-  names(edges)[1:2] = c('V1', 'V2')
+  edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
   pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
@@ -494,4 +501,51 @@ make_favicon = function() {
   pkgdown::build_favicons(overwrite = T)
   system('mv pkgdown/favicon/* docs/')
 }
+
+
+
+plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
+
+  if(class(graph)[1] == 'igraph') {
+    grph = graph
+    edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
+  } else {
+    grph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
+    edges = graph %>% as_tibble
+    names(edges)[1:2] = c('V1', 'V2')
+  }
+  #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
+  admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
+
+  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
+  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
+
+  if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = admixtools:::fix_layout(eg, grph)
+
+  if(!'label' %in% names(edges)) edges %<>% mutate(label='')
+  eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
+  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
+
+  plt = eg %>% mutate(rownum = 1:n()) %>%
+    ggplot(aes(x=x, xend=xend, y=y, yend=yend, name=name, to=to, rownum=rownum)) +
+    geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
+                 arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches'))) +
+    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label)) +
+    geom_text(data=nodes, aes_string(label = 'name', col='as.factor(yend)', rownum='rownum'), size=3) +
+    theme(panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          legend.position = 'none') +
+    xlab('') + ylab('') +
+    scale_linetype_manual(values = c(admix=3, normal=1)) +
+    ggtitle(title) +
+    scale_x_continuous(expand = c(0.15, 0.15))
+
+  plt
+
+}
+
+
+
 

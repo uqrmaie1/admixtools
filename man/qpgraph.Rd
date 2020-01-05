@@ -2,7 +2,7 @@
 % Please edit documentation in R/qpgraph.R
 \name{qpgraph}
 \alias{qpgraph}
-\title{Compute the fit of an admixturegraph.}
+\title{Compute the fit of an admixturegraph}
 \usage{
 qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
   lsqmode = FALSE, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,

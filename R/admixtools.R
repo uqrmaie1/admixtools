@@ -16,7 +16,7 @@
 #' @importFrom rlang .data
 #' @importFrom plotly plot_ly add_trace add_markers layout
 #' @importFrom Rcpp cppFunction
-#' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths graph_from_edgelist as_edgelist
+#' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths graph_from_edgelist as_edgelist shortest_paths
 #' @useDynLib admixtools
 
 TRUE

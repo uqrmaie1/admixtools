@@ -64,6 +64,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -145,14 +155,15 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plot_map</span>(<span class='no'>leafcoords</span>, <span class='kw'>map_layout</span> <span class='kw'>=</span> <span class='fl'>1</span>)</pre>
+    <pre class="usage"><span class='fu'>plot_map</span>(<span class='no'>leafcoords</span>, <span class='kw'>map_layout</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>color</span> <span class='kw'>=</span> <span class='st'>"yearsbp"</span>,
+  <span class='kw'>colorscale</span> <span class='kw'>=</span> <span class='st'>"Portland"</span>, <span class='kw'>collog10</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>leafcoords</th>
-      <td><p>data frame with columns <code>group</code>, <code>lon</code>, <code>lat</code></p></td>
+      <td><p>data frame with columns <code>iid</code>, <code>lon</code>, <code>lat</code></p></td>
     </tr>
     <tr>
       <th>map_layout</th>
@@ -203,7 +214,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {

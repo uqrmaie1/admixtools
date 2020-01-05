@@ -62,6 +62,16 @@
 <![endif]-->
 
 
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-155330476-1');
+</script>
+
 
   </head>
 
@@ -173,7 +183,7 @@
         <td>
           <p><code><a href="qpgraph.html">qpgraph()</a></code> </p>
         </td>
-        <td><p>Compute the fit of an admixturegraph.</p></td>
+        <td><p>Compute the fit of an admixturegraph</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -351,18 +361,6 @@
       <tr>
         
         <td>
-          <p><code><a href="random_newick.html">random_newick()</a></code> </p>
-        </td>
-        <td><p>Generate a random, binary graph with n terminal nodes</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="newick_to_edges.html">newick_to_edges()</a></code> </p>
-        </td>
-        <td><p>Turn a newick format tree to a matrix of edges</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="random_admixturegraph.html">random_admixturegraph()</a></code> </p>
         </td>
         <td><p>Generate a random admixture graph</p></td>
@@ -423,7 +421,7 @@
     
     
     apiKey: '',
-    indexName: 'bayesplot',
+    indexName: 'admixtools',
     inputSelector: 'input#search-input.form-control',
     transformData: function(hits) {
       return hits.map(function (hit) {
