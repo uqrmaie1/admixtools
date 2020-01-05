@@ -28,10 +28,10 @@ pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 ```
 ```{r, eval = FALSE}
 f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
-qp3pop(pop1, pop2, pop3, f2_dir = f2_dir)
+qp3pop(f2_dir, pop1, pop2, pop3)
 ```
 ```{r, echo = FALSE}
-qp3pop(pop1, pop2, pop3, example_f2_blocks, example_block_lengths)
+qp3pop(example_f2_blocks, pop1, pop2, pop3)
 ```
 
 
@@ -43,10 +43,10 @@ qp3pop(pop1, pop2, pop3, example_f2_blocks, example_block_lengths)
 pop4 = 'Switzerland_Bichon.SG'
 ```
 ```{r, eval = FALSE}
-qpdstat(pop1, pop2, pop3, pop4, f2_dir = f2_dir)
+qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 ```
 ```{r, echo = FALSE}
-qpdstat(pop1, pop2, pop3, pop4, example_f2_blocks, example_block_lengths)
+qpdstat(example_f2_blocks, pop1, pop2, pop3, pop4)
 ```
 
 
@@ -60,10 +60,10 @@ left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 ```
 ```{r, eval = FALSE}
-qpadm(target, left, right, f2_dir = f2_dir)
+qpadm(f2_dir, target, left, right)
 ```
 ```{r, echo = FALSE}
-qpadm(target, left, right, example_f2_blocks, example_block_lengths)
+qpadm(example_f2_blocks, target, left, right)
 ```
 
 ### Caveats
@@ -78,10 +78,10 @@ This function only reports `qpAdm` admixture weights, and doesn't determine the 
 The f2-statistics can also be used to fit an admixture graph to the data.
 
 ```{r, eval = FALSE}
-qpg_results = qpgraph(example_graph, f2_dir = f2_dir, f2_denom = 0.278)
+qpg_results = qpgraph(f2_dir, example_graph, f2_denom = 0.278)
 ```
 ```{r, echo = FALSE}
-qpg_results = qpgraph(example_graph, example_f2_blocks, example_block_lengths, f2_denom = 0.278)
+qpg_results = qpgraph(example_f2_blocks, example_graph, f2_denom = 0.278)
 ```
 
 Here, `example_graph` is a specific graph included in this R package, but you can provide any other graph in one of three formats.
@@ -119,7 +119,7 @@ This works for any populations for which there are precomputed f2-statistics.
 allpops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
 rand_pops = sample(allpops, 20)
 rand_graph = random_admixturegraph(rand_pops, numadmix = 3)
-rand_results = qpgraph(rand_graph, f2_dir = f2_dir, f2_denom = 0.278, verbose = TRUE)
+rand_results = qpgraph(f2_dir, rand_graph, f2_denom = 0.278, verbose = TRUE)
 ```
 
 ### Caveats
@@ -223,7 +223,7 @@ This will look for genotype files in `packedancestrymap` or `PLINK` format, comp
 Now you should be able to run the same examples as before using your own f2 statistics.
 
 ```{r, eval = FALSE}
-qpg_results = qpgraph(example_graph, f2_dir = my_f2_dir)
+qpg_results = qpgraph(my_f2_dir, example_graph)
 ```
 ```{r, fig.width = 9, fig.align="center"}
 plot_graph(qpg_results$edges)
@@ -234,9 +234,8 @@ The example above will read the f2 data from `my_f2_dir`. It can be faster to lo
 
 ```{r, eval = FALSE}
 f2_blocks = read_f2(my_f2_dir, pops)
-block_lengths = read_bl(my_f2_dir)
 
-qpg_results = qpgraph(example_graph, f2_blocks, block_lengths)
+qpg_results = qpgraph(f2_blocks, example_graph)
 ```
 
 <br>
@@ -244,9 +243,9 @@ qpg_results = qpgraph(example_graph, f2_blocks, block_lengths)
 You can also skip writing data to disk altogether, by not specifying `outdir` in `extract_data`. This can be useful if the number of populations is not too large:
 
 ```{r, eval = FALSE}
-data = extract_data(prefix, pops = pops)
-f2_blocks = data$f2_blocks
-block_lengths = data$block_lengths
+f2_blocks = extract_data(prefix, pops = pops)
+
+qpg_results = qpgraph(f2_blocks, example_graph)
 ```
 
 
@@ -258,21 +257,12 @@ Since evaluating one graph doesn't take long once the f-statistics are pre-compu
 
 <br>
 
-In order for that to be as fast as possible, we can precompute and reuse f3-statistics and the inverse of the f3-statistic covariance matrix.
+
+The function `fit_graph` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
 
 ```{r, eval = FALSE}
-precomp = qpgraph_precompute_f3(pops, f2_dir = my_f2_dir, f2_denom = 0.278)
-f3_jest = precomp$f3_jest
-ppinv = precomp$ppinv
-```
-<br>
-
-The function `optimize_admixturegraph` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
-
-```{r, eval = FALSE}
-opt_results = optimize_admixturegraph(pops, f3_jest, ppinv,
-                                      numrep = 200, numgraphs = 100, numgen = 20,
-                                      numsel = 5, numadmix = 3)
+opt_results = fit_graph(my_f2_dir, pops, outpop = pops[1], numrep = 200,
+                        numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
 ```
 <br>
 
@@ -316,30 +306,22 @@ This specifies that up to 50 jobs should be run at a time, with each one request
 
 This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as this one: `/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl`.
 
-After that, the `optimize_admixturegraph` function will submit each of the 200 repeats as a separate job.
+With this setup the `fit_graph` function will submit each of the 200 repeats as a separate job.
 
 As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.
 
-First, the input should be saved to a file.
-```{r, eval = FALSE}
-save(pops, f3_jest, ppinv, file = 'qpgraph_input.RData')
-```
-
-The R script could then look like this.
+The R script could look like this.
 ```{r, eval = FALSE}
 library(admixtools)
 library(future.batchtools)
-
-load('qpgraph_input.RData')
 
 future::plan(tweak(batchtools_slurm, workers=50,
                    resources=list(ncpus = 1, memory=1024,
                                   walltime=10*60*60, partition='short')))
 
-opt_results = optimize_admixturegraph(pops, outpop = pops[1],
-                                      f3_jest, ppinv, numrep = 200,
-                                      numgen = 20, numgraphs = 100,
-                                      numadmix = 3, verbose = FALSE)
+pops = c('popA', 'popB', 'popC', 'popD')
+opt_results = fit_graph('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
+                        numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
 
 save(opt_results, file='opt_results.RData')
 ```

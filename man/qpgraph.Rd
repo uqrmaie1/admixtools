@@ -2,28 +2,24 @@
 % Please edit documentation in R/qpgraph.R
 \name{qpgraph}
 \alias{qpgraph}
-\title{Compute the fit of an admixturegraph}
+\title{Compute the fit of an admixture graph}
 \usage{
-qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
-  lsqmode = FALSE, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,
-  numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE)
+qpgraph(f2_data, graph, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,
+  lsqmode = FALSE, numstart = NULL, seed = NULL, verbose = FALSE,
+  cpp = TRUE)
 }
 \arguments{
+\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+
 \item{graph}{an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
-
-\item{f2_blocks}{3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of \code{\link{afs_to_f2_blocks}}.}
-
-\item{block_lengths}{the jackknife block lengths used in computing the f2 statistics. see \code{\link{get_block_lengths}}.}
-
-\item{f2_dir}{a directory with f2 statistics for each population pair in the graph. must contain 'block_lengths.RData'.}
-
-\item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fnscale}{try increasing or decreasing this, if optimization does not converge.}
 
 \item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
+
+\item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
 \item{numstart}{number of random initializations. defaults to 10 times the number of admixture nodes.}
 
@@ -37,10 +33,10 @@ qpgraph(graph, f2_blocks = NULL, block_lengths = NULL, f2_dir = NULL,
 a list of qpGraph output data
 }
 \description{
-Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics. f2-block-jackknife statistics can be provided via the arguments \code{f2_blocks} and \code{block_lengths}, or via \code{f2_dir}.
+Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
 }
 \examples{
-out = qpgraph(example_graph, example_f2_blocks, example_block_lengths)
+out = qpgraph(example_graph, example_f2_blocks)
 plot_graph(out$edges)
 }
 \references{

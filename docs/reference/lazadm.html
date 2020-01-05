@@ -155,35 +155,27 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>f2_blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_dir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>f2_data</th>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code><a href='extract_data.html'>extract_data</a></code>.</p></td>
+    </tr>
     <tr>
       <th>target</th>
       <td><p>target population</p></td>
     </tr>
     <tr>
       <th>left</th>
-      <td><p>source populations</p></td>
+      <td><p>source populations (or leftlist file)</p></td>
     </tr>
     <tr>
       <th>right</th>
-      <td><p>outgroup populations</p></td>
-    </tr>
-    <tr>
-      <th>f2_blocks</th>
-      <td><p>3d array of block-jackknife leave-one-block-out estimates of f2 statistics. output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code></p></td>
-    </tr>
-    <tr>
-      <th>block_lengths</th>
-      <td><p>the jackknife block lengths used in computing the f2 statistics. see <code><a href='get_block_lengths.html'>get_block_lengths</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>f2_dir</th>
-      <td><p>a directory with f2 statistics for each population pair in the graph. must contain <code>block_lengths.RData</code>.</p></td>
+      <td><p>outgroup populations (or rightlist file)</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
@@ -217,11 +209,11 @@
     <pre class="examples"><div class='input'><span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>lazadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 4</span><span>
+<span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 4</span><span>
 #&gt;   target      left                 weight se   
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG      1 </span><span style='color: #BB0000;'>NA</span><span>   
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG                0 </span><span style='color: #BB0000;'>NA</span><span>   </div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>example_f2_blocks</span>, <span class='no'>example_block_lengths</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 4</span><span>
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG                0 </span><span style='color: #BB0000;'>NA</span><span>   </div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 4</span><span>
 #&gt;   target      left                 weight se   
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   5.70 </span><span style='color: #BB0000;'>NA</span><span>   

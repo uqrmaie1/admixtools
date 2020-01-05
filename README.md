@@ -33,7 +33,7 @@ graph like this:
 
 ``` r
 f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
-fit = qpgraph(example_graph, f2_dir = f2_dir)
+fit = qpgraph(f2_dir, example_graph)
 plot_graph(fit$edges)
 ```
 
@@ -50,7 +50,7 @@ right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG
 ```
 
 ``` r
-qpadm(target, left, right, f2_dir = f2_dir)
+qpadm(f2_dir, target, left, right)
 ```
 
     #> # A tibble: 2 x 4
