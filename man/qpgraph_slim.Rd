@@ -34,7 +34,7 @@ Computes the fit of an admixture graph for a given graph topology given f3 estim
 }
 \examples{
 pops = get_leafnames(example_igraph)
-precomp = qpgraph_precompute_f3(pops, example_f2_blocks)
+precomp = qpgraph_precompute_f3(example_f2_blocks, pops)
 f3_jest = precomp$f3_jest
 ppinv = precomp$ppinv
 out = qpgraph_slim(example_igraph, f3_jest, ppinv)

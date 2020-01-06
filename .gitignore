@@ -5,3 +5,6 @@
 pkgdown
 .DS_Store
 .Rbuildignore
+graphfile
+out
+parfile

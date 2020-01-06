@@ -36,7 +36,7 @@ a list of qpGraph output data
 Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
 }
 \examples{
-out = qpgraph(example_graph, example_f2_blocks)
+out = qpgraph(example_f2_blocks, example_graph)
 plot_graph(out$edges)
 }
 \references{

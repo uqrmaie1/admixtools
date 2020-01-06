@@ -220,10 +220,14 @@ parse_qpgraph_output = function(outfile) {
              separate('X1', c('a', 'b', 'score'), sep=' +', convert = T, extra='drop', fill='right'))$score
 
   f2 = dat %>% filter(grepl(' f2: ', .data$X1)) %>%
-    separate('X1', c('pop1', 'pop2', 'fst','f2fit','f2est','diff','se','z'), sep=' +', convert = TRUE) %>%
+    separate('X1', c('pop1', 'pop2', 'fst','fit','est','diff','se','z'), sep=' +', convert = TRUE) %>%
     select(-.data$fst)
 
-  namedList(edges, score, f2)
+  f3 = dat %>% filter(grepl(' ff3fit: ', .data$X1)) %>%
+    separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
+    select(-.data$ff3fit)
+
+  namedList(edges, score, f2, f3)
 }
 
 #' Read qpGraph graph file
@@ -513,7 +517,7 @@ split_afmat = function(afmat, pops_per_block, outprefix, verbose = TRUE) {
 }
 
 
-#' Extract subset of genotype data
+#' Extract f2 jackknife blocks from genotype data
 #'
 #' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files, and computes allele frequencies and f2 block jackknife statistics for selected populations. Data is either written to disk in files for each population and population pair, or returned as list. This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}} and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'} which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO}, use \code{na.action = 'remove'}.
 #' @export

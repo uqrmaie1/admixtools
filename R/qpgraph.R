@@ -235,9 +235,10 @@ optimweightsfun = function(weights, args) {
   cmb = args[[7]]
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, args[[8]])
-  w2 = (ppwts_2d %*% q2) - f3_jest
-  lik = t(w2) %*% ppinv %*% w2
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, args[[8]])
+  f3_fit = ppwts_2d %*% branch_lengths
+  res = f3_fit - f3_jest
+  lik = t(res) %*% ppinv %*% res
   lik[1,1]
 }
 
@@ -264,13 +265,19 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_jest, qpsolve) {
   #quadprogpp::QP.Solve(cc, q1, CI = diag(nc), ci0 = rep(0, nc))
 }
 
+# @export
+# get_score_old = function(ppwts_2d, ppinv, f3_jest, q2) {
+#   w2 = (ppwts_2d %*% q2) - f3_jest
+#   lik = t(w2) %*% ppinv %*% w2
+#   lik[1,1]
+# }
+
 #' @export
-get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
-  w2 = (ppwts_2d %*% q2) - f3_jest
-  lik = t(w2) %*% ppinv %*% w2
+get_score = function(f3_fit, f3_jest, ppinv) {
+  res = f3_fit - f3_jest
+  lik = t(res) %*% ppinv %*% res
   lik[1,1]
 }
-
 
 
 
@@ -292,7 +299,7 @@ get_score = function(ppwts_2d, ppinv, f3_jest, q2) {
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @seealso \code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
 #' @examples
-#' out = qpgraph(example_graph, example_f2_blocks)
+#' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
 qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, lsqmode=FALSE, numstart = NULL, seed = NULL, verbose = FALSE, cpp = TRUE) {
   # modelled after AdmixTools qpGraph
@@ -307,15 +314,14 @@ qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, l
   } else {
     stop(paste0('Cannot parse graph of class ', class(graph),'!'))
   }
-  grph = graph_from_edgelist(edges)
-  if(class(graph)[1] == 'igraph') grph = graph
-  nedges = length(E(grph))
-  admixnodes = which(degree(grph, mode='in')==2)
+  if(class(graph)[1] != 'igraph') graph = graph_from_edgelist(edges)
+  nedges = length(E(graph))
+  admixnodes = which(degree(graph, mode='in')==2)
   nadmix = length(admixnodes)
-  admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(grph, admixnodes, mode='in')[[i]][1:2])
+  admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(graph, admixnodes, mode='in')[[i]][1:2])
   normedges = setdiff(1:nedges, admixedgesfull)
 
-  pops = get_leafnames(grph)
+  pops = get_leafnames(graph)
   npop = length(pops)
   cmb = combn(0:(npop-1), 2)+(1:0)
 
@@ -327,9 +333,9 @@ qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, l
   f3out = precomp$f3out
 
   if(verbose) alert_info('preprocessing done')
-  weightind = graph_to_weightind(grph)
+  weightind = graph_to_weightind(graph)
   weight = rep(NA, nedges)
-  pwts = graph_to_pwts(grph)
+  pwts = graph_to_pwts(graph)
   opt = NULL
   qpsolve = function(...) quadprog::solve.QP(...)$solution
 
@@ -359,13 +365,16 @@ qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, l
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
 
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
-  score = get_score(ppwts_2d, ppinv, f3_jest, q2)
-  weight[normedges] = q2
-  edges = as_tibble(edges, .name_repair = ~c('from', 'to')) %>%
-    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight=weight, label=round(weight, 2))
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  f3_fit = ppwts_2d %*% branch_lengths
+  score = get_score(f3_fit, f3_jest, ppinv)
 
-  namedList(edges, score, f2=f2out, f3=f3out, opt)
+  weight[normedges] = branch_lengths
+  edges = as_tibble(edges, .name_repair = ~c('from', 'to')) %>%
+    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight)
+  f3out %<>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p.value = ztop(z))
+
+  namedList(edges, score, f2 = f2out, f3 = f3out, opt)
 }
 
 #' Compute the fit of an admixturegraph.
@@ -385,7 +394,7 @@ qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, l
 #' @seealso \code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
 #' @examples
 #' pops = get_leafnames(example_igraph)
-#' precomp = qpgraph_precompute_f3(pops, example_f2_blocks)
+#' precomp = qpgraph_precompute_f3(example_f2_blocks, pops)
 #' f3_jest = precomp$f3_jest
 #' ppinv = precomp$ppinv
 #' out = qpgraph_slim(example_igraph, f3_jest, ppinv)
@@ -442,11 +451,13 @@ qpgraph_slim = function(graph, f3_jest, ppinv, fnscale = 1e-6, numstart = 10,
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
 
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
-  score = get_score(ppwts_2d, ppinv, f3_jest, q2)
-  weight[normedges] = q2
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  f3_fit = ppwts_2d %*% branch_lengths
+  score = get_score(f3_fit, f3_jest, ppinv)
+
+  weight[normedges] = branch_lengths
   edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
-    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight=weight, label=round(weight, 2))
+    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight)
 
   namedList(edges, score, opt)
 }
@@ -490,9 +501,9 @@ qpgraph_precompute_f3 = function(f2_data, pops, f2_denom = 1, fudge = 1e-3, lsqm
   cmb = combn(0:(npop-1), 2)+(1:0)
 
   f2 = bj_arr_stats(f2_blocks, block_lengths)
-  f2out = tibble(pop1=combn(pops, 2)[1,],
-                 pop2=combn(pops, 2)[2,],
-                 f2est = f2[[1]][lower.tri(f2[[1]])],
+  f2out = tibble(pop1 = combn(pops, 2)[1,],
+                 pop2 = combn(pops, 2)[2,],
+                 est = f2[[1]][lower.tri(f2[[1]])],
                  se = sqrt(f2[[2]][lower.tri(f2[[2]])]))
 
   f3_blocks = (f2_blocks[,1,] + f2_blocks[1,,] - f2_blocks)/2
@@ -500,9 +511,10 @@ qpgraph_precompute_f3 = function(f2_data, pops, f2_denom = 1, fudge = 1e-3, lsqm
   f3dat = bj_mat_stats(f3_blocks_2d, block_lengths)
   f3_jest = f3dat$jest
   f3_jvar = f3dat$jvar
-  f3out = tibble(pop1=pops[cmb[1,]],
-                 pop2=pops[cmb[2,]],
-                 f3est = f3_jest, se = sqrt(diag(f3_jvar)))
+  f3out = tibble(pop1 = pops[1],
+                 pop2 = pops[cmb[1,]+1],
+                 pop3 = pops[cmb[2,]+1],
+                 est = f3_jest, se = sqrt(diag(f3_jvar)))
   diag(f3_jvar) = diag(f3_jvar) + sum(diag(f3_jvar))*fudge
   # in qpGraph fudge is 1e-5; sometimes quadprog doesn't converge unless this is larger; has large effect on magnitude of likelihood score
   if(lsqmode) ppinv = diag(1/diag(f3_jvar))
@@ -544,10 +556,12 @@ qpgraph_anorexic = function(graph, f3_jest, ppinv, fnscale = 1e-6,
   ppwts_2d = t(pwts[,cmb[1,]] * pwts[,cmb[2,]])
   qpsolve = function(...) quadprog::solve.QP(...)$solution
 
-  q2 = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
-  score = get_score(ppwts_2d, ppinv, f3_jest, q2)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve)
+  f3_fit = ppwts_2d %*% branch_lengths
+  score = get_score(f3_fit, f3_jest, ppinv)
+
   edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
-    mutate(type = 'edge', weight = c(q2))
+    mutate(type = 'edge', weight = c(branch_lengths))
 
   namedList(edges, score, opt = NULL)
 }

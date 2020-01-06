@@ -103,9 +103,13 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   #----------------- prepare f4 stats -----------------
   if(is.null(target)) {
     left %<>% readLines
+    target = left[1]
+    left = left[-1]
     right %<>% readLines
   }
-  f2dat = get_f2(f2_data, unique(c(target, left, right)), f2_denom)
+  pops = c(target, left, right)
+  stopifnot(!any(duplicated(pops)))
+  f2dat = get_f2(f2_data, pops, f2_denom)
   f2_blocks = f2dat$f2_blocks
 
   f4_blocks = (f2_blocks[target, right[-1], ] +
@@ -232,9 +236,14 @@ lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   #----------------- prepare f4 stats -----------------
   if(is.null(target)) {
     left %<>% readLines
+    target = left[1]
+    left = left[-1]
     right %<>% readLines
   }
-  f2dat = get_f2(f2_data, unique(c(target, left, right)), f2_denom)
+  pops = c(target, left, right)
+  stopifnot(!any(duplicated(pops)))
+  f2dat = get_f2(f2_data, pops, f2_denom)
+
   f2_mat = apply(f2dat$f2_blocks, 1:2, weighted.mean, f2dat$block_lengths)
 
   ri = 1:length(right)

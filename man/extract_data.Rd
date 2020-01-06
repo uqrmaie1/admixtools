@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{extract_data}
 \alias{extract_data}
-\title{Extract subset of genotype data}
+\title{Extract f2 jackknife blocks from genotype data}
 \usage{
 extract_data(pref, outdir = NULL, pops = NULL, inds = NULL,
   na.action = "none", maxmem = 1000, overwrite = FALSE,

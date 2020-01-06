@@ -4,36 +4,69 @@
 #' @param out2 second qpgraph output.
 #' @return a ggplot object.
 #' @examples
-#' fit1 = qpgraph(example_graph, example_f2_blocks, cpp = TRUE)
-#' fit2 = qpgraph(example_graph, example_f2_blocks, cpp = FALSE)
+#' fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
+#' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
 #' plot_comparison(fit1, fit2)
 plot_comparison = function(out1, out2) {
   # plots a comparison of two qpgraph outputs
 
-  if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
-    stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
-                length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
-                length(unique(c(out2$f2$pop1, out2$f2$pop2))) ==
-                length(unique(substr(c(out2$f2$pop1, out2$f2$pop2), 1, 3))))
-    out1$f2$pop1 = substr(out1$f2$pop1, 1, 3)
-    out1$f2$pop2 = substr(out1$f2$pop2, 1, 3)
-    out2$f2$pop1 = substr(out2$f2$pop1, 1, 3)
-    out2$f2$pop2 = substr(out2$f2$pop2, 1, 3)
+  f2comp = f3comp = NULL
+
+  if('f2' %in% names(out1) && 'f2' %in% names(out2)) {
+
+    if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
+      stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
+                  length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
+                  length(unique(c(out2$f2$pop1, out2$f2$pop2))) ==
+                  length(unique(substr(c(out2$f2$pop1, out2$f2$pop2), 1, 3))))
+
+      out1$f2$pop1 %<>% str_sub(1, 3)
+      out1$f2$pop2 %<>% str_sub(1, 3)
+      out2$f2$pop1 %<>% str_sub(1, 3)
+      out2$f2$pop2 %<>% str_sub(1, 3)
+    }
+
+    f2comp = out1$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'x') %>%
+      bind_rows(out2$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'y')) %>%
+      rename(f2_est = est, f2_se = se) %>%
+      gather('type', 'v', .data$f2_est, .data$f2_se) %>% spread(.data$i, .data$v) %>%
+      rename(from=.data$pop1, to=.data$pop2)
+
   }
 
-  f2comp = out1$f2 %>% select('pop1', 'pop2', 'f2est', 'se') %>% mutate(i = 'x') %>%
-    bind_rows(out2$f2 %>% select('pop1', 'pop2', 'f2est', 'se') %>% mutate(i = 'y')) %>%
-    gather('type', 'v', .data$f2est, .data$se) %>% spread(.data$i, .data$v) %>%
-    rename(from=.data$pop1, to=.data$pop2)
+  if('f3' %in% names(out1) && 'f3' %in% names(out2)) {
+
+    if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
+      stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
+                  length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
+                  length(unique(c(out2$f2$pop1, out2$f2$pop2))) ==
+                  length(unique(substr(c(out2$f2$pop1, out2$f2$pop2), 1, 3))))
+
+      out1$f3$pop2 %<>% str_sub(1, 3)
+      out1$f3$pop3 %<>% str_sub(1, 3)
+      out2$f3$pop2 %<>% str_sub(1, 3)
+      out2$f3$pop3 %<>% str_sub(1, 3)
+    }
+
+    f3comp = out1$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'x') %>%
+      bind_rows(out2$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'y')) %>%
+      rename(f3_est = est, f3_fit = fit) %>%
+      gather('type', 'v', .data$f3_est, .data$f3_fit) %>% spread(.data$i, .data$v) %>%
+      rename(from=.data$pop2, to=.data$pop3) %>% filter(!is.na(x), !is.na(y))
+
+  }
 
   out1$edges %>% rename(x = .data$weight) %>%
     left_join(out2$edges %>% select(-'type') %>% rename(y = .data$weight), by=c('from', 'to')) %>%
-    bind_rows(f2comp) %>%
-    ggplot(aes(.data$x, .data$y)) + geom_point() + facet_wrap('type', scales='free') + geom_abline() +
+    bind_rows(f2comp, f3comp) %>%
+    ggplot(aes(.data$x, .data$y)) +
+    geom_point() +
+    facet_wrap('type', scales='free', dir = 'v', nrow = 2) +
+    geom_abline() +
     xlab(paste0('stats 1 (score: ', round(out1$score, 2),')')) +
     ylab(paste0('stats 2 (score: ', round(out2$score, 2),')')) +
     theme(panel.background = element_blank(), axis.line = element_line()) +
-    geom_smooth(method='lm', se=F, formula=y~x-1)
+    geom_smooth(method='lm', se = FALSE, formula=y~x-1)
 
 }
 
@@ -101,7 +134,10 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
 
   if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = fix_layout(eg, grph)
 
-  if(!'label' %in% names(edges)) edges %<>% mutate(label='')
+  if(!'label' %in% names(edges)) {
+    lab = ifelse('weight' %in% names(edges), round(edges$weight, 2), '')
+    edges %<>% mutate(label = lab)
+  }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
   nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
 
