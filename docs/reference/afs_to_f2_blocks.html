@@ -157,7 +157,7 @@
 
     <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afs</span>, <span class='no'>popcounts</span>, <span class='no'>block_lengths</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>infocols</span> <span class='kw'>=</span> <span class='fl'>6</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>loo</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -193,6 +193,10 @@
     <tr>
       <th>overwrite</th>
       <td><p>should existing files be overwritten? only relevant if <code>outdir</code> is not <code>NULL</code></p></td>
+    </tr>
+    <tr>
+      <th>loo</th>
+      <td><p>if <code>TRUE</code> (the default), return the total estimates minus the estimates from each block. if <code>FALSE</code>, return the estimate from each block.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

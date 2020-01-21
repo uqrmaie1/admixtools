@@ -47,7 +47,7 @@
 
 <meta property="og:title" content="Estimate f3 statistics — qp3pop" />
 
-<meta property="og:description" content="Computes f3 statistics from f2 jackknife blocks of the form \(F_3(P_1; P_2, P_3)\). Equivalent to  \((F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2\) and to \(F_4(P_1, P_2; P_1, P_3)\)" />
+<meta property="og:description" content="Computes f3 statistics from f2 jackknife blocks of the form \(F_3(A; B, C)\). Equivalent to  \((F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2\) and to \(F_4(A, B; A, C)\)" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,7 +151,7 @@
 
     <div class="ref-description">
     
-    <p>Computes f3 statistics from f2 jackknife blocks of the form \(F_3(P_1; P_2, P_3)\). Equivalent to  \((F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2\) and to \(F_4(P_1, P_2; P_1, P_3)\)</p>
+    <p>Computes f3 statistics from f2 jackknife blocks of the form \(F_3(A; B, C)\). Equivalent to  \((F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2\) and to \(F_4(A, B; A, C)\)</p>
     
     </div>
 
@@ -163,7 +163,7 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code><a href='extract_data.html'>extract_data</a></code>.</p></td>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
     </tr>
     <tr>
       <th>pop1</th>

@@ -34,14 +34,15 @@ reference:
       - qpgraph_precompute_f3
   - title: "Reading and writing"
     contents:
-      - extract_data
+      - extract_f2
+      - extract_indpairs
+      - f2_from_precomp
+      - f2_from_geno
+      - read_packedancestrymap
       - packedancestrymap_to_aftable
-      - plink_to_aftable
-      - read_f2
-      - write_f2
   - title: "Graph topology"
     contents:
-      - fit_graph
+      - find_graphs
       - random_admixturegraph
       - summarize_triples
       - qpadm_models

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Add two nodes before each admixture node — desimplify_graph • admixtools</title>
+<title>Write data for individual pairs to disk — extract_indpairs • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Add two nodes before each admixture node — desimplify_graph" />
+<meta property="og:title" content="Write data for individual pairs to disk — extract_indpairs" />
 
-<meta property="og:description" content="This is used to revert simplify_graph." />
+<meta property="og:description" content="Write data for individual pairs to disk" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -144,39 +144,26 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Add two nodes before each admixture node</h1>
+    <h1>Write data for individual pairs to disk</h1>
     
-    <div class="hidden name"><code>desimplify_graph.Rd</code></div>
+    <div class="hidden name"><code>extract_indpairs.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This is used to revert simplify_graph.</p>
+    <p>Write data for individual pairs to disk</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>desimplify_graph</span>(<span class='no'>graph</span>)</pre>
-    
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>graph</th>
-      <td><p>an admixture graph</p></td>
-    </tr>
-    </table>
-    
+    <pre class="usage"><span class='fu'>extract_indpairs</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+        
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>simple</span> <span class='kw'>=</span> <span class='fu'><a href='simplify_graph.html'>simplify_graph</a></span>(<span class='no'>igraph1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in simplify_graph(igraph1): object 'igraph1' not found</span></div><div class='input'><span class='no'>desimple</span> <span class='kw'>=</span> <span class='fu'>desimplify_graph</span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in desimplify_graph(simple): object 'simple' not found</span></div><div class='input'><span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph(simple): object 'simple' not found</span></div><div class='input'><span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>desimple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph(desimple): object 'desimple' not found</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-            
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+                </ul>
 
   </div>
 </div>

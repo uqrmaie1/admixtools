@@ -68,7 +68,7 @@ qpadm(example_f2_blocks, target, left, right)
 
 ### Caveats
 
-This function only reports `qpAdm` admixture weights, and doesn't determine the number of independent source populations. The `qpadm` function also hasn't been tested as much as the `qpgraph` function, and the results are sometimes not very accurate, in particular when the weights are outside the range of [0, 1], like in this example.
+This function only reports `qpAdm` admixture weights, and doesn't determine the number of independent source populations. The `qpadm` function also hasn't been tested as much as the `qpgraph` function, and doesn't always give accurate results.
 
 <br>
 
@@ -117,7 +117,7 @@ This works for any populations for which there are precomputed f2-statistics.
 
 ```{r, eval = FALSE}
 allpops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
-rand_pops = sample(allpops, 20)
+rand_pops = sample(allpops, min(20, length(allpops)))
 rand_graph = random_admixturegraph(rand_pops, numadmix = 3)
 rand_results = qpgraph(f2_dir, rand_graph, f2_denom = 0.278, verbose = TRUE)
 ```
@@ -214,7 +214,7 @@ pops = c('Denisova.DG',
          'Russia_Ust_Ishim.DG',
          'Switzerland_Bichon.SG')
 
-extract_data(prefix, outdir = my_f2_dir, pops = pops)
+extract_f2(prefix, outdir = my_f2_dir, pops = pops)
 ```
 This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `outdir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
 
@@ -233,17 +233,17 @@ plot_graph(qpg_results$edges)
 The example above will read the f2 data from `my_f2_dir`. It can be faster to load it into memory first, like so:
 
 ```{r, eval = FALSE}
-f2_blocks = read_f2(my_f2_dir, pops)
+f2_blocks = f2_from_precomp(my_f2_dir, pops)
 
 qpg_results = qpgraph(f2_blocks, example_graph)
 ```
 
 <br>
 
-You can also skip writing data to disk altogether, by not specifying `outdir` in `extract_data`. This can be useful if the number of populations is not too large:
+With `f2_from_geno`, you can skip writing data to disk, and read f2 blocks from genotype files directly. This can be useful if the number of populations is not too large:
 
 ```{r, eval = FALSE}
-f2_blocks = extract_data(prefix, pops = pops)
+f2_blocks = f2_from_geno(prefix, pops = pops)
 
 qpg_results = qpgraph(f2_blocks, example_graph)
 ```
@@ -258,11 +258,11 @@ Since evaluating one graph doesn't take long once the f-statistics are pre-compu
 <br>
 
 
-The function `fit_graph` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
+The function `find_graphs` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
 
 ```{r, eval = FALSE}
-opt_results = fit_graph(my_f2_dir, pops, outpop = pops[1], numrep = 200,
-                        numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
+opt_results = find_graphs(my_f2_dir, pops, outpop = pops[1], numrep = 200,
+                          numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
 ```
 <br>
 
@@ -306,7 +306,7 @@ This specifies that up to 50 jobs should be run at a time, with each one request
 
 This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as this one: `/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl`.
 
-With this setup the `fit_graph` function will submit each of the 200 repeats as a separate job.
+With this setup the `find_graphs` function will submit each of the 200 repeats as a separate job.
 
 As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.
 
@@ -320,8 +320,8 @@ future::plan(tweak(batchtools_slurm, workers=50,
                                   walltime=10*60*60, partition='short')))
 
 pops = c('popA', 'popB', 'popC', 'popD')
-opt_results = fit_graph('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
-                        numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
+opt_results = find_graphs('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
+                          numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
 
 save(opt_results, file='opt_results.RData')
 ```

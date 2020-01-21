@@ -47,7 +47,7 @@
 
 <meta property="og:title" content="Estimate f4 statistics — qpdstat" />
 
-<meta property="og:description" content="Computes f4 statistics from f2 jackknife blocks of the form \(F_4(P_1, P_2; P_3, P_4)\). Equivalent to \((F_2(P_1, P_4) + F_2(P_2, P_3) - F_2(P_1, P_3) - F_2(P_2, P_4)) / 2\)" />
+<meta property="og:description" content="Computes f4 statistics from f2 jackknife blocks of the form \(F_4(A, B; C, D)\). Equivalent to \((F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2\)" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,7 +151,7 @@
 
     <div class="ref-description">
     
-    <p>Computes f4 statistics from f2 jackknife blocks of the form \(F_4(P_1, P_2; P_3, P_4)\). Equivalent to \((F_2(P_1, P_4) + F_2(P_2, P_3) - F_2(P_1, P_3) - F_2(P_2, P_4)) / 2\)</p>
+    <p>Computes f4 statistics from f2 jackknife blocks of the form \(F_4(A, B; C, D)\). Equivalent to \((F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2\)</p>
     
     </div>
 
@@ -164,7 +164,7 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code><a href='extract_data.html'>extract_data</a></code>.</p></td>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
     </tr>
     <tr>
       <th>pop1</th>

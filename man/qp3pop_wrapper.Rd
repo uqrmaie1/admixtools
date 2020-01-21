@@ -6,15 +6,15 @@
 \usage{
 qp3pop_wrapper(source1, source2 = NULL, target = NULL,
   bin = "./qp3Pop", pref = NULL, outdir = ".", parfile = NULL,
-  inbreed = "NO", outgroupmode = "YES", printonly = FALSE,
-  env = "")
+  inbreed = "NO", outgroupmode = "YES", useallsnps = "NO",
+  printonly = FALSE, env = "")
 }
 \arguments{
 \item{source1}{one of the following four:
 \enumerate{
 \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
 \item a vector of population labels
-\item a data frame in which the first four columns specify the population quadruples to be tested. \code{source2}, \code{target} will be ignored.
+\item a data frame in which the first four columns specify the population triples to be tested. \code{source2}, \code{target} will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or population quadruples to be tested. \code{source2} and \code{target} will be ignored.
 }}
 
@@ -36,7 +36,7 @@ qp3pop_wrapper(source1, source2 = NULL, target = NULL,
 If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
 }
 \description{
-Computes f3 statistics of the form \eqn{F_3(P_1; P_2, P_3)}. Equivalent to \eqn{(F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2} and to \eqn{F_4(P_1, P_2; P_1, P_3)}. Requires a working installation of qp3Pop, which will be called using \code{\link{system}}
+Computes f3 statistics of the form \eqn{F_3(A; B, C)}. Equivalent to \eqn{(F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2} and to \eqn{F_4(A, B; A, C)}. Requires a working installation of qp3Pop, which will be called using \code{\link{system}}
 }
 \examples{
 \dontrun{

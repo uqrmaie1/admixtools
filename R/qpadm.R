@@ -1,5 +1,10 @@
 
 
+qpwave_dof = function(a, b, r) r*(a+b - (r+2))
+qpwave_dof2 = function(a, b, r) ((a-1) + (b-1))*r - r^2
+qpadm_dof = function(a, b, r) (a*b) - (a+b)*r + r^2
+qpadm_dof2 = function(a, b, r) a*b - 2*r*(r+1) - qpwave_dof(a, b, r)
+
 opt_A = function(B, xmat, qinv, fudge = 0.0001) {
   # return A which minimizes covariance-weighted t(c(E)) %*% qinv %*% c(E), where E = xmat - (A %*% B)
   # A: nr * rnk
@@ -68,7 +73,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001,
   #w = solve(t(cbind(A, 1)), c(rep(0, rnk), 1))
   nc = ncol(rhs)
   if(constrained) w = -qpsolve(rhs, lhs, -diag(nc), rep(0, nc))
-  else w = solve(rhs, lhs)[,1]
+  else w = as.matrix(solve(rhs, lhs))[,1]
   w/sum(w)
 }
 
@@ -116,7 +121,7 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
                f2_blocks[left, right[1], ] -
                f2_blocks[target, right[1], ] -
                f2_blocks[left, right[-1], ])/2
-
+#browser()
   f4dat = bj_pairarr_stats(f4_blocks, f2dat$block_lengths)
   f4_jest = f4dat$jest
   f4_jvar = f4dat$jvar
@@ -136,7 +141,7 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
                                                    qpsolve = qpsolve)))
   else se = rep(NA, length(weight))
 
-  tibble(target, left, weight, se)
+  tibble(target, left, weight, se) %>% mutate(z = weight/se)
 }
 
 
@@ -163,13 +168,15 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
 #'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 #' }
 qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = NULL,
-                         outdir = './', parfile = NULL, printonly=FALSE, env='') {
+                         outdir = './', parfile = NULL, useallsnps = 'NO',
+                         fancyf4 = 'YES', f4mode = 'YES', inbreed = 'NO', printonly = FALSE, env = '') {
 
   stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
             !is.null(pref) & !is.null(left) & !is.null(right))
   stopifnot(file.exists(str_replace(bin, '.+ ', '')))
   stopifnot(!is.null(target) | all(file.exists(c(left, right))))
 
+  outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
 
     if(!is.null(target)) {
@@ -188,7 +195,12 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin, pref = N
                      'indivname: ', pref, '.ind\n',
                      'popleft: ', leftfile, '\n',
                      'popright: ', rightfile, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'fancyf4: ', fancyf4, '\n',
+                     'f4mode: ', f4mode, '\n',
+                     'inbreed: ', inbreed, '\n',
                      'details: YES\n',
+                     'fstdetails: YES\n',
                      'hashcheck: NO')
 
     parfilename = paste0(outdir, '/parfile')
@@ -278,5 +290,5 @@ lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   if(getcov) se = rep(NA, length(weight))
   else se = rep(NA, length(weight))
 
-  tibble(target, left, weight, se)
+  tibble(target, left, weight, se) %>% mutate(z = weight/se)
 }

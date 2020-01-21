@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Add two nodes before each admixture node — desimplify_graph • admixtools</title>
+<title>Find well fitting admixture graphs — find_graphs • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Add two nodes before each admixture node — desimplify_graph" />
+<meta property="og:title" content="Find well fitting admixture graphs — find_graphs" />
 
-<meta property="og:description" content="This is used to revert simplify_graph." />
+<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations across numrep independent repeats to find well fitting admixturegraphs. It uses the function future_map from the furrr package to parallelize across the independent repeats. The function future::plan can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting numadmix to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -144,37 +144,97 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Add two nodes before each admixture node</h1>
+    <h1>Find well fitting admixture graphs</h1>
     
-    <div class="hidden name"><code>desimplify_graph.Rd</code></div>
+    <div class="hidden name"><code>find_graphs.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This is used to revert simplify_graph.</p>
+    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats to find well fitting admixturegraphs. It uses the function <code>future_map</code> from the <code>furrr</code> package to parallelize across the independent repeats. The function <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan</a></code> can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting <code>numadmix</code> to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>desimplify_graph</span>(<span class='no'>graph</span>)</pre>
+    <pre class="usage"><span class='fu'>find_graphs</span>(<span class='no'>f2_data</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>numrep</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>numgraphs</span> <span class='kw'>=</span> <span class='fl'>50</span>, <span class='kw'>numgen</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numsel</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>), <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>0.278</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>debug</span> <span class='kw'>=</span> <span class='no'>numrep</span> <span class='kw'>==</span> <span class='fl'>1</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>graph</th>
-      <td><p>an admixture graph</p></td>
+      <th>f2_data</th>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>populations for which to fit admixture graphs</p></td>
+    </tr>
+    <tr>
+      <th>outpop</th>
+      <td><p>outgroup population</p></td>
+    </tr>
+    <tr>
+      <th>numrep</th>
+      <td><p>number of independent repetitions (each repetition can be run in parallel)</p></td>
+    </tr>
+    <tr>
+      <th>numgraphs</th>
+      <td><p>number of graphs in each generation</p></td>
+    </tr>
+    <tr>
+      <th>numgen</th>
+      <td><p>number of generations</p></td>
+    </tr>
+    <tr>
+      <th>numsel</th>
+      <td><p>number of graphs which are selected in each generation</p></td>
+    </tr>
+    <tr>
+      <th>numadmix</th>
+      <td><p>number of admixture events within each graph</p></td>
+    </tr>
+    <tr>
+      <th>keep</th>
+      <td><p>by default, all evaluated graphs will be returned. <code>best</code> will only return the best fitting graph from each repeat and each generation. <code>last</code> will return all graphs from the last generation.</p></td>
+    </tr>
+    <tr>
+      <th>f2_denom</th>
+      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
+    </tr>
+    <tr>
+      <th>cpp</th>
+      <td><p>should optimization be run in C++ or in R? C++ is faster.</p></td>
+    </tr>
+    <tr>
+      <th>debug</th>
+      <td><p>if <code>TRUE</code> each repeat is run sequentially in a loop and not via <code>furrr::map</code>). Errors will interrupt execution. This is the default if <code>numrep == 1</code></p></td>
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>a nested data frame with one model per line</p>
+    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>simple</span> <span class='kw'>=</span> <span class='fu'><a href='simplify_graph.html'>simplify_graph</a></span>(<span class='no'>igraph1</span>)</div><div class='output co'>#&gt; <span class='error'>Error in simplify_graph(igraph1): object 'igraph1' not found</span></div><div class='input'><span class='no'>desimple</span> <span class='kw'>=</span> <span class='fu'>desimplify_graph</span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in desimplify_graph(simple): object 'simple' not found</span></div><div class='input'><span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>simple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph(simple): object 'simple' not found</span></div><div class='input'><span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>desimple</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph(desimple): object 'desimple' not found</span></div></pre>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='fu'>find_graphs</span>(<span class='no'>example_f2_blocks</span>, <span class='kw'>numrep</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>numgraphs</span> <span class='kw'>=</span> <span class='fl'>100</span>,
+            <span class='kw'>numgen</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>numsel</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>3</span>)
+}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-            
+      
+      <li><a href="#value">Value</a></li>
+      
       <li><a href="#examples">Examples</a></li>
     </ul>
 

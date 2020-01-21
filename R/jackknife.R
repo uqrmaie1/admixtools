@@ -1,5 +1,5 @@
 
-bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
+bj_arr_lo_mean = function(arr, block_lengths, loo = TRUE, verbose = TRUE) {
   # returns leave-one-block-out array means
   # arr is 3d
   # group over third dimension
@@ -7,22 +7,43 @@ bj_arr_lo_mean = function(arr, block_lengths, verbose=TRUE) {
 
   blockids = rep(seq_along(block_lengths), block_lengths)
   numblocks = length(block_lengths)
-  tot = apply(arr, 1:2, sum, na.rm=TRUE)
+  tot = apply(arr, 1:2, sum, na.rm = TRUE)
   tot_nonmiss = apply(arr, 1:2, function(x) sum(!is.na(x)))
   parts = parts_nonmiss = array(NA, c(dim(arr)[1], dim(arr)[2], numblocks))
   for(i in 1:numblocks) {
     #if(verbose) cat(paste0('\r',  i, ' out of ', numblocks, ' SNP blocks processed...'))
     bid = which(blockids == i)
-    parts[,,i] = apply(arr[,, bid, drop=F], 1:2, sum, na.rm=TRUE)
+    parts[,,i] = apply(arr[,, bid, drop=F], 1:2, sum, na.rm = TRUE)
     parts_nonmiss[,,i] = apply(arr[,, bid, drop=F], 1:2, function(x) sum(!is.na(x)))
   }
   #if(verbose) cat('\n')
-  sums = rray(tot) - rray(parts)
-  nonmiss = rray(tot_nonmiss) - rray(parts_nonmiss)
+  if(loo) {
+    sums = rray(tot) - rray(parts)
+    nonmiss = rray(tot_nonmiss) - rray(parts_nonmiss)
+  } else {
+    sums = parts
+    nonmiss = parts_nonmiss
+  }
   out = as.array(sums/nonmiss)
   if(!is.null(dimnames(arr)[[1]])) dimnames(out)[[1]] = dimnames(arr)[[1]]
   if(!is.null(dimnames(arr)[[2]])) dimnames(out)[[2]] = dimnames(arr)[[2]]
   out
+}
+
+block_arr_mean = function(arr, block_lengths, verbose = TRUE) {
+  # returns grouped array means
+  # arr is 3d
+  # group over third dimension
+
+  blockids = rep(seq_along(block_lengths), block_lengths)
+  numblocks = length(block_lengths)
+  sums = nonmiss = arr[,,1:numblocks]*NA
+  for(i in 1:numblocks) {
+    bid = which(blockids == i)
+    sums[,,i] = apply(arr[,, bid, drop=F], 1:2, sum, na.rm = TRUE)
+    nonmiss[,,i] = apply(arr[,, bid, drop=F], 1:2, function(x) sum(!is.na(x)))
+  }
+  sums/nonmiss
 }
 
 
@@ -43,10 +64,15 @@ bj_arr_stats = function(bj_lo_arr, block_lengths) {
   # input is 3d array (n x n x m)
   # output is list with jackknife means and jackknife variances
   # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+
   numblocks = length(block_lengths)
-  jest = apply(bj_lo_arr, 1:2, mean)
+  jest = apply(bj_lo_arr, 1:2, weighted.mean, block_lengths)
+  # changed the previous line without testing. used to be:
+  # jest = apply(bj_lo_arr, 1:2, mean)
   xtau = (rray(jest) - bj_lo_arr)^2 * rray(sum(block_lengths)/block_lengths-1, c(1, 1, numblocks))
-  jvar = apply(xtau, 1:2, mean)
+  jvar = apply(xtau, 1:2, weighted.mean, block_lengths)
+  # changed the previous line without testing. used to be:
+  # jvar = apply(xtau, 1:2, mean)
   namedList(jest, jvar)
 }
 
@@ -55,7 +81,9 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
   # output is list with jackknife means and jackknife covariances
   # uses mean jackknife estimate instead of overall mean; probably makes very little difference
   numblocks = length(block_lengths)
-  jest = c(t(apply(bj_lo_arr, 1:2, mean)))
+  jest = c(t(apply(bj_lo_arr, 1:2, weighted.mean, block_lengths)))
+  # changed the previous line without testing. used to be:
+  # jest = c(t(apply(bj_lo_arr, 1:2, mean)))
   bj_lo_mat = bj_lo_arr %>% aperm(c(2,1,3)) %>% arr3d_to_mat
   mnc = t(jest - bj_lo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks)
   jvar = crossprod(mnc)
@@ -77,6 +105,7 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
 #' @param infocols number of initil columns with meta data
 #' @param outdir directory into which to write f2 data (if \code{NULL}, data is returned instead)
 #' @param overwrite should existing files be overwritten? only relevant if \code{outdir} is not \code{NULL}
+#' @param loo if \code{TRUE} (the default), return the total estimates minus the estimates from each block. if \code{FALSE}, return the estimate from each block.
 #' @param verbose print progress updates
 #' @details For each population pair, each of the \eqn{i = 1, \ldots, n} resutling values (\eqn{n} is around 700 in practice) is the mean \eqn{f2} estimate across all SNPs except the ones in block \eqn{i}.
 #'
@@ -87,10 +116,10 @@ bj_pairarr_stats = function(bj_lo_arr, block_lengths) {
 #' f2_blocks = afs_to_f2_blocks(afs, popcounts, block_lengths)
 #' }
 afs_to_f2_blocks = function(afs, popcounts, block_lengths, f2_denom=1, maxmem=1e3,
-                            infocols = 6, outdir = NULL, overwrite = FALSE, verbose = TRUE) {
+                            infocols = 6, outdir = NULL, overwrite = FALSE, loo = TRUE, verbose = TRUE) {
 
   if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
-  popcounts = as.vector(popcounts[colnames(afs)])
+  #popcounts = as.vector(popcounts[colnames(afs)])
 
   mem1 = lobstr::obj_size(afs)
   mem2 = mem1*ncol(afs)
@@ -106,9 +135,10 @@ afs_to_f2_blocks = function(afs, popcounts, block_lengths, f2_denom=1, maxmem=1e
     if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ', width, ' populations and up to ', maxmem, ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
   }
 
-  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, starts=starts, ends=ends, outdir = outdir, overwrite = overwrite, f2_denom = f2_denom, verbose = verbose)
+  f2_blocks = get_split_f2_blocks(afs, popcounts, block_lengths, starts=starts, ends=ends, outdir = outdir, overwrite = overwrite, f2_denom = f2_denom, loo = loo, verbose = verbose)
   f2_blocks
 }
+
 
 
 set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
@@ -155,7 +185,8 @@ get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
     rle %$% lengths
 }
 
-get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, outdir = NULL, overwrite = FALSE, f2_denom = 1, verbose = TRUE) {
+get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, outdir = NULL,
+                               overwrite = FALSE, f2_denom = 1, loo = TRUE, verbose = TRUE) {
   # splits afmat into blocks by column, computes lo jackknife blocks on each pair of blocks, and combines into 3d array
   numsplits2 = length(starts)
   cmb = combn(0:numsplits2, 2)+(1:0)
@@ -163,20 +194,17 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, ou
   nsnp = nrow(afmat)
 
   for(i in 1:ncol(cmb)) {
-    if(numsplits2 > 1 & verbose) cat(paste0('\rpop combination ', i, ' out of ', ncol(cmb)))
+    if(numsplits2 > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', ncol(cmb)))
     c1 = cmb[1,i]
     c2 = cmb[2,i]
     s1 = starts[c1]:ends[c1]
     s2 = starts[c2]:ends[c2]
-    b1 = afmat[,s1,drop=F]
-    b2 = afmat[,s2,drop=F]
-    afrr1 = rray(t(b1), dim=c(ncol(b1), 1, nsnp))
-    afrr2 = rray(t(b2), dim=c(1, ncol(b2), nsnp))
-    pqarr = afrr1*(1-afrr1)/(2*popcounts[s1]-1) + afrr2*(1-afrr2)/t(2*popcounts[s2]-1)
-    numer = (afrr1 - afrr2)^2 - pqarr
-    dimnames(numer)[[1]] = colnames(b1)
-    dimnames(numer)[[2]] = colnames(b2)
-    f2_subblock = bj_arr_lo_mean(numer / f2_denom, block_lengths)
+    arrs = mats_to_f2arr(afmat[,s1,drop=F], afmat[,s2,drop=F], popcounts[,s1,drop=F], popcounts[,s2,drop=F])
+    numer = arrs[[1]]
+    denom = arrs[[2]]
+    f2_subblock = bj_arr_lo_mean(numer, block_lengths, loo = loo)
+    #f2_denom = bj_arr_lo_mean(denom, block_lengths, loo = loo)
+    f2_subblock = f2_subblock / f2_denom
     if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
     if(!is.null(outdir)) {
       write_f2(f2_subblock, outdir = outdir, overwrite = overwrite)
@@ -187,10 +215,47 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, ou
   }
   if(numsplits2 > 1 & verbose) cat('\n')
   if(is.null(outdir)) {
-    f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
+    f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1)) %>%
+      structure(block_lengths = block_lengths)
     dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = colnames(afmat)
     return(f2_blocks)
   }
+}
+
+mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
+
+  stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
+  stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
+  stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
+
+  nsnp = nrow(afmat1)
+  d1 = c(ncol(afmat1), 1, nsnp)
+  d2 = c(1, ncol(afmat2), nsnp)
+  afrr1 = rray(t(afmat1), dim = d1)
+  afrr2 = rray(t(afmat2), dim = d2)
+  #denom1 = rray(t(pmax(-Inf, countmat1-1)), dim = d1)
+  #denom2 = rray(t(pmax(-Inf, countmat2-1)), dim = d2)
+  denom1 = pmax(1, colMeans(countmat1, na.rm = T)-1)
+  denom2 = t(pmax(1, colMeans(countmat2, na.rm = T)-1))
+  #denom1 = pmax(1, apply(countmat1, 2, max, na.rm = T)-1)
+  #denom2 = t(pmax(1, apply(countmat2, 2, max, na.rm = T)-1))
+  pq1 = afrr1*(1-afrr1)
+  pq2 = afrr2*(1-afrr2)
+  pqarr = pq1/denom1 + pq2/denom2
+  arr = (afrr1 - afrr2)^2 - pqarr
+  denom = NULL
+  #denom = arr + pq1*countmat1/(countmat1-1) + pq2*countmat2/(countmat2-1)
+  arr = as.array(arr)
+  #denom = as.array(denom)
+  # maybe set pop pairs with < 2 haplotypes to missing here
+  #valid = rray(countmat1 > 1, dim = d1) & rray(countmat2 > 1, dim = d2)
+  #arr[which(!valid)] = NA
+  #denom[which(!valid)] = NA
+  dimnames(arr)[[1]] = colnames(afmat1)
+  dimnames(arr)[[2]] = colnames(afmat2)
+  #dimnames(denom)[[1]] = colnames(afmat1)
+  #dimnames(denom)[[2]] = colnames(afmat2)
+  list(arr, denom)
 }
 
 #' Compute block jackknife f2 blocks and write them to disk
@@ -223,25 +288,33 @@ get_split_f2_blocks = function(afmat, popcounts, block_lengths, starts, ends, ou
 write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, block_lengths, f2_denom = 1, verbose = TRUE) {
   # reads two afmat blocks, computes f2 jackknife blocks, and writes output to outdir
 
-  load(paste0(afmatprefix, block1, '.RData'))
-  b1 = afs
-  load(paste0(afmatprefix, block2, '.RData'))
-  b2 = afs
-  rm(afs)
+  # load(paste0(afmatprefix, block1, '.RData'))
+  # b1 = afs
+  # load(paste0(afmatprefix, block2, '.RData'))
+  # b2 = afs
+  # rm(afs)
+  b1 = readRDS(paste0(afmatprefix, block1, '.rds'))
+  b2 = readRDS(paste0(afmatprefix, block2, '.rds'))
+  # continue here: need to read count matrices in a similar way
   nam1 = colnames(b1)
   nam2 = colnames(b2)
   nsnp = nrow(b1)
   filenames = expand_grid(nam1, nam2) %>%
-    transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.RData')) %$% nam
+    transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.rds')) %$% nam
+    #transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.RData')) %$% nam
   if(all(file.exists(filenames))) return()
 
+  # replace below with this:
+  # arr = mats_to_f2arr(b1, b2, popcounts[,s1,drop=F], popcounts[,s2,drop=F])
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   afrr1 = rray::rray(t(b1), dim=c(ncol(b1), 1, nsnp))
   afrr2 = rray::rray(t(b2), dim=c(1, ncol(b2), nsnp))
   pqarr = afrr1*(1-afrr1)/(2*c(popcounts[nam1])-1) + afrr2*(1-afrr2)/t(2*c(popcounts[nam2])-1)
-  numer = as.array((afrr1 - afrr2)^2 - pqarr)
+  arr = as.array((afrr1 - afrr2)^2 - pqarr)
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   rm(afrr1, afrr2, pqarr)
-  f2_subblock = bj_arr_lo_mean(numer / f2_denom, block_lengths, verbose = verbose)
-  rm(numer)
+  f2_subblock = bj_arr_lo_mean(arr / f2_denom, block_lengths, verbose = verbose)
+  rm(arr)
   dimnames(f2_subblock)[[1]] = nam1
   dimnames(f2_subblock)[[2]] = nam2
   if(block1 == block2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
@@ -249,5 +322,26 @@ write_split_f2_block = function(afmatprefix, outdir, block1, block2, popcounts, 
 }
 
 
+est_to_loo = function(arr) {
+  # turns block estimates into leave-one-block-out estimates
+  # assumes blocks are along 3rd dimension, and block_lengths is attribute
+
+  block_lengths = attr(arr, 'block_lengths')
+  tot = rray(apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T))
+  rel_bl = rray(block_lengths/sum(block_lengths), dim = c(1,1,dim(arr)[3]))
+  out = (tot - arr*rel_bl) / (1-rel_bl)
+  attributes(out) = attributes(arr)
+  out
+}
 
 
+loo_to_est = function(arr) {
+  # inverse of est_to_res
+
+  block_lengths = attr(arr, 'block_lengths')
+  rel_bl = rray(block_lengths/sum(block_lengths), dim = c(1,1,dim(arr)[3]))
+  tot = rray(apply(arr, 1:2, weighted.mean, 1-rel_bl, na.rm=T))
+  out = as.array((tot - arr * (1-rel_bl))/rel_bl)
+  attributes(out) = attributes(arr)
+  out
+}

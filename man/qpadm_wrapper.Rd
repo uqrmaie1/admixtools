@@ -5,8 +5,9 @@
 \title{Wrapper function around the original qpAdm program}
 \usage{
 qpadm_wrapper(target = NULL, left = NULL, right = NULL, bin,
-  pref = NULL, outdir = "./", parfile = NULL, printonly = FALSE,
-  env = "")
+  pref = NULL, outdir = "./", parfile = NULL, useallsnps = "NO",
+  fancyf4 = "YES", f4mode = "YES", inbreed = "NO",
+  printonly = FALSE, env = "")
 }
 \arguments{
 \item{target}{target population}

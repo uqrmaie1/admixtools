@@ -43,7 +43,7 @@ using namespace Eigen;
 class Data {
 public:
 
-  MatrixXd X, afmat, countmat;
+  MatrixXd X, afmat, countmat, scanmat;
   unsigned int N, p;
   unsigned long long len, filesize;
   unsigned int np, nsnps;
@@ -144,8 +144,9 @@ void decode_plink(unsigned char *out,
 // Expects PLINK BED in SNP-major format
 void Data::read_afs()
 {
-  int val, k, pop, npop;
+  int val, k, pop, npop, nind;
   npop = max(this->indvec);
+  nind = max(this->indvec2);
   std::ifstream in(this->bedfile, std::ios::in | std::ios::binary);
 
   if(!in)
@@ -173,6 +174,21 @@ void Data::read_afs()
   //              << " SNPs." << std::endl;
   VectorXd popafs(npop), popsum(npop), poptot(npop);
 
+  // determine ploidy
+  VectorXd ploidy = VectorXd::Ones(nind);
+  int nscan = 1000;
+  for(unsigned int j = 0; j < nscan; j++) {
+    if(j == nsnps) break;
+    in.read((char*)tmp, sizeof(char) * np);
+    decode_plink(tmp2, tmp, np);
+    for(unsigned int i = 0; i < nind; i++) {
+      k = this->indvec2(i)-1;
+      val = (double)tmp2[k];
+      if(val == 1) ploidy(i) = 2;
+    }
+  }
+
+  in.seekg(3, std::ifstream::beg);
   for(unsigned int j = 0 ; j < nsnps ; j++)
   {
     if(verbose && j % 1000 == 0) Rcout << "\r" << j/1000 << "k SNPs read...";
@@ -184,17 +200,17 @@ void Data::read_afs()
 
     // decode the genotypes
     decode_plink(tmp2, tmp, np);
-    for(unsigned int i = 0; i < this->indvec2.length(); i++) {
+    for(unsigned int i = 0; i < nind; i++) {
       k = this->indvec2(i)-1;
       pop = indvec(k)-1;
       val = (double)tmp2[k];
       if(val == PLINK_NA) val = 0;
-      else poptot(pop) += 1;
-      popsum(pop) += val;
+      else poptot(pop) += ploidy(i);
+      popsum(pop) += val/(3-ploidy(i));
     }
 
     for(unsigned int i = 0; i < npop; i++) {
-      if(poptot(i) > 0) popafs(i) = popsum(i)/poptot(i)/2;
+      if(poptot(i) > 0) popafs(i) = popsum(i)/poptot(i);
       else popafs(i) = NA_REAL;
     }
     afmat.row(j) = popafs;
@@ -211,6 +227,7 @@ void Data::read_afs()
 // [[Rcpp::export]]
 List read_plink_afs_cpp(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool verbose)
 {
+  // indvec: assignes each individual to population; indvec2: which individuals to keep
   Data data(bedfile.get_cstring(), indvec, indvec2, verbose);
   data.read_afs();
   return List::create(data.afmat, data.countmat);

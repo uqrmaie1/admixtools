@@ -11,7 +11,7 @@ write_afs(afmat, path, countmat = NULL, overwrite = FALSE)
 
 \item{path}{directory into which to write the files.}
 
-\item{countmat}{optional matrix with individual counts for each SNP and population. Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.RData}) in the variable \code{num_individuals}}
+\item{countmat}{optional matrix with allele counts for each SNP and population. Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.RData}) in the variable \code{num_individuals}}
 
 \item{overwrite}{should existing \code{.RData} files be overwritten?}
 }

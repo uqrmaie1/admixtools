@@ -47,7 +47,7 @@
 
 <meta property="og:title" content="Wrapper function around the original qp3Pop program — qp3pop_wrapper" />
 
-<meta property="og:description" content="Computes f3 statistics of the form \(F_3(P_1; P_2, P_3)\). Equivalent to \((F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2\) and to \(F_4(P_1, P_2; P_1, P_3)\). Requires a working installation of qp3Pop, which will be called using system" />
+<meta property="og:description" content="Computes f3 statistics of the form \(F_3(A; B, C)\). Equivalent to \((F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2\) and to \(F_4(A, B; A, C)\). Requires a working installation of qp3Pop, which will be called using system" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,14 +151,14 @@
 
     <div class="ref-description">
     
-    <p>Computes f3 statistics of the form \(F_3(P_1; P_2, P_3)\). Equivalent to \((F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2\) and to \(F_4(P_1, P_2; P_1, P_3)\). Requires a working installation of qp3Pop, which will be called using <code><a href='https://rdrr.io/r/base/system.html'>system</a></code></p>
+    <p>Computes f3 statistics of the form \(F_3(A; B, C)\). Equivalent to \((F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2\) and to \(F_4(A, B; A, C)\). Requires a working installation of qp3Pop, which will be called using <code><a href='https://rdrr.io/r/base/system.html'>system</a></code></p>
     
     </div>
 
     <pre class="usage"><span class='fu'>qp3pop_wrapper</span>(<span class='no'>source1</span>, <span class='kw'>source2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"./qp3Pop"</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>outgroupmode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
+  <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>outgroupmode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>useallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -168,7 +168,7 @@
       <td><p>one of the following four:</p><ol>
 <li><p><code>NULL</code>: populations will be read from <code>poplistname</code> or <code>popfilename</code> specified in <code>parfile</code></p></li>
 <li><p>a vector of population labels</p></li>
-<li><p>a data frame in which the first four columns specify the population quadruples to be tested. <code>source2</code>, <code>target</code> will be ignored.</p></li>
+<li><p>a data frame in which the first four columns specify the population triples to be tested. <code>source2</code>, <code>target</code> will be ignored.</p></li>
 <li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or population quadruples to be tested. <code>source2</code> and <code>target</code> will be ignored.</p></li>
 </ol></td>
     </tr>

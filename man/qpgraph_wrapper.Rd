@@ -5,9 +5,10 @@
 \title{Wrapper function around the original qpGraph program}
 \usage{
 qpgraph_wrapper(graph, bin, pref = NULL, parfile = NULL,
-  outdir = ".", printonly = FALSE, lambdascale = -1, diag = 1e-04,
-  outpop = "NULL", lsqmode = "NO", hires = "NO", forcezmode = "NO",
-  allsnps = "NO", bigiter = 100, env = "")
+  outdir = ".", printonly = FALSE, lambdascale = -1,
+  inbreed = "NO", diag = 1e-04, outpop = "NULL", lsqmode = "NO",
+  fstdmode = "NO", hires = "NO", forcezmode = "NO",
+  useallsnps = "NO", bigiter = 100, env = "")
 }
 \arguments{
 \item{graph}{an admixture graph or qpGraph graph file}
@@ -34,9 +35,9 @@ qpgraph_wrapper(graph, bin, pref = NULL, parfile = NULL,
 
 \item{forcezmode}{forcezmode}
 
-\item{allsnps}{allsnps}
-
 \item{bigiter}{bigiter}
+
+\item{allsnps}{allsnps}
 }
 \value{
 a list with parsed qpGraph output

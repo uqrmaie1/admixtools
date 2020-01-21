@@ -32,7 +32,7 @@ qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 }
 \description{
-Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(P_1, P_2; P_3, P_4)}. Equivalent to \eqn{(F_2(P_1, P_4) + F_2(P_2, P_3) - F_2(P_1, P_3) - F_2(P_2, P_4)) / 2}
+Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(A, B; C, D)}. Equivalent to \eqn{(F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2}
 }
 \section{Alias}{
 

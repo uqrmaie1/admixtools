@@ -6,7 +6,7 @@
 \usage{
 afs_to_f2_blocks(afs, popcounts, block_lengths, f2_denom = 1,
   maxmem = 1000, infocols = 6, outdir = NULL, overwrite = FALSE,
-  verbose = TRUE)
+  loo = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{afs}{data frame of allele frequencies for each population. column 1 to \code{infocols} are SNP annotation columns, the other columns are allele frequencies.}
@@ -24,6 +24,8 @@ afs_to_f2_blocks(afs, popcounts, block_lengths, f2_denom = 1,
 \item{outdir}{directory into which to write f2 data (if \code{NULL}, data is returned instead)}
 
 \item{overwrite}{should existing files be overwritten? only relevant if \code{outdir} is not \code{NULL}}
+
+\item{loo}{if \code{TRUE} (the default), return the total estimates minus the estimates from each block. if \code{FALSE}, return the estimate from each block.}
 
 \item{verbose}{print progress updates}
 }

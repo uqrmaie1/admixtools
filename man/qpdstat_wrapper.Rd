@@ -6,7 +6,8 @@
 \usage{
 qpdstat_wrapper(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   bin = "./qpDstat", pref = NULL, outdir = ".", parfile = NULL,
-  f4mode = "YES", printonly = FALSE, env = "")
+  f4mode = "YES", useallsnps = "NO", inbreed = "NO",
+  lambdascale = -1, printonly = FALSE, env = "")
 }
 \arguments{
 \item{pop1}{one of the following four:

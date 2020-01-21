@@ -4,10 +4,10 @@
 \alias{desimplify_graph}
 \title{Add two nodes before each admixture node}
 \usage{
-desimplify_graph(grph)
+desimplify_graph(graph)
 }
 \arguments{
-\item{grph}{an admixture graph}
+\item{graph}{an admixture graph}
 }
 \description{
 This is used to revert simplify_graph.

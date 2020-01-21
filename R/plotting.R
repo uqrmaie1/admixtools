@@ -75,6 +75,7 @@ plot_comparison = function(out1, out2) {
 # @param edges a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
 # @param layout argument passed to \code{\link[ggdag]{tidy_dagitty}} to modify plot layout.
 # @return a ggplot object.
+#' @export
 plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 
   if (!requireNamespace('ggdag', quietly = TRUE)) {
@@ -135,7 +136,8 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
   if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = fix_layout(eg, grph)
 
   if(!'label' %in% names(edges)) {
-    lab = ifelse('weight' %in% names(edges), round(edges$weight, 2), '')
+    if('weight' %in% names(edges)) lab = round(edges$weight, 2)
+    else lab = ''
     edges %<>% mutate(label = lab)
   }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))

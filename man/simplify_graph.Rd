@@ -4,10 +4,10 @@
 \alias{simplify_graph}
 \title{Remove redundant edges}
 \usage{
-simplify_graph(grph)
+simplify_graph(graph)
 }
 \arguments{
-\item{grph}{an igraph object}
+\item{graph}{an igraph object}
 }
 \description{
 Nodes with in and out degree of one will be removed.

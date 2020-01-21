@@ -1,37 +1,5 @@
 
-f2_qpgraph = function(p1, p2, c1, c2) {
-  # c1, c2: counts of individuals
-  (p1-p2)^2 - p1*(1-p1)/(2*c1-1) - p2*(1-p2)/(2*c2-1)
-}
 
-f2_qpgraph1 = function(p1, p2) {
-  # c1, c2: counts of individuals
-  (p1-p2)^2 - p1*(1-p1) - p2*(1-p2)
-}
-
-
-fst_qpgraph = function(p1, p2, c1, c2) {
-  # c1, c2: counts of individuals
-  # is the same as fst_reich
-  num = (p1-p2)^2 - p1*(1-p1)/(2*c1-1) - p2*(1-p2)/(2*c2-1)
-  denom = p1 + p2 - 2*p1*p2
-  num/denom
-}
-
-
-qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile', outfile='./out', printonly=FALSE) {
-  # wrapper around AdmixTools qpGraph
-  # input is locations of parfile and graphfile
-  # output is parsed output
-
-  cmd = paste0(bin, ' -p ', parfile, ' -g ', graphfile, ' > ', outfile)
-  if(printonly) {
-    print(cmd)
-  } else{
-    system(cmd)
-    return(parse_qpgraph_output(outfile))
-  }
-}
 
 
 
@@ -66,13 +34,14 @@ qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./g
 #'                 bin = 'path/to/qpGraph',
 #'                 parfile = 'path/to/parfile')
 #' }
-qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
-                           printonly=FALSE, lambdascale=-1, diag=0.0001, outpop='NULL',
-                           lsqmode='NO', hires='NO', forcezmode='NO', allsnps='NO', bigiter=100, env='') {
+qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir = '.',
+                           printonly = FALSE, lambdascale = -1, inbreed = 'NO', diag = 0.0001, outpop = 'NULL',
+                           lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', useallsnps = 'NO', bigiter = 100, env = '') {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
   stopifnot(!is.null(parfile) | !is.null(pref))
 
+  outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
     pref = normalizePath(pref, mustWork = FALSE)
     parfile = paste0('indivname:       ', pref, '.ind\n',
@@ -82,12 +51,15 @@ qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
                      'blgsize: 0.05\n',
                      'details: YES\n',
                      'fstdetails: YES\n',
+                     'hashcheck: NO\n',
                      'diag: ', diag, '\n',
                      'lsqmode: ', lsqmode, '\n',
+                     'fstdmode: ', fstdmode, '\n',
                      'hires: ', hires, '\n',
                      'forcezmode: ', forcezmode, '\n',
-                     'allsnps: ', allsnps, '\n',
+                     'useallsnps: ', useallsnps, '\n',
                      'lambdascale: ', lambdascale, '\n',
+                     'inbreed: ', inbreed, '\n',
                      'bigiter: ', bigiter, '\n')
     pf = paste0(outdir, '/parfile')
     write(parfile, pf)
@@ -119,12 +91,29 @@ qpgraph_wrapper = function(graph, bin, pref = NULL, parfile = NULL, outdir='.',
     simfile %>% write_tsv(gf, col_names=F)
   } else {
     stopifnot(file.exists(graph))
-    gf = graph
+    gf = normalizePath(graph)
   }
 
-  qpgraph_wrapper2(bin = paste0(env,' ', bin), parfile = pf, graphfile = gf,
+  qpgraph_wrapper2(bin = paste0(env,' ', normalizePath(bin)), parfile = pf, graphfile = gf,
                    outfile = paste0(outdir, '/out'), printonly = printonly)
 }
+
+
+
+qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile', outfile='./out', printonly=FALSE) {
+  # wrapper around AdmixTools qpGraph
+  # input is locations of parfile and graphfile
+  # output is parsed output
+
+  cmd = paste0(bin, ' -p ', parfile, ' -g ', graphfile, ' > ', outfile)
+  if(printonly) {
+    print(cmd)
+  } else{
+    system(cmd)
+    return(parse_qpgraph_output(outfile))
+  }
+}
+
 
 
 
@@ -332,7 +321,6 @@ qpgraph = function(f2_data, graph, f2_denom = 1, fnscale = 1e-6, fudge = 1e-3, l
   f2out = precomp$f2out
   f3out = precomp$f3out
 
-  if(verbose) alert_info('preprocessing done')
   weightind = graph_to_weightind(graph)
   weight = rep(NA, nedges)
   pwts = graph_to_pwts(graph)

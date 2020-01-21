@@ -29,7 +29,7 @@ qp3pop(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
 }
 \description{
-Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(P_1; P_2, P_3)}. Equivalent to  \eqn{(F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2} and to \eqn{F_4(P_1, P_2; P_1, P_3)}
+Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(A; B, C)}. Equivalent to  \eqn{(F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2} and to \eqn{F_4(A, B; A, C)}
 }
 \section{Alias}{
 

@@ -27,7 +27,7 @@ packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
 \item{return_matrix}{return data as list of matrices}
 }
 \value{
-a list with two items: allele frequency data and individual counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
+a list with two items: allele frequency data and allele counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
 }
 \description{
 Read allele frequencies from packedancestrymap files

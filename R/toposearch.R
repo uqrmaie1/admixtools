@@ -70,11 +70,11 @@ shortest_unique_prefixes = function(strings) {
   str_sub(strings, 1, len)
 }
 
-unify_vertex_names = function(grph, keep_unique=TRUE) {
+unify_vertex_names = function(graph, keep_unique = TRUE) {
   # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices, so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
-  leaves = get_leaves(grph)
+  leaves = get_leaves(graph)
   lv = shortest_unique_prefixes(names(leaves))
-  g = set_vertex_attr(grph, 'name', leaves, lv)
+  g = set_vertex_attr(graph, 'name', leaves, lv)
   ormap = names(V(g))
   names(ormap) = ormap
 
@@ -86,7 +86,7 @@ unify_vertex_names = function(grph, keep_unique=TRUE) {
     changed = setdiff(names(nammap), c('R', names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
   }
-  set_vertex_attr(grph, 'name', names(nammap), nammap)
+  set_vertex_attr(graph, 'name', names(nammap), nammap)
 }
 
 
@@ -101,100 +101,102 @@ unify_vertex_names = function(grph, keep_unique=TRUE) {
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
-random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = NA) {
+random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = NULL) {
   # makes a random admixture graph
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
   stopifnot(class(leaves)[1] %in% c('numeric', 'character'))
   if(length(leaves) == 1) leaves = paste0('l', 1:leaves)
-  if(is.na(outpop)) outpop = sample(leaves, 1)
+  if(is.null(outpop)) outpop = sample(leaves, 1)
   newick = random_newick(sample(setdiff(leaves, outpop)), outpop = outpop)
-  grph = graph_from_edgelist(newick_to_edges(newick))
-  grph = insert_admix_igraph_random(grph, numadmix)
-  if(simple) return(grph)
-  desimplify_graph(grph)
+  graph = graph_from_edgelist(newick_to_edges(newick))
+  graph = insert_admix_igraph_random(graph, numadmix)
+  if(simple) return(graph)
+  desimplify_graph(graph)
 }
 
 
 #' Remove redundant edges
 #'
 #' Nodes with in and out degree of one will be removed.
-#' @param grph an igraph object
+#' @param graph an igraph object
 #' @export
 #' @examples
 #' simple = simplify_graph(igraph1)
 #' plot_graph(igraph1)
 #' plot_graph(simple)
-simplify_graph = function(grph) {
+simplify_graph = function(graph) {
   # removes redundant nodes
   convmat = FALSE
-  if(class(grph) == 'matrix') {
+  if(class(graph) == 'matrix') {
     convmat = TRUE
-    grph = graph_from_edgelist(grph)
+    graph = graph_from_edgelist(graph)
   }
   repeat({
-    redundant = which(degree(grph, mode='in') == 1 & degree(grph, mode='out') == 1)
+    redundant = which(degree(graph, mode='in') == 1 & degree(graph, mode='out') == 1)
     if(length(redundant) == 0) break
-    newfrom = names((neighbors(grph, redundant[1], mode='in')))
-    newto = names((neighbors(grph, redundant[1], mode='out')))
-    grph = igraph::delete_vertices(grph, redundant[1])
-    grph = igraph::add_edges(grph, c(newfrom, newto))
+    newfrom = names((neighbors(graph, redundant[1], mode='in')))
+    newto = names((neighbors(graph, redundant[1], mode='out')))
+    graph = igraph::delete_vertices(graph, redundant[1])
+    graph = igraph::add_edges(graph, c(newfrom, newto))
   })
-  if(convmat) grph = igraph::as_edgelist(grph)
-  grph
+  if(convmat) graph = igraph::as_edgelist(graph)
+  graph
 }
 
 #' Add two nodes before each admixture node
 #'
 #' This is used to revert simplify_graph.
 #' @export
-#' @param grph an admixture graph
+#' @param graph an admixture graph
 #' @examples
 #' simple = simplify_graph(igraph1)
 #' desimple = desimplify_graph(simple)
 #' plot_graph(simple)
 #' plot_graph(desimple)
-desimplify_graph = function(grph) {
+desimplify_graph = function(graph) {
   # adds two nodes before each admixture node
   convmat = FALSE
-  if(class(grph)[1] == 'matrix') {
+  if(class(graph)[1] == 'matrix') {
     convmat = TRUE
-    grph = graph_from_edgelist(grph)
+    graph = graph_from_edgelist(graph)
   }
-  admix = which(degree(grph, mode='in') == 2)
-  if(length(admix) == 0) return(grph)
-  parents = names(unlist(unname(lapply(admix, function(v) neighbors(grph, v, mode='in')))))
+  admix = which(degree(graph, mode='in') == 2)
+  if(length(admix) == 0) return(graph)
+  parents = names(unlist(unname(lapply(admix, function(v) neighbors(graph, v, mode='in')))))
   admixnamesrep = rep(names(admix), each=2)
   newnam = paste0(admixnamesrep, c('a', 'b'))
-  grph = igraph::add_vertices(grph, length(admix)*2, name=newnam)
+  graph = igraph::add_vertices(graph, length(admix)*2, name=newnam)
   newedges = c(rbind(parents, newnam, newnam, admixnamesrep))
   deledges = paste(parents, admixnamesrep, sep='|')
-  grph = igraph::add_edges(grph, newedges)
-  grph = igraph::delete_edges(grph, deledges)
-  if(convmat) grph = igraph::as_edgelist(grph)
-  grph
+  graph = igraph::add_edges(graph, newedges)
+  graph = igraph::delete_edges(graph, deledges)
+  if(convmat) graph = igraph::as_edgelist(graph)
+  graph
 }
 
-split_graph = function(grph) {
+split_graph = function(graph) {
   # removes admixture nodes from an admixturegraph
   # returns a tree and a list of edges that can be used to reconstruct the original admixturegraph
-  admixedges = list()
+  fromnodes = tonodes = c()
   repeat({
-    admix = names(which(degree(grph, mode='in') == 2))
+    admix = names(which(degree(graph, mode='in') == 2))
     if(length(admix) == 0) break
-    parents = names(neighbors(grph, admix[1], mode='in'))
+    parents = names(neighbors(graph, admix[1], mode='in'))
     parents = sample(parents)
     # stopifnot(!any(c(parents[1], admix[1]) %in% unlist(admixedges)))
     # too strict; probably won't be able to always reintroduce admixedges at appropriate locations after SPR
-    fromedge1 = names(neighbors(grph, parents[1], mode = 'in'))
-    fromedge2 = setdiff(names(neighbors(grph, parents[1], mode = 'out')), admix[1])
-    toedge1 = setdiff(names(neighbors(grph, admix[1], mode = 'in')), parents[1])
-    toedge2 = names(neighbors(grph, admix[1], mode = 'out'))
-    admixedges[[length(admixedges)+1]] = c(fromedge1, fromedge2, toedge1, toedge2)
-    grph = igraph::delete_vertices(grph, c(admix[1], parents[1]))
-    grph = igraph::add_edges(grph, c(fromedge1, fromedge2, toedge1, toedge2))
+    fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
+    fromnode = setdiff(names(neighbors(graph, parents[1], mode = 'out')), admix[1])
+    tonode0 = setdiff(names(neighbors(graph, admix[1], mode = 'in')), parents[1])
+    tonode = names(neighbors(graph, admix[1], mode = 'out'))
+    fromnodes = c(fromnodes, fromnode)
+    tonodes = c(tonodes, tonode)
+    graph = igraph::delete_vertices(graph, c(admix[1], parents[1]))
+    graph = igraph::add_edges(graph, c(fromnode0, fromnode, tonode0, tonode))
   })
-  list(grph, admixedges)
+  tree = graph
+  namedList(tree, fromnodes, tonodes)
 }
 
 
@@ -277,62 +279,70 @@ newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
   rbind(c(node, nodel), edgesleft, c(node, noder), edgesright, edgemat)
 }
 
-insert_admix_igraph = function(grph, admixedges, substitute_missing=FALSE) {
+#' @export
+insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = FALSE) {
+  # inserts edges fromnodes -> tonodes into graph
   # inverse of 'split_graph'
-  # only uses 'fromedge2' and 'toedge2' (2nd and 4th elements of admixedges)
-  # stopifnot(all(c(sapply(admixedges, `[`, c(2, 4))) %in% names(V(grph))))
+  # stopifnot(all(c(sapply(admixedges, `[`, c(2, 4))) %in% names(V(graph))))
   # some nodes will get lost when splitting; insert random amix edges instead
+
+  #ograph = graph
+  stopifnot(length(fromnodes) == length(tonodes))
   miss = 0
-  for(i in rev(seq_len(length(admixedges)))) {
-    fromedge2 = admixedges[[i]][2]
-    toedge2 = admixedges[[i]][4]
-    if(!fromedge2 %in% names(V(grph)) ||
-       !toedge2 %in% names(V(grph))) {
+  for(i in rev(seq_len(length(fromnodes)))) {
+    fromnode = fromnodes[i]
+    tonode = tonodes[i]
+    if(!fromnode %in% names(V(graph)) ||
+       !tonode %in% names(V(graph))) {
       miss = miss+1
       next
     }
-    toedge2parent = neighbors(grph, toedge2, mode='in')
-    toedge2sib = setdiff(names(neighbors(grph, toedge2parent, mode='out')), toedge2)
-    if(degree(grph, fromedge2, mode='in') > 1 ||
-       degree(grph, toedge2sib, mode='in') > 1) {
+    toedge2parent = neighbors(graph, tonode, mode='in')
+    toedge2sib = setdiff(names(neighbors(graph, toedge2parent, mode='out')), tonode)
+    if(degree(graph, fromnode, mode='in') > 1 ||
+       degree(graph, toedge2sib, mode='in') > 1) {
       miss = miss+1
       next
     }
-    fromedge1 = names(neighbors(grph, fromedge2, mode='in'))
-    toedge1 = names(neighbors(grph, toedge2, mode='in'))
-    grph = igraph::delete_edges(grph, c(paste(fromedge1, fromedge2, sep='|'), paste(toedge1, toedge2, sep='|')))
-    new1 = paste0(fromedge1, 'x')
-    while(new1 %in% names(V(grph))) new1 = paste0(new1, sample(letters, 1))
+    fromnode_parent = names(neighbors(graph, fromnode, mode='in'))
+    tonode_parent = names(neighbors(graph, tonode, mode='in'))
+    graph = igraph::delete_edges(graph, c(paste(fromnode_parent, fromnode, sep='|'),
+                                          paste(tonode_parent, tonode, sep='|')))
+    new1 = paste0(fromnode_parent, 'x')
+    while(new1 %in% names(V(graph))) new1 = paste0(new1, sample(letters, 1))
     j = i
     new2 = paste0('admix', j)
-    while(new2 %in% names(V(grph))) {j=j+1; new2 = paste0('admix', j)}
-    grph = igraph::add_vertices(grph, 2, name=c(new1, new2))
-    newedges = c(fromedge1, new1, new1, fromedge2, toedge1, new2, new2, toedge2, new1, new2)
-    grph = igraph::add_edges(grph, newedges)
-    stopifnot(max(degree(grph)) <= 3)
+    while(new2 %in% names(V(graph))) {j=j+1; new2 = paste0('admix', j)}
+    graph = igraph::add_vertices(graph, 2, name=c(new1, new2))
+    newedges = c(fromnode_parent, new1, new1, fromnode, tonode_parent, new2, new2, tonode, new1, new2)
+    graph = igraph::add_edges(graph, newedges)
+    stopifnot(max(degree(graph)) <= 3)
   }
-  if(substitute_missing) grph = insert_admix_igraph_random(grph, miss)
-  else if (miss > 0) warning('did not insert or substitute admixedge')
-  grph
+  if (miss > 0) {
+    if(substitute_missing) graph = insert_admix_igraph_random(graph, miss)
+    else warning('did not insert or substitute admixedge')
+    #browser()
+  }
+  graph
 }
 
 
-insert_admix_igraph_random = function(grph, nadmix) {
-  # grph should be simplified
+insert_admix_igraph_random = function(graph, nadmix) {
+  # graph should be simplified
   for(i in seq_len(nadmix)) {
-    firstgen = neighbors(grph, V(grph)[1], mode='out')
-    admix = V(grph)[(degree(grph, mode='in') > 1)]
-    admixchildren = do.call(c, igraph::ego(grph, 1, admix, mode='out'))
-    admixparents = do.call(c, igraph::ego(grph, 1, admix, mode='in'))
-    admixsiblings = do.call(c, igraph::ego(grph, 1, admixparents, mode='out'))
+    firstgen = neighbors(graph, V(graph)[1], mode='out')
+    admix = V(graph)[(degree(graph, mode='in') > 1)]
+    admixchildren = do.call(c, igraph::ego(graph, 1, admix, mode='out'))
+    admixparents = do.call(c, igraph::ego(graph, 1, admix, mode='in'))
+    admixsiblings = do.call(c, igraph::ego(graph, 1, admixparents, mode='out'))
     exclude = c(admix, firstgen)
     if(!is.null(admixchildren)) exclude = c(exclude, admixchildren)
-    cand_from = sample(igraph::difference(V(grph)[-1], exclude))
+    cand_from = sample(igraph::difference(V(graph)[-1], exclude))
     for(fromnode in names(cand_from)) {
-      upstream = subcomponent(grph, fromnode, mode='in')
-      downstream1 = neighbors(grph, fromnode, mode='out')
-      siblings = neighbors(grph, upstream[2], mode='out') # upstream[2] should be parent of fromnode
-      uncles = neighbors(grph, neighbors(grph, upstream[2], mode='in'), mode='out')
+      upstream = subcomponent(graph, fromnode, mode='in')
+      downstream1 = neighbors(graph, fromnode, mode='out')
+      siblings = neighbors(graph, upstream[2], mode='out') # upstream[2] should be parent of fromnode
+      uncles = neighbors(graph, neighbors(graph, upstream[2], mode='in'), mode='out')
       exclude = c(upstream, downstream1, siblings, uncles)
       if(!is.null(admixsiblings)) exclude = c(exclude, admixsiblings)
       cand_to = igraph::difference(cand_from, exclude)
@@ -343,13 +353,13 @@ insert_admix_igraph_random = function(grph, nadmix) {
       break
     }
     tonode = sample(names(cand_to), 1)
-    stopifnot(all(c(fromnode, tonode) %in% names(V(grph))))
-    grphnew = insert_admix_igraph(grph, list(c(NA, fromnode, NA, tonode)), substitute_missing=FALSE)
-    stopifnot(numadmix(grphnew) > numadmix(grph))
-    stopifnot(igraph::is_simple(grphnew))
-    grph = grphnew
+    stopifnot(all(c(fromnode, tonode) %in% names(V(graph))))
+    graphnew = insert_admix_igraph(graph, fromnode, tonode, substitute_missing = FALSE)
+    stopifnot(numadmix(graphnew) > numadmix(graph))
+    stopifnot(igraph::is_simple(graphnew))
+    graph = graphnew
   }
-  grph
+  graph
 }
 
 
@@ -390,17 +400,17 @@ subtree_prune_and_regraft = function(grph, only_leaves=FALSE) {
 }
 
 
-admixturegraph_prune_and_regraft = function(grph, desimplify=TRUE, only_leaves = FALSE) {
+admixturegraph_prune_and_regraft = function(graph, desimplify=TRUE, only_leaves = FALSE) {
   # 1. remove admixture edges (one randomly selected from each admixture node)
   # 2. runs subtree_prune_and_regraft on resulting tree
   # 3. add admixture edges back on
-  grph = simplify_graph(grph)
-  spl = split_graph(grph)
-  grph = subtree_prune_and_regraft(spl[[1]], only_leaves = only_leaves)
-  grph = insert_admix_igraph(grph, spl[[2]], substitute_missing = TRUE)
-  stopifnot(igraph::is_simple(grph))
-  if(desimplify) grph = desimplify_graph(grph)
-  grph
+  graph = simplify_graph(graph)
+  spl = split_graph(graph)
+  graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves)
+  graph = insert_admix_igraph(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
+  stopifnot(igraph::is_simple(graph))
+  if(desimplify) graph = desimplify_graph(graph)
+  graph
 }
 
 
@@ -629,12 +639,12 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
 #' @return a nested data frame with one model per line
 #' @examples
 #' \dontrun{
-#' fit_graph(example_f2_blocks, numrep = 200, numgraphs = 100,
-#'           numgen = 20, numsel = 5, numadmix = 3)
+#' find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,
+#'             numgen = 20, numsel = 5, numadmix = 3)
 #' }
-fit_graph = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgraphs = 50,
-                     numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
-                     f2_denom = 0.278, verbose = TRUE, cpp = TRUE, debug = numrep==1, ...) {
+find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgraphs = 50,
+                       numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
+                       f2_denom = 0.278, verbose = TRUE, cpp = TRUE, debug = numrep==1, ...) {
 
   keep = rlang::arg_match(keep)
   if(is.null(pops)) {
@@ -879,7 +889,7 @@ tree_neighbors = function(tree) {
 
 tree_neighbors_single = function(tree, node) {
   # returns nested data frame with all trees within edit distance 1
-  # that are created by cutting the edge leading to node
+  # that are created by cutting all edges leading to node
   if(class(node) != 'character') node = names(node)
   downstream = subcomponent(tree, node, mode = 'out')
   root = V(tree)[1]
@@ -904,8 +914,63 @@ replace_edge = function(tree, from, to) {
     add_edges(c(parent, to, newgrandparent, parent, parent, from))
 }
 
+#' @export
+graph_plusone = function(graph, desimplify = TRUE) {
+  # returns all graphs with one more edge
+  graph %<>% simplify_graph
+  newedges = find_newedges(graph)
+  fn = ~insert_admix_igraph(graph, .x, .y)
+  if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
+  newedges %>% mutate(graph = map2(from, to, fn))
+}
+
+#' @export
+graph_minusone = function(graph, desimplify = TRUE) {
+  # returns all graphs with one admixture edge removed
+  graph %<>% simplify_graph
+  admixedges = find_admixedges(graph)
+  fn = ~delete_edges(graph, paste(.x, .y, sep = '|'))
+  if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
+  admixedges %>% mutate(graph = map2(from, to, fn))
+}
 
 
+#' @export
+find_newedges = function(graph) {
+  # returns a two column data frame with edges that can be inserted into the graph
+
+  edges = matrix(NA, 0, 2)
+  firstgen = neighbors(graph, V(graph)[1], mode='out')
+  admix = V(graph)[(degree(graph, mode='in') > 1)]
+  admixchildren = do.call(c, igraph::ego(graph, 1, admix, mode='out'))
+  admixparents = do.call(c, igraph::ego(graph, 1, admix, mode='in'))
+  admixsiblings = do.call(c, igraph::ego(graph, 1, admixparents, mode='out'))
+  exclude = c(admix, firstgen)
+  if(!is.null(admixchildren)) exclude = c(exclude, admixchildren)
+  cand_from = igraph::difference(V(graph)[-1], exclude)
+  for(fromnode in names(cand_from)) {
+    upstream = subcomponent(graph, fromnode, mode='in')
+    downstream1 = neighbors(graph, fromnode, mode='out')
+    siblings = neighbors(graph, upstream[2], mode='out') # upstream[2] should be parent of fromnode
+    uncles = neighbors(graph, neighbors(graph, upstream[2], mode='in'), mode='out')
+    exclude = c(upstream, downstream1, siblings, uncles)
+    if(!is.null(admixsiblings)) exclude = c(exclude, admixsiblings)
+    cand_to = names(igraph::difference(cand_from, exclude))
+    edges %<>% rbind(cbind(fromnode, cand_to))
+  }
+  edges %>% as_tibble(.name_repair = ~c('from', 'to'))
+}
+
+#' @export
+find_admixedges = function(graph) {
+  # returns a two column data frame with edges that can be removed from the graph
+
+  edges = matrix(NA, 0, 2)
+  admixnodes = which(degree(graph, mode = 'in') == 2)
+  graph %>% adjacent_vertices(admixnodes, mode = 'in') %>%
+    map(names) %>% enframe('to', 'from') %>%
+    unnest_longer(from) %>% select(2:1)
+}
 
 
 

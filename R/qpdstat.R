@@ -18,13 +18,13 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 
 #' Wrapper function around the original qp3Pop program
 #'
-#' Computes f3 statistics of the form \eqn{F_3(P_1; P_2, P_3)}. Equivalent to \eqn{(F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2} and to \eqn{F_4(P_1, P_2; P_1, P_3)}. Requires a working installation of qp3Pop, which will be called using \code{\link{system}}
+#' Computes f3 statistics of the form \eqn{F_3(A; B, C)}. Equivalent to \eqn{(F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2} and to \eqn{F_4(A, B; A, C)}. Requires a working installation of qp3Pop, which will be called using \code{\link{system}}
 #' @export
 #' @param source1 one of the following four:
 #' \enumerate{
 #' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
 #' \item a vector of population labels
-#' \item a data frame in which the first four columns specify the population quadruples to be tested. \code{source2}, \code{target} will be ignored.
+#' \item a data frame in which the first four columns specify the population triples to be tested. \code{source2}, \code{target} will be ignored.
 #' \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or population quadruples to be tested. \code{source2} and \code{target} will be ignored.
 #' }
 #' @param source2 a vector of population labels
@@ -47,15 +47,16 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' qp3pop_wrapper(bin = 'path/to/qp3Pop', parfile = 'path/to/parfile')
 #' }
 qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Pop',
-                          pref = NULL, outdir='.', parfile = NULL,
-                          inbreed = 'NO', outgroupmode = 'YES',
-                          printonly=FALSE, env='') {
+                          pref = NULL, outdir = '.', parfile = NULL,
+                          inbreed = 'NO', outgroupmode = 'YES', useallsnps = 'NO',
+                          printonly = FALSE, env = '') {
 
   stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(source1))
   stopifnot(file.exists(str_replace(bin, '.+ ', '')))
   stopifnot(is.null(source1) | is.null(source2) & is.null(target) |
               !is.null(source2) & !is.null(target))
 
+  outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
 
     popfilename = paste0(outdir, '/popfilename')
@@ -75,6 +76,7 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Po
                    # 'f4mode: ', f4mode, '\n',
                      'inbreed: ', inbreed, '\n',
                      'outgroupmode: ', outgroupmode, '\n',
+                     'useallsnps: ', useallsnps, '\n',
                      'details: YES\n',
                      'hashcheck: NO')
     parfilename = paste0(outdir, '/parfile')
@@ -128,14 +130,17 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = './qp3Po
 #'
 #' qpdstat_wrapper(bin = 'path/to/qpDstat', parfile = 'path/to/parfile')
 #' }
-qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, bin = './qpDstat',
-                           pref = NULL, outdir='.', parfile = NULL, f4mode = 'YES', printonly=FALSE, env='') {
+qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+                           bin = './qpDstat', pref = NULL, outdir='.', parfile = NULL,
+                           f4mode = 'YES', useallsnps = 'NO', inbreed = 'NO', lambdascale = -1,
+                           printonly=FALSE, env='') {
 
   stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(pop1))
   stopifnot(file.exists(str_replace(bin, '.+ ', '')))
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
 
+  outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
 
     popfiletype = 'popfilename'
@@ -160,6 +165,9 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, b
                      'indivname: ', pref, '.ind\n',
                      popfiletype, ': ', popfilename, '\n',
                      'f4mode: ', f4mode, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'inbreed: ', inbreed, '\n',
+                     'lambdascale: ', lambdascale, '\n',
                      'details: YES\n',
                      'hashcheck: NO')
     parfilename = paste0(outdir, '/parfile')
@@ -182,7 +190,7 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL, b
 
 #' Estimate f2 statistics
 #'
-#' Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(P_1, P_2)}
+#' Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(A, B)}
 #' @export
 #' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:
@@ -229,7 +237,7 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 
 #' Estimate f3 statistics
 #'
-#' Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(P_1; P_2, P_3)}. Equivalent to  \eqn{(F_2(P_1, P_2) + F_2(P_1, P_3) - F_2(P_2, P_3)) / 2} and to \eqn{F_4(P_1, P_2; P_1, P_3)}
+#' Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(A; B, C)}. Equivalent to  \eqn{(F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2} and to \eqn{F_4(A, B; A, C)}
 #' @export
 #' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:
@@ -288,7 +296,7 @@ f3 = qp3pop
 
 #' Estimate f4 statistics
 #'
-#' Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(P_1, P_2; P_3, P_4)}. Equivalent to \eqn{(F_2(P_1, P_4) + F_2(P_2, P_3) - F_2(P_1, P_3) - F_2(P_2, P_4)) / 2}
+#' Computes f4 statistics from f2 jackknife blocks of the form \eqn{F_4(A, B; C, D)}. Equivalent to \eqn{(F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2}
 #' @export
 #' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
 #' @param pop1 one of the following four:

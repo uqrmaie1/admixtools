@@ -5,7 +5,7 @@
 \title{Generate a random admixture graph}
 \usage{
 random_admixturegraph(leaves, numadmix = 0, simple = FALSE,
-  outpop = NA)
+  outpop = NULL)
 }
 \arguments{
 \item{leaves}{the names of the leaf nodes, or a number specifying how many leaf nodes there should be}

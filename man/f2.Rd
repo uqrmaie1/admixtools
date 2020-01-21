@@ -28,7 +28,7 @@ f2(f2_data, pop1 = NULL, pop2 = NULL, f2_denom = 1, sure = FALSE,
 If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 }
 \description{
-Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(P_1, P_2)}
+Computes f2 statistics from f2 jackknife blocks of the form \eqn{F_2(A, B)}
 }
 \examples{
 pop1 = 'Denisova.DG'
