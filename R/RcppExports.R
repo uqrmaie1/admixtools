@@ -17,12 +17,12 @@ cpp_qpadm_weights <- function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20L,
     .Call('_admixtools_cpp_qpadm_weights', PACKAGE = 'admixtools', xmat, qinv, rnk, fudge, iterations, constrained, qpsolve)
 }
 
-cpp_get_weights_covariance <- function(f4_blocks, qinv, fudge = 0.0001, iterations = 20L, constrained = FALSE, qpsolve = NULL) {
-    .Call('_admixtools_cpp_get_weights_covariance', PACKAGE = 'admixtools', f4_blocks, qinv, fudge, iterations, constrained, qpsolve)
+cpp_get_weights_covariance <- function(f4_lo, qinv, block_lengths, fudge = 0.0001, boot = 0L, constrained = FALSE, qpsolve = NULL) {
+    .Call('_admixtools_cpp_get_weights_covariance', PACKAGE = 'admixtools', f4_lo, qinv, block_lengths, fudge, boot, constrained, qpsolve)
 }
 
-cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_jest, qpsolve) {
-    .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_jest, qpsolve)
+cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve) {
+    .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve)
 }
 
 cpp_fill_pwts <- function(pwts, weights, path_edge_table, path_admixedge_table, numpaths) {

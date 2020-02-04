@@ -47,7 +47,8 @@
 
 <meta property="og:title" content="Estimate admixture weights — lazadm" />
 
-<meta property="og:description" content="Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method based non-negative least squares of f4 matrix." />
+<meta property="og:description" content="Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
+based non-negative least squares of f4 matrix." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,19 +152,21 @@
 
     <div class="ref-description">
     
-    <p>Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method based non-negative least squares of f4 matrix.</p>
+    <p>Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
+based non-negative least squares of f4 matrix.</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
+      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
+alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>target</th>
@@ -171,11 +174,11 @@
     </tr>
     <tr>
       <th>left</th>
-      <td><p>source populations (or leftlist file)</p></td>
+      <td><p>source populations (or <code>leftlist</code> file)</p></td>
     </tr>
     <tr>
       <th>right</th>
-      <td><p>outgroup populations (or rightlist file)</p></td>
+      <td><p>outgroup populations (or <code>rightlist</code> file)</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
@@ -187,7 +190,8 @@
     </tr>
     <tr>
       <th>constrained</th>
-      <td><p>if <code>TRUE</code> (default), admixture weights will all be non-negative. if <code>FALSE</code>, they can be negative, as in <code><a href='qpadm.html'>qpadm</a></code></p></td>
+      <td><p>if <code>TRUE</code> (default), admixture weights will all be non-negative.
+if <code>FALSE</code>, they can be negative, as in <code><a href='qpadm.html'>qpadm</a></code></p></td>
     </tr>
     </table>
     
@@ -198,7 +202,8 @@
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
-<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European languages in Europe.</em> Nature (SI 9)</p>
+<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European
+languages in Europe.</em> Nature (SI 9)</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 

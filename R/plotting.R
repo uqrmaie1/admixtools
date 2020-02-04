@@ -1,19 +1,29 @@
-#' Plot a comparison of two lists of qpgraph output
+
+#' Plot a comparison of two runs of qpgraph or two runs of qpadm
 #' @export
-#' @param out1 first qpgraph output.
-#' @param out2 second qpgraph output.
+#' @param out1 first model
+#' @param out2 second model
+#' @param name1 optional name for first model
+#' @param name2 optional name for second model
 #' @return a ggplot object.
 #' @examples
 #' fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
 #' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
 #' plot_comparison(fit1, fit2)
-plot_comparison = function(out1, out2) {
-  # plots a comparison of two qpgraph outputs
+plot_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
+  # plots a comparison of two qpgraph or qpadm outputs
+  if(is.null(name1)) name1 = enexpr(out1)
+  if(is.null(name2)) name2 = enexpr(out2)
+
+  f = ifelse('score' %in% names(out1), plot_comparison_qpgraph, plot_comparison_qpadm)
+  f(out1, out2, name1, name2)
+}
+
+
+plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 
   f2comp = f3comp = NULL
-
   if('f2' %in% names(out1) && 'f2' %in% names(out2)) {
-
     if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
       stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
                   length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
@@ -25,13 +35,11 @@ plot_comparison = function(out1, out2) {
       out2$f2$pop1 %<>% str_sub(1, 3)
       out2$f2$pop2 %<>% str_sub(1, 3)
     }
-
     f2comp = out1$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'x') %>%
       bind_rows(out2$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'y')) %>%
       rename(f2_est = est, f2_se = se) %>%
       gather('type', 'v', .data$f2_est, .data$f2_se) %>% spread(.data$i, .data$v) %>%
       rename(from=.data$pop1, to=.data$pop2)
-
   }
 
   if('f3' %in% names(out1) && 'f3' %in% names(out2)) {
@@ -53,7 +61,6 @@ plot_comparison = function(out1, out2) {
       rename(f3_est = est, f3_fit = fit) %>%
       gather('type', 'v', .data$f3_est, .data$f3_fit) %>% spread(.data$i, .data$v) %>%
       rename(from=.data$pop2, to=.data$pop3) %>% filter(!is.na(x), !is.na(y))
-
   }
 
   out1$edges %>% rename(x = .data$weight) %>%
@@ -63,19 +70,19 @@ plot_comparison = function(out1, out2) {
     geom_point() +
     facet_wrap('type', scales='free', dir = 'v', nrow = 2) +
     geom_abline() +
-    xlab(paste0('stats 1 (score: ', round(out1$score, 2),')')) +
-    ylab(paste0('stats 2 (score: ', round(out2$score, 2),')')) +
+    xlab(paste0(name1, ' (score: ', round(out1$score, 2),')')) +
+    ylab(paste0(name2, ' (score: ', round(out2$score, 2),')')) +
     theme(panel.background = element_blank(), axis.line = element_line()) +
     geom_smooth(method='lm', se = FALSE, formula=y~x-1)
-
 }
 
 
 # Plot an admixture graph
-# @param edges a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
+# @param edges a two column matrix specifying the admixture graph. first column is source node,
+# second column is target node. the first edge has to be root -> outgroup.
+# admixture nodes are inferred as those nodes which are the targets of two different sources.
 # @param layout argument passed to \code{\link[ggdag]{tidy_dagitty}} to modify plot layout.
 # @return a ggplot object.
-#' @export
 plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 
   if (!requireNamespace('ggdag', quietly = TRUE)) {
@@ -110,8 +117,11 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 
 #' Plot an admixture graph
 #' @export
-#' @param graph an admixture graph. If it's an edge list with a \code{label} column, those values will displayed on the edges
-#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize the number of intersecting edges. This can take very long for large graphs. By default this is only done for graphs with fewer than 10 leaves.
+#' @param graph an admixture graph. If it's an edge list with a \code{label} column,
+#' those values will displayed on the edges
+#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+#' the number of intersecting edges. This can take very long for large graphs.
+#' By default this is only done for graphs with fewer than 10 leaves.
 #' @param title plot title
 #' @param color plot it in color or greyscale
 #' @return a ggplot object
@@ -130,10 +140,13 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
+  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+    set_colnames(c('node', 'x', 'y'))
+  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+    left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
+    mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = fix_layout(eg, grph)
+  if(isTRUE(fix) || is.null(fix) && length(get_leafnames(grph)) < 10) eg = fix_layout(eg, grph)
 
   if(!'label' %in% names(edges)) {
     if('weight' %in% names(edges)) lab = round(edges$weight, 2)
@@ -141,7 +154,8 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
     edges %<>% mutate(label = lab)
   }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
+  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+    transmute(name = to, x, y, xend, yend)
 
   if(color) {
     gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
@@ -167,11 +181,8 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
     scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle(title) +
     scale_x_continuous(expand = c(0.15, 0.15))
-
   plt
-
 }
-
 
 
 fix_layout = function(coord, grph) {
@@ -244,14 +255,20 @@ fix_layout2 = function(coord) {
 
   nodeshift = edges %>% filter(y == yend)
   if(nrow(nodeshift) > 0) {
-    nodeshift %<>% group_by(g = interaction(y, yend, cumsum(cummax(lag(xend, default = first(xend))) < x))) %>% mutate(tot = n(), this = (seq_len(tot[1]))-1, shift = this/tot) %>% filter(shift != 0) %>% dplyr::select(g, name, to, shift) %>% ungroup %>% gather(irl, node, name, to) %>% dplyr::select(node, shift)
+    nodeshift %<>% group_by(g = interaction(y, yend, cumsum(cummax(lag(xend, default = first(xend))) < x))) %>%
+      mutate(tot = n(), this = (seq_len(tot[1]))-1, shift = this/tot) %>% filter(shift != 0) %>%
+      dplyr::select(g, name, to, shift) %>% ungroup %>% gather(irl, node, name, to) %>% dplyr::select(node, shift)
     if(nrow(nodeshift) > 0) {
-      edges %<>% left_join(nodeshift %>% transmute(name=node, s1 = shift), by='name') %>% left_join(nodeshift %>% transmute(to=node, s2 = shift), by='to') %>% mutate(y = ifelse(is.na(s1), y, y+s1), yend = ifelse(is.na(s2), yend, yend+s2))
-      leaves %<>% left_join(nodeshift %>% transmute(name=node, shift), by='name') %>% mutate(y=ifelse(is.na(shift), y, y+shift))
+      edges %<>% left_join(nodeshift %>% transmute(name=node, s1 = shift), by='name') %>%
+        left_join(nodeshift %>% transmute(to=node, s2 = shift), by='to') %>%
+        mutate(y = ifelse(is.na(s1), y, y+s1), yend = ifelse(is.na(s2), yend, yend+s2))
+      leaves %<>% left_join(nodeshift %>% transmute(name=node, shift), by='name') %>%
+        mutate(y=ifelse(is.na(shift), y, y+shift))
     }
   }
   bind_rows(edges, leaves)
 }
+
 
 intersecting = function(x1, y1, x2, y2, x3, y3, x4, y4) {
   # returns TRUE iff segment 12 intersects with segment 34
@@ -325,17 +342,18 @@ collapse_edges = function(edges, below=0) {
   admixnodenames = edges %>% filter(type == 'admix') %$% unique(to)
   leaves = setdiff(edges[[2]], edges[[1]])
   excl = c(admixnodenames, leaves)
-  adjmat = edges %>% select(1, 2, weight) %>% bind_rows(rename(., from=to, to=from)) %>%  spread(to, weight, fill = 0) %>% column_to_rownames(var = 'from') %>% as.matrix
+  adjmat = edges %>% select(1, 2, weight) %>% bind_rows(rename(., from=to, to=from)) %>%
+    spread(to, weight, fill = 0) %>% column_to_rownames(var = 'from') %>% as.matrix
   adjmat[adjmat > below] = 0
   adjmat[rownames(adjmat) %in% excl, ] = 0
   adjmat[, colnames(adjmat) %in% excl] = 0
   diag(adjmat) = 1
   comp = components(graph_from_adjacency_matrix(as.matrix(adjmat), weighted='x'))
-  newnam = comp$membership %>% enframe %>% group_by(value) %>% mutate(name, groupname = paste(name, collapse='.')) %>% ungroup %>% select(-value) %>% deframe
+  newnam = comp$membership %>% enframe %>% group_by(value) %>%
+    mutate(name, groupname = paste(name, collapse='.')) %>% ungroup %>% select(-value) %>% deframe
   edges %>% mutate(from = newnam[from], to = newnam[to]) %>% filter(from != to)
 
 }
-
 
 
 #' @export
@@ -345,9 +363,15 @@ plot_graph_pcs = function(grph, pcs) {
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
   sg = grph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
-  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>% set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>% left_join(node_coord, by='node') %>% arrange(eid)
-  edge_coord %<>% mutate(admix = eid %in% (filter(., type == 'to') %>% group_by(node) %>% mutate(cnt = n()) %>% filter(cnt == 2) %$% eid), admix=ifelse(admix, 'dot', 'solid'))
-  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>% bind_rows(node_coord %>% filter(z==0) %>% transmute(s = 'center', group=node, x, y)) %>% mutate(z=0, sz = ((s == 'center')*5+2))
+  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
+    set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
+    left_join(node_coord, by='node') %>% arrange(eid)
+  edge_coord %<>% mutate(admix = eid %in% (filter(., type == 'to') %>% group_by(node) %>%
+                                             mutate(cnt = n()) %>% filter(cnt == 2) %$% eid),
+                         admix=ifelse(admix, 'dot', 'solid'))
+  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>%
+    bind_rows(node_coord %>% filter(z==0) %>% transmute(s = 'center', group=node, x, y)) %>%
+    mutate(z=0, sz = ((s == 'center')*5+2))
 
   ax = list(visible=FALSE)
 
@@ -360,31 +384,38 @@ plot_graph_pcs = function(grph, pcs) {
                                   camera = list(projection = list(type = 'orthographic'),
                                                 eye = list(x = 0, y = 0, z = 1),
                                                 up = list(x = 0, y = 1, z = 0))))
-
 }
-
-
 
 
 #' Plot an admixture graph on a map
 #' @export
-#' @param grph a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.
+#' @param grph a two column matrix specifying the admixture graph. first column is source node,
+#' second column is target node. the first edge has to be root -> outgroup.
+#' admixture nodes are inferred as those nodes which are the targets of two different sources.
 #' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
-#' @return a plotly object.
+#' @param shapedata shapedata
+#' @return a plotly object
 #' @examples
 # #' \dontrun{
 #' plot_graph_map(example_igraph, example_anno)
 # #' }
-plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
+plot_graph_map = function(grph, leafcoords, shapedata = NULL) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
   leafcoords %<>% filter(group %in% get_leafnames(grph))
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
   sg = grph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
-  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>% set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>% left_join(node_coord, by='node') %>% arrange(eid)
-  edge_coord %<>% mutate(admix = eid %in% (filter(., type == 'to') %>% group_by(node) %>% mutate(cnt = n()) %>% filter(cnt == 2) %$% eid), admix=ifelse(admix, 'dot', 'solid'))
-  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>% bind_rows(node_coord %>% filter(z==0) %>% transmute(iid = 'center', group=node, x, y)) %>% mutate(z=0, sz = ((iid == 'center')*5+2))
+  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
+    set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
+    left_join(node_coord, by='node') %>% arrange(eid)
+  edge_coord %<>% mutate(admix = eid %in%
+                           (filter(., type == 'to') %>% group_by(node) %>%
+                              mutate(cnt = n()) %>% filter(cnt == 2) %$% eid),
+                         admix=ifelse(admix, 'dot', 'solid'))
+  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>%
+    bind_rows(node_coord %>% filter(z==0) %>% transmute(iid = 'center', group=node, x, y)) %>%
+    mutate(z=0, sz = ((iid == 'center')*5+2))
 
   ax = list(visible=FALSE)
   if(is.null(shapedata)) shapedata = shapedata_basic
@@ -402,7 +433,6 @@ plot_graph_map = function(grph, leafcoords, shapedata=NULL) {
                                   camera = list(projection = list(type = 'orthographic'),
                                                 eye = list(x = 0, y = 0, z = 1),
                                                 up = list(x = 0, y = 1, z = 0))))
-
 }
 
 
@@ -422,14 +452,21 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
   sg = grph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
-  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>% set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>% left_join(node_coord, by='node') %>% arrange(eid)
-  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>% bind_rows(node_coord %>% filter(z==0) %>% transmute(iid = 'center', group=node, x, y)) %>% mutate(z=0, sz = ((iid == 'center')*5+2))
+  edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
+    set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
+    left_join(node_coord, by='node') %>% arrange(eid)
+  node_coord2 = leafcoords %>% rename(x=lon, y=lat) %>%
+    bind_rows(node_coord %>% filter(z==0) %>% transmute(iid = 'center', group=node, x, y)) %>%
+    mutate(z=0, sz = ((iid == 'center')*5+2))
 
   ax = list(visible=FALSE)
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
-  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', zoom = 2), xaxis=ax, yaxis=ax)
-  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
+  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', zoom = 2),
+                                                      xaxis=ax, yaxis=ax)
+  if(map_layout == 2) lo = function(x) plotly::layout(
+    x, mapbox = list(style = 'white-bg', zoom = 2,
+                     layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
   plotly::plot_ly(type = 'scattermapbox', mode='lines', hoverinfo = 'text') %>%
     plotly::add_trace(data = edge_coord %>% mutate(const='grey', lon=x, lat=y), lon = ~x, lat = ~y,
@@ -437,13 +474,16 @@ plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
     plotly::add_trace(data = node_coord2, mode='markers', x = ~x, y = ~y,
               hovertext = ~group, marker=list(size=~((iid=='center')*5+5)), color = ~group, colors='Set1') %>%
     lo
-
 }
+
 
 #' Plot samples on a map
 #' @export
 #' @param leafcoords data frame with columns \code{iid}, \code{lon}, \code{lat}
 #' @param map_layout 1 or 2
+#' @param color color
+#' @param colorscale colorscale
+#' @param collog10 collog10
 #' @return a plotly object.
 #' @examples
 #' \dontrun{
@@ -461,9 +501,12 @@ plot_map = function(leafcoords, map_layout = 1, color = 'yearsbp', colorscale = 
 
   src1 = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'
 
-  if(map_layout == 1) lo = function(x) plotly::layout(x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3), zoom = 2), xaxis=ax, yaxis=ax)
+  if(map_layout == 1) lo = function(x) plotly::layout(
+    x, mapbox = list(style = 'stamen-terrain', center = list(lat = 48.2, lon = 16.3), zoom = 2), xaxis=ax, yaxis=ax)
 
-  if(map_layout == 2) lo = function(x) plotly::layout(x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),  zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
+  if(map_layout == 2) lo = function(x) plotly::layout(
+    x, mapbox = list(style = 'white-bg', center = list(lat = 48.2, lon = 16.3),
+                     zoom = 2, layers = list(list(below = 'traces', sourcetype = 'raster', source = list(src1)))))
 
   plotly::plot_ly(leafcoords, type = 'scattermapbox', mode='markers',
                   marker=list(size=4, color = ~color, colorscale = colorscale, showscale = TRUE,
@@ -473,8 +516,6 @@ plot_map = function(leafcoords, map_layout = 1, color = 'yearsbp', colorscale = 
 }
 
 
-
-#' @export
 node_coords_3d = function(grph, leafcoords, rootlon=NA, rootlat=NA) {
   # given a graph and 2d coordinates of leaves,
   # this function returns 3d coords for all nodes
@@ -494,12 +535,13 @@ node_coords_3d = function(grph, leafcoords, rootlon=NA, rootlat=NA) {
 
   path_coords = function(path, startcoord, endcoord) {
     # given a sequence of nodes where the first and last node have 3d coords, return xyz for all intermediate nodes
-    map2(startcoord, endcoord, ~seq(.x, .y, length.out=length(path))) %>% bind_cols %>% add_column(node=path, .before=1)
+    map2(startcoord, endcoord, ~seq(.x, .y, length.out=length(path))) %>%
+      bind_cols %>% add_column(node=path, .before=1)
   }
 
-  paths %>% map(names) %>% map(~path_coords(., rootcoord, filter(out, group == tail(., 1)) %$% c(x=x, y=y, z=z))) %>%
+  paths %>% map(names) %>%
+    map(~path_coords(., rootcoord, filter(out, group == tail(., 1)) %$% c(x=x, y=y, z=z))) %>%
     bind_rows(.id='pid') %>% group_by(node) %>% summarize(x = mean(x), y = mean(y), z = mean(z))
-
 }
 
 
@@ -514,13 +556,17 @@ make_favicon = function() {
   edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
+  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+    set_colnames(c('node', 'x', 'y'))
+  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+    left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
+    mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
   eg = fix_layout(eg, grph)
   edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
+  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+    transmute(name = to, x, y, xend, yend)
 
   eg %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
@@ -541,7 +587,6 @@ make_favicon = function() {
 }
 
 
-
 plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
 
   if(class(graph)[1] == 'igraph') {
@@ -555,14 +600,18 @@ plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>% set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>% left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>% mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
+  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+    set_colnames(c('node', 'x', 'y'))
+  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+    left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
+    mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
   if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = admixtools:::fix_layout(eg, grph)
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
+  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+    transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
 
   plt = eg %>% mutate(rownum = 1:n()) %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend, name=name, to=to, rownum=rownum)) +
@@ -581,9 +630,46 @@ plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
     scale_x_continuous(expand = c(0.15, 0.15))
 
   plt
-
 }
 
 
+plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
+
+  yscale = diff(range(out2$weights$weight))
+  p1 = out1$weights %>% left_join(out2$weights, by = c('target', 'left')) %>%
+    ggplot(aes(weight.x, weight.y)) +
+    geom_rect(xmin = 0, xmax = 1, ymin = 0, ymax = 1, fill = 'blue', alpha = 0.05) +
+    geom_point() +
+    geom_abline() +
+    geom_errorbar(aes(ymin = weight.y - se.y, ymax = weight.y + se.y), width=0) +
+    geom_errorbarh(aes(xmin = weight.x - se.x, xmax = weight.x + se.x), height=0) +
+    geom_text(aes(label = left), nudge_y = yscale/10) +
+    theme(panel.background = element_blank(), axis.line = element_line(), legend.position = 'none') +
+    xlab(paste0(name1, ' weights')) +
+    ylab(paste0(name2, ' weights'))
+
+  if(nrow(out1$popdrop) < 2 || nrow(out2$popdrop) < 2) return(p1)
+
+  nams = c('pat', 'wt', 'dof', 'chisq', 'p', 'f4rank', 'feasible', 'best', 'dofdiff', 'chisqdiff', 'p_nested')
+  pops1 = setdiff(names(out1$popdrop), nams)
+  pops2 = setdiff(names(out2$popdrop), nams)
+  stopifnot(all(sort(pops1) == sort(pops2)))
+
+  p2 = out1$popdrop %>% select(pat, dof, chisq, pops1) %>%
+    type_convert(col_types = cols()) %>% mutate(lab = 'x') %>%
+    bind_rows(out2$popdrop %>% select(pat, dof, chisq, pops1) %>%
+                type_convert(col_types = cols()) %>% mutate(lab = 'y')) %>%
+    pivot_longer(pops1, 'pop', values_to = 'weight') %>%
+    pivot_longer(c(chisq, weight), 'key', values_to = 'value') %>%
+    pivot_wider(names_from = lab, values_from = value) %>%
+    filter(!is.na(x), !is.na(y)) %>%
+    ggplot(aes(x, y, col = pat)) + geom_point() + facet_wrap(~ key, scales = 'free') +
+    geom_abline() +
+    theme(panel.background = element_blank(), axis.line = element_line(), legend.position = 'top') +
+    xlab(paste0(name1)) +
+    ylab(paste0(name2))
+
+  gridExtra::grid.arrange(p1, p2, layout_matrix = matrix(c(1, 1, 2, 2), 2))
+}
 
 

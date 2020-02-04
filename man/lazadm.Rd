@@ -5,28 +5,31 @@
 \title{Estimate admixture weights}
 \usage{
 lazadm(f2_data, target = NULL, left = NULL, right = NULL,
-  f2_denom = 1, getcov = FALSE, constrained = TRUE)
+  f2_denom = 1, boot = FALSE, getcov = FALSE, constrained = TRUE)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{target}{target population}
 
-\item{left}{source populations (or leftlist file)}
+\item{left}{source populations (or \code{leftlist} file)}
 
-\item{right}{outgroup populations (or rightlist file)}
+\item{right}{outgroup populations (or \code{rightlist} file)}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{getcov}{should standard errors be returned? Currently not implemented.}
 
-\item{constrained}{if \code{TRUE} (default), admixture weights will all be non-negative. if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
+\item{constrained}{if \code{TRUE} (default), admixture weights will all be non-negative.
+if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
 }
 \value{
 a data frame with weights and standard errors for each left population
 }
 \description{
-Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method based non-negative least squares of f4 matrix.
+Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
+based non-negative least squares of f4 matrix.
 }
 \examples{
 target = 'Denisova.DG'
@@ -38,7 +41,8 @@ lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
 \references{
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 
-Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 9)
+Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
+languages in Europe.} Nature (SI 9)
 }
 \seealso{
 \code{\link{qpadm}}

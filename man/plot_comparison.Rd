@@ -2,20 +2,24 @@
 % Please edit documentation in R/plotting.R
 \name{plot_comparison}
 \alias{plot_comparison}
-\title{Plot a comparison of two lists of qpgraph output}
+\title{Plot a comparison of two runs of qpgraph or two runs of qpadm}
 \usage{
-plot_comparison(out1, out2)
+plot_comparison(out1, out2, name1 = NULL, name2 = NULL)
 }
 \arguments{
-\item{out1}{first qpgraph output.}
+\item{out1}{first model}
 
-\item{out2}{second qpgraph output.}
+\item{out2}{second model}
+
+\item{name1}{optional name for first model}
+
+\item{name2}{optional name for second model}
 }
 \value{
 a ggplot object.
 }
 \description{
-Plot a comparison of two lists of qpgraph output
+Plot a comparison of two runs of qpgraph or two runs of qpadm
 }
 \examples{
 fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)

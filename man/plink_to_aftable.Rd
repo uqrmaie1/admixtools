@@ -2,17 +2,19 @@
 % Please edit documentation in R/io.R
 \name{plink_to_aftable}
 \alias{plink_to_aftable}
-\title{Read allele frequencies from PLINK files}
+\title{Read allele frequencies from \code{PLINK} files}
 \usage{
-plink_to_aftable(pref, pops = NULL, inds = NULL, na.action = "none",
-  return_matrix = FALSE, verbose = FALSE)
+plink_to_aftable(pref, inds = NULL, pops = NULL, na.action = "none",
+  auto_only = TRUE, return_matrix = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{pref}{prefix of PLINK files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).}
+\item{pref}{prefix of \code{PLINK} files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).}
 
-\item{pops}{vector of populations from which to compute allele frequencies.}
+\item{inds}{vector of samples from which to compute allele frequencies.}
 
-\item{inds}{vector of samples from which to compute allele frequencies. \code{pops} and \code{inds} cannot be specified at the same time. If none are specified, populations will be extracted from the first column in the \code{.fam} file}
+\item{pops}{vector of populations from which to compute allele frequencies.
+\code{pops} and \code{inds} cannot be specified at the same time. If none are specified,
+populations will be extracted from the third column in the \code{.ind} file}
 
 \item{na.action}{what to do with SNPs with missing data.
 \itemize{
@@ -21,13 +23,18 @@ plink_to_aftable(pref, pops = NULL, inds = NULL, na.action = "none",
 \item \code{remove} SNPs with missing data will be removed
 }}
 
+\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
+
 \item{return_matrix}{return data as list of matrices}
+
+\item{verbose}{print progress updates}
 }
 \value{
-a list with two items: allele frequency data and individual counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
+a list with two items: allele frequency data and individual counts.
+Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
 }
 \description{
-Read allele frequencies from PLINK files
+Read allele frequencies from \code{PLINK} files
 }
 \examples{
 \dontrun{

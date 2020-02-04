@@ -201,7 +201,7 @@ There are at least a few examples where the results seem to be approximately cor
 
 ## Computing f2 statistics
 
-If you're not on O2, or want use different samples or populations, you first have to compute f2 block jackknife statistics from genotype data.
+If you're not on O2, or want use different samples or populations, you first have to compute f2 statistics from genotype data.
 
 
 ```{r, eval = FALSE}
@@ -216,7 +216,7 @@ pops = c('Denisova.DG',
 
 extract_f2(prefix, outdir = my_f2_dir, pops = pops)
 ```
-This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and f2 block jackknife statistics, and write them to `outdir`. Specifying `inds` rather than `pops` will treat each individual as a separate population. This is not very useful at the moment, because there is no simple way of combining block jackknife f2 statistics computed per individual to population block jackknife f2 statistics, but it may be useful in the future.
+This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and blocked f2 statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `outdir`.
 
 <br>
 
@@ -233,7 +233,7 @@ plot_graph(qpg_results$edges)
 The example above will read the f2 data from `my_f2_dir`. It can be faster to load it into memory first, like so:
 
 ```{r, eval = FALSE}
-f2_blocks = f2_from_precomp(my_f2_dir, pops)
+f2_blocks = f2_from_precomp(my_f2_dir, pops = pops)
 
 qpg_results = qpgraph(f2_blocks, example_graph)
 ```
@@ -251,9 +251,100 @@ qpg_results = qpgraph(f2_blocks, example_graph)
 
 <br>
 
+### Arbitrary populations
+
+What if you decide that a particular sample should be added or removed from a population? With the approach described so far, you would have to go back to the genotype data to get new estimates of f2 for all pairs of the modified population and any other populations. Even if you had computed f2 for all pairs of individuals (rather than for pairs of populations), it would not be possible to combine the f2 statistics from individual pairs into f2 statistics on population pairs formed from these individuals. It *is* possible, however, to store other statistics for all individuals and individual pairs, which *can* be combined into estimates of f2 for any populations formed from these individuals. These statistics are simply the mean alternative allele counts (`a`) and total allele counts (`n`) for each individual and block, and the mean products of allele counts for all individual pairs (`aa` and `nn`).
+
+The upside of this approach is that it allows you to change population definitions however you like and still get very fast results without accessing the genotype data more than once. The downside is that it makes it necessary to store data for all individual pairs, rather than just all population pairs.
+
+The following function extracts data for a set of individuals which can then be combined to get estimates of f2 for any populations:
+
+```{r, eval = FALSE}
+inds = c('Chimp.REF', 'Altai_snpAD.DG', 'Vindija_snpAD.DG',
+         'S_Mbuti-3.DG', 'B_Mbuti-4.DG', 'S_Mbuti-2.DG', 'S_Mbuti-1.DG',
+         'Denisova_snpAD.DG', 'UstIshim_snpAD.DG', 'Bichon.SG')
+dir = 'my/indpair/dir'
+extract_counts(dir, inds)
+```
+
+You can again use `f2_from_precomp` to load a subset of the extracted data into memory. If the directory you provide contains allele count data rather than f2 statistics, this function will not only read the data, but combine it into f2 statistics for populations that you define. The populations can be defined by providing a vector of individuals and another vector of equal length with population labels.
+
+For example, the following code should return f2 statistics very similar to the f2 statistics in the earlier examples. They will not be exactly identical, because some approximations are necessary when computing f2 statistics this way.
+
+```{r, eval = FALSE}
+pops = c('Chimp', 'Altai', 'Vindija',
+         'Mbuti', 'Mbuti', 'Mbuti', 'Mbuti',
+         'Denisova', 'Russia', 'Switzerland')
+f2_blocks_v2 = f2_from_precomp(my_f2_dir, inds = inds, pops = pops)
+```
+
+It's now easy to test how the inclusion or exclusion of specific samples affects the fit of a model. The following example uses only two Mbuti samples, and combines the two Neanderthal samples into one group.  
+
+```{r, eval = FALSE}
+inds = c('Chimp.REF', 'Altai_snpAD.DG', 'Vindija_snpAD.DG',
+         'S_Mbuti-2.DG', 'S_Mbuti-1.DG',
+         'Denisova_snpAD.DG', 'UstIshim_snpAD.DG', 'Bichon.SG')
+pops = c('Chimp', 'Neanderthal', 'Neanderthal',
+         'Mbuti', 'Mbuti',
+         'Denisova', 'Russia', 'Switzerland')
+f2_blocks_v3 = f2_from_precomp(my_f2_dir, inds = inds, pops = pops)
+```
+
+<br>
+
+This approach is very flexible, but it gets slow when some populations consist of large numbers of samples. If you find yourself in this situation, you can group individuals into populations and store the combined allele count data for those populations on disk. The following example stores a `Mbuti` group on disk, and then uses that group, rather than each sample in it, to compute f2 statistics.
+
+```{r, eval = FALSE}
+mbuti = c('S_Mbuti-3.DG', 'B_Mbuti-4.DG', 'S_Mbuti-2.DG', 'S_Mbuti-1.DG')
+group_samples(dir, mbuti, 'Mbuti')
+
+inds = c('Chimp.REF', 'Altai_snpAD.DG', 'Vindija_snpAD.DG', 'Mbuti', 'Denisova_snpAD.DG', 'UstIshim_snpAD.DG', 'Bichon.SG')
+f2_blocks_v4 = f2_from_precomp(dir, inds = inds)
+```
+
+Data from these groups can be deleted like this:
+
+```{r, eval = FALSE}
+delete_groups(dir, 'Mbuti')
+```
+
+
+<br>
+
+## Model robustness
+
+One of the advantages of being able to evaluate models quickly is that it becomes easier to test their robustness. For each `qp` function, there is a function which tests robustness by resampling SNPs (`resample_snps`), and another function which tests robustness by resampling individuals (`resample_inds`).
+
+### Resampling SNPs
+
+The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.
+
+Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of **n times** the sampling variance.
+
+In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted.
+
+```{r, eval = FALSE}
+snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 1000)
+hist(snpres, 100)
+```
+
+
+### Resampling individuals
+
+We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.
+
+```{r, eval = FALSE}
+indres = qpgraph_resample_inds(dir, inds = inds, pops = pops, graph = example_graph)
+```
+
+For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.
+
+<br>
+
+
 ## Finding graphs with good fits
 
-Since evaluating one graph doesn't take long once the f-statistics are pre-computed, we can evaluate many graphs and find graph topologies with good fits.
+Another advantage of being able to quickly evaluate a single model using precomputed f-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits.
 
 <br>
 

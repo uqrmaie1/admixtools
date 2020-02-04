@@ -267,7 +267,7 @@
         <td>
           <p><code><a href="plot_comparison.html">plot_comparison()</a></code> </p>
         </td>
-        <td><p>Plot a comparison of two lists of qpgraph output</p></td>
+        <td><p>Plot a comparison of two runs of qpgraph or two runs of qpadm</p></td>
       </tr><tr>
         
         <td>
@@ -290,28 +290,22 @@
     </tbody><tbody>
       <tr>
         <th colspan="2">
-          <h2 id="section-jackknife-functions" class="hasAnchor"><a href="#section-jackknife-functions" class="anchor"></a>Jackknife functions</h2>
+          <h2 id="section-resampling-functions" class="hasAnchor"><a href="#section-resampling-functions" class="anchor"></a>Resampling functions</h2>
           <p class="section-desc"></p>
         </th>
       </tr>
       <tr>
         
         <td>
-          <p><code><a href="get_block_lengths.html">get_block_lengths()</a></code> </p>
+          <p><code><a href="resample_inds.html">qp3pop_resample_inds()</a></code> <code><a href="resample_inds.html">qpdstat_resample_inds()</a></code> <code><a href="resample_inds.html">qpadm_resample_inds()</a></code> <code><a href="resample_inds.html">qpgraph_resample_inds()</a></code> </p>
         </td>
-        <td><p>Find LD-independent blocks</p></td>
+        <td><p>Run models while leaving out individuals</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="afs_to_f2_blocks.html">afs_to_f2_blocks()</a></code> </p>
+          <p><code><a href="resample_snps.html">qp3pop_resample_snps()</a></code> <code><a href="resample_snps.html">qpdstat_resample_snps()</a></code> <code><a href="resample_snps.html">qpadm_resample_snps()</a></code> <code><a href="resample_snps.html">qpgraph_resample_snps()</a></code> </p>
         </td>
-        <td><p>Compute all pairwise f2 statistics</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="qpgraph_precompute_f3.html">qpgraph_precompute_f3()</a></code> </p>
-        </td>
-        <td><p>Compute f3-statistics from f2-statistics.</p></td>
+        <td><p>Run models while leaving out SNP blocks</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -325,19 +319,13 @@
         <td>
           <p><code><a href="extract_f2.html">extract_f2()</a></code> </p>
         </td>
-        <td><p>Write f2 jackknife blocks to disk</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="extract_indpairs.html">extract_indpairs()</a></code> </p>
-        </td>
-        <td><p>Write data for individual pairs to disk</p></td>
+        <td><p>Compute and store blocked f2 statistics</p></td>
       </tr><tr>
         
         <td>
           <p><code><a href="f2_from_precomp.html">f2_from_precomp()</a></code> </p>
         </td>
-        <td><p>Read f2 jackknife blocks from disk</p></td>
+        <td><p>Read blocked f2 statistics from disk</p></td>
       </tr><tr>
         
         <td>
@@ -400,7 +388,7 @@
       <li><a href="#section-wrapper-functions">Wrapper functions</a></li>
       <li><a href="#section-parsing-functions">Parsing functions</a></li>
       <li><a href="#section-plotting-functions">Plotting functions</a></li>
-      <li><a href="#section-jackknife-functions">Jackknife functions</a></li>
+      <li><a href="#section-resampling-functions">Resampling functions</a></li>
       <li><a href="#section-reading-and-writing">Reading and writing</a></li>
       <li><a href="#section-graph-topology">Graph topology</a></li>
     </ul>

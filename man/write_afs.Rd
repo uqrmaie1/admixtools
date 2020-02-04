@@ -7,16 +7,20 @@
 write_afs(afmat, path, countmat = NULL, overwrite = FALSE)
 }
 \arguments{
-\item{afmat}{matrix with allele frequency estimates. Has to have column names. Data for each population will be stored in a variable called \code{allele_frequencies} under \code{{path}/{pop}.RData}}
+\item{afmat}{matrix with allele frequency estimates. Has to have column names. Data for each population
+will be stored in a variable called \code{allele_frequencies} under \code{{path}/{pop}.RData}}
 
 \item{path}{directory into which to write the files.}
 
-\item{countmat}{optional matrix with allele counts for each SNP and population. Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.RData}) in the variable \code{num_individuals}}
+\item{countmat}{optional matrix with allele counts for each SNP and population.
+Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.RData})
+in the variable \code{num_individuals}}
 
 \item{overwrite}{should existing \code{.RData} files be overwritten?}
 }
 \description{
-This function takes a 3d array of f2 block jackknife estimates, splits it by population pair, and writes each pair to a separate \code{.RData} file.
+This function takes a 3d array of f2 block jackknife estimates, splits it by population pair,
+and writes each pair to a separate \code{.RData} file.
 }
 \examples{
 \dontrun{

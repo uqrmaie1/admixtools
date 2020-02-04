@@ -1,0 +1,658 @@
+
+#' Wrapper function around the original qp3Pop program
+#'
+#' Computes f3 statistics of the form \eqn{f3(A; B, C)}. Equivalent to \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2}
+#' and to \eqn{f4(A, B; A, C)}. Requires a working installation of qp3Pop, which will be called
+#' using \code{\link{system}}
+#' @export
+#' @param source1 one of the following four:
+#' \enumerate{
+#' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
+#' \item a vector of population labels
+#' \item a data frame in which the first four columns specify the population triples to be tested.
+#' \code{source2}, \code{target} will be ignored.
+#' \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
+#' population combinations to be tested. \code{source2} and \code{target} will be ignored.
+#' }
+#' @param source2 a vector of population labels
+#' @param target a vector of population labels
+#' @param bin path to the qp3Pop binary file
+#' @param pref path to and prefix of the packedancestrymap genotype files
+#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+#' \code{popfilename} may be overwritten
+#' @param parfile qp3Pop parameter file. If this is specified, \code{source1}, \code{source2},
+#' \code{target} will be ignored.
+#' @param printonly should the command be printed or executed?
+#' @param verbose print progress updates
+#' @return If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
+#' @examples
+#' \dontrun{
+#' target = 'Denisova.DG'
+#' source1 = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' source2 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
+#' qp3pop_wrapper(source1, source2, target,
+#'   bin = 'path/to/qp3Pop', pref = 'path/to/packedancestrymap_prefix',
+#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
+#'
+#' qp3pop_wrapper(bin = 'path/to/qp3Pop', parfile = 'path/to/parfile')
+#' }
+qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o2bin/qp3Pop',
+                          pref = NULL, outdir = '.', parfile = NULL,
+                          inbreed = 'NO', outgroupmode = 'YES', f4mode = 'YES', useallsnps = 'NO',
+                          printonly = FALSE, env = '', verbose = TRUE) {
+
+  stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(source1))
+  stopifnot(file.exists(str_replace(bin, '.+ ', '')))
+  stopifnot(is.null(source1) | is.null(source2) & is.null(target) |
+              !is.null(source2) & !is.null(target))
+
+  outdir = normalizePath(outdir, mustWork = FALSE)
+  if(is.null(parfile)) {
+
+    popfilename = paste0(outdir, '/popfilename')
+    if(!is.null(source2)) {
+      expand_grid(source1, source2, target) %>% write_tsv(popfilename, col_names = FALSE)
+    } else if('data.frame' %in% class(source1)) {
+      source1 %>% select(1:3) %>% write_tsv(popfilename, col_names = FALSE)
+    } else {
+      stopifnot(file.exists(source1))
+      popfilename = source1
+    }
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('genotypename: ', pref, '.geno\n',
+                     'snpname: ', pref, '.snp\n',
+                     'indivname: ', pref, '.ind\n',
+                     'popfilename: ', popfilename, '\n',
+                     'f4mode: ', f4mode, '\n',
+                     'inbreed: ', inbreed, '\n',
+                     'outgroupmode: ', outgroupmode, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'details: YES\n')
+    parfilename = paste0(outdir, '/parfile')
+    write(parfile, parfilename)
+
+  } else {
+    parfilename = parfile
+  }
+
+  cmd = paste0(env,' ', bin, ' -p ', parfilename, ' > ', outdir, '/out')
+  outfile = paste0(outdir, '/out')
+  run_admixtools(cmd, parse_qp3pop_output, outfile, printonly, verbose)
+}
+
+
+
+#' Wrapper function around the original qpDstat program
+#'
+#' This requires a working installation of qpDstat, which will be called using \code{\link{system}}
+#' @export
+#' @param pop1 one of the following four:
+#' \enumerate{
+#' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
+#' \item a vector of population labels
+#' \item a data frame in which the first four columns specify the population combinations to be tested.
+#' \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
+#' \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies
+#' the populations or population combinations to be tested. \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
+#' }
+#' @param pop2 a vector of population labels
+#' @param pop3 a vector of population labels
+#' @param pop4 a vector of population labels
+#' @param bin path to the qpDstat binary file
+#' @param pref path to and prefix of the packedancestrymap genotype files
+#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+#' \code{popfilename} may be overwritten
+#' @param parfile qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3},
+#' and \code{pop4} will be ignored.
+#' @param printonly should the command be printed or executed?
+#' @param verbose print progress updates
+#' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
+#' @examples
+#' \dontrun{
+#' pop1 = 'Denisova.DG'
+#' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
+#' pop4 = 'Switzerland_Bichon.SG'
+#' qpdstat_wrapper(pop1, pop2, pop3, pop4,
+#'   bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix',
+#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
+#'
+#' qpdstat_wrapper(bin = 'path/to/qpDstat', parfile = 'path/to/parfile')
+#' }
+qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+                           bin = '~np29/o2bin/qpDstat', pref = NULL, outdir='.', parfile = NULL,
+                           f4mode = 'YES', useallsnps = 'NO', inbreed = 'NO', lambdascale = -1,
+                           printonly=FALSE, env='', verbose = TRUE) {
+
+  stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(pop1))
+  stopifnot(file.exists(str_replace(bin, '.+ ', '')))
+  stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
+              !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
+
+  outdir = normalizePath(outdir, mustWork = FALSE)
+  if(is.null(parfile)) {
+
+    popfiletype = 'popfilename'
+    popfilename = paste0(outdir, '/popfilename')
+    if(!is.null(pop2)) {
+      expand_grid(pop1, pop2, pop3, pop4) %>% write_tsv(popfilename, col_names = FALSE)
+    } else if('data.frame' %in% class(pop1)) {
+      pop1 %>% select(1:4) %>% write_tsv(popfilename, col_names = FALSE)
+    } else if(length(pop1) == 1) {
+      stopifnot(file.exists(pop1))
+      dat = read_table2(pop1, col_names = FALSE)
+      if(ncol(dat) < 4) popfiletype = 'poplistname'
+      popfilename = pop1
+    } else {
+      popfiletype = 'poplistname'
+      popfilename = paste0(outdir, '/poplistname')
+      write(pop1, popfilename)
+    }
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('genotypename: ', pref, '.geno\n',
+                     'snpname: ', pref, '.snp\n',
+                     'indivname: ', pref, '.ind\n',
+                     popfiletype, ': ', popfilename, '\n',
+                     'f4mode: ', f4mode, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'inbreed: ', inbreed, '\n',
+                     'lambdascale: ', lambdascale, '\n',
+                     'details: YES\n')
+    parfilename = paste0(outdir, '/parfile')
+    write(parfile, parfilename)
+
+  } else {
+    parfilename = parfile
+  }
+
+  cmd = paste0(env,' ', bin, ' -p ', parfilename, ' > ', outdir, '/out')
+  outfile = paste0(outdir, '/out')
+  run_admixtools(cmd, parse_qpdstat_output, outfile, printonly, verbose)
+}
+
+
+
+#' Wrapper function around the original qpAdm program
+#'
+#' This requires a working installation of qpAdm, which will be called using \code{\link{system}}
+#'
+#' @param target target population
+#' @param left source populations (or leftlist file)
+#' @param right outgroup populations (or rightlist file)
+#' @param bin path to the qpAdm binary file
+#' @param pref path to and prefix of the packedancestrymap genotype files
+#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{leftlist},
+#' \code{rightlist} will be overwritten
+#' @param printonly should the command be printed or executed?
+#' @param verbose print progress updates
+#' @return if not printonly, a data frame with parsed qpAdm output
+#' @export
+#' @examples
+#' \dontrun{
+#' target = 'Denisova.DG'
+#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+#' qpadm_wrapper(target, left, right,
+#'   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
+#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
+#' }
+qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/o2bin/qpAdm', pref = NULL,
+                         outdir = './', parfile = NULL, useallsnps = 'NO', fancyf4 = 'YES',
+                         f4mode = 'YES', inbreed = 'NO', printonly = FALSE, env = '', verbose = TRUE) {
+
+  stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
+              !is.null(pref) & !is.null(left) & !is.null(right))
+  stopifnot(file.exists(str_replace(bin, '.+ ', '')))
+  stopifnot(!is.null(target) | all(file.exists(c(left, right))))
+
+  outdir = normalizePath(outdir, mustWork = FALSE)
+  if(is.null(parfile)) {
+
+    if(!is.null(target)) {
+      leftfile = paste0(outdir, '/leftlist')
+      rightfile = paste0(outdir, '/rightlist')
+      write(c(target, left), leftfile)
+      write(right, rightfile)
+    } else {
+      leftfile = left
+      rightfile = right
+    }
+
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('genotypename: ', pref, '.geno\n',
+                     'snpname: ', pref, '.snp\n',
+                     'indivname: ', pref, '.ind\n',
+                     'popleft: ', leftfile, '\n',
+                     'popright: ', rightfile, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'fancyf4: ', fancyf4, '\n',
+                     'f4mode: ', f4mode, '\n',
+                     'inbreed: ', inbreed, '\n',
+                     'details: YES\n',
+                     'fstdetails: YES\n')
+
+    parfilename = paste0(outdir, '/parfile')
+    write(parfile, parfilename)
+
+  } else {
+    parfilename = parfile
+  }
+
+  cmd = paste0(env,' ', bin, ' -p ', parfilename, ' > ', outdir, '/out')
+  outfile = paste0(outdir, '/out')
+  run_admixtools(cmd, parse_qpadm_output, outfile, printonly, verbose)
+}
+
+
+#' Wrapper function around the original qpGraph program
+#' @export
+#' @param graph an admixture graph or qpGraph graph file
+#' @param bin location of the qpGraph binary
+#' @param pref prefix of the packedancestrymap format genotype files.
+#' @param parfile qpGraph parameter file
+#' @param outdir output directory
+#' @param printonly should output be executed or the command just be printed?
+#' @param lambdascale lambdascale
+#' @param diag diag
+#' @param outpop outgroup population
+#' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
+#' @param hires hires
+#' @param forcezmode forcezmode
+#' @param allsnps allsnps
+#' @param bigiter bigiter
+#' @param verbose print progress updates
+#' @return a list with parsed qpGraph output
+#' \enumerate{
+#' \item \code{edges}: data frame
+#' \item \code{score}: scalar
+#' \item \code{f2}: data frame
+#' }
+#' @examples
+#' \dontrun{
+#' qpgraph_wrapper(example_graph,
+#'                  bin = 'path/to/qpGraph',
+#'                  pref = 'path/to/packedancestrymap_prefix')
+#' qpgraph_wrapper('path/to/graphfile',
+#'                 bin = 'path/to/qpGraph',
+#'                 parfile = 'path/to/parfile')
+#' }
+qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
+                           printonly = FALSE, lambdascale = -1, inbreed = 'NO', diag = 0.0001, outpop = 'NULL',
+                           lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 2,
+                           useallsnps = 'NO', bigiter = 100, env = '', verbose = TRUE) {
+  # wrapper around AdmixTools qpGraph
+  # makes parfile and graphfile
+  stopifnot(!is.null(parfile) | !is.null(pref))
+
+  outdir = normalizePath(outdir, mustWork = FALSE)
+  if(is.null(parfile)) {
+    pref = normalizePath(pref, mustWork = FALSE)
+    parfile = paste0('indivname:       ', pref, '.ind\n',
+                     'snpname:         ', pref, '.snp\n',
+                     'genotypename:    ', pref, '.geno\n',
+                     'outpop:         ', outpop, '\n',
+                     'blgsize: 0.05\n',
+                     'details: YES\n',
+                     'fstdetails: YES\n',
+                     'diag: ', diag, '\n',
+                     'lsqmode: ', lsqmode, '\n',
+                     'fstdmode: ', fstdmode, '\n',
+                     'hires: ', hires, '\n',
+                     'forcezmode: ', forcezmode, '\n',
+                     'zthresh: ', zthresh, '\n',
+                     'useallsnps: ', useallsnps, '\n',
+                     'lambdascale: ', lambdascale, '\n',
+                     'inbreed: ', inbreed, '\n',
+                     'bigiter: ', bigiter, '\n')
+    pf = paste0(outdir, '/parfile')
+    write(parfile, pf)
+  } else {
+    pf = parfile
+  }
+
+  if(!'character' %in% class(graph)) {
+
+    if(class(graph)[1] == 'igraph') graph = igraph::as_edgelist(graph)
+    edg = as_tibble(graph) %>% set_colnames(c('from', 'to'))
+    edg %<>% group_by(.data$to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
+    e1 = (edg %>% filter(.data$type == 'edge'))$from
+    e2 = (edg %>% filter(.data$type == 'edge'))$to
+    a1 = (edg %>% filter(.data$type == 'admix'))$from
+    a2 = (edg %>% filter(.data$type == 'admix'))$to
+    leaves = setdiff(edg$to, edg$from)
+    admix = tibble()
+    for(m in unique(a2)) {
+      admix %<>% bind_rows(tibble(v1='admix', v2=m, v3=(edg %>% filter(.data$to == m))$from[1],
+                                  v4=(edg %>% filter(.data$to == m))$from[2]))
+    }
+
+    simfile = tibble(v1 = c('root'), v2 = c('R'), v3='', v4='') %>%
+      bind_rows(tibble(v1 = 'label', v2=leaves, v3=leaves, v4='')) %>%
+      bind_rows(tibble(v1='edge', v2=paste0('e', 1:length(e1)), v3=e1, v4=e2)) %>%
+      bind_rows(admix)
+
+    gf = paste0(outdir, '/graphfile')
+    simfile %>% write_tsv(gf, col_names=F)
+  } else {
+    stopifnot(file.exists(graph))
+    gf = normalizePath(graph)
+  }
+
+  qpgraph_wrapper2(bin = paste0(env,' ', bin), parfile = pf, graphfile = gf,
+                   outfile = paste0(outdir, '/out'), printonly = printonly, verbose = verbose)
+}
+
+
+qpgraph_wrapper2 = function(bin='./qpGraph', parfile='./parfile', graphfile='./graphfile',
+                            outfile='./out', printonly=FALSE, verbose = TRUE) {
+  # wrapper around AdmixTools qpGraph
+  # input is locations of parfile and graphfile
+  # output is parsed output
+
+  cmd = paste0(bin, ' -p ', parfile, ' -g ', graphfile, ' > ', outfile)
+  run_admixtools(cmd, parse_qpgraph_output, outfile, printonly, verbose)
+}
+
+
+run_admixtools = function(cmd, parsefun, outfile, printonly, verbose) {
+  if(printonly) {
+    print(cmd)
+  } else{
+    if(verbose) {
+      alert_info('Running admixtools:\n')
+      cat(paste0(cmd, '\n'))
+    }
+    system(cmd)
+    if(verbose) alert_info('Parsing output\n')
+    return(parsefun(outfile))
+  }
+}
+
+
+
+parse_fstats = function(outfile, denom1 = 1e3, denom2 = 1e7) {
+  # parse Nick's qpGraph fstats file
+
+  dat = read_lines(outfile, skip = 1) %>% str_squish
+  f3 = dat %>% {str_count(., ' ') == 2} %>% `[`(dat, .) %>% as_tibble %>%
+    separate(value, c('pop1', 'pop2', 'est'), ' ', T, T)
+  f3var = dat %>% {str_count(., ' ') > 2} %>% `[`(dat, .) %>% as_tibble %>%
+    separate(value, c('pop1', 'pop2', 'pop3', 'pop4', 'se2'), ' ', T, T)
+  pops = c('Out', unique(c(f3$pop1, f3$pop2)))
+  npop = 5
+  npair = choose(npop, 2)
+  npair2 = choose(choose(npop,2)+1, 2)
+  p1 = split(1:npair2, rep(1:npair, npair:1))
+  p2 = sapply(2:npair, function(i) rep(i, i-1)-npair + cumsum(npair:(npair-i+2)))
+  indices = unname(unlist(interleave(p1, p2)))
+
+  f3 = (f3$est/denom1) %>% structure(pops = pops)
+  f3var = matrix(f3var$se2[indices]/denom2, npair, npair)
+  diag(f3var) = diag(f3var) + 1e-2
+
+  namedList(pops, f3, f3var)
+}
+
+# for Nick
+write_qpgraph_output = function(fit, outfile = './out', decimals = 3, labels = NULL, counts = NULL) {
+
+  sep = '\t'
+  paste('final_score:', fit$score, sep = sep) %>% write(outfile)
+  if('f2' %in% names(fit)) {
+    write('f2:', outfile, append = TRUE)
+    fit$f2 %>% write_delim(outfile, delim = sep, append = TRUE, col_names = TRUE)
+  }
+  if('f3' %in% names(fit)) {
+    write('f3:', outfile, append = TRUE)
+    fit$f3 %>% write_delim(outfile, delim = sep, append = TRUE, col_names = TRUE)
+  }
+
+  edges = fit$edges
+  leaves = setdiff(edges$to, edges$from)
+  vertex = paste('vertex', unique(c(t(as.matrix(cbind(edges$from, edges$to))))), '0', sep = sep)
+  label = paste('label', leaves, leaves, sep = sep)
+  norm = edges %>% filter(type == 'edge') %$%
+    paste('edge', paste0(from, '_', to), from, to, round(weight, decimals), sep = sep)
+  admix = edges %>% filter(type == 'admix') %>% group_by(to) %>%
+    summarize(from = paste(from, collapse = sep),
+              weight = paste(round(weight, decimals), collapse = sep)) %$%
+    paste(rep('admix', length(to)), to, from, weight, sep = sep)
+
+  c('graph:', vertex, label, norm, admix) %>% write(outfile, append = TRUE)
+}
+
+
+#' Read qpGraph output file
+#' @export
+#' @param outfile output file generated by qpGraph.
+#' @return list of output data.
+parse_qpgraph_output = function(outfile) {
+  # reads qpGraph output file
+  # returns list of three objects:
+  # 'edges': data.frame of branch lengths and admixture weights
+  # 'score': best fit score
+  # 'f2': data.frame of estimated and fitted f2 values
+
+  dat = read_table(outfile, col_names=F, col_types = cols(), guess_max = 1e6)
+
+  edges = dat %>%
+    filter(grepl('^ledge|^redge|^admix', .data$X1)) %>%
+    separate('X1', c('type', 'name', 'from', 'to', 'weight', 'w2'),
+             sep=' +', convert = T, extra='drop', fill='right')
+  admix1 = edges %>% filter(.data$type=='admix') %>%
+    mutate(type='aedge', to=.data$name, name='', w2=NA)
+  admix2 = edges %>% filter(.data$type=='admix') %>%
+    mutate(type='aedge', from=.data$to, to=.data$name, name='', weight=.data$w2, w2=NA)
+  edges %<>%
+    bind_rows(admix1) %>%
+    bind_rows(admix2) %>%
+    filter(!.data$type == 'admix') %>%
+    mutate(type = ifelse(.data$type=='aedge', 'admix', 'edge')) %>%
+    select(from, to, type, weight)
+
+  score = (dat %>% filter(grepl('^final score', .data$X1)) %>%
+             separate('X1', c('a', 'b', 'score'), sep=' +', convert = T, extra='drop', fill='right'))$score
+
+  f2 = dat %>% filter(grepl(' f2: ', .data$X1)) %>%
+    separate('X1', c('pop1', 'pop2', 'fst','fit','est2','diff','se','z'), sep=' +', convert = TRUE) %>%
+    select(-.data$fst)
+
+  f3 = dat %>% filter(grepl(' ff3fit: ', .data$X1)) %>%
+    separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
+    select(-.data$ff3fit)
+
+  fststart = str_which(dat$X1, '^fst:')[1]+2
+  fstend = str_which(dat$X1, '^f2:')[1]-1
+  f2start = fstend+3
+  f2end = str_which(dat$X1, '^ff3:')[1]-1
+  pops = dat$X1 %>% str_subset('^population:') %>% str_squish %>% word(3)
+  denom = 1000
+
+  f21 = dat %>% slice(f2start:f2end) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
+    mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'est') %>% mutate(est = est/denom)
+  fst = dat %>% slice(fststart:fstend) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
+    mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
+  f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) %>%
+    mutate(pop1 = str_sub(pop1, 1, 3), pop2 = str_sub(pop2, 1, 3))
+
+  f2 %<>% left_join(f2before, by = c('pop1', 'pop2'))
+
+  namedList(edges, score, f2, f3)
+}
+
+
+#' Read qpGraph graph file
+#' @export
+#' @param graphfile file with admixture graph in qpGraph format.
+#' @return graph represented as two column edge matrix.
+parse_qpgraph_graphfile = function(graphfile) {
+  # reads graph in qpGraph format
+  # returns edge matrix (adjacency list)
+  lines = read_lines(graphfile) %>%
+    tibble %>% set_colnames('V1')
+  namemap = lines %>% filter(grepl('^label', .data$V1)) %>%
+    separate('V1', c('type', 'label', 'name'), sep = '\\s+', extra = 'drop') %>%
+    select(-type) %>% deframe
+
+
+  dat = lines %>%
+    filter(grepl('^edge|redge|ledge|admix', .data$V1)) %>%
+    separate('V1', c('type', 'name', 'from', 'to'), sep = '\\s+', extra = 'drop') %>%
+    mutate(type = recode(type, ledge = 'edge', redge = 'edge'))
+  admix1 = dat %>% filter(.data$type=='admix') %>% mutate(type='edge', to=.data$name, name='')
+  admix2 = dat %>% filter(.data$type=='admix') %>% mutate(type='edge', from=.data$to, to=.data$name, name='')
+  dat %>%
+    bind_rows(admix1) %>%
+    bind_rows(admix2) %>%
+    filter(.data$type != 'admix') %>%
+    mutate(from = recode(from, !!!namemap),
+           to = recode(to, !!!namemap)) %>%
+    select(.data$from, .data$to) %>% as.matrix
+}
+
+
+# Read qpGraph parameter file
+# @export
+# @param parfile parameter file for qpGraph.
+# @return named list of qpGraph parameters.
+parse_qpgraph_parfile = function(parfile) {
+  # reads qpGraph parfile
+  # returns named list of parameters
+  # all genotype files have to have same prefix
+
+  dat = read_table2(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
+  dat %<>% mutate(par = str_replace_all(.data$par, c(':$'='', 'genotypename'='pref')),
+                  value = str_replace_all(.data$value,
+                                          c('\\.geno$'='',
+                                            'S1'=filter(dat, .data$par=='S1:')$value[1],
+                                            'DIR'=filter(dat, .data$par=='DIR:')$value[1])),
+                  value=ifelse(.data$value=='YES', TRUE, ifelse(.data$value=='NO', FALSE, .data$value))) %>%
+    filter(!.data$par %in% c('DIR', 'S1', 'indivname', 'snpname')) %>%
+    t %>%
+    as_tibble()
+  dat %>%
+    set_colnames(slice(dat, 1)) %>%
+    slice(-1) %>%
+    type_convert(col_types = cols()) %>%
+    as.list
+}
+
+
+# Read qpDstat parameter file
+# @export
+# @param parfile parameter file for qpDstat.
+# @return named list of qpGraph parameters.
+parse_qpdstat_parfile = function(parfile) {
+  # reads qpGraph parfile
+  # returns named list of parameters
+  # all genotype files have to have same prefix
+
+  dat = read_table2(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
+  dat %>% mutate(par = str_replace_all(.data$par, c(':$'='', 'genotypename'='pref')),
+                 value = str_replace_all(.data$value,
+                                         c('\\.geno$'='',
+                                           'SSS'=filter(dat, .data$par=='SSS:')$value[1],
+                                           'DIR'=filter(dat, .data$par=='DIR:')$value[1])),
+                 value=ifelse(.data$value=='YES', TRUE, ifelse(.data$value=='NO', FALSE, .data$value))) %>%
+    filter(!.data$par %in% c('DIR', 'SSS', 'indivname', 'snpname')) %>%
+    deframe %>%
+    as.list %>%
+    as_tibble()
+}
+
+
+
+#' Read qpAdm output file
+#' @export
+#' @param outfile output file generated by qpAdm.
+#' @return tibble with output data.
+parse_qpadm_output = function(outfile) {
+  # reads qpAdm output file
+
+  dat = read_lines(outfile)
+
+  lstart = str_which(dat, 'left pops:')[1]+1
+  rstart = str_which(dat, 'right pops:')[1]+1
+  lend = str_which(dat, '^$') %>% magrittr::extract(. > lstart) %>% head(1)-1
+  rend = str_which(dat, '^$') %>% magrittr::extract(. > rstart) %>% head(1)-1
+  coefstart = str_which(dat, '^best coefficients:')[1]
+  sigstart = str_which(dat, 'fixed pat')[1]+1
+  sigend = str_which(dat, '^best pat:')[1]-1
+
+  target = dat[lstart]
+  left = dat[lstart:lend][-1]
+  right = dat[rstart:rend]
+  coefs = dat[coefstart:(coefstart+2)]
+  coefs %<>% str_split(' +') %>%
+    map(~tail(., length(left)+1) %>% head(-1) %>% as.numeric %>% set_names(left)) %>%
+    set_names(c('weight', 'mean', 'se')) %>% as_tibble %>% mutate(z = mean/se)
+  weights = tibble(target, left) %>% bind_cols(coefs)
+
+  popdrop = do.call(rbind, str_split(dat[sigstart:sigend], ' +')) %>%
+    as.data.frame(stringsAsFactors=F) %>% select(-1) %>%
+    set_colnames(c('pat', 'wt', 'dof', 'chisq', 'p', left, 'feasible')) %>%
+    mutate(feasible = feasible != 'infeasible') %>% as_tibble
+
+  namedList(weights, popdrop)
+}
+
+
+#' Read qpDstat output file
+#' @export
+#' @param outfile output file generated by qpDstat.
+#' @return tibble with output data.
+parse_qpdstat_output = function(outfile) {
+
+  dat = read_lines(outfile) %>% str_subset('^result: ') %>% str_squish
+  stopifnot(length(dat) > 0)
+  nc = dat[[1]] %>% str_split(' +', simplify = T) %>% ncol
+  nam1 = c('result', 'pop1', 'pop2', 'pop3', 'pop4', 'f4', 'Z')
+  nam2 = c('BABA', 'ABBA', 'numsnps')
+  if(nc == 10) nam = c(nam1, nam2)
+  else if(nc == 11) nam = c(nam1, 'best', nam2)
+  else stop('Unexpected number of columns in output!')
+
+  dat %>% as_tibble %>% separate(value, nam, sep = ' +', convert = TRUE) %>%
+    select(-result) %>% mutate(se = f4/Z, p.value = ztop(Z))
+}
+
+
+#' Read qp3Pop output file
+#' @export
+#' @param outfile output file generated by qp3Pop.
+#' @return tibble with output data.
+parse_qp3pop_output = function(outfile) {
+
+  dat = read_lines(outfile) %>% str_replace(' no data', 'result:') %>% str_subset('^ result: ') %>% str_squish
+  stopifnot(length(dat) > 0)
+  nam = c('result', 'source1', 'source2', 'target', 'f3', 'se', 'Z', 'numsnps')
+
+  dat %>% as_tibble %>% separate(value, nam, sep = ' +', convert = TRUE) %>%
+    select(-result) %>% mutate(se = f3/Z, p.value = ztop(Z))
+}
+
+# for Nick
+parse_qpff3base_output = function(outfile, denom = 1000) {
+
+  dat = read_lines(outfile) %>% str_squish
+  stopifnot(length(dat) > 0)
+
+  popstart = str_which(dat, '^end of inpack')[1]+1
+  popend = str_which(dat, '^outpop:.+basepop:')[1]-1
+  fststart = str_which(dat, '^fst:')[1]+2
+  fstend = str_which(dat, '^f2:')[1]-2
+  f2start = fstend+4
+  f2end = str_which(dat, '^ff3 \\(unscaled\\):')[1]-2
+
+  pops = dat[popstart:popend] %>% str_replace('.+ ', '')
+  fst = dat[fststart:fstend] %>% enframe %>% separate(value, c('pop1', pops), ' ', T, T) %>%
+    select(-name) %>% mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
+  f2 = dat[f2start:f2end] %>% enframe %>% separate(value, c('pop1', pops), ' ', T, T) %>%
+    select(-name) %>% mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'f2') %>% mutate(f2 = f2/denom)
+
+  fst %>% left_join(f2, by = c('pop1', 'pop2'))
+}
+
+
+
+

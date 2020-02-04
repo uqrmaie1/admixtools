@@ -11,6 +11,12 @@ plot_map(leafcoords, map_layout = 1, color = "yearsbp",
 \item{leafcoords}{data frame with columns \code{iid}, \code{lon}, \code{lat}}
 
 \item{map_layout}{1 or 2}
+
+\item{color}{color}
+
+\item{colorscale}{colorscale}
+
+\item{collog10}{collog10}
 }
 \value{
 a plotly object.

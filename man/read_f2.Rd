@@ -9,13 +9,15 @@ read_f2(f2_dir, pops = NULL)
 \arguments{
 \item{f2_dir}{directory from which to read files}
 
-\item{pops}{the populations for which f2 statistics should be read. Defaults to all populations, which may require a lot of memory.}
+\item{pops}{the populations for which f2 statistics should be read. Defaults to all populations,
+which may require a lot of memory.}
 }
 \value{
 a 3d array of block jackknife estimates
 }
 \description{
-This function reads f2 block jackknife estimates which were writtend to disk by \code{\link{write_f2}} and returns a 3d array of f2 block jackknife estimates.
+This function reads f2 block jackknife estimates which were writtend to disk by \code{\link{write_f2}}
+and returns a 3d array of f2 block jackknife estimates.
 }
 \examples{
 \dontrun{

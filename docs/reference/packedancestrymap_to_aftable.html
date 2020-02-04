@@ -47,7 +47,7 @@
 
 <meta property="og:title" content="Read allele frequencies from packedancestrymap files — packedancestrymap_to_aftable" />
 
-<meta property="og:description" content="Read allele frequencies from packedancestrymap files" />
+<meta property="og:description" content="This is currently slower than plink_to_aftable because it is implemented only in R, not in C++." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,13 +151,13 @@
 
     <div class="ref-description">
     
-    <p>Read allele frequencies from packedancestrymap files</p>
+    <p>This is currently slower than <code>plink_to_aftable</code> because it is implemented only in <code>R</code>, not in <code>C++</code>.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>blocksize</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>blocksize</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -167,12 +167,14 @@
       <td><p>prefix of packedancestrymap files (files have to end in <code>.geno</code>, <code>.ind</code>, <code>.snp</code>).</p></td>
     </tr>
     <tr>
-      <th>pops</th>
-      <td><p>vector of populations from which to compute allele frequencies.</p></td>
+      <th>inds</th>
+      <td><p>vector of samples from which to compute allele frequencies.</p></td>
     </tr>
     <tr>
-      <th>inds</th>
-      <td><p>vector of samples from which to compute allele frequencies. <code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified, populations will be extracted from the third column in the <code>.ind</code> file</p></td>
+      <th>pops</th>
+      <td><p>vector of populations from which to compute allele frequencies.
+<code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified,
+populations will be extracted from the third column in the <code>.ind</code> file</p></td>
     </tr>
     <tr>
       <th>blocksize</th>
@@ -187,19 +189,28 @@
 </ul></td>
     </tr>
     <tr>
+      <th>auto_only</th>
+      <td><p>If <code>TRUE</code> (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.</p></td>
+    </tr>
+    <tr>
       <th>return_matrix</th>
       <td><p>return data as list of matrices</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with two items: allele frequency data and allele counts. Unless <code>return_matrix</code> is specified, first six columns are bimfile, remaining columns are data for each population.</p>
+    <p>a list with two items: allele frequency data and allele counts. Unless <code>return_matrix = TRUE</code>,
+first six columns are bimfile, remaining columns are data for each population.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>prefix</span>, <span class='no'>pops</span>)
+<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'>packedancestrymap_to_aftable</span>(<span class='no'>prefix</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='no'>pops</span>)
 <span class='no'>afs</span> <span class='kw'>=</span> <span class='no'>afdat</span>$<span class='no'>afs</span>
 <span class='no'>counts</span> <span class='kw'>=</span> <span class='no'>afdat</span>$<span class='no'>counts</span>
 }</div></pre>

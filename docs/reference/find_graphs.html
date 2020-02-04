@@ -47,7 +47,12 @@
 
 <meta property="og:title" content="Find well fitting admixture graphs — find_graphs" />
 
-<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations across numrep independent repeats to find well fitting admixturegraphs. It uses the function future_map from the furrr package to parallelize across the independent repeats. The function future::plan can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting numadmix to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes." />
+<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations across numrep independent repeats
+to find well fitting admixturegraphs. It uses the function future_map from the furrr
+package to parallelize across the independent repeats. The function future::plan can be called
+to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+a compute cluster. Setting numadmix to 0 will search for well fitting trees, which is much faster than searching
+for admixture graphs with many admixture nodes." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,13 +156,18 @@
 
     <div class="ref-description">
     
-    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats to find well fitting admixturegraphs. It uses the function <code>future_map</code> from the <code>furrr</code> package to parallelize across the independent repeats. The function <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan</a></code> can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting <code>numadmix</code> to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes.</p>
+    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats
+to find well fitting admixturegraphs. It uses the function <code>future_map</code> from the <code>furrr</code>
+package to parallelize across the independent repeats. The function <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan</a></code> can be called
+to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+a compute cluster. Setting <code>numadmix</code> to 0 will search for well fitting trees, which is much faster than searching
+for admixture graphs with many admixture nodes.</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>find_graphs</span>(<span class='no'>f2_data</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>numrep</span> <span class='kw'>=</span> <span class='fl'>10</span>,
   <span class='kw'>numgraphs</span> <span class='kw'>=</span> <span class='fl'>50</span>, <span class='kw'>numgen</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numsel</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>), <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>0.278</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>), <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>debug</span> <span class='kw'>=</span> <span class='no'>numrep</span> <span class='kw'>==</span> <span class='fl'>1</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -165,7 +175,8 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
+      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
+alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>pops</th>
@@ -197,7 +208,8 @@
     </tr>
     <tr>
       <th>keep</th>
-      <td><p>by default, all evaluated graphs will be returned. <code>best</code> will only return the best fitting graph from each repeat and each generation. <code>last</code> will return all graphs from the last generation.</p></td>
+      <td><p>by default, all evaluated graphs will be returned. <code>best</code> will only return the best fitting
+graph from each repeat and each generation. <code>last</code> will return all graphs from the last generation.</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
@@ -213,7 +225,8 @@
     </tr>
     <tr>
       <th>debug</th>
-      <td><p>if <code>TRUE</code> each repeat is run sequentially in a loop and not via <code>furrr::map</code>). Errors will interrupt execution. This is the default if <code>numrep == 1</code></p></td>
+      <td><p>If <code>TRUE</code> each repeat is run sequentially in a loop and not via <code>furrr::map</code>).
+Errors will interrupt execution. This is the default if <code>numrep = 1</code></p></td>
     </tr>
     </table>
     

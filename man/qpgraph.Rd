@@ -4,20 +4,26 @@
 \alias{qpgraph}
 \title{Compute the fit of an admixture graph}
 \usage{
-qpgraph(f2_data, graph, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,
-  lsqmode = FALSE, numstart = NULL, seed = NULL, verbose = FALSE,
-  cpp = TRUE)
+qpgraph(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 0.001,
+  fnscale = 1e-06, lsqmode = FALSE, numstart = NULL, seed = NULL,
+  cpp = TRUE, return_f4 = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{graph}{an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
-\item{fnscale}{try increasing or decreasing this, if optimization does not converge.}
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix of
+f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
+where \code{n} is either equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}.
+The covariance matrix of f3 statistics will be computed using bootstrapping.}
 
 \item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
+
+\item{fnscale}{optimization parameter passed to \code{control} in \code{\link{optim}}}
 
 \item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
@@ -25,12 +31,25 @@ qpgraph(f2_data, graph, f2_denom = 1, fnscale = 1e-06, fudge = 0.001,
 
 \item{seed}{seed for generating starting weights.}
 
-\item{verbose}{print optimization iterations}
-
 \item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
+
+\item{return_f4}{return all f4 statistics? Can take a while.}
+
+\item{verbose}{print progress updates}
 }
 \value{
-a list of qpGraph output data
+a list with output describing the model fit:
+\enumerate{
+\item \code{edges} a data frame where each row is an edge in the graph. For regular edges,
+the column \code{weight} is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
+\item \code{score} the likelihood score of the fitted graph. lower values correspond to better fits.
+the score is calculated as the inner product of the residuals (difference between estimated and
+fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.
+\item \code{f2} estimated and fitted f2 statistics
+\item \code{f3} estimated and fitted f3 statistics
+\item \code{f4} estimated and fitted f4 statistics (if \code{return_f4 = TRUE})
+\item \code{opt} a data frame with details of the weight-fitting step, including the randomly sampled starting weights.
+}
 }
 \description{
 Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
@@ -43,5 +62,7 @@ plot_graph(out$edges)
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 }
 \seealso{
-\code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates and an inverted covariance matrix as input instead.
+\code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program;
+\code{\link{qpgraph_slim}} for a faster function function which requires f3 estimates
+and an inverted covariance matrix as input instead.
 }

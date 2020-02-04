@@ -7,12 +7,16 @@
 plot_graph_map(grph, leafcoords, shapedata = NULL)
 }
 \arguments{
-\item{grph}{a two column matrix specifying the admixture graph. first column is source node, second column is target node. the first edge has to be root -> outgroup. admixture nodes are inferred as those nodes which are the targets of two different sources.}
+\item{grph}{a two column matrix specifying the admixture graph. first column is source node,
+second column is target node. the first edge has to be root -> outgroup.
+admixture nodes are inferred as those nodes which are the targets of two different sources.}
 
 \item{leafcoords}{data frame with columns \code{group}, \code{lon}, \code{lat}}
+
+\item{shapedata}{shapedata}
 }
 \value{
-a plotly object.
+a plotly object
 }
 \description{
 Plot an admixture graph on a map

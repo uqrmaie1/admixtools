@@ -4,15 +4,24 @@
 \alias{qpgraph_precompute_f3}
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
-qpgraph_precompute_f3(f2_data, pops, f2_denom = 1, fudge = 0.001,
-  lsqmode = FALSE)
+qpgraph_precompute_f3(f2_data, pops, outpop = NULL, f2_denom = 1,
+  boot = FALSE, fudge = 0.001, lsqmode = FALSE)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{pops}{populations for which to compute f3-statistics}
 
+\item{outpop}{outgroup population. used as the basis of the f3-statistics. If \code{NULL} (the default),
+the first population in \code{pops} will be used as the basis.}
+
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
+
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix of f3 statistics
+will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either
+equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix
+of f3 statistics will be computed using bootstrapping.}
 
 \item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
 
@@ -21,18 +30,19 @@ qpgraph_precompute_f3(f2_data, pops, f2_denom = 1, fudge = 0.001,
 \value{
 a list with four items
 \enumerate{
-\item \code{f3_jest} a matrix with f3-statistics for all population pairs with the output
+\item \code{f3_est} a matrix with f3-statistics for all population pairs with the output
 \item \code{ppinv} a matrix with the inverse of the f3-statistic covariance matrix
-\item \code{f2out} a data frame with f2 estimates
+\item \code{2out} a data frame with f2 estimates
 \item \code{f3out} a data frame with f3 estimates
 }
 }
 \description{
-Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the first population \code{p1} and all population pairs \code{i, j}: \code{f3(p1; p_i, p_j)}
+Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the
+first population \eqn{p1} and all population pairs \eqn{i, j}: \eqn{f3(p1; p_i, p_j)}
 }
 \examples{
 pops = get_leafnames(example_igraph)
-qpgraph_precompute_f3(example_f2_blocks, pops)$f3_jest
+qpgraph_precompute_f3(example_f2_blocks, pops)$f3_est
 \dontrun{
 qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
 }

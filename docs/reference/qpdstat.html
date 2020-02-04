@@ -47,7 +47,8 @@
 
 <meta property="og:title" content="Estimate f4 statistics — qpdstat" />
 
-<meta property="og:description" content="Computes f4 statistics from f2 jackknife blocks of the form \(F_4(A, B; C, D)\). Equivalent to \((F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2\)" />
+<meta property="og:description" content="Computes f4 statistics from f2 blocks of the form \(f4(A, B; C, D)\). Equivalent to
+\((f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2\)" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,28 +152,33 @@
 
     <div class="ref-description">
     
-    <p>Computes f4 statistics from f2 jackknife blocks of the form \(F_4(A, B; C, D)\). Equivalent to \((F_2(A, D) + F_2(B, C) - F_2(A, C) - F_2(B, D)) / 2\)</p>
+    <p>Computes f4 statistics from f2 blocks of the form \(f4(A, B; C, D)\). Equivalent to
+\((f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2\)</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>qpdstat</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
+      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
+output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics.
+see <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>pop1</th>
       <td><p>one of the following four:</p><ol>
-<li><p><code>NULL</code>: all possible quadruples of the populations in <code>f2_blocks</code> will be returned</p></li>
+<li><p><code>NULL</code>: all possible pairs of the populations in <code>f2_blocks</code> will be returned</p></li>
 <li><p>a vector of population labels</p></li>
-<li><p>a data frame in which the first four columns specify the population quadruples to be tested. <code>pop2</code>, <code>pop3</code>, <code>pop4</code> will be ignored.</p></li>
-<li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or population quadruples to be tested. <code>pop2</code>, <code>pop3</code>, <code>pop4</code> will be ignored.</p></li>
+<li><p>a data frame with population combinations to be tested, with one population per column and one
+combination per row. Other <code>pop</code> arguments will be ignored.</p></li>
+<li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or
+population combinations to be tested. Other <code>pop</code> arguments will be ignored.</p></li>
 </ol></td>
     </tr>
     <tr>
@@ -189,13 +195,33 @@
     </tr>
     <tr>
       <th>f2_denom</th>
-      <td><p>scales f2-statistics. 1 correspondes to <code>f4mode: YES</code>. 1/4.75 is similar to <code>f4mode: NO</code></p></td>
+      <td><p>scales f2-statistics. 1 correspondes to <code>f4mode: YES</code>. 1/4.75 is similar to <code>f4mode: NO</code>.</p></td>
+    </tr>
+    <tr>
+      <th>boot</th>
+      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
+of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed <code>n</code> times,
+where <code>n</code> is either equal to <code>boot</code> if it is an integer, or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.
+The the covariance matrix of the f statistics will be computed using bootstrapping.</p></td>
+    </tr>
+    <tr>
+      <th>sure</th>
+      <td><p>The number of population combinations can get very large. This is a safety option that stops you
+from accidently computing all combinations if that number is large.</p></td>
+    </tr>
+    <tr>
+      <th>unique_only</th>
+      <td><p>If <code>TRUE</code> (the default), redundant combinations will be returned as well.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>If <code>printonly</code>, the <code>qpDstat</code> command, otherwise a data frame with parsed <code>qpDstat</code> output</p>
+    <p>a data frame with f4 statistics</p>
     
     <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
 
@@ -214,7 +240,7 @@
 <span class='no'>pop3</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>)
 <span class='no'>pop4</span> <span class='kw'>=</span> <span class='st'>'Switzerland_Bichon.SG'</span>
 <span class='fu'>qpdstat</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 6 x 8</span><span>
-#&gt;   pop1     pop2        pop3       pop4        estimate      se       z   p.value
+#&gt;   pop1     pop2        pop3       pop4             est      se       z         p
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>      </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>          </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span> Denisov… Altai_Nean… Chimp.REF  Switzerlan…  1.16</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 3.65</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  31.9   1.88</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-223</span><span>
 #&gt; </span><span style='color: #555555;'>2</span><span> Denisov… Altai_Nean… Mbuti.DG   Switzerlan…  1.58</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span> 2.76</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>   5.72  1.04</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  8</span><span>

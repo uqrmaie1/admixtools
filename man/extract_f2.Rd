@@ -2,17 +2,22 @@
 % Please edit documentation in R/io.R
 \name{extract_f2}
 \alias{extract_f2}
-\title{Write f2 jackknife blocks to disk}
+\title{Compute and store blocked f2 statistics}
 \usage{
-extract_f2(pref, outdir, pops = NULL, na.action = "none",
-  maxmem = 8000, overwrite = FALSE, loo = TRUE, verbose = TRUE)
+extract_f2(pref, outdir, inds = NULL, pops = NULL,
+  na.action = "none", maxmem = 8000, overwrite = FALSE,
+  format = NULL, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind}, PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
+\item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{outdir}{the directory to which to write data}
 
-\item{pops}{the populations for which data should be extracted. Defaults to all populations, which may require a lot of memory. If \code{NULL}, each individual will be its own population.}
+\item{inds}{the individuals for which data should be extracted.}
+
+\item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
+at the same time. If none are specified, all populations will be extracted.}
 
 \item{na.action}{what to do with SNPs with missing data.
 \itemize{
@@ -25,14 +30,19 @@ extract_f2(pref, outdir, pops = NULL, na.action = "none",
 
 \item{overwrite}{should existing files be overwritten?}
 
-\item{loo}{if \code{TRUE} (the default), return the total estimates minus the estimates from each block. if \code{FALSE}, return the estimate from each block.}
+\item{format}{supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read}
 
 \item{verbose}{print progress updates}
-
-\item{inds}{the individuals for which data should be extracted. \code{pops} and \code{inds} cannot be specified at the same time. If none are specified, all populations will be extracted}
 }
 \description{
-Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files, and computes allele frequencies and f2 block jackknife statistics for selected populations. Data is either written to disk in files for each population and population pair, or returned as list. This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}} and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'} which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO}, use \code{na.action = 'remove'}.
+Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
+and computes allele frequencies and f2 block jackknife statistics for selected populations.
+Data is either written to disk in files for each population and population pair, or returned as list.
+This function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
+and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'}
+which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO},
+use \code{na.action = 'remove'}.
 }
 \examples{
 \dontrun{

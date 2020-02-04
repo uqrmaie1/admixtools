@@ -71,7 +71,8 @@ shortest_unique_prefixes = function(strings) {
 }
 
 unify_vertex_names = function(graph, keep_unique = TRUE) {
-  # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices, so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
+  # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices,
+  # so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
   leaves = get_leaves(graph)
   lv = shortest_unique_prefixes(names(leaves))
   g = set_vertex_attr(graph, 'name', leaves, lv)
@@ -438,7 +439,9 @@ move_admixedge_once = function(grph, desimplify=TRUE) {
            !n %in% names(subcomponent(grph, admix[i], mode='out'))) {
           newgrandparent = names(neighbors(grph, n, mode='in'))
           grph = igraph::add_edges(grph, c(grandparent, sibling, newgrandparent, parents[j], parents[j], n))
-          grph = igraph::delete_edges(grph, c(paste(newgrandparent, n, sep='|'), paste(grandparent, parents[j], sep='|'), paste(parents[j], sibling, sep='|')))
+          grph = igraph::delete_edges(grph, c(paste(newgrandparent, n, sep='|'),
+                                              paste(grandparent, parents[j], sep='|'),
+                                              paste(parents[j], sibling, sep='|')))
           stopifnot(igraph::is_simple(grph))
           if(desimplify) grph = desimplify_graph(grph)
           return(grph)
@@ -512,11 +515,13 @@ evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, ver
   for(i in seq_len(numgen)) {
     newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns)
     if(keep == 'all') out %<>% bind_rows(newmodels)
-    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>% ungroup %>% bind_rows(newmodels)
+    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>%
+      ungroup %>% bind_rows(newmodels)
     else out = newmodels
     if(verbose) {
       best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
-      cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best), collapse=', '), paste(rep(' ', 30), collapse=''), '\r'))
+      cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best, 3), collapse=', '),
+                 paste(rep(' ', 30), collapse=''), '\r'))
     }
   }
   if(verbose) cat('\n')
@@ -525,25 +530,9 @@ evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, ver
 }
 
 
-#' Find well fitting admixturegraphs
-#'
-#' This function generates and evaluates admixturegraphs in \code{numgen} iterations to find well fitting admixturegraphs.
-#' @export
-#' @param pops population names for which to fit admixturegraphs
-#' @param f3_jest 3d array with all pairwise f3 estimates with the outgroup
-#' @param ppinv inverse of the f3 block jackknife covariance matrix
-#' @param numgraphs number of graphs in each generation
-#' @param numgen number of generations
-#' @param numsel number of graphs which are selected in each generation
-#' @param numadmix number of admixture events within each graph
-#' @param outpop outgroup population
-#' @return a nested data frame with one model per line
-#' @examples
-#' pops = get_leafnames(igraph1)
-#' optimize_admixturegraph_single(igraph1, f3_jest, ppinv, numgraphs=10, numgen=2, numsel=2, numadmix=1)
-optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, numgen = 5,
+optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, outpop = NA, verbose = TRUE,
-                                          cpp = TRUE, debug = FALSE, keep = 'all', ...) {
+                                          cpp = TRUE, debug = FALSE, keep = 'all') {
   if(numadmix == 0) {
 
     qpgfun0 = qpgraph_anorexic
@@ -561,7 +550,7 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
                    moveadmix = move_admixedge_once)
   }
 
-  qpgfun = function(graph) qpgfun0(graph, f3_jest, ppinv, cpp = cpp, verbose = FALSE, ...)
+  qpgfun = function(graph) qpgfun0(graph, f3_est, ppinv, cpp = cpp, verbose = FALSE)
   if(!debug) qpgfun = possibly(qpgfun, otherwise = NULL)
 
   initigraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop=outpop), simplify = F)
@@ -571,59 +560,26 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
 
   if(verbose) {
     best = init %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
-    cat(paste0('Generation 0  Best new scores: ', paste(round(best), collapse=', '), paste(rep(' ', 30), collapse=''), '\r'))
+    cat(paste0('Generation 0  Best new scores: ', paste(round(best), collapse=', '),
+               paste(rep(' ', 30), collapse=''), '\r'))
   }
 
   evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, verbose = verbose, keep = keep)
 }
 
-# Find a well fitting admixturegraph
-#
-# This function generates and evaluates admixturegraphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster.
-# @export
-# @param pops population names for which to fit admixturegraphs
-# @param f3_jest 3d array with all pairwise f3 estimates with the outgroup
-# @param ppinv inverse of the f3 block jackknife covariance matrix
-# @param numgraphs number of graphs in each generation
-# @param numgen number of generations
-# @param numsel number of graphs which are selected in each generation
-# @param numadmix number of admixture events within each graph
-# @param outpop outgroup population
-# @return a nested data frame with one model per line
-# @examples
-# \dontrun{
-# optimize_admixturegraph(pops, f3_jest, ppinv, numrep = 200, numgraphs = 100,
-#                         numgen = 20, numsel = 5, numadmix = 3)
-# }
-# optimize_admixturegraph = function(pops, f3_jest, ppinv, numrep = 10, numgraphs = 50,
-#                                    numgen = 5, numsel = 5, numadmix = 0,
-#                                    outpop = NA, verbose = TRUE, cpp = TRUE, debug = FALSE, ...) {
-#
-#   if(is.na(outpop)) outpop = pops[1]
-#   else if(!outpop %in% pops) pops = c(outpop, pops)
-#
-#   oa = function() optimize_admixturegraph_single(pops, outpop=outpop, f3_jest, ppinv,
-#                                                  numgen = numgen, numsel = numsel,
-#                                                  numgraphs = numgraphs, numadmix = numadmix,
-#                                                  verbose = verbose, cpp = cpp, debug = debug, ...)
-#   if(!debug) {
-#     oa = possibly(oa, otherwise=NULL)
-#     res = furrr::future_map(as.list(seq_len(numrep)), oa)
-#   } else {
-#     res = list()
-#     for(i in seq_len(numrep)) {
-#       res[[i]] = oa()
-#     }
-#   }
-#   bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
-# }
 
 
 #' Find well fitting admixture graphs
 #'
-#' This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting \code{numadmix} to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes.
+#' This function generates and evaluates admixture graphs in `numgen` iterations across `numrep` independent repeats
+#' to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}}
+#' package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called
+#' to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+#' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
+#' for admixture graphs with many admixture nodes.
 #' @export
-#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.
+#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
 #' @param pops populations for which to fit admixture graphs
 #' @param outpop outgroup population
 #' @param numrep number of independent repetitions (each repetition can be run in parallel)
@@ -631,11 +587,13 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
 #' @param numgen number of generations
 #' @param numsel number of graphs which are selected in each generation
 #' @param numadmix number of admixture events within each graph
-#' @param keep by default, all evaluated graphs will be returned. \code{best} will only return the best fitting graph from each repeat and each generation. \code{last} will return all graphs from the last generation.
+#' @param keep by default, all evaluated graphs will be returned. `best` will only return the best fitting
+#' graph from each repeat and each generation. `last` will return all graphs from the last generation.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param verbose print progress updates
 #' @param cpp should optimization be run in C++ or in R? C++ is faster.
-#' @param debug if \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}). Errors will interrupt execution. This is the default if \code{numrep == 1}
+#' @param debug If `TRUE` each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
+#' Errors will interrupt execution. This is the default if `numrep = 1`
 #' @return a nested data frame with one model per line
 #' @examples
 #' \dontrun{
@@ -644,23 +602,31 @@ optimize_admixturegraph_single = function(pops, f3_jest, ppinv, numgraphs = 50, 
 #' }
 find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
-                       f2_denom = 0.278, verbose = TRUE, cpp = TRUE, debug = numrep==1, ...) {
+                       f2_denom = 1, verbose = TRUE, cpp = TRUE, debug = numrep==1, ...) {
 
   keep = rlang::arg_match(keep)
-  if(is.null(pops)) {
-    if(is.character(f2_data)) pops = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
-    else pops = dimnames(f2_data)[[1]]
+  if(is.character(f2_data) && file.exists(f2_data) && !isTRUE(file.info(f2_data)$isdir)) {
+    # parse Nick's fstats
+    precomp = parse_fstats(f2_data)
+    precomp$f3_est = precomp$f3
+    precomp$ppinv = solve(precomp$f3var)
+    pops = precomp$pops
+  } else {
+    if(is.null(pops)) {
+      if(is.character(f2_data)) pops = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
+      else pops = dimnames(f2_data)[[1]]
+    }
+    precomp = qpgraph_precompute_f3(f2_data, pops, outpop = outpop, f2_denom = f2_denom)
   }
-  precomp = qpgraph_precompute_f3(f2_data, pops, f2_denom = f2_denom)
 
   if(is.null(outpop)) outpop = pops[1]
   else if(!outpop %in% pops) pops = c(outpop, pops)
 
-  oa = function(i) optimize_admixturegraph_single(pops, outpop=outpop, precomp$f3_jest, precomp$ppinv,
+  oa = function(i) optimize_admixturegraph_single(pops, outpop = outpop, precomp$f3_est, precomp$ppinv,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix,
                                                  verbose = verbose, cpp = cpp, debug = debug,
-                                                 keep = keep, ...)
+                                                 keep = keep)
   if(!debug) {
     oa = possibly(oa, otherwise=NULL)
     res = furrr::future_map(as.list(seq_len(numrep)), oa)
@@ -676,12 +642,14 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
 
 
 
+
 summarize_graph = function(grph, exclude_outgroup = TRUE) {
 
   leaves = V(grph)[degree(grph, v = V(grph), mode = c('out')) == 0]
   if(exclude_outgroup) leaves = igraph::difference(leaves, V(grph)[2])
 
-  paths = all_simple_paths(grph, V(grph)[1], leaves, mode = 'out') %>% enframe(name = 'pathnum', value='path') %>% mutate(name1 = map_chr(path, ~(tail(names(.), 1))))
+  paths = all_simple_paths(grph, V(grph)[1], leaves, mode = 'out') %>%
+    enframe(name = 'pathnum', value='path') %>% mutate(name1 = map_chr(path, ~(tail(names(.), 1))))
 
   get_iap = function(x, y) suppressWarnings(names(tail(which(cumsum(x != y) == 0), 1)))
 
@@ -718,12 +686,12 @@ summarize_graph = function(grph, exclude_outgroup = TRUE) {
 #'
 #' @export
 #' @param results the output of \code{\link{optimize_admixturegraph}}
-#' @param maxscore restrict summary to graphs with score not larger than \code{maxscore}
+#' @param maxscore restrict summary to graphs with score not larger than `maxscore`
 #' @examples
 #' \dontrun{
 #' summarize_triples(opt_results)
 #' }
-summarize_triples = function(results, maxscore=NA) {
+summarize_triples = function(results, maxscore = NA) {
   # results is output from 'optimize_admixturegraph'
   # takes at most one graph from each independent run
 
@@ -779,9 +747,11 @@ isomorphism_classes = function(igraphlist) {
 isomorphism_classes2 = function(igraphlist) {
 
   # considers topology and leaf labels
-  # in order to make sure a combination of leaves and topolgy is recognized as unique, this function uses 'unify_vertex_names'
+  # in order to make sure a combination of leaves and topolgy is recognized as unique, this function uses
+  # 'unify_vertex_names'
   # 'unify_vertex_names' often leads to stack overflow; fix this
-  # 'unify_vertex_names' should make consistent and unique node names for a given combination of topology and leaves, as long as no node has both more than one incoming edge and more than one outgoing edge
+  # 'unify_vertex_names' should make consistent and unique node names for a given combination of topology and leaves,
+  # as long as no node has both more than one incoming edge and more than one outgoing edge
 
   numgraph = length(igraphlist)
   if(numgraph == 0) return(numeric())
@@ -810,8 +780,10 @@ isomorphism_classes2 = function(igraphlist) {
 #'
 #' @export
 #' @param grph an admixture graph as igraph object
-#' @param add_outgroup should the graph outgroup be added to the qpAdm right populations? Technically this shouldn't be an informative outgroup for qpAdm.
-#' @param nested should a nested data frame be returned (\code{TRUE}), or should populations be concatenated into strings (\code{FALSE})?
+#' @param add_outgroup should the graph outgroup be added to the qpAdm right populations?
+#' Technically this shouldn't be an informative outgroup for qpAdm.
+#' @param nested should a nested data frame be returned (`TRUE`), or should populations be concatenated
+#' into strings (`FALSE`)?
 #' @param abbr maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
 #' @examples
 #' \dontrun{
@@ -829,13 +801,22 @@ qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   if(nrow(tlr) == 0) return(tibble())
   # table of all possible right pops for each combination of target and right pop
   rightpops = tlr %>% group_by(name1, name2) %>% summarize(right = list(name3)) %>% ungroup %>% unnest_longer(right)
-  # table of all possible combinations of target and power set of left pops (restricted to nleaves/2 because we need more rightpops than leftpops)
-  leftpops = tlr %>% group_by(name1) %>% summarize(left = list(power_set(unique(name2), nmax=min(length(unique(name2)), floor(nleaves/2))))) %>% ungroup %>% unnest_longer(left) %>% group_by(name1) %>% mutate(powerset = seq_len(n())) %>% ungroup %>% unnest_longer(left)
-  # table of all possible combinations of target, power set of left pops, and right, where right is right for every left pop of power set
-  out = leftpops %>% group_by(name1, powerset) %>% mutate(numleft = n()) %>% filter(numleft > 1) %>% left_join(rightpops, by=c('name1', 'left'='name2')) %>% group_by(name1, powerset, right) %>% mutate(numoginset = n()) %>% group_by(name1, powerset) %>% filter(numoginset == numleft) %>% select(-numoginset) %>% ungroup %>% rename(target = name1)
+  # table of all possible combinations of target and power set of left pops (restricted to nleaves/2
+  # because we need more rightpops than leftpops)
+  leftpops = tlr %>% group_by(name1) %>%
+    summarize(left = list(power_set(unique(name2), nmax=min(length(unique(name2)), floor(nleaves/2))))) %>%
+    ungroup %>% unnest_longer(left) %>% group_by(name1) %>% mutate(powerset = seq_len(n())) %>% ungroup %>%
+    unnest_longer(left)
+  # table of all possible combinations of target, power set of left pops, and right, where right is right
+  # for every left pop of power set
+  out = leftpops %>% group_by(name1, powerset) %>% mutate(numleft = n()) %>% filter(numleft > 1) %>%
+    left_join(rightpops, by=c('name1', 'left'='name2')) %>% group_by(name1, powerset, right) %>%
+    mutate(numoginset = n()) %>% group_by(name1, powerset) %>% filter(numoginset == numleft) %>%
+    select(-numoginset) %>% ungroup %>% rename(target = name1)
 
   # group so that each qpadm model is one line
-  out %<>% group_by(target, powerset) %>% summarize(left = list(sort(unique(left))), right = list(sort(unique(right)))) %>% ungroup %>% select(-powerset)
+  out %<>% group_by(target, powerset) %>%
+    summarize(left = list(sort(unique(left))), right = list(sort(unique(right)))) %>% ungroup %>% select(-powerset)
 
   # add outpop to right pops (even though it shouldn't be a right-group-outgroup in the qpAdm sense)
   if(add_outgroup) out %<>% mutate(right = modify(right, ~sort(c(., outgroup))))
@@ -851,7 +832,8 @@ qpadm_models = function(grph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   if(abbr != -1) out %<>% mutate(target = str_sub(target, 1, abbr),
                                  left = map(left, ~str_sub(., 1, abbr)),
                                  right = map(right, ~str_sub(., 1, abbr)))
-  if(!nested) out %<>% select(target, left, right) %>% mutate(left = map_chr(left, ~paste(., collapse=',')), right = map_chr(right, ~paste(., collapse=',')))
+  if(!nested) out %<>% select(target, left, right) %>%
+    mutate(left = map_chr(left, ~paste(., collapse=',')), right = map_chr(right, ~paste(., collapse=',')))
 
   out
 
@@ -866,7 +848,8 @@ decompose_graph = function(graph) {
   edges = graph %>% simplify_graph %>% as_edgelist %>%
     as_tibble(.name_repair = ~c('from', 'to'))
 
-  admixmat = edges %>% mutate(i = 1:n()) %>% group_by(to) %>% mutate(cnt = n(), j = 1:n()) %>% ungroup %>% filter(cnt == 2) %>% select(to, i, j) %>% spread(to, i) %>% select(-j) %>% as.matrix
+  admixmat = edges %>% mutate(i = 1:n()) %>% group_by(to) %>% mutate(cnt = n(), j = 1:n()) %>% ungroup %>%
+    filter(cnt == 2) %>% select(to, i, j) %>% spread(to, i) %>% select(-j) %>% as.matrix
   nadmix = ncol(admixmat)
   if(nadmix == 0) return(list(graph))
 

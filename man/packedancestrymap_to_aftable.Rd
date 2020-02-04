@@ -4,16 +4,18 @@
 \alias{packedancestrymap_to_aftable}
 \title{Read allele frequencies from packedancestrymap files}
 \usage{
-packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
-  blocksize = 1000, na.action = "none", return_matrix = FALSE,
-  verbose = TRUE)
+packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
+  blocksize = 1000, na.action = "none", auto_only = TRUE,
+  return_matrix = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
 
-\item{pops}{vector of populations from which to compute allele frequencies.}
+\item{inds}{vector of samples from which to compute allele frequencies.}
 
-\item{inds}{vector of samples from which to compute allele frequencies. \code{pops} and \code{inds} cannot be specified at the same time. If none are specified, populations will be extracted from the third column in the \code{.ind} file}
+\item{pops}{vector of populations from which to compute allele frequencies.
+\code{pops} and \code{inds} cannot be specified at the same time. If none are specified,
+populations will be extracted from the third column in the \code{.ind} file}
 
 \item{blocksize}{number of SNPs read in each block.}
 
@@ -24,17 +26,22 @@ packedancestrymap_to_aftable(pref, pops = NULL, inds = NULL,
 \item \code{remove} SNPs with missing data will be removed
 }}
 
+\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
+
 \item{return_matrix}{return data as list of matrices}
+
+\item{verbose}{print progress updates}
 }
 \value{
-a list with two items: allele frequency data and allele counts. Unless \code{return_matrix} is specified, first six columns are bimfile, remaining columns are data for each population.
+a list with two items: allele frequency data and allele counts. Unless \code{return_matrix = TRUE},
+first six columns are bimfile, remaining columns are data for each population.
 }
 \description{
-Read allele frequencies from packedancestrymap files
+This is currently slower than \code{plink_to_aftable} because it is implemented only in \code{R}, not in \code{C++}.
 }
 \examples{
 \dontrun{
-afdat = packedancestrymap_to_aftable(prefix, pops)
+afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 afs = afdat$afs
 counts = afdat$counts
 }

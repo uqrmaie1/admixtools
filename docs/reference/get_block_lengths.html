@@ -47,7 +47,8 @@
 
 <meta property="og:title" content="Find LD-independent blocks — get_block_lengths" />
 
-<meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within dist of the start of the last block. afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
+<meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within dist of the start of the last block.
+afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,7 +152,8 @@
 
     <div class="ref-description">
     
-    <p>A new block begins at the SNP after the first SNP which is not within <code>dist</code> of the start of the last block. <code>afdat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
+    <p>A new block begins at the SNP after the first SNP which is not within <code>dist</code> of the start of the last block.
+<code>afdat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
     
     </div>
 
@@ -183,7 +185,7 @@
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>prefix</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>
 <span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Zerg'</span>, <span class='st'>'Protoss'</span>, <span class='st'>'Terran'</span>)
-<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='no'>prefix</span>, <span class='no'>pops</span>)
+<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='no'>prefix</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='no'>pops</span>)
 <span class='no'>block_lengths</span> <span class='kw'>=</span> <span class='fu'>get_block_lengths</span>(<span class='no'>afdat</span>)
 }</div></pre>
   </div>

@@ -27,15 +27,14 @@ reference:
   - title: "Plotting functions"
     contents:
       - starts_with("plot")
-  - title: "Jackknife functions"
+  - title: "Resampling functions"
     contents:
-      - get_block_lengths
-      - afs_to_f2_blocks
-      - qpgraph_precompute_f3
+      - resample_inds
+      - resample_snps
   - title: "Reading and writing"
     contents:
       - extract_f2
-      - extract_indpairs
+      - extract_counts
       - f2_from_precomp
       - f2_from_geno
       - read_packedancestrymap

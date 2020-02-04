@@ -19,12 +19,10 @@ using namespace arma;
 
 
 // [[Rcpp::export]]
-arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d,
-                               const arma::mat& ppinv,
-                               const arma::vec& f3_jest,
-                               Function qpsolve) {
-  arma::mat pppp = ppwts_2d.t() * ppinv;
-  arma::mat cc = pppp * ppwts_2d;
+arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv,
+                               const arma::vec& f3_est, Function qpsolve) {
+  mat pppp = ppwts_2d.t() * ppinv;
+  mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
   for(int i = 0; i < nc; i++) {
     for(int j = i+1; j < nc; j++) {
@@ -34,25 +32,25 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d,
   for(int i = 0; i < nc; i++) {
     cc(i,i) += 0.0001;
   }
-  arma::vec q1 = -(pppp * f3_jest);
-  arma::mat CI(nc, nc, arma::fill::eye);
-  arma::vec ci0 = arma::zeros<arma::vec>(nc);
-  return -as<arma::vec>(qpsolve(cc, q1, -CI, ci0));
+  vec q1 = -(pppp * f3_est);
+  mat CI(nc, nc, fill::eye);
+  vec ci0 = zeros<vec>(nc);
+  return -as<vec>(qpsolve(cc, q1, -CI, ci0));
 }
 
 
 // [[Rcpp::export]]
 arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
-                   const arma::mat& path_edge_table,
-                   const arma::mat& path_admixedge_table, int numpaths) {
+                        const arma::mat& path_edge_table,
+                        const arma::mat& path_admixedge_table, int numpaths) {
   // puts weights onto pwts, using index matrix and vectors
   // returns pwts to be consistent with R function. However, it edits pwts in place. Used to return NULL.
 
   if(weights.n_elem == 0) return pwts;
 
-  arma::vec pathweights(numpaths, arma::fill::ones);
-  arma::vec pwtsfill(pwts.n_elem, arma::fill::zeros);
-  arma::vec pwtsfillind(pwts.n_elem, arma::fill::zeros);
+  vec pathweights(numpaths, fill::ones);
+  vec pwtsfill(pwts.n_elem, fill::zeros);
+  vec pwtsfillind(pwts.n_elem, fill::zeros);
 
   int path, admixedge, row, column, elem;
   for(int i=0; i<path_admixedge_table.n_rows; i++) {
@@ -80,11 +78,11 @@ arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
 // [[Rcpp::export]]
 double cpp_optimweightsfun(arma::vec weights, List args) {
 
-  arma::mat pwts = args[0];
-  arma::mat ppinv = args[1];
-  arma::vec f3_jest = args[2];
-  arma::mat path_edge_table = args[3];
-  arma::mat path_admixedge_table = args[4];
+  mat pwts = args[0];
+  mat ppinv = args[1];
+  vec f3_est = args[2];
+  mat path_edge_table = args[3];
+  mat path_admixedge_table = args[4];
   int numpaths = args[5];
   // args[6] is cmb matrix with column combinations; not needed here
   Function qpsolve = args[7];
@@ -92,7 +90,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   double nr = pwts.n_rows;
   double nc = pwts.n_cols;
   cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
-  arma::mat ppwts_2d(nc*(nc+1)/2, nr);
+  mat ppwts_2d(nc*(nc+1)/2, nr);
   for(int i=0; i<nr; i++) {
     int c=0;
     for(int j=0; j<nc; j++) {
@@ -102,9 +100,9 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
       }
     }
   }
-  arma::vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_jest, qpsolve);
-  arma::vec w2 = (ppwts_2d * q2) - f3_jest;
-  arma::vec lik = w2.t() * ppinv * w2;
+  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve);
+  vec w2 = (ppwts_2d * q2) - f3_est;
+  vec lik = w2.t() * ppinv * w2;
   return lik(0);
 }
 
@@ -155,11 +153,11 @@ using namespace roptim;
 class Optimfunctor : public Functor {
 
 public:
-  Optimfunctor(const arma::mat &pwts, const arma::mat &ppinv, const arma::vec &f3_jest, const arma::mat &path_edge_table,
+  Optimfunctor(const arma::mat &pwts, const arma::mat &ppinv, const arma::vec &f3_est, const arma::mat &path_edge_table,
                const arma::mat &path_admixedge_table, Function qpsolve, int numpaths) : qpsolve2(qpsolve) {
     thispwts = pwts;
     thisppinv = ppinv;
-    thisf3_jest = f3_jest;
+    thisf3_est = f3_est;
     thispath_edge_table = path_edge_table;
     thispath_admixedge_table = path_admixedge_table;
     thisnumpaths = numpaths;
@@ -184,8 +182,8 @@ public:
       }
     }
 
-    arma::vec q2 = cpp_opt_edge_lengths(ppwts_2d, thisppinv, thisf3_jest, qpsolve2);
-    arma::vec w2 = (ppwts_2d * q2) - thisf3_jest;
+    arma::vec q2 = cpp_opt_edge_lengths(ppwts_2d, thisppinv, thisf3_est, qpsolve2);
+    arma::vec w2 = (ppwts_2d * q2) - thisf3_est;
     arma::vec lik = w2.t() * thisppinv * w2;
     return lik(0);
   }
@@ -193,7 +191,7 @@ public:
   private:
     arma::mat thispwts;
     arma::mat thisppinv;
-    arma::vec thisf3_jest;
+    arma::vec thisf3_est;
     arma::mat thispath_edge_table;
     arma::mat thispath_admixedge_table;
     Function qpsolve2;
@@ -203,10 +201,10 @@ public:
 
 // [[Rcpp::export]]
 List cpp_lbfgsb(arma::vec weights, const arma::mat &pwts, const arma::mat &ppinv,
-                const arma::vec &f3_jest, const arma::mat &path_edge_table,
+                const arma::vec &f3_est, const arma::mat &path_edge_table,
                 const arma::mat &path_admixedge_table, int numpaths, Function qpsolve) {
 
-  Optimfunctor optfu(pwts, ppinv, f3_jest, path_edge_table,
+  Optimfunctor optfu(pwts, ppinv, f3_est, path_edge_table,
                      path_admixedge_table, qpsolve, numpaths);
   Roptim<Optimfunctor> opt("L-BFGS-B");
 

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot a comparison of two lists of qpgraph output — plot_comparison • admixtools</title>
+<title>Plot a comparison of two runs of qpgraph or two runs of qpadm — plot_comparison • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Plot a comparison of two lists of qpgraph output — plot_comparison" />
+<meta property="og:title" content="Plot a comparison of two runs of qpgraph or two runs of qpadm — plot_comparison" />
 
-<meta property="og:description" content="Plot a comparison of two lists of qpgraph output" />
+<meta property="og:description" content="Plot a comparison of two runs of qpgraph or two runs of qpadm" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -144,29 +144,37 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot a comparison of two lists of qpgraph output</h1>
+    <h1>Plot a comparison of two runs of qpgraph or two runs of qpadm</h1>
     
     <div class="hidden name"><code>plot_comparison.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Plot a comparison of two lists of qpgraph output</p>
+    <p>Plot a comparison of two runs of qpgraph or two runs of qpadm</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>plot_comparison</span>(<span class='no'>out1</span>, <span class='no'>out2</span>)</pre>
+    <pre class="usage"><span class='fu'>plot_comparison</span>(<span class='no'>out1</span>, <span class='no'>out2</span>, <span class='kw'>name1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>name2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>out1</th>
-      <td><p>first qpgraph output.</p></td>
+      <td><p>first model</p></td>
     </tr>
     <tr>
       <th>out2</th>
-      <td><p>second qpgraph output.</p></td>
+      <td><p>second model</p></td>
+    </tr>
+    <tr>
+      <th>name1</th>
+      <td><p>optional name for first model</p></td>
+    </tr>
+    <tr>
+      <th>name2</th>
+      <td><p>optional name for second model</p></td>
     </tr>
     </table>
     

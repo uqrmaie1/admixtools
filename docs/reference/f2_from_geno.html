@@ -47,7 +47,13 @@
 
 <meta property="og:title" content="Read f2 jackknife blocks from genotype data — f2_from_geno" />
 
-<meta property="og:description" content="Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files, and computes allele frequencies and f2 block jackknife statistics for selected populations. Data is either written to disk in files for each population and population pair, or returned as list. This function calls packedancestrymap_to_aftable / plink_to_aftable and afs_to_f2_blocks. The default treatment of missing data is na.action = 'none' which is similar to useallsnps: YES. To get results that are closer to useallsnps: NO, use na.action = 'remove'." />
+<meta property="og:description" content="Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
+and computes allele frequencies and f2 block jackknife statistics for selected populations.
+Data is either written to disk in files for each population and population pair, or returned as list.
+This function calls packedancestrymap_to_aftable / plink_to_aftable
+and afs_to_f2_blocks. The default treatment of missing data is na.action = 'none'
+which is similar to useallsnps: YES. To get results that are closer to useallsnps: NO,
+use na.action = 'remove'." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,27 +157,35 @@
 
     <div class="ref-description">
     
-    <p>Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files, and computes allele frequencies and f2 block jackknife statistics for selected populations. Data is either written to disk in files for each population and population pair, or returned as list. This function calls <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code> / <code><a href='plink_to_aftable.html'>plink_to_aftable</a></code> and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. The default treatment of missing data is <code>na.action = 'none'</code> which is similar to <code>useallsnps: YES</code>. To get results that are closer to <code>useallsnps: NO</code>, use <code>na.action = 'remove'</code>.</p>
+    <p>Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
+and computes allele frequencies and f2 block jackknife statistics for selected populations.
+Data is either written to disk in files for each population and population pair, or returned as list.
+This function calls <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code> / <code><a href='plink_to_aftable.html'>plink_to_aftable</a></code>
+and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. The default treatment of missing data is <code>na.action = 'none'</code>
+which is similar to <code>useallsnps: YES</code>. To get results that are closer to <code>useallsnps: NO</code>,
+use <code>na.action = 'remove'</code>.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2_from_geno</span>(<span class='no'>pref</span>, <span class='kw'>poplist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>f2_from_geno</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>, PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
-    </tr>
-    <tr>
-      <th>pops</th>
-      <td><p>the populations for which data should be extracted. Defaults to all populations, which may require a lot of memory. If <code>NULL</code>, each individual will be its own population.</p></td>
+      <td><p>prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
+PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>the individuals for which data should be extracted. <code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified, all populations will be extracted</p></td>
+      <td><p>the individuals for which data should be extracted.</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>the populations for which data should be extracted. <code>pops</code> and <code>inds</code> cannot be specified
+at the same time. If none are specified, all populations will be extracted.</p></td>
     </tr>
     <tr>
       <th>na.action</th>
@@ -184,6 +198,11 @@
     <tr>
       <th>maxmem</th>
       <td><p>split up allele frequency data into blocks, if memory requirements exceed <code>maxmem</code> MB.</p></td>
+    </tr>
+    <tr>
+      <th>format</th>
+      <td><p>supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read</p></td>
     </tr>
     <tr>
       <th>verbose</th>

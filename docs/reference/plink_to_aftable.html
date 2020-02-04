@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read allele frequencies from PLINK files — plink_to_aftable • admixtools</title>
+<title>Read allele frequencies from <code>PLINK</code> files — plink_to_aftable • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,7 +45,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Read allele frequencies from PLINK files — plink_to_aftable" />
+<meta property="og:title" content="Read allele frequencies from <code>PLINK</code> files — plink_to_aftable" />
 
 <meta property="og:description" content="Read allele frequencies from PLINK files" />
 
@@ -144,34 +144,36 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read allele frequencies from PLINK files</h1>
+    <h1>Read allele frequencies from <code>PLINK</code> files</h1>
     
     <div class="hidden name"><code>plink_to_aftable.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Read allele frequencies from PLINK files</p>
+    <p>Read allele frequencies from <code>PLINK</code> files</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
-  <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
+  <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>prefix of PLINK files (files have to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code>).</p></td>
-    </tr>
-    <tr>
-      <th>pops</th>
-      <td><p>vector of populations from which to compute allele frequencies.</p></td>
+      <td><p>prefix of <code>PLINK</code> files (files have to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code>).</p></td>
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>vector of samples from which to compute allele frequencies. <code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified, populations will be extracted from the first column in the <code>.fam</code> file</p></td>
+      <td><p>vector of samples from which to compute allele frequencies.</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>vector of populations from which to compute allele frequencies.
+<code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified,
+populations will be extracted from the third column in the <code>.ind</code> file</p></td>
     </tr>
     <tr>
       <th>na.action</th>
@@ -182,14 +184,23 @@
 </ul></td>
     </tr>
     <tr>
+      <th>auto_only</th>
+      <td><p>If <code>TRUE</code> (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.</p></td>
+    </tr>
+    <tr>
       <th>return_matrix</th>
       <td><p>return data as list of matrices</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with two items: allele frequency data and individual counts. Unless <code>return_matrix</code> is specified, first six columns are bimfile, remaining columns are data for each population.</p>
+    <p>a list with two items: allele frequency data and individual counts.
+Unless <code>return_matrix</code> is specified, first six columns are bimfile, remaining columns are data for each population.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

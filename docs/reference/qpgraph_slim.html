@@ -155,8 +155,8 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph_slim</span>(<span class='no'>graph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
-  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_slim</span>(<span class='no'>graph</span>, <span class='no'>f3_est</span>, <span class='no'>ppinv</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -166,7 +166,7 @@
       <td><p>an admixture graph represented as an <code>igraph</code> object</p></td>
     </tr>
     <tr>
-      <th>f3_jest</th>
+      <th>f3_est</th>
       <td><p>matrix of f3 estimates. output of <code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code></p></td>
     </tr>
     <tr>
@@ -186,34 +186,40 @@
       <td><p>seed for generating starting weights.</p></td>
     </tr>
     <tr>
-      <th>verbose</th>
-      <td><p>print optimization iterations</p></td>
-    </tr>
-    <tr>
       <th>cpp</th>
       <td><p>should optimization be run in C++ or in R? C++ is faster.</p></td>
     </tr>
     <tr>
-      <th>fudge</th>
-      <td><p>try increasing this, if you get the error message <code>constraints are inconsistent, no solution!</code>.</p></td>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list of qpGraph output data</p>
+    <p>a list with output describing the model fit:</p><ol>
+<li><p><code>edges</code> a data frame where each row is an edge in the graph. For regular edges, the column <code>weight</code> is the
+estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
+<li><p><code>score</code> the likelihood score of the fitted graph. lower values correspond to better fits.
+the score is calculated as the inner product of the residuals (difference between estimated and fitted f3 statistics),
+weighted by the inverse of the f3 covariance matrix.</p></li>
+<li><p><code>opt</code> a data frame with details of the weight-fitting step, including the randomly sampled starting weights.</p></li>
+</ol>
+
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code>for a wrapper functions which call the original qpGraph program; <code><a href='qpgraph.html'>qpgraph</a></code> for a slower function which requires f2 block jackknife statistics as input instead. <code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code> computes the required input from a 3d array of <code>f2_statistics</code></p></div>
+    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code>for a wrapper functions which call the original qpGraph program;
+<code><a href='qpgraph.html'>qpgraph</a></code> for a slower function which requires f2 block jackknife statistics as input instead.
+<code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code> computes the required input (<code>f3_est</code>, <code>ppinv</code>) from a 3d array of f2 statistics.</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
 <span class='no'>precomp</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pops</span>)
-<span class='no'>f3_jest</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>f3_jest</span>
+<span class='no'>f3_est</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>f3_est</span>
 <span class='no'>ppinv</span> <span class='kw'>=</span> <span class='no'>precomp</span>$<span class='no'>ppinv</span>
-<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>example_igraph</span>, <span class='no'>f3_jest</span>, <span class='no'>ppinv</span>)
+<span class='no'>out</span> <span class='kw'>=</span> <span class='fu'>qpgraph_slim</span>(<span class='no'>example_igraph</span>, <span class='no'>f3_est</span>, <span class='no'>ppinv</span>)
 <span class='fu'><a href='plot_graph.html'>plot_graph</a></span>(<span class='no'>out</span>$<span class='no'>edges</span>)</div><div class='img'><img src='qpgraph_slim-1.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

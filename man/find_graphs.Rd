@@ -6,11 +6,12 @@
 \usage{
 find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
   numgraphs = 50, numgen = 5, numsel = 5, numadmix = 0,
-  keep = c("all", "best", "last"), f2_denom = 0.278, verbose = TRUE,
+  keep = c("all", "best", "last"), f2_denom = 1, verbose = TRUE,
   cpp = TRUE, debug = numrep == 1, ...)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{pops}{populations for which to fit admixture graphs}
 
@@ -26,7 +27,8 @@ find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
 
 \item{numadmix}{number of admixture events within each graph}
 
-\item{keep}{by default, all evaluated graphs will be returned. \code{best} will only return the best fitting graph from each repeat and each generation. \code{last} will return all graphs from the last generation.}
+\item{keep}{by default, all evaluated graphs will be returned. \code{best} will only return the best fitting
+graph from each repeat and each generation. \code{last} will return all graphs from the last generation.}
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
@@ -34,13 +36,19 @@ find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
 
 \item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
 
-\item{debug}{if \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}). Errors will interrupt execution. This is the default if \code{numrep == 1}}
+\item{debug}{If \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
+Errors will interrupt execution. This is the default if \code{numrep = 1}}
 }
 \value{
 a nested data frame with one model per line
 }
 \description{
-This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}} package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on a compute cluster. Setting \code{numadmix} to 0 will search for well fitting trees, which is much faster than searching for admixture graphs with many admixture nodes.
+This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats
+to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}}
+package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called
+to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+a compute cluster. Setting \code{numadmix} to 0 will search for well fitting trees, which is much faster than searching
+for admixture graphs with many admixture nodes.
 }
 \examples{
 \dontrun{

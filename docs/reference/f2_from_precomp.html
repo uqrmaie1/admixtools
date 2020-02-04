@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read f2 jackknife blocks from disk — f2_from_precomp • admixtools</title>
+<title>Read blocked f2 statistics from disk — f2_from_precomp • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Read f2 jackknife blocks from disk — f2_from_precomp" />
+<meta property="og:title" content="Read blocked f2 statistics from disk — f2_from_precomp" />
 
-<meta property="og:description" content="Read f2 jackknife blocks from disk" />
+<meta property="og:description" content="Read blocked f2 statistics from disk" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -144,29 +144,35 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read f2 jackknife blocks from disk</h1>
+    <h1>Read blocked f2 statistics from disk</h1>
     
     <div class="hidden name"><code>f2_from_precomp.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Read f2 jackknife blocks from disk</p>
+    <p>Read blocked f2 statistics from disk</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2_from_precomp</span>(<span class='no'>dir</span>, <span class='kw'>poplist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>f2_from_precomp</span>(<span class='no'>dir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>dir</th>
-      <td><p>directory with precomputed f2 jackknife blocks</p></td>
+      <td><p>directory with precomputed f2 statistics, or precomputed individual pair data</p></td>
     </tr>
     <tr>
-      <th>poplist</th>
-      <td><p>the populations for which data should be extracted. Defaults to all populations, which may require a lot of memory. If <code>NULL</code>, each individual will be its own population.</p></td>
+      <th>inds</th>
+      <td><p>the individuals for which data should be read. Defaults to all individuals,
+which may require a lot of memory.</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>the populations for which data should be read. Defaults to all populations,
+which may require a lot of memory.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

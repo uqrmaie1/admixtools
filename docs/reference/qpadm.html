@@ -47,7 +47,9 @@
 
 <meta property="og:title" content="Estimate admixture weights — qpadm" />
 
-<meta property="og:description" content="Models target as a mixture of left populations, and outgroup right populations." />
+<meta property="og:description" content="Models target as a mixture of left populations, given a set of outgroup right populations.
+Can be used to estimate admixture proportions, and to estimate the number of independent
+admixture events (see wave)." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,20 +153,23 @@
 
     <div class="ref-description">
     
-    <p>Models target as a mixture of left populations, and outgroup right populations.</p>
+    <p>Models target as a mixture of left populations, given a set of outgroup right populations.
+Can be used to estimate admixture proportions, and to estimate the number of independent
+admixture events (see <code>wave</code>).</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>qpadm</span>(<span class='no'>f2_data</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>wave</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics. see <code>extract_data</code>.</p></td>
+      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
+alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>target</th>
@@ -179,6 +184,10 @@
       <td><p>outgroup populations</p></td>
     </tr>
     <tr>
+      <th>wave</th>
+      <td><p>If <code>TRUE</code> (the default), lower rank models and models with fewer source populations will also be tested.</p></td>
+    </tr>
+    <tr>
       <th>f2_denom</th>
       <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
@@ -187,27 +196,54 @@
       <td><p>value added to diagonal matrix elements before inverting</p></td>
     </tr>
     <tr>
+      <th>boot</th>
+      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
+or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.</p></td>
+    </tr>
+    <tr>
       <th>getcov</th>
       <td><p>should standard errors be returned? Setting this to <code>FALSE</code> makes this function much faster.</p></td>
     </tr>
     <tr>
       <th>constrained</th>
-      <td><p>if <code>FALSE</code> (default), admixture weights can be negative. if <code>TRUE</code>, they will all be non-negative, as in <code><a href='lazadm.html'>lazadm</a></code></p></td>
+      <td><p>if <code>FALSE</code> (default), admixture weights can be negative.
+if <code>TRUE</code>, they will all be non-negative, as in <code><a href='lazadm.html'>lazadm</a></code></p></td>
     </tr>
     <tr>
       <th>cpp</th>
       <td><p>should optimization be done using C++ or R function? <code>cpp = TRUE</code> is much faster.</p></td>
     </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
+    </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a data frame with weights and standard errors for each left population</p>
+    <p>a list with output describing the model fit:</p><ol>
+<li><p><code>weights</code> a data frame with estimated admixture proportions where each row is left population.
+estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
+<li><p><code>rankdrop</code> a data frame describing model fits with different ranks, including p-values for the overall fit
+and for nested models (comparing two models with rank difference of one). returned only if <code>wave = TRUE</code></p></li>
+<li><p><code>popdrop</code> a data frame describing model fits with different populations. returned only if <code>wave = TRUE</code></p></li>
+</ol>
+
+    
+    <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
+
+    
+
+<p><code>qpwave</code></p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
-<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European languages in Europe.</em> Nature (SI 10)</p>
+<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European
+languages in Europe.</em> Nature (SI 10)</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
@@ -218,11 +254,11 @@
     <pre class="examples"><div class='input'><span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>qpadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                 weight    se     z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   43.4  17.7  2.45
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>42.4</span><span>  17.7 -</span><span style='color: #BB0000;'>2.39</span><span></div></span></pre>
+<span class='fu'>qpadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span style='color: #00BBBB;'>ℹ Computing f4 stats...
+#&gt; ℹ Computing admixture weights...
+#&gt; ℹ Computing standard errors...
+#&gt; ℹ Computing number of admixture waves...
+#&gt; </span><span></div><div class='output co'>#&gt; <span class='error'>Error in eval(lhs, parent, parent): object 'left' not found</span></div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
@@ -230,6 +266,8 @@
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#alias">Alias</a></li>
 
       <li><a href="#references">References</a></li>
 

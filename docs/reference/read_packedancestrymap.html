@@ -47,7 +47,7 @@
 
 <meta property="og:title" content="Read genotype data from packedancestrymap files — read_packedancestrymap" />
 
-<meta property="og:description" content="Read genotype data from packedancestrymap files" />
+<meta property="og:description" content="This is currently slower than read_plink because it is implemented only in R, not in C++." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -151,7 +151,7 @@
 
     <div class="ref-description">
     
-    <p>Read genotype data from packedancestrymap files</p>
+    <p>This is currently slower than <code>read_plink</code> because it is implemented only in <code>R</code>, not in <code>C++</code>.</p>
     
     </div>
 
@@ -180,6 +180,14 @@
 <li><p><code>impute</code> allele frequencies will be imputed from other populations</p></li>
 <li><p><code>remove</code> SNPs with missing data will be removed</p></li>
 </ul></td>
+    </tr>
+    <tr>
+      <th>auto_only</th>
+      <td><p>If <code>TRUE</code> (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     

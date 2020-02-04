@@ -2,14 +2,16 @@
 % Please edit documentation in R/qpadm.R
 \name{qpadm}
 \alias{qpadm}
+\alias{qpwave}
 \title{Estimate admixture weights}
 \usage{
 qpadm(f2_data, target = NULL, left = NULL, right = NULL,
-  f2_denom = 1, fudge = 1e-04, getcov = TRUE, constrained = FALSE,
-  cpp = TRUE)
+  wave = TRUE, f2_denom = 1, fudge = 1e-04, boot = FALSE,
+  getcov = TRUE, constrained = FALSE, cpp = TRUE, verbose = TRUE)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{target}{target population}
 
@@ -17,22 +19,47 @@ qpadm(f2_data, target = NULL, left = NULL, right = NULL,
 
 \item{right}{outgroup populations}
 
+\item{wave}{If \code{TRUE} (the default), lower rank models and models with fewer source populations will also be tested.}
+
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fudge}{value added to diagonal matrix elements before inverting}
 
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
+or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.}
+
 \item{getcov}{should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.}
 
-\item{constrained}{if \code{FALSE} (default), admixture weights can be negative. if \code{TRUE}, they will all be non-negative, as in \code{\link{lazadm}}}
+\item{constrained}{if \code{FALSE} (default), admixture weights can be negative.
+if \code{TRUE}, they will all be non-negative, as in \code{\link{lazadm}}}
 
 \item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
+
+\item{verbose}{print progress updates}
 }
 \value{
-a data frame with weights and standard errors for each left population
+a list with output describing the model fit:
+\enumerate{
+\item \code{weights} a data frame with estimated admixture proportions where each row is left population.
+estimated edge length, and for admixture edges, it is the estimated admixture weight.
+\item \code{rankdrop} a data frame describing model fits with different ranks, including p-values for the overall fit
+and for nested models (comparing two models with rank difference of one). returned only if \code{wave = TRUE}
+\item \code{popdrop} a data frame describing model fits with different populations. returned only if \code{wave = TRUE}
+}
 }
 \description{
-Models target as a mixture of left populations, and outgroup right populations.
+Models target as a mixture of left populations, given a set of outgroup right populations.
+Can be used to estimate admixture proportions, and to estimate the number of independent
+admixture events (see \code{wave}).
 }
+\section{Alias}{
+
+\code{qpwave}
+}
+
 \examples{
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
@@ -42,7 +69,8 @@ qpadm(example_f2_blocks, target, left, right)
 \references{
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 
-Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European languages in Europe.} Nature (SI 10)
+Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
+languages in Europe.} Nature (SI 10)
 }
 \seealso{
 \code{\link{lazadm}}

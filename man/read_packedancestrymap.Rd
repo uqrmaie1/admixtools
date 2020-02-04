@@ -20,12 +20,16 @@ read_packedancestrymap(pref, inds = NULL, blocksize = 1000,
 \item \code{impute} allele frequencies will be imputed from other populations
 \item \code{remove} SNPs with missing data will be removed
 }}
+
+\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
+
+\item{verbose}{print progress updates}
 }
 \value{
 a list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
 }
 \description{
-Read genotype data from packedancestrymap files
+This is currently slower than \code{read_plink} because it is implemented only in \code{R}, not in \code{C++}.
 }
 \examples{
 \dontrun{

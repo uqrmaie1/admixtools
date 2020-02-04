@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Write f2 block jackknife estimates to disk — write_f2 • admixtools</title>
+<title>Write blocked f2 estimates to disk — write_f2 • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,9 +45,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Write f2 block jackknife estimates to disk — write_f2" />
+<meta property="og:title" content="Write blocked f2 estimates to disk — write_f2" />
 
-<meta property="og:description" content="This function takes a 3d array of f2 block jackknife estimates, splits it by population pair, and writes each pair to a separate .RData file." />
+<meta property="og:description" content="This function takes a 3d array of blocked f2 estimates, splits it by population pair,
+and writes each pair to a separate .rds file." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -144,14 +145,15 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Write f2 block jackknife estimates to disk</h1>
+    <h1>Write blocked f2 estimates to disk</h1>
     
     <div class="hidden name"><code>write_f2.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function takes a 3d array of f2 block jackknife estimates, splits it by population pair, and writes each pair to a separate <code>.RData</code> file.</p>
+    <p>This function takes a 3d array of blocked f2 estimates, splits it by population pair,
+and writes each pair to a separate <code>.rds</code> file.</p>
     
     </div>
 
@@ -162,7 +164,8 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_block</th>
-      <td><p>3d array with f2 block jackknife estimates. The first two dimensions of <code>f2_block</code> have to have population names. Each file will be stored under <code>{outdir}/{pop1}/{pop2}.RData</code>.</p></td>
+      <td><p>3d array with f2 block jackknife estimates. The first two dimensions of
+<code>f2_block</code> have to have population names. Each file will be stored under <code>{outdir}/{pop1}/{pop2}.rds</code>.</p></td>
     </tr>
     <tr>
       <th>outdir</th>
@@ -170,7 +173,7 @@
     </tr>
     <tr>
       <th>overwrite</th>
-      <td><p>should existing <code>.RData</code> files be overwritten?</p></td>
+      <td><p>should existing <code>.rds</code> files be overwritten?</p></td>
     </tr>
     </table>
     

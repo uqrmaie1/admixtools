@@ -17,13 +17,14 @@ get_block_lengths(afdat, dist = 0.05, distcol = "cm")
 a numeric vector where the ith element lists the number of SNPs in the ith block.
 }
 \description{
-A new block begins at the SNP after the first SNP which is not within \code{dist} of the start of the last block. \code{afdat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+A new block begins at the SNP after the first SNP which is not within \code{dist} of the start of the last block.
+\code{afdat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 }
 \examples{
 \dontrun{
 prefix = 'path/to/packedancestrymap_prefix'
 pops = c('Zerg', 'Protoss', 'Terran')
-afdat = packedancestrymap_to_aftable(prefix, pops)
+afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 block_lengths = get_block_lengths(afdat)
 }
 }

@@ -6,30 +6,47 @@
 \title{Estimate f3 statistics}
 \usage{
 qp3pop(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-  f2_denom = 1, sure = FALSE, unique_only = TRUE, verbose = FALSE)
+  f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE,
+  verbose = FALSE)
 }
 \arguments{
-\item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics, output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics. see \code{\link{extract_data}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
 \item{pop1}{one of the following four:
 \enumerate{
-\item \code{NULL}: all possible triples of the populations in \code{f2_blocks} will be returned
+\item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
 \item a vector of population labels
-\item a data frame in which the first four columns specify the population quadruples to be tested. \code{pop2} and \code{pop3} will be ignored.
-\item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or population quadruples to be tested. \code{pop2} and \code{pop3} will be ignored.
+\item a data frame with population combinations to be tested, with one population per column and one
+combination per row. Other \code{pop} arguments will be ignored.
+\item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
+population combinations to be tested. Other \code{pop} arguments will be ignored.
 }}
 
 \item{pop2}{a vector of population labels}
 
 \item{pop3}{a vector of population labels}
 
-\item{f2_denom}{scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}}
+\item{f2_denom}{scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.}
+
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
+of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
+where \code{n} is either equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}.
+The the covariance matrix of the f statistics will be computed using bootstrapping.}
+
+\item{sure}{The number of population combinations can get very large. This is a safety option that stops you
+from accidently computing all combinations if that number is large.}
+
+\item{unique_only}{If \code{TRUE} (the default), redundant combinations will be returned as well.}
+
+\item{verbose}{print progress updates}
 }
 \value{
-If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
+a data frame with f3 statistics
 }
 \description{
-Computes f3 statistics from f2 jackknife blocks of the form \eqn{F_3(A; B, C)}. Equivalent to  \eqn{(F_2(A, B) + F_2(A, C) - F_2(B, C)) / 2} and to \eqn{F_4(A, B; A, C)}
+Computes f3 statistics from f2 blocks of the form \eqn{f3(A; B, C)}. Equivalent to
+\eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
 }
 \section{Alias}{
 

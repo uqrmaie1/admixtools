@@ -2,19 +2,23 @@
 % Please edit documentation in R/io.R
 \name{f2_from_precomp}
 \alias{f2_from_precomp}
-\title{Read f2 jackknife blocks from disk}
+\title{Read blocked f2 statistics from disk}
 \usage{
-f2_from_precomp(dir, poplist = NULL, verbose = TRUE)
+f2_from_precomp(dir, inds = NULL, pops = NULL, verbose = TRUE)
 }
 \arguments{
-\item{dir}{directory with precomputed f2 jackknife blocks}
+\item{dir}{directory with precomputed f2 statistics, or precomputed individual pair data}
 
-\item{poplist}{the populations for which data should be extracted. Defaults to all populations, which may require a lot of memory. If \code{NULL}, each individual will be its own population.}
+\item{inds}{the individuals for which data should be read. Defaults to all individuals,
+which may require a lot of memory.}
+
+\item{pops}{the populations for which data should be read. Defaults to all populations,
+which may require a lot of memory.}
 
 \item{verbose}{print progress updates}
 }
 \description{
-Read f2 jackknife blocks from disk
+Read blocked f2 statistics from disk
 }
 \examples{
 \dontrun{

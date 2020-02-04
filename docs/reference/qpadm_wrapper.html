@@ -155,10 +155,11 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>bin</span>,
-  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"./"</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>useallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
-  <span class='kw'>fancyf4</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
-  <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>)</pre>
+    <pre class="usage"><span class='fu'>qpadm_wrapper</span>(<span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpAdm"</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"./"</span>,
+  <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>useallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>fancyf4</span> <span class='kw'>=</span> <span class='st'>"YES"</span>,
+  <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -185,11 +186,16 @@
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>the output directory. files <code>out</code>, <code>parfile</code>, <code>leftlist</code>, <code>rightlist</code> will be overwritten</p></td>
+      <td><p>the output directory. files <code>out</code>, <code>parfile</code>, <code>leftlist</code>,
+<code>rightlist</code> will be overwritten</p></td>
     </tr>
     <tr>
       <th>printonly</th>
       <td><p>should the command be printed or executed?</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>print progress updates</p></td>
     </tr>
     </table>
     

@@ -4,13 +4,13 @@
 \alias{qpgraph_slim}
 \title{Compute the fit of an admixturegraph.}
 \usage{
-qpgraph_slim(graph, f3_jest, ppinv, fnscale = 1e-06, numstart = 10,
-  seed = NULL, verbose = FALSE, cpp = TRUE)
+qpgraph_slim(graph, f3_est, ppinv, fnscale = 1e-06, numstart = 10,
+  seed = NULL, cpp = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{graph}{an admixture graph represented as an \code{\link{igraph}} object}
 
-\item{f3_jest}{matrix of f3 estimates. output of \code{\link{qpgraph_precompute_f3}}}
+\item{f3_est}{matrix of f3 estimates. output of \code{\link{qpgraph_precompute_f3}}}
 
 \item{ppinv}{inverted covariance matrix of f3-statistics}
 
@@ -20,14 +20,20 @@ qpgraph_slim(graph, f3_jest, ppinv, fnscale = 1e-06, numstart = 10,
 
 \item{seed}{seed for generating starting weights.}
 
-\item{verbose}{print optimization iterations}
-
 \item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
 
-\item{fudge}{try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.}
+\item{verbose}{print progress updates}
 }
 \value{
-a list of qpGraph output data
+a list with output describing the model fit:
+\enumerate{
+\item \code{edges} a data frame where each row is an edge in the graph. For regular edges, the column \code{weight} is the
+estimated edge length, and for admixture edges, it is the estimated admixture weight.
+\item \code{score} the likelihood score of the fitted graph. lower values correspond to better fits.
+the score is calculated as the inner product of the residuals (difference between estimated and fitted f3 statistics),
+weighted by the inverse of the f3 covariance matrix.
+\item \code{opt} a data frame with details of the weight-fitting step, including the randomly sampled starting weights.
+}
 }
 \description{
 Computes the fit of an admixture graph for a given graph topology given f3 estimates and an inverted covariance matrix.
@@ -35,11 +41,13 @@ Computes the fit of an admixture graph for a given graph topology given f3 estim
 \examples{
 pops = get_leafnames(example_igraph)
 precomp = qpgraph_precompute_f3(example_f2_blocks, pops)
-f3_jest = precomp$f3_jest
+f3_est = precomp$f3_est
 ppinv = precomp$ppinv
-out = qpgraph_slim(example_igraph, f3_jest, ppinv)
+out = qpgraph_slim(example_igraph, f3_est, ppinv)
 plot_graph(out$edges)
 }
 \seealso{
-\code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program; \code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead. \code{\link{qpgraph_precompute_f3}} computes the required input from a 3d array of \code{f2_statistics}
+\code{\link{qpgraph_wrapper}}for a wrapper functions which call the original qpGraph program;
+\code{\link{qpgraph}} for a slower function which requires f2 block jackknife statistics as input instead.
+\code{\link{qpgraph_precompute_f3}} computes the required input (\code{f3_est}, \code{ppinv}) from a 3d array of f2 statistics.
 }

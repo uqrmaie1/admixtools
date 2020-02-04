@@ -2,19 +2,21 @@
 % Please edit documentation in R/io.R
 \name{write_f2}
 \alias{write_f2}
-\title{Write f2 block jackknife estimates to disk}
+\title{Write blocked f2 estimates to disk}
 \usage{
 write_f2(f2_block, outdir, overwrite = FALSE)
 }
 \arguments{
-\item{f2_block}{3d array with f2 block jackknife estimates. The first two dimensions of \code{f2_block} have to have population names. Each file will be stored under \code{{outdir}/{pop1}/{pop2}.RData}.}
+\item{f2_block}{3d array with f2 block jackknife estimates. The first two dimensions of
+\code{f2_block} have to have population names. Each file will be stored under \code{{outdir}/{pop1}/{pop2}.rds}.}
 
 \item{outdir}{directory into which to write the files.}
 
-\item{overwrite}{should existing \code{.RData} files be overwritten?}
+\item{overwrite}{should existing \code{.rds} files be overwritten?}
 }
 \description{
-This function takes a 3d array of f2 block jackknife estimates, splits it by population pair, and writes each pair to a separate \code{.RData} file.
+This function takes a 3d array of blocked f2 estimates, splits it by population pair,
+and writes each pair to a separate \code{.rds} file.
 }
 \examples{
 \dontrun{
