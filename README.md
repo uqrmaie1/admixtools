@@ -53,11 +53,30 @@ right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG
 qpadm(f2_dir, target, left, right)
 ```
 
-    #> # A tibble: 2 x 4
-    #>   target      left                 weight    se
-    #>   <chr>       <chr>                 <dbl> <dbl>
-    #> 1 Denisova.DG Altai_Neanderthal.DG   43.4  17.7
-    #> 2 Denisova.DG Vindija.DG            -42.4  17.7
+    #> ℹ Computing f4 stats...
+    #> ℹ Computing admixture weights...
+    #> ℹ Computing standard errors...
+    #> ℹ Computing number of admixture waves...
+    #> $weights
+    #> # A tibble: 2 x 5
+    #>   target      left                 weight    se     z
+    #>   <chr>       <chr>                 <dbl> <dbl> <dbl>
+    #> 1 Denisova.DG Altai_Neanderthal.DG   50.2  24.0  2.10
+    #> 2 Denisova.DG Vindija.DG            -49.2  24.0 -2.06
+    #> 
+    #> $rankdrop
+    #> # A tibble: 1 x 7
+    #>   f4rank   dof chisq      p dofdiff chisqdiff p_nested
+    #>    <int> <int> <dbl>  <dbl>   <int>     <dbl>    <dbl>
+    #> 1      1     2  7.14 0.0281      NA        NA       NA
+    #> 
+    #> $popdrop
+    #> # A tibble: 1 x 13
+    #>   pat      wt   dof chisq      p f4rank Altai_Neanderth… Vindija.DG feasible
+    #>   <chr> <dbl> <int> <dbl>  <dbl>  <int>            <dbl>      <dbl> <lgl>   
+    #> 1 00        0     2  7.14 0.0281      1             50.2      -49.2 FALSE   
+    #> # … with 4 more variables: best <lgl>, dofdiff <int>, chisqdiff <dbl>,
+    #> #   p_nested <dbl>
 
 More documentation
 [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html).

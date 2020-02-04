@@ -125,11 +125,30 @@
 <a class="sourceLine" id="cb4-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
 <a class="sourceLine" id="cb4-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>, <span class="st">'Switzerland_Bichon.SG'</span>)</a></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw"><a href="reference/qpadm.html">qpadm</a></span>(f2_dir, target, left, right)</a></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">#&gt; # A tibble: 2 x 5</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="co">#&gt;   target      left                 weight    se     z</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   43.4  17.7  2.45</span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -42.4  17.7 -2.39</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">#&gt; ℹ Computing f4 stats...</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="co">#&gt; ℹ Computing admixture weights...</span></a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co">#&gt; ℹ Computing standard errors...</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="co">#&gt; ℹ Computing number of admixture waves...</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="co">#&gt; $weights</span></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="co">#&gt; # A tibble: 2 x 5</span></a>
+<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="co">#&gt;   target      left                 weight    se     z</span></a>
+<a class="sourceLine" id="cb6-8" data-line-number="8"><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></a>
+<a class="sourceLine" id="cb6-9" data-line-number="9"><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   50.2  24.0  2.10</span></a>
+<a class="sourceLine" id="cb6-10" data-line-number="10"><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -49.2  24.0 -2.06</span></a>
+<a class="sourceLine" id="cb6-11" data-line-number="11"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb6-12" data-line-number="12"><span class="co">#&gt; $rankdrop</span></a>
+<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="co">#&gt; # A tibble: 1 x 7</span></a>
+<a class="sourceLine" id="cb6-14" data-line-number="14"><span class="co">#&gt;   f4rank   dof chisq      p dofdiff chisqdiff p_nested</span></a>
+<a class="sourceLine" id="cb6-15" data-line-number="15"><span class="co">#&gt;    &lt;int&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;</span></a>
+<a class="sourceLine" id="cb6-16" data-line-number="16"><span class="co">#&gt; 1      1     2  7.14 0.0281      NA        NA       NA</span></a>
+<a class="sourceLine" id="cb6-17" data-line-number="17"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb6-18" data-line-number="18"><span class="co">#&gt; $popdrop</span></a>
+<a class="sourceLine" id="cb6-19" data-line-number="19"><span class="co">#&gt; # A tibble: 1 x 13</span></a>
+<a class="sourceLine" id="cb6-20" data-line-number="20"><span class="co">#&gt;   pat      wt   dof chisq      p f4rank Altai_Neanderth… Vindija.DG feasible</span></a>
+<a class="sourceLine" id="cb6-21" data-line-number="21"><span class="co">#&gt;   &lt;chr&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;int&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;lgl&gt;   </span></a>
+<a class="sourceLine" id="cb6-22" data-line-number="22"><span class="co">#&gt; 1 00        0     2  7.14 0.0281      1             50.2      -49.2 FALSE   </span></a>
+<a class="sourceLine" id="cb6-23" data-line-number="23"><span class="co">#&gt; # … with 4 more variables: best &lt;lgl&gt;, dofdiff &lt;int&gt;, chisqdiff &lt;dbl&gt;,</span></a>
+<a class="sourceLine" id="cb6-24" data-line-number="24"><span class="co">#&gt; #   p_nested &lt;dbl&gt;</span></a></code></pre></div>
 <p>More documentation <a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html">here</a>.</p>
 </div>
 </div>

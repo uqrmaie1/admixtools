@@ -10,7 +10,7 @@
 #' @importFrom lobstr obj_size
 #' @importFrom abind abind
 #' @importFrom crayon blue red green bold italic
-#' @importFrom tibble as_tibble deframe enframe add_column
+#' @importFrom tibble as_tibble deframe enframe add_column rownames_to_column
 #' @importFrom stats na.omit setNames runif
 #' @importFrom grDevices hcl
 #' @importFrom rlang .data

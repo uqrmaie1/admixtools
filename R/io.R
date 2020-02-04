@@ -763,6 +763,7 @@ extract_counts = function(pref, outdir, inds = NULL, na.action = 'none',
 
   g = read_anygeno(pref, inds, na.action = na.action, format = format, verbose = verbose)
 
+  if(verbose) alert_info(paste0('Determining SNP blocks...\n'))
   block_lengths = get_block_lengths(g$bim)
   xmat_to_inddat(g$bed, block_lengths,
                   outdir = outdir, overwrite = overwrite,
@@ -1022,9 +1023,9 @@ xmat_to_pairdat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
   ends = c(lead(starts)[-numsplits2]-1, nc)
 
   if(verbose) {
-    alert_warning(paste0('computing pairwise stats for all SNPs and sample pairs requires ',
+    alert_warning(paste0('Computing pairwise stats for all SNPs and sample pairs requires ',
                          round(mem2/1e6), ' MB RAM without splitting\n'))
-    if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2,
+    if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2,
                                          ' blocks of ', width, ' samples and up to ', maxmem,
                                          ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
   }
@@ -1149,7 +1150,7 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
   poplist %>%
     split(.$pop) %>%
     map(~saveRDS(.$ind, file = paste0(dir, '/groups/', .$pop[1], '.rds')))
-  if(verbose) alert_info(paste0('Grouped ', length(inds),' samples into ', pop, '\n'))
+  if(verbose) alert_info(paste0('Grouped ', length(inds),' samples into "', pop, '"\n'))
 }
 
 
