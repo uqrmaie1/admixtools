@@ -215,6 +215,7 @@ make_resample_snps_fun = function(qpfun) {
 
 make_resample_inds_fun = function(qpfun) {
   function(dir, inds, pops, multicore = TRUE, verbose = TRUE, ...) {
+    stopifnot(length(pops) == length(inds))
     poplist = tibble(ind = inds, pop = pops)
     lo_samples = poplist %>% group_by(pop) %>% mutate(cnt = n()) %>%
       ungroup %>% filter(cnt > 1) %>% select(-cnt)
