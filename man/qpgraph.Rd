@@ -6,7 +6,8 @@
 \usage{
 qpgraph(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 0.001,
   fnscale = 1e-06, lsqmode = FALSE, numstart = NULL, seed = NULL,
-  cpp = TRUE, return_f4 = FALSE, verbose = FALSE)
+  cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, low_q = 0,
+  high_q = 1, verbose = FALSE)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.

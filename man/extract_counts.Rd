@@ -5,7 +5,8 @@
 \title{Extract and store data needed to compute blocked f2}
 \usage{
 extract_counts(pref, outdir, inds = NULL, na.action = "none",
-  maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE)
+  keepsnps = NULL, maxmem = 8000, overwrite = FALSE, format = NULL,
+  verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},

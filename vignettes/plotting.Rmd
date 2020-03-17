@@ -25,12 +25,12 @@ plot_graph(example_igraph)
 ```
 
 
-## Admixture graph on a map
+<!-- ## Admixture graph on a map -->
 
 
-```{r, fig.height = 7, fig.align='center'}
-plot_graph_map(example_igraph, example_anno)
-```
+<!-- ```{r, fig.height = 7, fig.align='center'} -->
+<!-- plot_graph_map(example_igraph, example_anno) -->
+<!-- ``` -->
 
 
 ## All samples on a map

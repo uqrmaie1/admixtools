@@ -20,7 +20,27 @@ using namespace arma;
 
 // [[Rcpp::export]]
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv,
-                               const arma::vec& f3_est, Function qpsolve) {
+                               const arma::vec& f3_est, Function qpsolve,
+                               const arma::vec& lower, const arma::vec& upper) {
+  mat pppp = ppwts_2d.t() * ppinv;
+  mat cc = pppp * ppwts_2d;
+  int nc = cc.n_cols;
+  for(int i = 0; i < nc; i++) {
+    for(int j = i+1; j < nc; j++) {
+      cc(i,j) = cc(j,i);
+    }
+  }
+  for(int i = 0; i < nc; i++) {
+    cc(i,i) += 0.0001;
+  }
+  vec q1 = pppp * f3_est;
+  mat CI(nc, nc, fill::eye);
+  return as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)));
+}
+
+// [[Rcpp::export]]
+arma::vec cpp_opt_edge_lengths_old(const arma::mat& ppwts_2d, const arma::mat& ppinv,
+                                   const arma::vec& f3_est, Function qpsolve) {
   mat pppp = ppwts_2d.t() * ppinv;
   mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
@@ -86,6 +106,8 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   int numpaths = args[5];
   // args[6] is cmb matrix with column combinations; not needed here
   Function qpsolve = args[7];
+  vec lower = args[8];
+  vec upper = args[9];
 
   double nr = pwts.n_rows;
   double nc = pwts.n_cols;
@@ -100,7 +122,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
       }
     }
   }
-  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve);
+  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper);
   vec w2 = (ppwts_2d * q2) - f3_est;
   vec lik = w2.t() * ppinv * w2;
   return lik(0);

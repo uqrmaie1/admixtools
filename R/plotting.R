@@ -23,18 +23,8 @@ plot_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
 plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 
   f2comp = f3comp = NULL
-  if('f2' %in% names(out1) && 'f2' %in% names(out2)) {
-    if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
-      stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
-                  length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
-                  length(unique(c(out2$f2$pop1, out2$f2$pop2))) ==
-                  length(unique(substr(c(out2$f2$pop1, out2$f2$pop2), 1, 3))))
+  if(!is.null(out1$f2) && !is.null(out2$f2)) {
 
-      out1$f2$pop1 %<>% str_sub(1, 3)
-      out1$f2$pop2 %<>% str_sub(1, 3)
-      out2$f2$pop1 %<>% str_sub(1, 3)
-      out2$f2$pop2 %<>% str_sub(1, 3)
-    }
     f2comp = out1$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'x') %>%
       bind_rows(out2$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'y')) %>%
       rename(f2_est = est, f2_se = se) %>%
@@ -42,37 +32,37 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
       rename(from=.data$pop1, to=.data$pop2)
   }
 
-  if('f3' %in% names(out1) && 'f3' %in% names(out2)) {
+  if(!is.null(out1$f3) && !is.null(out2$f3)) {
 
-    if(max(nchar(out1$f2$pop1))==3 || max(nchar(out2$f2$pop1))==3) {
-      stopifnot(length(unique(c(out1$f2$pop1, out1$f2$pop2))) ==
-                  length(unique(substr(c(out1$f2$pop1, out1$f2$pop2), 1, 3))) &&
-                  length(unique(c(out2$f2$pop1, out2$f2$pop2))) ==
-                  length(unique(substr(c(out2$f2$pop1, out2$f2$pop2), 1, 3))))
-
-      out1$f3$pop2 %<>% str_sub(1, 3)
-      out1$f3$pop3 %<>% str_sub(1, 3)
-      out2$f3$pop2 %<>% str_sub(1, 3)
-      out2$f3$pop3 %<>% str_sub(1, 3)
-    }
-
+    # continue here: autmoatically select all variables that exists in both ('z')
     f3comp = out1$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'x') %>%
       bind_rows(out2$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'y')) %>%
       rename(f3_est = est, f3_fit = fit) %>%
-      gather('type', 'v', .data$f3_est, .data$f3_fit) %>% spread(.data$i, .data$v) %>%
+      gather('type', 'v', f3_est, f3_fit) %>% spread(.data$i, .data$v) %>%
       rename(from=.data$pop2, to=.data$pop3) %>% filter(!is.na(x), !is.na(y))
   }
 
-  out1$edges %>% rename(x = .data$weight) %>%
-    left_join(out2$edges %>% select(-'type') %>% rename(y = .data$weight), by=c('from', 'to')) %>%
+  if(!'low' %in% names(out1$edges)) out1$edges %<>% mutate(low = NA)
+  if(!'low' %in% names(out2$edges)) out2$edges %<>% mutate(low = NA)
+  if(!'high' %in% names(out1$edges)) out1$edges %<>% mutate(high = NA)
+  if(!'high' %in% names(out2$edges)) out2$edges %<>% mutate(high = NA)
+
+  out1$edges %>% rename(x = .data$weight, xmin = .data$low, xmax = .data$high) %>%
+    left_join(out2$edges %>% select(-'type') %>%
+                rename(y = .data$weight, ymin = .data$low, ymax = .data$high), by=c('from', 'to')) %>%
     bind_rows(f2comp, f3comp) %>%
-    ggplot(aes(.data$x, .data$y)) +
-    geom_point() +
-    facet_wrap('type', scales='free', dir = 'v', nrow = 2) +
+    mutate_at(vars(c(xmin, xmax)), ~ifelse(is.na(.), x, .)) %>%
+    mutate_at(vars(c(ymin, ymax)), ~ifelse(is.na(.), y, .)) %>%
+    mutate(e = paste(from, to, sep = ' -> ')) %>%
+    ggplot(aes(x=x, y=y, label = e)) +
+    geom_errorbarh(aes(xmin = replace_na(xmin, 0), xmax = replace_na(xmax, 0)), height = 0, col = 'grey') +
+    geom_errorbar(aes(ymin = replace_na(ymin, 0), ymax = replace_na(ymax, 0)), width = 0, col = 'grey') +
+    geom_point(aes(col = from == to)) +
+    facet_wrap('type', scales='free', dir = 'v', ncol = 2) +
     geom_abline() +
     xlab(paste0(name1, ' (score: ', round(out1$score, 2),')')) +
     ylab(paste0(name2, ' (score: ', round(out2$score, 2),')')) +
-    theme(panel.background = element_blank(), axis.line = element_line()) +
+    theme(panel.background = element_blank(), axis.line = element_line(), legend.position = 'none') +
     geom_smooth(method='lm', se = FALSE, formula=y~x-1)
 }
 
@@ -124,53 +114,57 @@ plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
 #' By default this is only done for graphs with fewer than 10 leaves.
 #' @param title plot title
 #' @param color plot it in color or greyscale
+#' @param textsize size of edge and node labels
 #' @return a ggplot object
 #' @examples
 #' plot_graph(example_graph)
-plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
+plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5) {
 
   if(class(graph)[1] == 'igraph') {
-    grph = graph
+    graph = graph
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
   } else {
-    grph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
     edges = graph %>% as_tibble
     names(edges)[1:2] = c('V1', 'V2')
+    graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
   }
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+  eg = as_tibble(as_edgelist(graph)) %>% left_join(pos, by=c('V1'='node')) %>%
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(get_leafnames(grph)) < 10) eg = fix_layout(eg, grph)
+  if(isTRUE(fix) || is.null(fix) && length(get_leafnames(graph)) < 10) eg = fix_layout(eg, graph)
+  if(fix_down) eg = fix_shiftdown(eg, graph)
 
   if(!'label' %in% names(edges)) {
-    if('weight' %in% names(edges)) lab = round(edges$weight, 2)
+    if('weight' %in% names(edges)) {
+      lab = ifelse(edges$type == 'admix', paste0(round(edges$weight*100), '%'), round(edges$weight*1000))
+    }
     else lab = ''
     edges %<>% mutate(label = lab)
   }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+  nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
     transmute(name = to, x, y, xend, yend)
 
   if(color) {
     gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gl = geom_label(data=nodes, aes_string(label = 'name', col='as.factor(yend)'), size=3)
+    gl = geom_label(data=nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
   } else {
     gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gl = geom_label(data=nodes, aes_string(label = 'name'), col = 'black', size=3)
+    gl = geom_label(data=nodes, aes_string(label = 'name'), col = 'black', size = textsize)
   }
 
   plt = eg %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
     gs +
-    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label)) +
+    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize) +
     gl +
     theme(panel.background = element_blank(),
           axis.line = element_blank(),
@@ -184,17 +178,17 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE) {
   plt
 }
 
-
-fix_layout = function(coord, grph) {
+#' @export
+fix_layout = function(coord, graph) {
   # rearranges nodes in tree layout, so that there are fewer long branches
-  dst = igraph::distances(grph, V(grph)[1], mode='out')[1,]
+  dst = igraph::distances(graph, V(graph)[1], mode='out')[1,]
   totdist = function(x, xend) {
     sum(abs(x-xend), na.rm=TRUE)
   }
-  swap_subtree = function(grph, coord, node) {
+  swap_subtree = function(graph, coord, node) {
     center = coord$x[match(node, coord$name)[1]]
-    offspring = names(subcomponent(grph, node, mode='out'))
-    dst2 = igraph::distances(grph, node, mode='out')[1,]
+    offspring = names(subcomponent(graph, node, mode='out'))
+    dst2 = igraph::distances(graph, node, mode='out')[1,]
     for(n in offspring) {
       if(dst[node] + dst2[n] <= dst[n])
         coord %<>% mutate(x = ifelse(name == n, 2*center-x, x),
@@ -202,13 +196,13 @@ fix_layout = function(coord, grph) {
     }
     coord
   }
-  swap_subtree2 = function(grph, coord, node) {
+  swap_subtree2 = function(graph, coord, node) {
     center = coord$x[match(node, coord$name)[1]]
-    children = names(neighbors(grph, node, mode='out'))
-    dst2 = igraph::distances(grph, node, mode='out')[1,]
+    children = names(neighbors(graph, node, mode='out'))
+    dst2 = igraph::distances(graph, node, mode='out')[1,]
     if(length(children) == 2) {
       for(child in children) {
-        offspring = names(subcomponent(grph, child, mode='out'))
+        offspring = names(subcomponent(graph, child, mode='out'))
         xx = coord %>% filter(name == node, to == child) %$% xend
         shift = 2 * (xx - center)
         for(n in offspring) {
@@ -220,13 +214,13 @@ fix_layout = function(coord, grph) {
     }
     coord
   }
-  inner_bf = setdiff(names(subcomponent(grph, V(grph)[1])), get_leafnames(grph))
+  inner_bf = setdiff(names(subcomponent(graph, V(graph)[1])), get_leafnames(graph))
   for(node in rep(inner_bf, 1)) {
 
     d1 = totdist(coord$x, coord$xend)
     n1 = num_intersecting(coord)
     s1 = num_samepos(coord)
-    c2 = swap_subtree(grph, coord, node)
+    c2 = swap_subtree(graph, coord, node)
     d2 = totdist(c2$x, c2$xend)
     n2 = num_intersecting(c2)
     s2 = num_samepos(c2)
@@ -238,7 +232,7 @@ fix_layout = function(coord, grph) {
     d1 = totdist(coord$x, coord$xend)
     n1 = num_intersecting(coord)
     s1 = num_samepos(coord)
-    c2 = swap_subtree2(grph, coord, node)
+    c2 = swap_subtree2(graph, coord, node)
     d2 = totdist(c2$x, c2$xend)
     n2 = num_intersecting(c2)
     s2 = num_samepos(c2)
@@ -269,6 +263,27 @@ fix_layout2 = function(coord) {
   bind_rows(edges, leaves)
 }
 
+fix_shiftdown = function(coord, graph) {
+  adm = find_admixedges(graph) %>%
+    left_join(coord, by = c('from'='name', 'to'='to')) %>%
+    filter(yend >= y) %>% mutate(by = yend - y + 1)
+  for(i in seq_len(nrow(adm))) {
+    by = coord %>% filter(name == adm$from[i], to == adm$to[i]) %$% {yend - y + 1}
+    coord = shift_subgraph_down(graph, coord, adm$to[i], by = by)
+  }
+  coord
+}
+
+shift_subgraph_down = function(graph, coord, node, by) {
+  # returns new coords with some nodes shifted down
+  if(by <= 0) return(coord)
+  nodes = graph %>% subcomponent(node, mode = 'out') %>% names
+  coord %>% mutate(shift = name %in% nodes,
+                   shift1 = to %in% nodes,
+                   y = ifelse(shift, y-by, y),
+                   yend = ifelse(shift | shift1, yend-by, yend)) %>%
+    select(-shift, -shift1)
+}
 
 intersecting = function(x1, y1, x2, y2, x3, y3, x4, y4) {
   # returns TRUE iff segment 12 intersects with segment 34
@@ -348,20 +363,19 @@ collapse_edges = function(edges, below=0) {
   adjmat[rownames(adjmat) %in% excl, ] = 0
   adjmat[, colnames(adjmat) %in% excl] = 0
   diag(adjmat) = 1
-  comp = components(graph_from_adjacency_matrix(as.matrix(adjmat), weighted='x'))
+  comp = igraph::components(graph_from_adjacency_matrix(as.matrix(adjmat), weighted='x'))
   newnam = comp$membership %>% enframe %>% group_by(value) %>%
     mutate(name, groupname = paste(name, collapse='.')) %>% ungroup %>% select(-value) %>% deframe
   edges %>% mutate(from = newnam[from], to = newnam[to]) %>% filter(from != to)
-
 }
 
 
 #' @export
-plot_graph_pcs = function(grph, pcs) {
+plot_graph_pcs = function(graph, pcs) {
 
   leafcoords = pcs %>% rename(lon=PC1, lat=PC2)
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
-  sg = grph %>% simplify_graph
+  sg = graph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
   edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
     set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
@@ -389,7 +403,7 @@ plot_graph_pcs = function(grph, pcs) {
 
 #' Plot an admixture graph on a map
 #' @export
-#' @param grph a two column matrix specifying the admixture graph. first column is source node,
+#' @param graph a two column matrix specifying the admixture graph. first column is source node,
 #' second column is target node. the first edge has to be root -> outgroup.
 #' admixture nodes are inferred as those nodes which are the targets of two different sources.
 #' @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
@@ -399,12 +413,12 @@ plot_graph_pcs = function(grph, pcs) {
 # #' \dontrun{
 #' plot_graph_map(example_igraph, example_anno)
 # #' }
-plot_graph_map = function(grph, leafcoords, shapedata = NULL) {
+plot_graph_map = function(graph, leafcoords, shapedata = NULL) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
-  leafcoords %<>% filter(group %in% get_leafnames(grph))
+  leafcoords %<>% filter(group %in% get_leafnames(graph))
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
-  sg = grph %>% simplify_graph
+  sg = graph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
   edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
     set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
@@ -437,7 +451,7 @@ plot_graph_map = function(grph, leafcoords, shapedata = NULL) {
 
 
 # Plot an admixture graph on a map
-# @param grph an admixture graph as an igraph object.
+# @param graph an admixture graph as an igraph object.
 # @param leafcoords data frame with columns \code{group}, \code{lon}, \code{lat}
 # @param map_layout 1 or 2
 # @return a ggplot object.
@@ -445,12 +459,12 @@ plot_graph_map = function(grph, leafcoords, shapedata = NULL) {
 # \dontrun{
 # plot_graph_map2(example_igraph, example_anno, 1)
 # }
-plot_graph_map2 = function(grph, leafcoords, map_layout = 1) {
+plot_graph_map2 = function(graph, leafcoords, map_layout = 1) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
-  leafcoords %<>% filter(group %in% get_leafnames(grph))
+  leafcoords %<>% filter(group %in% get_leafnames(graph))
   leafcoords2 = leafcoords %>% group_by(group) %>% summarize(x = mean(lon), y = mean(lat))
-  sg = grph %>% simplify_graph
+  sg = graph %>% simplify_graph
   node_coord = node_coords_3d(sg, leafcoords2)
   edge_coord = sg %>% as_edgelist %>% as.data.frame(stringsAsFactors=F) %>%
     set_colnames(c('from', 'to')) %>% mutate(eid = 1:n()) %>% gather(type, node, -eid) %>%
@@ -516,16 +530,16 @@ plot_map = function(leafcoords, map_layout = 1, color = 'yearsbp', colorscale = 
 }
 
 
-node_coords_3d = function(grph, leafcoords, rootlon=NA, rootlat=NA) {
+node_coords_3d = function(graph, leafcoords, rootlon=NA, rootlat=NA) {
   # given a graph and 2d coordinates of leaves,
   # this function returns 3d coords for all nodes
-  root = names(V(grph)[1])
-  leaves = get_leafnames(grph)
+  root = names(V(graph)[1])
+  leaves = get_leafnames(graph)
   #leafcoords %<>% filter(!is.na(x), !is.na(y))
   leafcoords %<>% mutate(x = ifelse(is.na(x), runif(1, min(x,na.rm=T), max(x,na.rm=T)), x),
                         y = ifelse(is.na(y), runif(1, min(y,na.rm=T), max(y,na.rm=T)), y))
   stopifnot(all(leaves %in% leafcoords$group))
-  paths = grph %>% igraph::all_simple_paths(root, leaves, mode='out')
+  paths = graph %>% igraph::all_simple_paths(root, leaves, mode='out')
   out = leafcoords %>% mutate(z = 0) %>%
     bind_rows(tibble(group = root, x = mean(.$x, na.rm=T), y = mean(.$y, na.rm=T), z = 1))
   rootcoord = out %>% filter(group == root) %$% c(x=x, y=y, z=z)
@@ -550,22 +564,22 @@ make_favicon = function() {
   g = random_admixturegraph(str_sub('       ', 1, 1:6), 1)
 
   g %<>% simplify_graph
-  grph = g
+  graph = g
   edges = igraph::as_edgelist(g)
 
   edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+  eg = as_tibble(as_edgelist(graph)) %>% left_join(pos, by=c('V1'='node')) %>%
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  eg = fix_layout(eg, grph)
+  eg = fix_layout(eg, graph)
   edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+  nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
     transmute(name = to, x, y, xend, yend)
 
   eg %>%
@@ -590,27 +604,27 @@ make_favicon = function() {
 plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
 
   if(class(graph)[1] == 'igraph') {
-    grph = graph
+    graph = graph
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
   } else {
-    grph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
+    graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
     edges = graph %>% as_tibble
     names(edges)[1:2] = c('V1', 'V2')
   }
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(grph)), igraph::layout_as_tree(grph), stringsAsFactors = F) %>%
+  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(grph)) %>% left_join(pos, by=c('V1'='node')) %>%
+  eg = as_tibble(as_edgelist(graph)) %>% left_join(pos, by=c('V1'='node')) %>%
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(V(grph)) < 10) eg = admixtools:::fix_layout(eg, grph)
+  if(isTRUE(fix) || is.null(fix) && length(V(graph)) < 10) eg = admixtools::fix_layout(eg, graph)
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(grph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+  nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
     transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
 
   plt = eg %>% mutate(rownum = 1:n()) %>%
@@ -665,7 +679,7 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
     filter(!is.na(x), !is.na(y)) %>%
     ggplot(aes(x, y, col = pat)) + geom_point() + facet_wrap(~ key, scales = 'free') +
     geom_abline() +
-    theme(panel.background = element_blank(), axis.line = element_line(), legend.position = 'top') +
+    theme(panel.background = element_blank(), axis.line = element_line(), legend.position = 'none') +
     xlab(paste0(name1)) +
     ylab(paste0(name2))
 

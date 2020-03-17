@@ -5,6 +5,7 @@
 #' @import stringr
 #' @import ggplot2
 #' @import utils
+#' @importFrom shiny isRunning
 #' @importFrom magrittr set_colnames "%$%" "%<>%"
 #' @importFrom rray rray rray_transpose
 #' @importFrom lobstr obj_size
@@ -17,7 +18,7 @@
 #' @importFrom plotly plot_ly add_trace add_markers layout
 #' @importFrom Rcpp cppFunction
 #' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths
-#' graph_from_edgelist as_edgelist shortest_paths
+#' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag
 #' @useDynLib admixtools
 
 TRUE
@@ -42,4 +43,9 @@ TRUE
 #' @docType package
 #' @name admixtools
 NULL
+
+
+#a = devtools::check()
+#a$notes[[2]] %>% str_split('’\n') %>% `[[`(1) %>% str_extract_all('‘.+') %>% unlist %>% str_sub(2) %>% unique %>% paste0(., collapse = '",\n"') %>% paste0('globalVariables(c("', ., '"))') %>% write_lines('r/admixtools.R', append = T)
+
 

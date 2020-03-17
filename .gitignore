@@ -9,3 +9,13 @@ graphfile
 out
 parfile
 popfilename
+badsnps
+fstats.out
+fstats.out.bak
+fstats.out2
+fstats.out_inb
+leftlist
+out.bak
+out2
+out_inb
+rightlist

@@ -8,17 +8,13 @@
 \alias{qpgraph_resample_snps}
 \title{Run models while leaving out SNP blocks}
 \usage{
-qp3pop_resample_snps(f2_blocks, boot = FALSE, multicore = TRUE,
-  verbose = TRUE, ...)
+qp3pop_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 
-qpdstat_resample_snps(f2_blocks, boot = FALSE, multicore = TRUE,
-  verbose = TRUE, ...)
+qpdstat_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 
-qpadm_resample_snps(f2_blocks, boot = FALSE, multicore = TRUE,
-  verbose = TRUE, ...)
+qpadm_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 
-qpgraph_resample_snps(f2_blocks, boot = FALSE, multicore = TRUE,
-  verbose = TRUE, ...)
+qpgraph_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 }
 \arguments{
 \item{f2_blocks}{a 3d array of blocked f2 statistics}
@@ -27,11 +23,11 @@ qpgraph_resample_snps(f2_blocks, boot = FALSE, multicore = TRUE,
 Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
 or equal to the number of blocks if \code{boot} is \code{TRUE}.}
 
-\item{multicore}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
-
 \item{verbose}{print progress updates}
 
 \item{...}{named arguments which are passed to the \code{qp} function.}
+
+\item{multiprocess}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs

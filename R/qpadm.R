@@ -179,12 +179,15 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
 
   out = list(weights = tibble(target, left, weight, se) %>% mutate(z = weight/se))
 
+  wvec = out$weights %>% select(left, weight) %>% deframe
+  out$f4 = fitted_f4(f2_blocks, wvec, target, left, right)
+
   #----------------- compute number of admixture waves -----------------
   if(wave) {
     if(verbose) alert_info('Computing number of admixture waves...\n')
 
     rankdrop = drop_ranks(f4_est, qinv, fudge, constrained, cpp)
-    popdrop = drop_pops(f4_est, qinv, fudge, constrained, cpp)
+    popdrop = drop_pops(f4_est, qinv, fudge, constrained, cpp, left)
     out = c(out, namedList(rankdrop, popdrop))
   }
   out
@@ -287,7 +290,7 @@ drop_ranks = function(f4_est, qinv, fudge, constrained, cpp) {
 }
 
 
-drop_pops = function(f4_est, qinv, fudge, constrained, cpp) {
+drop_pops = function(f4_est, qinv, fudge, constrained, cpp, left) {
   # drops each subset of left populations and fits qpadm model
 
   fitpop = function(x, y) qpadm_fit(x, y, nrow(x)-1, fudge = fudge, constrained = constrained,
@@ -356,4 +359,32 @@ qpadm_fit = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
   }
   out
 }
+
+add_weighted_f2 = function(f2_blocks, weights) {
+
+  nam = dimnames(f2_blocks)[[1]]
+  npop = dim(f2_blocks)[[1]]
+  stopifnot(all(names(weights) %in% nam))
+  matchedweights = rep(0, npop)
+  matchedweights[match(names(weights), nam)] = weights
+  w1 = rray::rray(matchedweights, c(npop, 1, 1))
+  w2 = rray::rray(matchedweights, c(1, npop, 1))
+  ww = w1*w2
+  add = apply(rray::rray(f2_blocks)*w1*w2, 2:3, sum)
+  f2_blocks = abind::abind(f2_blocks, add, along = 1)
+  f2_blocks = abind::abind(f2_blocks, rbind(add, 0), along = 2)
+  dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = c(nam, 'fit')
+  f2_blocks
+}
+
+
+fitted_f4 = function(f2_blocks, weights, target, left, right) {
+
+  weights = weights/sum(weights)
+  f2_blocks_plus = add_weighted_f2(f2_blocks, weights)
+  fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right, f2_denom = 1) %>% filter(pop3 != pop4)
+  fitf4 %>% left_join(enframe(weights, name = 'pop2', value = 'weight'), by = 'pop2') %>%
+    arrange(pop1, pop3, pop4, pop2)
+}
+
 

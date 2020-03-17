@@ -4,7 +4,8 @@
 \alias{plot_graph}
 \title{Plot an admixture graph}
 \usage{
-plot_graph(graph, fix = NULL, title = "", color = TRUE)
+plot_graph(graph, fix = NULL, fix_down = TRUE, title = "",
+  color = TRUE, textsize = 2.5)
 }
 \arguments{
 \item{graph}{an admixture graph. If it's an edge list with a \code{label} column,
@@ -17,6 +18,8 @@ By default this is only done for graphs with fewer than 10 leaves.}
 \item{title}{plot title}
 
 \item{color}{plot it in color or greyscale}
+
+\item{textsize}{size of edge and node labels}
 }
 \value{
 a ggplot object

@@ -5,11 +5,11 @@
 \title{Wrapper function around the original qpGraph program}
 \usage{
 qpgraph_wrapper(graph, bin = "~np29/o2bin/qpGraph", pref = NULL,
-  parfile = NULL, outdir = ".", printonly = FALSE,
+  parfile = NULL, outdir = ".", printonly = FALSE, badsnps = NULL,
   lambdascale = -1, inbreed = "NO", diag = 1e-04, outpop = "NULL",
   lsqmode = "NO", fstdmode = "NO", hires = "NO", forcezmode = "NO",
-  zthresh = 2, useallsnps = "NO", bigiter = 100, env = "",
-  verbose = TRUE)
+  zthresh = 2, useallsnps = "NO", doanalysis = "YES",
+  bigiter = 100, env = "", verbose = TRUE)
 }
 \arguments{
 \item{graph}{an admixture graph or qpGraph graph file}

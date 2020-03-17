@@ -189,20 +189,16 @@ boo_list = function(arr, nboot = dim(arr)[3]) {
   rerun(nboot, arr[,,sample(1:dim(arr)[3], replace = TRUE)])
 }
 
-
+#' @export
 make_resample_snps_fun = function(qpfun) {
-  function(f2_blocks, boot = FALSE, multicore = TRUE, verbose = TRUE, ...) {
+  function(f2_blocks, boot = FALSE, verbose = TRUE, ...) {
     if(boot) {
-      f2dat = boo_list(f2_blocks, max(boot, dim(f2_blocks)[3]))
+      if(boot == 1) boot = dim(f2_blocks)[3]
+      f2dat = boo_list(f2_blocks, boot)
     } else {
       f2dat = loo_list(f2_blocks)
     }
 
-    if(multicore) {
-      oplan = future::plan()
-      future::plan('multicore')
-      on.exit(future::plan(oplan))
-    }
     if(verbose) alert_info(paste0('Running models...\n'))
     fun = function(x) safely(qpfun)(x, verbose = FALSE, ...)
     tibble(id = seq_len(length(f2dat)), f2dat) %>%
@@ -212,19 +208,14 @@ make_resample_snps_fun = function(qpfun) {
   }
 }
 
-
+#' @export
 make_resample_inds_fun = function(qpfun) {
-  function(dir, inds, pops, multicore = TRUE, verbose = TRUE, ...) {
+  function(dir, inds, pops, verbose = TRUE, ...) {
     stopifnot(length(pops) == length(inds))
     poplist = tibble(ind = inds, pop = pops)
     lo_samples = poplist %>% group_by(pop) %>% mutate(cnt = n()) %>%
       ungroup %>% filter(cnt > 1) %>% select(-cnt)
 
-    if(multicore) {
-      oplan = future::plan()
-      future::plan('multicore')
-      on.exit(future::plan(oplan))
-    }
     if(verbose) alert_info('Reading data...\n')
     f2dat = lo_samples$ind %>% set_names %>%
       furrr::future_map(~f2_from_precomp_indivs(dir, filter(poplist, ind != .), verbose = FALSE)$f2_blocks,
@@ -249,7 +240,7 @@ make_resample_inds_fun = function(qpfun) {
 #' @param boot If `FALSE` (the default), each block will be left out at a time.
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`.
-#' @param multicore If `TRUE` (the default), models will run on multiple cores in parallel.
+#' @param multiprocess If `TRUE` (the default), models will run on multiple cores in parallel.
 #' @param verbose print progress updates
 #' @param ... named arguments which are passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs
@@ -270,7 +261,7 @@ NULL
 #' @param dir directory with precomputed data
 #' @param inds vector of individual names
 #' @param pops vector of population names. Should be the same length as `inds`
-#' @param multicore If `TRUE` (the default), models will run on multiple cores in parallel.
+#' @param multiprocess If `TRUE` (the default), models will run on multiple cores in parallel.
 #' @param verbose print progress updates
 #' @param ... named arguments passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs

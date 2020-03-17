@@ -277,16 +277,20 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/
 #'                 parfile = 'path/to/parfile')
 #' }
 qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
-                           printonly = FALSE, lambdascale = -1, inbreed = 'NO', diag = 0.0001, outpop = 'NULL',
+                           printonly = FALSE, badsnps = NULL, lambdascale = -1, inbreed = 'NO',
+                           diag = 0.0001, outpop = 'NULL',
                            lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 2,
-                           useallsnps = 'NO', bigiter = 100, env = '', verbose = TRUE) {
+                           useallsnps = 'NO', doanalysis = 'YES',
+                           bigiter = 100, env = '', verbose = TRUE) {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
   stopifnot(!is.null(parfile) | !is.null(pref))
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
-    pref = normalizePath(pref, mustWork = FALSE)
+    pref = normalizePath(pref, mustWork = FALSE) %>% str_replace('(?<!\\\\) ', '\\\\ ')
+    badsnpfile = paste0(outdir, '/badsnps')
+    fstatsfile = paste0(outdir, '/fstats.out')
     parfile = paste0('indivname:       ', pref, '.ind\n',
                      'snpname:         ', pref, '.snp\n',
                      'genotypename:    ', pref, '.geno\n',
@@ -302,10 +306,14 @@ qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parf
                      'zthresh: ', zthresh, '\n',
                      'useallsnps: ', useallsnps, '\n',
                      'lambdascale: ', lambdascale, '\n',
+                     'badsnpname: ', badsnpfile, '\n',
                      'inbreed: ', inbreed, '\n',
-                     'bigiter: ', bigiter, '\n')
+                     'bigiter: ', bigiter, '\n',
+                     'fstatsname: ', fstatsfile, '\n',
+                     'doanalysis: ', doanalysis, '\n')
     pf = paste0(outdir, '/parfile')
     write(parfile, pf)
+    write(badsnps, badsnpfile)
   } else {
     pf = parfile
   }
@@ -369,28 +377,33 @@ run_admixtools = function(cmd, parsefun, outfile, printonly, verbose) {
 }
 
 
-
+#' @export
 parse_fstats = function(outfile, denom1 = 1e3, denom2 = 1e7) {
   # parse Nick's qpGraph fstats file
 
-  dat = read_lines(outfile, skip = 1) %>% str_squish
-  f3 = dat %>% {str_count(., ' ') == 2} %>% `[`(dat, .) %>% as_tibble %>%
-    separate(value, c('pop1', 'pop2', 'est'), ' ', T, T)
-  f3var = dat %>% {str_count(., ' ') > 2} %>% `[`(dat, .) %>% as_tibble %>%
+  dat = read_lines(outfile) %>% str_squish
+  basepop = dat[1] %>% str_replace('.+basepop: ', '') %>% str_replace(' .+', '')
+  dat = dat[-1]
+
+  f3 = dat %>% {str_count(., ' ') == 2} %>% `[`(dat, .) %>% enframe %>%
+    separate(value, c('pop2', 'pop3', 'est'), ' ', T, T)
+  f3var = dat %>% {str_count(., ' ') > 2} %>% `[`(dat, .) %>% enframe %>%
     separate(value, c('pop1', 'pop2', 'pop3', 'pop4', 'se2'), ' ', T, T)
-  pops = c('Out', unique(c(f3$pop1, f3$pop2)))
-  npop = 5
+  pops = c(basepop, unique(c(f3$pop2, f3$pop3)))
+  npop = length(pops)
   npair = choose(npop, 2)
   npair2 = choose(choose(npop,2)+1, 2)
   p1 = split(1:npair2, rep(1:npair, npair:1))
   p2 = sapply(2:npair, function(i) rep(i, i-1)-npair + cumsum(npair:(npair-i+2)))
   indices = unname(unlist(interleave(p1, p2)))
 
-  f3 = (f3$est/denom1) %>% structure(pops = pops)
-  f3var = matrix(f3var$se2[indices]/denom2, npair, npair)
-  diag(f3var) = diag(f3var) + 1e-2
+  f3_est = (f3$est/denom1) %>% structure(pops = pops)
+  f3varmat = matrix(f3var$se2[indices]/denom2, npair, npair)*10
+  ppinv = solve(f3varmat) %>% structure(pops = pops)
+  f3out = f3 %>% mutate(pop1 = basepop, est=est/denom1, se = sqrt(diag(f3varmat))) %>%
+    select(pop1, pop2, pop3, est, se)
 
-  namedList(pops, f3, f3var)
+  namedList(f3_est, ppinv, pops, f3out)
 }
 
 # for Nick
@@ -407,7 +420,13 @@ write_qpgraph_output = function(fit, outfile = './out', decimals = 3, labels = N
     fit$f3 %>% write_delim(outfile, delim = sep, append = TRUE, col_names = TRUE)
   }
 
-  edges = fit$edges
+  c('graph:', fit_to_qpgraph_format(fit$edges, decimals = decimals, sep = sep)) %>%
+    write(outfile, append = TRUE)
+}
+
+#' @export
+fit_to_qpgraph_format = function(edges, decimals = 3, sep = '\t') {
+  # edges is data frame with columns type, from, to, weight
   leaves = setdiff(edges$to, edges$from)
   vertex = paste('vertex', unique(c(t(as.matrix(cbind(edges$from, edges$to))))), '0', sep = sep)
   label = paste('label', leaves, leaves, sep = sep)
@@ -417,8 +436,7 @@ write_qpgraph_output = function(fit, outfile = './out', decimals = 3, labels = N
     summarize(from = paste(from, collapse = sep),
               weight = paste(round(weight, decimals), collapse = sep)) %$%
     paste(rep('admix', length(to)), to, from, weight, sep = sep)
-
-  c('graph:', vertex, label, norm, admix) %>% write(outfile, append = TRUE)
+  c(vertex, label, norm, admix)
 }
 
 
@@ -433,7 +451,10 @@ parse_qpgraph_output = function(outfile) {
   # 'score': best fit score
   # 'f2': data.frame of estimated and fitted f2 values
 
-  dat = read_table(outfile, col_names=F, col_types = cols(), guess_max = 1e6)
+  # addition of outliers currently not safe when two population have the same three-letter-prefix
+
+  #dat = read_table(outfile, col_names=F, col_types = cols(), guess_max = 1e6)
+  dat = readLines(outfile) %>% str_squish() %>% enframe(value = 'X1') %>% select(X1)
 
   edges = dat %>%
     filter(grepl('^ledge|^redge|^admix', .data$X1)) %>%
@@ -461,23 +482,34 @@ parse_qpgraph_output = function(outfile) {
     separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
     select(-.data$ff3fit)
 
+  outlierstart = str_which(dat$X1, '^outliers:')[1]+2
+  outlierend = str_which(dat$X1, '^worst f-stat:')[1]-1
+  popstart = str_which(dat$X1, '^fst:')[1]+2
   fststart = str_which(dat$X1, '^fst:')[1]+2
-  fstend = str_which(dat$X1, '^f2:')[1]-1
-  f2start = fstend+3
-  f2end = str_which(dat$X1, '^ff3:')[1]-1
+  fstend = str_which(dat$X1, '^f2:')[1]-2
+  f2start = fstend+4
+  f2end = str_which(dat$X1, '^ff3:')[1]-2
   pops = dat$X1 %>% str_subset('^population:') %>% str_squish %>% word(3)
   denom = 1000
+  amb = names(which(table(str_sub(pops, 1, 3)) > 1))
+  if(length(amb) > 0) warning(paste('Ambiguous populations ommited from outliers: ', amb))
 
+  outliers = dat$X1[outlierstart:outlierend] %>% str_split(' +') %>% do.call(rbind, .) %>% as_tibble(.name_repair = ~c(paste0('pop', 1:4), c('fit', 'est', 'diff', 'se', 'z'))) %>% type_convert(col_types = cols()) %>% mutate(diff = -diff, z = -z) %>% filter(length(intersect(amb, c(pop1, pop2, pop3, pop4))) == 0)
+  f3 %<>% left_join(outliers %>% filter(pop1 == pop3, pop1 == str_sub(pops[1], 1, 3)) %>% select(pop2, pop4, diff, se, z), by = c('pop2', 'pop3'='pop4'))
+
+  numpop = length(pops)
+  f2 %<>% mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
+  f3 %<>% mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
   f21 = dat %>% slice(f2start:f2end) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
     mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'est') %>% mutate(est = est/denom)
   fst = dat %>% slice(fststart:fstend) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
     mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
-  f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) %>%
-    mutate(pop1 = str_sub(pop1, 1, 3), pop2 = str_sub(pop2, 1, 3))
+  f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) #%>%
+    #mutate(pop1 = str_sub(pop1, 1, 3), pop2 = str_sub(pop2, 1, 3))
 
   f2 %<>% left_join(f2before, by = c('pop1', 'pop2'))
 
-  namedList(edges, score, f2, f3)
+  namedList(edges, score, f2, f3, f4=outliers)
 }
 
 
@@ -493,7 +525,6 @@ parse_qpgraph_graphfile = function(graphfile) {
   namemap = lines %>% filter(grepl('^label', .data$V1)) %>%
     separate('V1', c('type', 'label', 'name'), sep = '\\s+', extra = 'drop') %>%
     select(-type) %>% deframe
-
 
   dat = lines %>%
     filter(grepl('^edge|redge|ledge|admix', .data$V1)) %>%

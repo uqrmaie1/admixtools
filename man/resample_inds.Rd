@@ -8,17 +8,13 @@
 \alias{qpgraph_resample_inds}
 \title{Run models while leaving out individuals}
 \usage{
-qp3pop_resample_inds(dir, inds, pops, multicore = TRUE, verbose = TRUE,
-  ...)
+qp3pop_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 
-qpdstat_resample_inds(dir, inds, pops, multicore = TRUE,
-  verbose = TRUE, ...)
+qpdstat_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 
-qpadm_resample_inds(dir, inds, pops, multicore = TRUE, verbose = TRUE,
-  ...)
+qpadm_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 
-qpgraph_resample_inds(dir, inds, pops, multicore = TRUE,
-  verbose = TRUE, ...)
+qpgraph_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 }
 \arguments{
 \item{dir}{directory with precomputed data}
@@ -27,11 +23,11 @@ qpgraph_resample_inds(dir, inds, pops, multicore = TRUE,
 
 \item{pops}{vector of population names. Should be the same length as \code{inds}}
 
-\item{multicore}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
-
 \item{verbose}{print progress updates}
 
 \item{...}{named arguments passed to the \code{qp} function.}
+
+\item{multiprocess}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs

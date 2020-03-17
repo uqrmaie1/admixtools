@@ -146,7 +146,7 @@ xmats_to_pairarrs = function(xmat1, xmat2) {
 }
 
 
-indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths) {
+indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths, return_array = TRUE, apply_corr = TRUE) {
   # creates f2_blocks from per individual data
   # make fast version in Rcpp and use tibbles here for readability
   # indivs: data frame with columns ind, bl, a, n
@@ -156,14 +156,20 @@ indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths) {
   # a is number of alt alleles, n number of ref + alt alleles.
   stopifnot('ind' %in% names(poplist) && 'pop' %in% names(poplist))
 
-  indsums = indivs %>% left_join(poplist, by='ind') %>%
-    group_by(pop, bl) %>% summarize(a = sum(a), n = sum(n)) %>% ungroup
+  # the following line is a shortcut which only makes sense as long as I only want to return a df
+  # when I don't care about blocks
+  if(!return_array) {indivs$bl = 1; pairs$bl = 1}
 
+  indsums = indivs %>% left_join(poplist, by='ind') %>%
+    group_by(pop, bl) %>% summarize(p = mean(a[n>0]/n[n>0]), a = sum(a), n = sum(n)) %>% ungroup
+
+  pairs %<>% bind_rows(rename(., ind1 = ind2, ind2 = ind1)) %>% filter(!duplicated(.))
   pairsums = pairs %>%
     left_join(poplist %>% transmute(ind1 = ind, pop1 = pop), by = 'ind1') %>%
     left_join(poplist %>% transmute(ind2 = ind, pop2 = pop), by = 'ind2') %>%
+    #mutate(p1 = pmin(pop1, pop2), p2 = pmax(pop1, pop2), pop1 = p1, pop2 = p2) %>%
     group_by(pop1, pop2, bl) %>%
-    summarize(aa = sum(aa), nn = sum(nn), pp = aa/nn) %>% ungroup
+    summarize(pp = mean(aa[nn>0]/nn[nn>0]), aa = sum(aa), nn = sum(nn)) %>% ungroup
   # check if it should rather be pp = sum(aa/nn)
 
   pairsums_samepop = pairsums %>% filter(pop1 == pop2) %>% transmute(pop = pop1, bl, aa, nn, pp)
@@ -173,28 +179,38 @@ indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths) {
     left_join(pairsums_samepop %>% transmute(pop2 = pop, bl, pp2 = pp), by = c('pop2', 'bl')) %>%
     mutate(f2uncorr = pp1 + pp2 - 2*pp)
 
-  corr = pairsums_samepop %>% left_join(indsums, by=c('bl', 'pop')) %>%
-    mutate(den1 = pmax(nn - n, 1),
-           n3unfix = n*nn, n3fix = nn/n^2, n3 = n3unfix * n3fix,
-           den2 = pmax(n3 - nn, 1),
-           corr = a/den1 - aa/den2)
+  # corr = pairsums_samepop %>% left_join(indsums, by=c('bl', 'pop')) %>%
+  #   mutate(den1 = pmax(nn - n, n),
+  #   # used to be mutate(den1 = pmax(nn - n, 1)
+  #          n3unfix = n*nn, n3fix = nn/n^2, n3 = n3unfix * n3fix,
+  #          den2 = pmax(n3 - nn, nn),
+  #          # used to be den2 = pmax(n3 - nn, 1),
+  #          corr = a/den1 - aa/den2,
+  #          corr = pmax(0, corr))
+
+  corr = pairsums_samepop %>%
+    left_join(indsums, by=c('bl', 'pop')) %>%
+    mutate(corr = pmax(0, (p-pp))/pmax(1, (n-1)))
+
+  if(!apply_corr) corr$corr = 0
 
   f2dat = main %>%
     left_join(corr %>% transmute(pop1 = pop, bl, corr1 = corr), by = c('bl', 'pop1')) %>%
     left_join(corr %>% transmute(pop2 = pop, bl, corr2 = corr), by = c('bl', 'pop2')) %>%
     mutate(f2 = f2uncorr - corr1 - corr2, f2 = ifelse(pop1 == pop2, 0, f2),
            pp = paste(pmin(pop1, pop2), pmax(pop1, pop2))) %>%
-    group_by(pp, bl) %>% mutate(cnt = n()) %>% ungroup %>%
-    bind_rows(filter(., pop1 != pop2 & cnt == 1) %>%
-                rename(pop1 = pop2, pop2 = pop1, pp1 = pp2,
-                       pp2 = pp1, corr1 = corr2, corr2 = corr1)) %>%
+    #group_by(pp, bl) %>% mutate(cnt = n()) %>% ungroup %>%
+    #bind_rows(filter(., pop1 != pop2 & cnt == 1) %>%
+    #            rename(pop1 = pop2, pop2 = pop1, pp1 = pp2,
+    #                   pp2 = pp1, corr1 = corr2, corr2 = corr1)) %>%
     arrange(bl, pop2, pop1)
+
+  if(!return_array) return(f2dat)
 
   popnames = unique(poplist$pop)
   popnames2 = unique(pairsums_samepop$pop)
   npop = length(popnames)
   nblock = length(block_lengths)
-  nsnp = sum(block_lengths)
 
   array(f2dat$f2, dim = c(npop, npop, nblock),
         dimnames = list(pop1 = popnames2,
@@ -228,8 +244,11 @@ get_f2 = function(f2_data, pops, f2_denom = 1, rray = FALSE) {
   } else {
     f2_blocks = f2_data
   }
-
-  stopifnot(all(pops %in% dimnames(f2_blocks)[[1]]))
+  blockpops = dimnames(f2_blocks)[[1]]
+  if(!all(pops %in% blockpops)) {
+    stop(paste0('requested: ', paste(pops, collapse=', '),
+                '\navailable pops: ', paste(blockpops, collapse = ', ')))
+  }
   f2_blocks = f2_blocks[pops, pops,] / f2_denom
   if(rray) f2_blocks = rray::rray(f2_blocks, dim_names = dimnames(f2_blocks))
   f2_blocks

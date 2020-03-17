@@ -4,7 +4,8 @@
 \alias{split_mat}
 \title{Split a matrix into blocks}
 \usage{
-split_mat(mat, cols_per_block, outdir, verbose = TRUE)
+split_mat(mat, cols_per_block, outdir, overwrite = FALSE,
+  verbose = TRUE)
 }
 \arguments{
 \item{mat}{the matrix to be split}

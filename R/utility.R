@@ -1,9 +1,18 @@
 
 
-alert_success = function(msg) cat(crayon::green(cli::symbol$tick, msg))
-alert_info = function(msg) cat(crayon::cyan(cli::symbol$info, msg))
-alert_warning = function(msg) cat(crayon::yellow('!', msg))
-alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
+catfun = function(colfun, ...) {
+  if(shiny::isRunning()) {
+    l = list(..., appendLF = FALSE)
+    do.call(message, l[-1])
+  } else {
+    cat(colfun(...))
+  }
+}
+
+alert_success = function(msg) catfun(crayon::green, cli::symbol$tick, msg)
+alert_info = function(msg) catfun(crayon::cyan, cli::symbol$info, msg)
+alert_warning = function(msg) catfun(crayon::yellow, '!', msg)
+alert_danger = function(msg) catfun(crayon::red, cli::symbol$cross, msg)
 
 
 qpsolve = function(...) quadprog::solve.QP(...)$solution
@@ -125,3 +134,18 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
   if(verbose) cat('\n')
   as_tibble(ansret) %>% set_colnames(c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
 }
+
+#' @export
+shortest_unique_prefixes = function(strings, min_length = 1) {
+  # given a vector of strings, return a vector of the same length with the shortest unique prefixes
+  if(length(strings) == 0) return(strings)
+  len = rep(0, length(strings))
+  for(i in 1:max(nchar(strings))) {
+    pref = str_sub(strings, 1, i)
+    tab = which(pref %in% names(which(table(pref) == 1)))
+    tab = intersect(tab, which(len == 0))
+    len[tab] = i
+  }
+  str_sub(strings, 1, pmax(len, min_length))
+}
+

@@ -5,7 +5,8 @@
 \title{Read genotype data from packedancestrymap files}
 \usage{
 read_packedancestrymap(pref, inds = NULL, blocksize = 1000,
-  na.action = "none", auto_only = TRUE, verbose = TRUE)
+  na.action = "none", keepsnps = NULL, auto_only = TRUE,
+  verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}

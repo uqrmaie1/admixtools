@@ -155,13 +155,13 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plot_graph_map</span>(<span class='no'>grph</span>, <span class='no'>leafcoords</span>, <span class='kw'>shapedata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>plot_graph_map</span>(<span class='no'>graph</span>, <span class='no'>leafcoords</span>, <span class='kw'>shapedata</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>grph</th>
+      <th>graph</th>
       <td><p>a two column matrix specifying the admixture graph. first column is source node,
 second column is target node. the first edge has to be root -&gt; outgroup.
 admixture nodes are inferred as those nodes which are the targets of two different sources.</p></td>
@@ -182,7 +182,7 @@ admixture nodes are inferred as those nodes which are the targets of two differe
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>plot_graph_map</span>(<span class='no'>example_igraph</span>, <span class='no'>example_anno</span>)</div><div class='output co'>#&gt; <span class='warning'>Warning: Ignoring 1 observations</span></div></pre>
+    <pre class="examples"><div class='input'><span class='fu'>plot_graph_map</span>(<span class='no'>example_igraph</span>, <span class='no'>example_anno</span>)</div><div class='output co'>#&gt; <span class='error'>Error in plot_graph_map(example_igraph, example_anno): object 'shapedata_basic' not found</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

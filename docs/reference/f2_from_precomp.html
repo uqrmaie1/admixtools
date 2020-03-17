@@ -155,7 +155,8 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2_from_precomp</span>(<span class='no'>dir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>f2_from_precomp</span>(<span class='no'>dir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>return_array</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>apply_corr</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -173,6 +174,14 @@ which may require a lot of memory.</p></td>
       <th>pops</th>
       <td><p>the populations for which data should be read. Defaults to all populations,
 which may require a lot of memory.</p></td>
+    </tr>
+    <tr>
+      <th>return_array</th>
+      <td><p>should a 3d array or a data frame be returned</p></td>
+    </tr>
+    <tr>
+      <th>apply_corr</th>
+      <td><p>should f2 correction factor be subtracted. mostly used for testing</p></td>
     </tr>
     <tr>
       <th>verbose</th>

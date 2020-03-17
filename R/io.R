@@ -76,7 +76,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
   popindmat = matrix(sapply(1:numpop, function(i) indfile$X3[popind2] == pops[i]), ncol=numpop)
   cnt = 1
   sumna = 0
-
+  modnum = ifelse(shiny::isRunning(), 1e5, 1e3)
   while(cnt <= nsnp) {
     if(cnt+blocksize > nsnp) {
       blocksize = nsnp-cnt+1
@@ -100,11 +100,11 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
     sumna = sumna + sum(is.na(popfreqs))
     afmatrix[cnt:(cnt+blocksize-1),] = popfreqs
     countmatrix[cnt:(cnt+blocksize-1),] = popcounts
-    if(verbose) cat(paste0('\r', (cnt-1)/1e3, 'k SNPs read...'))
+    if(verbose && cnt %% modnum == 1) alert_info(paste0((cnt-1)/1e3, 'k SNPs read...\r'))
     cnt = cnt+blocksize
   }
   if(verbose) {
-    cat('\n')
+    alert_info('\n')
     alert_success(paste0(cnt-1, ' SNPs read in total\n'))
     alert_warning(paste0(sumna, ' allele frequencies are missing (on average ',
                          round(sumna/numpop), ' per population)\n'))
@@ -134,7 +134,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
 read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, na.action = 'none',
-                                  auto_only = TRUE, verbose = TRUE) {
+                                  keepsnps = NULL, auto_only = TRUE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # defaults to third column in ind file
   # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
@@ -144,8 +144,10 @@ read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, na.action
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  if(!is.null(keepsnps) && length(setdiff(keepsnps, snpfile$SNP)) > 0) stop('SNPs not found!')
   indfile$X3 = indfile$X1
   if(!is.null(inds)) {
+    stopifnot(all(inds %in% indfile$X1))
     indfile$X3[!indfile$X3 %in% inds] = NA
     inds = intersect(inds, indfile$X1)
   } else {
@@ -181,6 +183,7 @@ read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, na.action
   cnt = 1
   sumna = 0
   count_nonmissing = function(x) sum(!is.na(x))
+  modnum = ifelse(shiny::isRunning(), 1e5, 1e3)
   while(cnt <= nsnp) {
     if(cnt+blocksize > nsnp) {
       blocksize = nsnp-cnt+1
@@ -193,24 +196,28 @@ read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, na.action
     popfreqs[is.nan(popfreqs)] = NA
     sumna = sumna + sum(is.na(popfreqs))
     afmatrix[cnt:(cnt+blocksize-1),] = popfreqs
-    if(verbose) cat(paste0('\r', (cnt-1)/1e3, 'k SNPs read...'))
+    if(verbose && cnt %% modnum == 1) alert_info(paste0((cnt-1)/1e3, 'k SNPs read...\r'))
     cnt = cnt+blocksize
   }
   if(verbose) {
-    cat('\n')
+    alert_info('\n')
     alert_success(paste0(cnt-1, ' SNPs read in total\n'))
     alert_warning(paste0(sumna, ' genotypes are missing (on average ', round(sumna/nind), ' per sample)\n'))
   }
-  if(auto_only) keepsnps = snpfile %>% mutate(i = 1:n()) %>%
-    filter(as.numeric(gsub('[a-zA-Z]+', '', CHR)) %in% 1:22) %$% i
-  else keepsnps = seq_len(nrow(snpfile))
+  if(is.null(keepsnps)) {
+    if(auto_only) keepsnps = snpfile %>% mutate(i = 1:n()) %>%
+        filter(as.numeric(gsub('[a-zA-Z]+', '', CHR)) %in% 1:22) %$% i
+    else keepsnps = seq_len(nrow(snpfile))
+  } else {
+    keepsnps = sort(match(keepsnps, snpfile$SNP))
+  }
   outdat = treat_missing(afmatrix[keepsnps,], NULL, snpfile[keepsnps,], na.action = na.action, verbose = verbose)
   nr = nrow(outdat$afmatrix)
   nc = ncol(outdat$afmatrix)
   snpfile %<>% slice(keepsnps)
   stopifnot(nr == nrow(snpfile))
   stopifnot(nc == nrow(indfile))
-  if(verbose && nsnp > nr) alert_warning(paste0(nsnp - nr, ' SNPs were removed!\n'))
+  if(verbose && nsnp > nr) alert_warning(paste0(nsnp - length(keepsnps), ' SNPs were removed!\n'))
   outlist = list(geno = outdat$afmatrix, ind = indfile, snp = snpfile)
   outlist
 }
@@ -310,13 +317,15 @@ read_plink = function(pref, inds = NULL, na.action = 'none', auto_only = TRUE, v
   bim = read_table2(bimfile, col_names = nam, col_types = cols(), progress = FALSE)
   fam = read_table2(famfile, col_names = FALSE, col_types = cols(), progress = FALSE)
   if(is.null(inds)) inds = fam[[2]]
-  indvec2 = which(fam[[2]] %in% inds)
+  indvec = pop_indices(fam, pops = NULL, inds = inds)
+  indvec2 = which(indvec > 0)
+  #indvec2 = which(fam[[2]] %in% inds)
   keepinds = fam[[2]][indvec2]
 
   if(auto_only) keepsnps = bim %>% mutate(i = 1:n()) %>% filter(as.numeric(gsub('[a-zA-Z]+', '', CHR)) %in% 1:22) %$% i
   else keepsnps = 1:nrow(bim)
   bim %<>% slice(keepsnps)
-  g = read_plink_afs_cpp(normalizePath(bedfile), indvec=seq_len(nrow(fam)), indvec2, verbose = verbose)[[1]]
+  g = read_plink_afs_cpp(normalizePath(bedfile), indvec=indvec, indvec2, verbose = verbose)[[1]]
   g = g[keepsnps,] * 2
   rownames(g) = bim$SNP
   colnames(g) = keepinds
@@ -434,7 +443,7 @@ write_pairdat2 = function(data, ind1, ind2, outdir, overwrite = FALSE) {
 
 write_pairdat = function(aa_arr, nn_arr, outdir, overwrite = FALSE) {
 
-  if(!dir.exists(outdir)) dir.create(paste0(outdir, '/pairs'), recursive = TRUE)
+  if(!dir.exists(outdir)) dir.create(paste0(outdir, '/pairs'), recursive = TRUE, showWarnings = FALSE)
   stopifnot(!is.null(dimnames(aa_arr)[[1]]) && !is.null(dimnames(aa_arr)[[2]]))
   d1 = dim(aa_arr)[1]
   d2 = dim(aa_arr)[2]
@@ -504,7 +513,7 @@ write_afs = function(afmat, path, countmat = NULL, overwrite = FALSE) {
 #'                                          na.action = 'none', return_matrix = TRUE)
 #' split_mat(afmatall, cols_per_block = 20, outdir = 'afmatall_split_v42.1/')
 #' }
-split_mat = function(mat, cols_per_block, outdir, verbose = TRUE) {
+split_mat = function(mat, cols_per_block, outdir, overwrite = FALSE, verbose = TRUE) {
   # splits mat into numparts parts, and saves them to outdir
 
   dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
@@ -515,7 +524,8 @@ split_mat = function(mat, cols_per_block, outdir, verbose = TRUE) {
   for(i in seq_len(numparts)) {
     if(verbose) cat(paste0('\rpart ', i, ' of ', numparts))
     spl = mat[, starts[i]:ends[i]]
-    saveRDS(spl, file = paste0(outdir, '/part_', i, '.rds'))
+    fl = paste0(outdir, '/part_', i, '.rds')
+    if(overwrite || !file.exists(fl)) saveRDS(spl, file = fl)
   }
   if(verbose) cat('\n')
 }
@@ -625,12 +635,12 @@ write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000,
 
   if(verbose) alert_info(paste0('Writing data for ', length(files), ' files\n'))
   for(i in seq_len(nfiles)) {
-    if(verbose) cat(paste0('\rfile ', i, ' out of ', nfiles))
+    if(verbose) alert_info(paste0('file ', i, ' out of ', nfiles, '\r'))
     xmat = readRDS(files[i])
     xmat_to_inddat(xmat, block_lengths, outdir = outdir, overwrite = overwrite,
                    maxmem = maxmem, verbose = FALSE)
   }
-  if(verbose) cat(paste0('\n'))
+  if(verbose) alert_info(paste0('\n'))
 }
 
 
@@ -724,7 +734,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL,
 }
 
 
-read_anygeno = function(pref, inds = NULL, na.action = 'none', format = format, verbose = TRUE) {
+read_anygeno = function(pref, inds = NULL, na.action = 'none', keepsnps = keepsnps, format = format, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -736,7 +746,7 @@ read_anygeno = function(pref, inds = NULL, na.action = 'none', format = format, 
   } else if(tolower(format) == 'plink') {
     read_geno = read_plink
   } else stop('Genotype files not found!')
-  read_geno(pref, inds, na.action = na.action, verbose = verbose)
+  read_geno(pref, inds, na.action = na.action, keepsnps = keepsnps, verbose = verbose)
 
 }
 
@@ -758,21 +768,73 @@ read_anygeno = function(pref, inds = NULL, na.action = 'none', format = format, 
 #' \dontrun{
 #'
 #' }
-extract_counts = function(pref, outdir, inds = NULL, na.action = 'none',
+extract_counts = function(pref, outdir, inds = NULL, na.action = 'none', keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
+  dir.create(outdir, showWarnings = FALSE)
+  bfile = paste0(outdir, '/block_lengths.rds')
+  if(file.exists(bfile)) {
+    # todo: keepsnps
+    extract_more_counts(pref, outdir, inds = inds, na.action = na.action,
+                        maxmem = maxmem, overwrite = overwrite, format = format, verbose = verbose)
+    return()
+  }
 
-  g = read_anygeno(pref, inds, na.action = na.action, format = format, verbose = verbose)
+  g = read_anygeno(pref, inds, na.action = na.action, keepsnps = keepsnps, format = format, verbose = verbose)
 
   if(verbose) alert_info(paste0('Determining SNP blocks...\n'))
   block_lengths = get_block_lengths(g$bim)
+  saveRDS(block_lengths, file = bfile)
   xmat_to_inddat(g$bed, block_lengths,
-                  outdir = outdir, overwrite = overwrite,
-                  maxmem = maxmem, verbose = verbose)
+                 outdir = outdir, overwrite = overwrite,
+                 maxmem = maxmem, verbose = verbose)
   xmat_to_pairdat(g$bed, block_lengths,
                   outdir = outdir, overwrite = overwrite,
                   maxmem = maxmem, verbose = verbose)
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
 }
+
+extract_more_counts = function(pref, outdir, inds = NULL, na.action = 'none',
+                               maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
+
+  bfile = paste0(outdir, '/block_lengths.rds')
+  oldinds = list.files(paste0(outdir, '/indivs/')) %>% str_replace('\\.rds', '')
+  if(is.null(format)) {
+    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
+      format = 'plink'
+    } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
+      format = 'packedancestrymap'
+    }
+  }
+  if(format == 'plink') {
+    read_geno = read_plink
+  } else if(format == 'packedancestrymap') {
+    read_geno = function(...) {
+      g = read_packedancestrymap(...)
+      list(bed = g$geno, fam = g$ind, bim = g$snp)
+    }
+  } else stop('Genotype files not found!')
+
+  if(verbose) alert_info(paste0('Adding pairs to existing directory...\n'))
+  block_lengths = readRDS(bfile)
+
+  gnew = read_anygeno(pref, inds, na.action = na.action, format = format, verbose = verbose)$bed
+  if(!is.null(inds) && !isTRUE(all.equal(sort(inds), sort(oldinds)))) {
+    stop('Robert needs to implement adding samples in case of different geno files')
+    gold = read_anygeno(pref, oldinds, na.action = na.action, format = format, verbose = verbose)$bed
+    gcomb = cbind(gold, gnew)
+  } else {
+    gcomb = gnew
+  }
+  # continue here: update xmat_to_pairdat for cases where gold and gnew differ
+  xmat_to_inddat(gnew, block_lengths,
+                  outdir = outdir, overwrite = overwrite,
+                  maxmem = maxmem, verbose = verbose)
+  xmat_to_pairdat(gcomb, block_lengths,
+                  outdir = outdir, overwrite = overwrite,
+                  maxmem = maxmem, verbose = verbose)
+  if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
+}
+
 
 
 
@@ -807,8 +869,8 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, na.action = 'none',
 
 
 # this should not be needed in practice; used for testing
-f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
-                               na.action = 'none', format = NULL, maxmem = 8000, verbose = TRUE) {
+f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, na.action = 'none',
+                               format = NULL, maxmem = 8000, apply_corr = TRUE, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -830,7 +892,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
   if(is.null(pops)) pops = inds
   poplist = tibble(ind = inds, pop = pops)
 
-  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths)
+  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths, apply_corr = apply_corr)
   f2_blocks
 }
 
@@ -843,13 +905,16 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
 #' which may require a lot of memory.
 #' @param pops the populations for which data should be read. Defaults to all populations,
 #' which may require a lot of memory.
+#' @param return_array should a 3d array or a data frame be returned
+#' @param apply_corr should f2 correction factor be subtracted. mostly used for testing
 #' @param verbose print progress updates
 #' @examples
 #' \dontrun{
 #' dir = 'my/f2/dir/'
 #' f2_blocks = f2_from_precomp(dir, pops = c('Protoss', 'Zerg', 'Terran'))
 #' }
-f2_from_precomp = function(dir, inds = NULL, pops = NULL, verbose = TRUE) {
+f2_from_precomp = function(dir, inds = NULL, pops = NULL, return_array = TRUE,
+                           apply_corr = TRUE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop('pops and inds are not the same length!')
   indpairs = dir.exists(paste0(dir, '/indivs'))
@@ -864,7 +929,8 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, verbose = TRUE) {
     poplist = tibble(ind = inds, pop = pops)
     if(verbose) alert_info(paste0('Reading precomputed data for ', nrow(poplist), ' individuals grouped into ',
                                   length(unique(pops)), ' populations...\n'))
-    f2_blocks = f2_from_precomp_indivs(dir, poplist = poplist, verbose = verbose)$f2_blocks
+    f2_blocks = f2_from_precomp_indivs(dir, poplist = poplist, return_array = return_array,
+                                       apply_corr = apply_corr, verbose = verbose)$f2_blocks
   } else {
     if(!is.null(inds)) stop('Individual IDs supplied, but no "indivs" directory found!')
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
@@ -876,7 +942,7 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, verbose = TRUE) {
 }
 
 
-f2_from_precomp_indivs = function(dir, poplist = NULL, verbose = TRUE) {
+f2_from_precomp_indivs = function(dir, poplist = NULL, return_array = TRUE, apply_corr = TRUE, verbose = TRUE) {
 
   remove_na = is.null(poplist)
   if(is.null(poplist)) {
@@ -889,7 +955,8 @@ f2_from_precomp_indivs = function(dir, poplist = NULL, verbose = TRUE) {
   pairs = read_pairs(dir, inds, block_lengths = block_lengths)
 
   if(verbose) alert_info('Data read. Computing f2...\n')
-  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths)
+  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths,
+                                   apply_corr = apply_corr, return_array = return_array)
   if(remove_na) {
     keep = apply(f2_blocks, 1, function(x) sum(is.na(x)) == 0)
     f2_blocks %<>% `[`(keep, keep, )
@@ -983,7 +1050,7 @@ xmat_to_inddat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
   nc = ncol(xmat)
   stopifnot(nr == sum(block_lengths))
 
-  if(verbose) alert_info(paste0('Writing summary data for ', nc, ' samples\n'))
+  if(verbose) alert_info(paste0('Writing summary data for ', nc, ' samples...\n'))
 
   xmat %<>% fix_ploidy
   ploidy = attr(xmat, 'ploidy')
@@ -997,7 +1064,8 @@ xmat_to_inddat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
     group_by(bl, ind) %>% summarize(a = mean(a), n = mean(n)) %>% ungroup
 
   if(!is.null(outdir)) {
-    if(!dir.exists(outdir)) dir.create(paste0(outdir, '/indivs'), recursive = TRUE)
+    inddir = paste0(outdir, '/indivs')
+    if(!dir.exists(inddir)) dir.create(inddir, recursive = TRUE, showWarnings = FALSE)
     indivs %>% select(-bl) %>% split(.$ind) %>% map(~as.matrix(.[,-1])) %>%
       imap(write_indiv, outdir = outdir, overwrite = overwrite)
   } else {
@@ -1036,7 +1104,7 @@ xmat_to_pairdat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
   aa_list = nn_list = replicate(numsplits2, list())
 
   for(i in 1:ncol(cmb)) {
-    if(numsplits2 > 1 & verbose) cat(paste0('\rsample pair block ', i, ' out of ', ncol(cmb)))
+    if(numsplits2 > 1 & verbose) alert_info(paste0('sample pair block ', i, ' out of ', ncol(cmb), '\r'))
     c1 = cmb[1,i]
     c2 = cmb[2,i]
     s1 = starts[c1]:ends[c1]
@@ -1044,7 +1112,14 @@ xmat_to_pairdat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
     a1 = xmat[,s1, drop=F]
     a2 = xmat[,s2, drop=F]
 
+    if(!overwrite) {
+      nam = sort(unique(c(colnames(a1), colnames(a2))))
+      files = expand_grid(n1=nam, n2=nam) %>% filter(n1 <= n2) %$% paste0(outdir, '/pairs/', n1, '/', n2, '.rds')
+      if(all(file.exists(files))) next
+    }
     arrs = xmats_to_pairarrs(a1, a2)
+    arrs$pp = arrs$aa/arrs$nn
+    arrs$pp[!is.finite(arrs$pp)] = NA
     aa_subblock = block_arr_mean(arrs$aa, block_lengths)
     nn_subblock = block_arr_mean(arrs$nn, block_lengths)
     if(!is.null(outdir)) {
@@ -1056,15 +1131,16 @@ xmat_to_pairdat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
       nn_list[[c2]][[c1]] = aperm(nn_list[[c1]][[c2]], c(2,1,3))
     }
   }
-  if(numsplits2 > 1 & verbose) cat('\n')
-  if(!is.null(outdir)) {
-    bfile = paste0(outdir, '/block_lengths.rds')
-    if(overwrite || !file.exists(bfile)) saveRDS(block_lengths, file = bfile)
-  } else {
-    assemble_arrays = function(l) do.call(abind, list(lapply(l, function(x) do.call(abind, list(x, along=2))), along=1))
+  if(numsplits2 > 1 & verbose) alert_info('\n')
+
+  if(is.null(outdir)) {
+    assemble_arrays = function(l)
+      do.call(abind, list(lapply(l, function(x)
+        do.call(abind, list(x, along=2))), along=1))
     aa_arr_full = assemble_arrays(aa_list)
     nn_arr_full = assemble_arrays(nn_list)
-    dimnames(aa_arr_full) = dimnames(nn_arr_full) = list(ind1 = colnames(xmat), ind2 = colnames(xmat),
+    dimnames(aa_arr_full) = dimnames(nn_arr_full) = list(ind1 = colnames(xmat),
+                                                         ind2 = colnames(xmat),
                                                          bl = paste0('l', block_lengths))
     pairs = aa_arr_full %>% as.array %>% as.tbl_cube(met_name = 'aa') %>% as_tibble %>%
       mutate(nn = nn_arr_full %>% as.array %>% as.tbl_cube(met_name = 'nn') %>% as_tibble %$% nn)
@@ -1116,9 +1192,11 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
   # can be deleted with delete_groups
 
   stopifnot(length(pop) == 1)
-  allinds = list.dirs(paste0(dir, '/pairs'), full.names = F) %>% `[`(nchar(.) > 0)
   groups = list.files(paste0(dir, '/groups/')) %>% str_replace('\\.rds$', '')
-  if(pop %in% allinds && (!overwrite || !pop %in% groups)) stop(paste0('Group name ', pop, ' already exists!'))
+  if(overwrite && pop %in% groups) delete_groups(dir, pop, verbose = FALSE)
+  allinds = list.dirs(paste0(dir, '/pairs'), full.names = F) %>% `[`(nchar(.) > 0)
+  if(pop %in% allinds && !(overwrite && pop %in% groups)) stop(paste0('Group name ', pop, ' already exists!'))
+
   poplist = tibble(ind = inds, pop)
   block_lengths = readRDS(paste0(dir, '/block_lengths.rds'))
   numblocks = length(block_lengths)
@@ -1161,6 +1239,7 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
 #' @param dir directory with precomputed individual pair data
 #' @param groups the groups to delete. defaults to all groups
 #' @param verbose print progress updates
+#' @return invisibly returns sample IDs in deleted groups as character vector
 #' @seealso \code{\link{group_samples}}
 #' @examples
 #' \dontrun{
@@ -1172,6 +1251,7 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
 delete_groups = function(dir, groups = NULL, verbose = TRUE) {
   # delte groups created by group_samples
   # defaults to all groups
+  # returns sample IDs in deleted groups
 
   if(is.null(groups)) groups = list.files(paste0(dir, '/groups/')) %>% str_replace('\\.rds$', '')
   stopifnot(length(groups) > 0)
@@ -1182,9 +1262,16 @@ delete_groups = function(dir, groups = NULL, verbose = TRUE) {
       if(file.exists(fl)) file.remove(fl)
     }
   }
+  ids = unique(unlist(map(groups, ~readRDS(paste0(dir, '/groups/', ., '.rds')))))
   file.remove(paste0(dir, '/pairs/', groups))
   file.remove(paste0(dir, '/indivs/', groups, '.rds'))
   file.remove(paste0(dir, '/groups/', groups, '.rds'))
   if(verbose) alert_info('Grouped data deleted\n')
+  invisible(ids)
 }
+
+#' @export
+is_group = function(dir, group) file.exists(paste0(dir, '/groups/', group, '.rds'))
+
+
 

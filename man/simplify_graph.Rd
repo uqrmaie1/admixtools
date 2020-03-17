@@ -13,7 +13,7 @@ simplify_graph(graph)
 Nodes with in and out degree of one will be removed.
 }
 \examples{
-simple = simplify_graph(igraph1)
-plot_graph(igraph1)
+simple = simplify_graph(example_igraph)
+plot_graph(example_igraph)
 plot_graph(simple)
 }

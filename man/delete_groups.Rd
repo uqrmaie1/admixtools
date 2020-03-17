@@ -13,6 +13,9 @@ delete_groups(dir, groups = NULL, verbose = TRUE)
 
 \item{verbose}{print progress updates}
 }
+\value{
+invisibly returns sample IDs in deleted groups as character vector
+}
 \description{
 This function deletes data for groups created by \code{group_samples}
 }

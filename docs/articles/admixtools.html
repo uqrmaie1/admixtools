@@ -106,20 +106,29 @@
 
     
     
-<p>For the examples below the following R packages need to be loaded.</p>
+<div id="introduction" class="section level2">
+<h2 class="hasAnchor">
+<a href="#introduction" class="anchor"></a>Introduction</h2>
+<p>Admixtools is a set of programs used to infer population histories from genetic data. This implementation divides the computation into two steps: The first step performs most of the expensive computations which are necessary to run analyses on a given set of samples. This results in statistics which are stored on disk and which can be used in the second step for any further analyses on those samples.</p>
+<p>This package can either be run through the <code>R</code> command line, or through a browser application that can be launched like this:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(magrittr)</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(tidyverse)</a></code></pre></div>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">run_shiny_admixtools</span>()</a></code></pre></div>
+<p>The documentation of the browser application can be accessed through the <code>?</code> in the upper right corner of the application window. This website documents the <code>R</code> command line interface.</p>
+<p>For the examples below the following R packages need to be loaded.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(magrittr)</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(tidyverse)</a></code></pre></div>
 <p>If you have access to pre-computed f2-statistics, you can use them to compute f3 and f4 statistics, admixture weights, and to fit admixture graphs. The following examples should work on O2. The examples are just there to illustrate the principle, the models themselves don’t make too much sense.</p>
 <p><br></p>
+</div>
 <div id="qp3pop" class="section level2">
 <h2 class="hasAnchor">
 <a href="#qp3pop" class="anchor"></a>qp3Pop</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">pop1 =<span class="st"> 'Denisova.DG'</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">pop2 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3">pop3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">f2_dir =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'</span></a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw"><a href="../reference/qp3pop.html">qp3pop</a></span>(f2_dir, pop1, pop2, pop3)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">pop1 =<span class="st"> 'Denisova.DG'</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">pop2 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">pop3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">f2_dir =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw"><a href="../reference/qp3pop.html">qp3pop</a></span>(f2_dir, pop1, pop2, pop3)</a></code></pre></div>
 <pre><code>## # A tibble: 6 x 7
 ##   pop1        pop2                 pop3                  est      se     z     p
 ##   &lt;chr&gt;       &lt;chr&gt;                &lt;chr&gt;               &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
@@ -134,26 +143,26 @@
 <div id="qpdstat" class="section level2">
 <h2 class="hasAnchor">
 <a href="#qpdstat" class="anchor"></a>qpDstat</h2>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">pop4 =<span class="st"> 'Switzerland_Bichon.SG'</span></a></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="kw"><a href="../reference/qpdstat.html">qpdstat</a></span>(f2_dir, pop1, pop2, pop3, pop4)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">pop4 =<span class="st"> 'Switzerland_Bichon.SG'</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw"><a href="../reference/qpdstat.html">qpdstat</a></span>(f2_dir, pop1, pop2, pop3, pop4)</a></code></pre></div>
 <pre><code>## # A tibble: 6 x 8
-##   pop1     pop2        pop3       pop4             est      se       z         p
-##   &lt;chr&gt;    &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;
-## 1 Denisov… Altai_Nean… Chimp.REF  Switzerlan…  1.16e-2 3.65e-4  31.9   1.88e-223
-## 2 Denisov… Altai_Nean… Mbuti.DG   Switzerlan…  1.58e-3 2.76e-4   5.72  1.04e-  8
-## 3 Denisov… Altai_Nean… Russia_Us… Switzerlan… -1.68e-4 2.93e-4  -0.575 5.65e-  1
-## 4 Denisov… Vindija.DG  Chimp.REF  Switzerlan…  1.20e-2 3.76e-4  31.9   1.14e-222
-## 5 Denisov… Vindija.DG  Mbuti.DG   Switzerlan…  1.81e-3 2.83e-4   6.39  1.67e- 10
-## 6 Denisov… Vindija.DG  Russia_Us… Switzerlan… -1.86e-4 3.04e-4  -0.614 5.39e-  1</code></pre>
+##   pop1     pop2        pop3        pop4             est      se      z         p
+##   &lt;chr&gt;    &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.16e-2 3.65e-4 31.9   1.88e-223
+## 2 Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  1.58e-3 2.76e-4  5.72  1.04e-  8
+## 3 Denisov… Altai_Nean… Russia_Ust… Switzerlan… -1.68e-4 2.93e-4 -0.575 5.65e-  1
+## 4 Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.20e-2 3.76e-4 31.9   1.14e-222
+## 5 Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  1.81e-3 2.83e-4  6.39  1.67e- 10
+## 6 Denisov… Vindija.DG  Russia_Ust… Switzerlan… -1.86e-4 3.04e-4 -0.614 5.39e-  1</code></pre>
 <p><br></p>
 </div>
 <div id="qpadm" class="section level2">
 <h2 class="hasAnchor">
 <a href="#qpadm" class="anchor"></a>qpAdm</h2>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">target =<span class="st"> 'Denisova.DG'</span></a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>, <span class="st">'Switzerland_Bichon.SG'</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="kw"><a href="../reference/qpadm.html">qpadm</a></span>(f2_dir, target, left, right)</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">target =<span class="st"> 'Denisova.DG'</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span>)</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span>, <span class="st">'Switzerland_Bichon.SG'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="../reference/qpadm.html">qpadm</a></span>(f2_dir, target, left, right)</a></code></pre></div>
 <pre><code>## ℹ Computing f4 stats...
 ## ℹ Computing admixture weights...
 ## ℹ Computing standard errors...
@@ -165,10 +174,26 @@
 ## 1 Denisova.DG Altai_Neanderthal.DG   50.2  24.0  2.10
 ## 2 Denisova.DG Vindija.DG            -49.2  24.0 -2.06
 ## 
+## $f4
+## # A tibble: 36 x 9
+##    pop1    pop2       pop3    pop4            est      se     z         p weight
+##    &lt;chr&gt;   &lt;chr&gt;      &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;
+##  1 Deniso… Altai_Nea… Chimp.… Mbuti.DG    0.0101  2.82e-4  35.6 4.79e-278   50.2
+##  2 Deniso… fit        Chimp.… Mbuti.DG   -0.00616 3.91e-4 -15.7 9.78e- 56   NA  
+##  3 Deniso… Vindija.DG Chimp.… Mbuti.DG    0.0102  2.90e-4  35.1 1.28e-269  -49.2
+##  4 Deniso… Altai_Nea… Chimp.… Russia_Us…  0.0118  3.48e-4  34.0 4.75e-253   50.2
+##  5 Deniso… fit        Chimp.… Russia_Us…  0.0144  8.93e-4  16.1 1.64e- 58   NA  
+##  6 Deniso… Vindija.DG Chimp.… Russia_Us…  0.0122  3.53e-4  34.5 4.40e-260  -49.2
+##  7 Deniso… Altai_Nea… Chimp.… Switzerla…  0.0116  3.65e-4  31.9 1.88e-223   50.2
+##  8 Deniso… fit        Chimp.… Switzerla…  0.0846  4.96e-4 171.  0.          NA  
+##  9 Deniso… Vindija.DG Chimp.… Switzerla…  0.0120  3.76e-4  31.9 1.14e-222  -49.2
+## 10 Deniso… Altai_Nea… Mbuti.… Chimp.REF  -0.0101  2.82e-4 -35.6 4.79e-278   50.2
+## # … with 26 more rows
+## 
 ## $rankdrop
 ## # A tibble: 1 x 7
 ##   f4rank   dof chisq      p dofdiff chisqdiff p_nested
-##    &lt;int&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## *  &lt;int&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;
 ## 1      1     2  7.14 0.0281      NA        NA       NA
 ## 
 ## $popdrop
@@ -189,7 +214,7 @@
 <h2 class="hasAnchor">
 <a href="#qpgraph" class="anchor"></a>qpGraph</h2>
 <p>The f2-statistics can also be used to fit an admixture graph to the data.</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_dir, example_graph, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_dir, example_graph, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>)</a></code></pre></div>
 <p>Here, <code>example_graph</code> is a specific graph included in this R package, but you can provide any other graph in one of three formats.</p>
 <ol style="list-style-type: decimal">
 <li>An <a href="https://igraph.org/r/"><code>igraph</code></a> object.</li>
@@ -208,27 +233,27 @@
 <li>The estimated f3-statistics and standard errors for all population pairs with the outgroup</li>
 <li>A data frame with details from the weight optimization, with one row per set of starting values</li>
 </ol>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1">qpg_results<span class="op">$</span>edges</a></code></pre></div>
-<pre><code>## # A tibble: 27 x 4
-##    from  to                   type   weight
-##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;   &lt;dbl&gt;
-##  1 R     Chimp.REF            edge  0.203  
-##  2 R     N4N                  edge  0.203  
-##  3 N0N   Altai_Neanderthal.DG edge  0.00766
-##  4 N0N   N3N0                 edge  0.0292 
-##  5 N1N   N0N                  edge  0.234  
-##  6 N1N   N3N1                 edge  0.0981 
-##  7 N2N0  N1N                  edge  0.106  
-##  8 N2N0  N3N6                 edge  0.0428 
-##  9 N2N1  Vindija.DG           edge  0      
-## 10 N2N1  N2N3                 edge  0      
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1">qpg_results<span class="op">$</span>edges</a></code></pre></div>
+<pre><code>## # A tibble: 27 x 6
+##    from  to                   type     weight   low  high
+##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1 R     Chimp.REF            edge   2.03e- 1    NA    NA
+##  2 R     N4N                  edge   2.03e- 1    NA    NA
+##  3 N0N   Altai_Neanderthal.DG edge   7.66e- 3    NA    NA
+##  4 N0N   N3N0                 edge   2.92e- 2    NA    NA
+##  5 N1N   N0N                  edge   2.34e- 1    NA    NA
+##  6 N1N   N3N1                 edge   9.81e- 2    NA    NA
+##  7 N2N0  N1N                  edge   1.06e- 1    NA    NA
+##  8 N2N0  N3N6                 edge   4.28e- 2    NA    NA
+##  9 N2N1  Vindija.DG           edge  -1.73e-18    NA    NA
+## 10 N2N1  N2N3                 edge   0.          NA    NA
 ## # … with 17 more rows</code></pre>
 <p><br></p>
 <p>This works for any populations for which there are precomputed f2-statistics.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1">allpops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/list.files.html">list.dirs</a></span>(f2_dir, <span class="dt">full.names =</span> <span class="ot">FALSE</span>, <span class="dt">recursive =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb15-2" data-line-number="2">rand_pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(allpops, <span class="kw"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span>(<span class="dv">20</span>, <span class="kw"><a href="https://rdrr.io/r/base/length.html">length</a></span>(allpops)))</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3">rand_graph =<span class="st"> </span><span class="kw"><a href="../reference/random_admixturegraph.html">random_admixturegraph</a></span>(rand_pops, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">rand_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_dir, rand_graph, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>, <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">allpops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/list.files.html">list.dirs</a></span>(f2_dir, <span class="dt">full.names =</span> <span class="ot">FALSE</span>, <span class="dt">recursive =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">rand_pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(allpops, <span class="kw"><a href="https://rdrr.io/r/base/Extremes.html">min</a></span>(<span class="dv">20</span>, <span class="kw"><a href="https://rdrr.io/r/base/length.html">length</a></span>(allpops)))</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3">rand_graph =<span class="st"> </span><span class="kw"><a href="../reference/random_admixturegraph.html">random_admixturegraph</a></span>(rand_pops, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">rand_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_dir, rand_graph, <span class="dt">f2_denom =</span> <span class="fl">0.278</span>, <span class="dt">verbose =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <div id="caveats-1" class="section level3">
 <h3 class="hasAnchor">
 <a href="#caveats-1" class="anchor"></a>Caveats</h3>
@@ -243,43 +268,46 @@
 <h2 class="hasAnchor">
 <a href="#comparing-results-to-admixtools" class="anchor"></a>Comparing results to AdmixTools</h2>
 <p>There are wrapper function which call the origial <code>AdmixTools</code> programs and read the results. This can be used to check if the results of <code>qpgraph</code> are correct.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1">binpath =<span class="st"> '/home/np29/o2bin/'</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">env =<span class="st"> 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/n/app/openblas/0.2.19/lib/:/n/app/gsl/2.3/lib/;'</span></a>
-<a class="sourceLine" id="cb16-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb16-4" data-line-number="4">qp3pop_bin  =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qp3pop'</span>)</a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">qpdstat_bin =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpDstat'</span>)</a>
-<a class="sourceLine" id="cb16-6" data-line-number="6">qpadm_bin   =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpAdm'</span>)</a>
-<a class="sourceLine" id="cb16-7" data-line-number="7">qpgraph_bin =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpGraph'</span>)</a>
-<a class="sourceLine" id="cb16-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb16-9" data-line-number="9"><span class="co">#prefix = '/n/groups/reich/DAVID/V42/V42.1/v42.1'</span></a>
-<a class="sourceLine" id="cb16-10" data-line-number="10">prefix =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/v42.1_small'</span></a>
-<a class="sourceLine" id="cb16-11" data-line-number="11">outdir =<span class="st"> 'write/files/here/'</span></a>
-<a class="sourceLine" id="cb16-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb16-13" data-line-number="13"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span>(<span class="dt">source1 =</span> pop2, <span class="dt">source2 =</span> pop3, <span class="dt">target =</span> pop1,</a>
-<a class="sourceLine" id="cb16-14" data-line-number="14">               qp3pop_bin, prefix, outdir)</a>
-<a class="sourceLine" id="cb16-15" data-line-number="15"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(pop1, pop2, pop3, pop4,</a>
-<a class="sourceLine" id="cb16-16" data-line-number="16">                qpdstat_bin, prefix, outdir)</a>
-<a class="sourceLine" id="cb16-17" data-line-number="17"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(target, left, right,</a>
-<a class="sourceLine" id="cb16-18" data-line-number="18">              qpadm_bin, prefix, outdir)</a>
-<a class="sourceLine" id="cb16-19" data-line-number="19"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph,</a>
-<a class="sourceLine" id="cb16-20" data-line-number="20">                qpgraph_bin, prefix, outdir)</a></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1">binpath =<span class="st"> '/home/np29/o2bin/'</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">env =<span class="st"> 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/n/app/openblas/0.2.19/lib/:/n/app/gsl/2.3/lib/;'</span></a>
+<a class="sourceLine" id="cb17-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb17-4" data-line-number="4">qp3pop_bin  =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qp3pop'</span>)</a>
+<a class="sourceLine" id="cb17-5" data-line-number="5">qpdstat_bin =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpDstat'</span>)</a>
+<a class="sourceLine" id="cb17-6" data-line-number="6">qpadm_bin   =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpAdm'</span>)</a>
+<a class="sourceLine" id="cb17-7" data-line-number="7">qpgraph_bin =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span>(env, binpath, <span class="st">'qpGraph'</span>)</a>
+<a class="sourceLine" id="cb17-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb17-9" data-line-number="9"><span class="co">#prefix = '/n/groups/reich/DAVID/V42/V42.1/v42.1'</span></a>
+<a class="sourceLine" id="cb17-10" data-line-number="10">prefix =<span class="st"> '/n/groups/reich/robert/projects/admixprograms/v42.1_small'</span></a>
+<a class="sourceLine" id="cb17-11" data-line-number="11">outdir =<span class="st"> 'write/files/here/'</span></a>
+<a class="sourceLine" id="cb17-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb17-13" data-line-number="13"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span>(<span class="dt">source1 =</span> pop2, <span class="dt">source2 =</span> pop3, <span class="dt">target =</span> pop1,</a>
+<a class="sourceLine" id="cb17-14" data-line-number="14">               qp3pop_bin, prefix, outdir)</a>
+<a class="sourceLine" id="cb17-15" data-line-number="15"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(pop1, pop2, pop3, pop4,</a>
+<a class="sourceLine" id="cb17-16" data-line-number="16">                qpdstat_bin, prefix, outdir)</a>
+<a class="sourceLine" id="cb17-17" data-line-number="17"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(target, left, right,</a>
+<a class="sourceLine" id="cb17-18" data-line-number="18">              qpadm_bin, prefix, outdir)</a>
+<a class="sourceLine" id="cb17-19" data-line-number="19"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph,</a>
+<a class="sourceLine" id="cb17-20" data-line-number="20">                qpgraph_bin, prefix, outdir)</a></code></pre></div>
 <p><strong>Unless <code>outdir</code> is specified, calling these wrapper functions may overwrite files in the working directory!</strong></p>
 <p>If you already have existing parameter files and population or graph files, you can run the wrapper functions like this (though the different programs will require different parfiles and popfiles):</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span> (<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qp3pop_bin)</a>
-<a class="sourceLine" id="cb17-2" data-line-number="2"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpdstat_bin)</a>
-<a class="sourceLine" id="cb17-3" data-line-number="3"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>  (<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpadm_bin)</a>
-<a class="sourceLine" id="cb17-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb17-5" data-line-number="5"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span> (<span class="st">'popfile.txt'</span>, <span class="dt">bin =</span> qp3pop_bin,  <span class="dt">pref =</span> prefix)</a>
-<a class="sourceLine" id="cb17-6" data-line-number="6"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(<span class="st">'popfile.txt'</span>, <span class="dt">bin =</span> qpdstat_bin, <span class="dt">pref =</span> prefix)</a>
-<a class="sourceLine" id="cb17-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb17-8" data-line-number="8"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(<span class="dt">left =</span> <span class="st">'left.txt'</span>, <span class="dt">right =</span> <span class="st">'right.txt'</span>, <span class="dt">bin =</span> qpadm_bin, <span class="dt">pref =</span> prefix)</a>
-<a class="sourceLine" id="cb17-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb17-10" data-line-number="10"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(<span class="st">'graphfile.txt'</span>, <span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpgraph_bin)</a></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span> (<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qp3pop_bin)</a>
+<a class="sourceLine" id="cb18-2" data-line-number="2"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpdstat_bin)</a>
+<a class="sourceLine" id="cb18-3" data-line-number="3"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>  (<span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpadm_bin)</a>
+<a class="sourceLine" id="cb18-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb18-5" data-line-number="5"><span class="kw"><a href="../reference/qp3pop_wrapper.html">qp3pop_wrapper</a></span> (<span class="st">'popfile.txt'</span>, <span class="dt">bin =</span> qp3pop_bin,  <span class="dt">pref =</span> prefix)</a>
+<a class="sourceLine" id="cb18-6" data-line-number="6"><span class="kw"><a href="../reference/qpdstat_wrapper.html">qpdstat_wrapper</a></span>(<span class="st">'popfile.txt'</span>, <span class="dt">bin =</span> qpdstat_bin, <span class="dt">pref =</span> prefix)</a>
+<a class="sourceLine" id="cb18-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb18-8" data-line-number="8"><span class="kw"><a href="../reference/qpadm_wrapper.html">qpadm_wrapper</a></span>(<span class="dt">left =</span> <span class="st">'left.txt'</span>, <span class="dt">right =</span> <span class="st">'right.txt'</span>, <span class="dt">bin =</span> qpadm_bin, <span class="dt">pref =</span> prefix)</a>
+<a class="sourceLine" id="cb18-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb18-10" data-line-number="10"><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(<span class="st">'graphfile.txt'</span>, <span class="dt">parfile =</span> <span class="st">'parfile.txt'</span>, <span class="dt">bin =</span> qpgraph_bin)</a></code></pre></div>
 <p><br></p>
-<p>The following function makes it easy to compare qpGraph results.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph, qpgraph_bin, prefix)</a></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1"><span class="kw"><a href="../reference/plot_comparison.html">plot_comparison</a></span>(qpg_results, qpgraph_ref_results)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-19-1.png" width="700"><br></p>
+<p>The following function makes it easy to compare qpGraph or qpAdm results.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" data-line-number="1">qpgraph_ref_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph_wrapper.html">qpgraph_wrapper</a></span>(example_graph, qpgraph_bin, prefix)</a></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1"><span class="kw"><a href="../reference/plot_comparison.html">plot_comparison</a></span>(qpg_results, qpgraph_ref_results)</a></code></pre></div>
+<pre><code>## Warning: Removed 84 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning: Removed 42 rows containing missing values (geom_errorbarh).</code></pre>
+<pre><code>## Warning: Removed 84 rows containing missing values (geom_point).</code></pre>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-20-1.png" width="700"><br></p>
 <p>There are at least a few examples where the results seem to be approximately correct.</p>
 <p><strong>Please let me know if you find examples where the results are different!</strong></p>
 <p><br></p>
@@ -288,31 +316,31 @@
 <h2 class="hasAnchor">
 <a href="#computing-f2-statistics" class="anchor"></a>Computing f2 statistics</h2>
 <p>If you’re not on O2, or want use different samples or populations, you first have to compute f2 statistics from genotype data.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" data-line-number="1">my_f2_dir =<span class="st"> 'store/f2data/here/'</span></a>
-<a class="sourceLine" id="cb20-2" data-line-number="2">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Denisova.DG'</span>,</a>
-<a class="sourceLine" id="cb20-3" data-line-number="3">         <span class="st">'Altai_Neanderthal.DG'</span>,</a>
-<a class="sourceLine" id="cb20-4" data-line-number="4">         <span class="st">'Vindija.DG'</span>,</a>
-<a class="sourceLine" id="cb20-5" data-line-number="5">         <span class="st">'Chimp.REF'</span>,</a>
-<a class="sourceLine" id="cb20-6" data-line-number="6">         <span class="st">'Mbuti.DG'</span>,</a>
-<a class="sourceLine" id="cb20-7" data-line-number="7">         <span class="st">'Russia_Ust_Ishim.DG'</span>,</a>
-<a class="sourceLine" id="cb20-8" data-line-number="8">         <span class="st">'Switzerland_Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb20-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb20-10" data-line-number="10"><span class="kw"><a href="../reference/extract_f2.html">extract_f2</a></span>(prefix, <span class="dt">outdir =</span> my_f2_dir, <span class="dt">pops =</span> pops)</a></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" data-line-number="1">my_f2_dir =<span class="st"> 'store/f2data/here/'</span></a>
+<a class="sourceLine" id="cb24-2" data-line-number="2">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Denisova.DG'</span>,</a>
+<a class="sourceLine" id="cb24-3" data-line-number="3">         <span class="st">'Altai_Neanderthal.DG'</span>,</a>
+<a class="sourceLine" id="cb24-4" data-line-number="4">         <span class="st">'Vindija.DG'</span>,</a>
+<a class="sourceLine" id="cb24-5" data-line-number="5">         <span class="st">'Chimp.REF'</span>,</a>
+<a class="sourceLine" id="cb24-6" data-line-number="6">         <span class="st">'Mbuti.DG'</span>,</a>
+<a class="sourceLine" id="cb24-7" data-line-number="7">         <span class="st">'Russia_Ust_Ishim.DG'</span>,</a>
+<a class="sourceLine" id="cb24-8" data-line-number="8">         <span class="st">'Switzerland_Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb24-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb24-10" data-line-number="10"><span class="kw"><a href="../reference/extract_f2.html">extract_f2</a></span>(prefix, <span class="dt">outdir =</span> my_f2_dir, <span class="dt">pops =</span> pops)</a></code></pre></div>
 <p>This will look for genotype files in <code>packedancestrymap</code> or <code>PLINK</code> format, compute allele frequencies and blocked f2 statistics for all pairs of populations defined in the <code>.ind</code> or <code>.fam</code> file, and write them to <code>outdir</code>.</p>
 <p><br></p>
 <p>Now you should be able to run the same examples as before using your own f2 statistics.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(my_f2_dir, example_graph)</a></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(qpg_results<span class="op">$</span>edges)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-22-1.png" width="864" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" data-line-number="1">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(my_f2_dir, example_graph)</a></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(qpg_results<span class="op">$</span>edges)</a></code></pre></div>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-23-1.png" width="864" style="display: block; margin: auto;"></p>
 <p>The example above will read the f2 data from <code>my_f2_dir</code>. It can be faster to load it into memory first, like so:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" data-line-number="1">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_f2_dir, <span class="dt">pops =</span> pops)</a>
-<a class="sourceLine" id="cb23-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb23-3" data-line-number="3">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_blocks, example_graph)</a></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" data-line-number="1">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_f2_dir, <span class="dt">pops =</span> pops)</a>
+<a class="sourceLine" id="cb27-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb27-3" data-line-number="3">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_blocks, example_graph)</a></code></pre></div>
 <p><br></p>
 <p>With <code>f2_from_geno</code>, you can skip writing data to disk, and read f2 blocks from genotype files directly. This can be useful if the number of populations is not too large:</p>
-<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" data-line-number="1">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_geno.html">f2_from_geno</a></span>(prefix, <span class="dt">pops =</span> pops)</a>
-<a class="sourceLine" id="cb24-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb24-3" data-line-number="3">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_blocks, example_graph)</a></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" data-line-number="1">f2_blocks =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_geno.html">f2_from_geno</a></span>(prefix, <span class="dt">pops =</span> pops)</a>
+<a class="sourceLine" id="cb28-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb28-3" data-line-number="3">qpg_results =<span class="st"> </span><span class="kw"><a href="../reference/qpgraph.html">qpgraph</a></span>(f2_blocks, example_graph)</a></code></pre></div>
 <p><br></p>
 <div id="arbitrary-populations" class="section level3">
 <h3 class="hasAnchor">
@@ -320,35 +348,35 @@
 <p>What if you decide that a particular sample should be added or removed from a population? With the approach described so far, you would have to go back to the genotype data to get new estimates of f2 for all pairs of the modified population and any other populations. Even if you had computed f2 for all pairs of individuals (rather than for pairs of populations), it would not be possible to combine the f2 statistics from individual pairs into f2 statistics on population pairs formed from these individuals. It <em>is</em> possible, however, to store <em>other</em> statistics for all individuals and individual pairs, which can be combined into estimates of f2 for any populations formed from these individuals. These statistics are simply the mean alternative allele counts (<code>a</code>) and total allele counts (<code>n</code>) for each individual and block, and the mean products of allele counts for all individual pairs (<code>aa</code> and <code>nn</code>).</p>
 <p>The upside of this approach is that it allows you to change population definitions however you like and still get very fast results without accessing the genotype data more than once. The downside is that it makes it necessary to store data for all individual pairs, rather than just all population pairs.</p>
 <p>The following function extracts data for a set of individuals which can then be combined to get estimates of f2 for any populations:</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" data-line-number="1">inds =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
-<a class="sourceLine" id="cb25-2" data-line-number="2">         <span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
-<a class="sourceLine" id="cb25-3" data-line-number="3">         <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb25-4" data-line-number="4">my_counts_dir =<span class="st"> 'my/counts/dir'</span></a>
-<a class="sourceLine" id="cb25-5" data-line-number="5"><span class="kw"><a href="../reference/extract_counts.html">extract_counts</a></span>(prefix, my_counts_dir, inds)</a></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" data-line-number="1">inds =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
+<a class="sourceLine" id="cb29-2" data-line-number="2">         <span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
+<a class="sourceLine" id="cb29-3" data-line-number="3">         <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb29-4" data-line-number="4">my_counts_dir =<span class="st"> 'my/counts/dir'</span></a>
+<a class="sourceLine" id="cb29-5" data-line-number="5"><span class="kw"><a href="../reference/extract_counts.html">extract_counts</a></span>(prefix, my_counts_dir, inds)</a></code></pre></div>
 <p>You can again use <code>f2_from_precomp</code> to load a subset of the extracted data into memory. If the directory you provide contains allele count data rather than f2 statistics, this function will not only read the data, but combine it into f2 statistics for populations that you define. The populations can be defined by providing a vector of individuals and another vector of equal length with population labels.</p>
 <p>For example, the following code should return f2 statistics very similar to the f2 statistics in the earlier examples. They will not be exactly identical, because some approximations are necessary when computing f2 statistics this way.</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" data-line-number="1">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Altai'</span>, <span class="st">'Vindija'</span>,</a>
-<a class="sourceLine" id="cb26-2" data-line-number="2">         <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb26-3" data-line-number="3">         <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
-<a class="sourceLine" id="cb26-4" data-line-number="4">f2_blocks_v2 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops)</a></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" data-line-number="1">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Altai'</span>, <span class="st">'Vindija'</span>,</a>
+<a class="sourceLine" id="cb30-2" data-line-number="2">         <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb30-3" data-line-number="3">         <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
+<a class="sourceLine" id="cb30-4" data-line-number="4">f2_blocks_v2 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops)</a></code></pre></div>
 <p>It’s now easy to test how the inclusion or exclusion of specific samples affects the fit of a model. The following example uses only two Mbuti samples, and combines the two Neanderthal samples into one group.</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" data-line-number="1">inds_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
-<a class="sourceLine" id="cb27-2" data-line-number="2">            <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
-<a class="sourceLine" id="cb27-3" data-line-number="3">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb27-4" data-line-number="4">pops_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Neanderthal'</span>, <span class="st">'Neanderthal'</span>,</a>
-<a class="sourceLine" id="cb27-5" data-line-number="5">            <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb27-6" data-line-number="6">            <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
-<a class="sourceLine" id="cb27-7" data-line-number="7">f2_blocks_v3 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v3, <span class="dt">pops =</span> pops_v3)</a></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" data-line-number="1">inds_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
+<a class="sourceLine" id="cb31-2" data-line-number="2">            <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
+<a class="sourceLine" id="cb31-3" data-line-number="3">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb31-4" data-line-number="4">pops_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Neanderthal'</span>, <span class="st">'Neanderthal'</span>,</a>
+<a class="sourceLine" id="cb31-5" data-line-number="5">            <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb31-6" data-line-number="6">            <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
+<a class="sourceLine" id="cb31-7" data-line-number="7">f2_blocks_v3 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v3, <span class="dt">pops =</span> pops_v3)</a></code></pre></div>
 <p><br></p>
 <p>This approach is very flexible, but it gets slow when some populations consist of large numbers of samples. If you find yourself in this situation, you can group individuals into populations and store the combined allele count data for those populations on disk. The following example stores a <code>Mbuti</code> group on disk, and then uses that group, rather than each sample in it, to compute f2 statistics.</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" data-line-number="1">mbuti =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>)</a>
-<a class="sourceLine" id="cb28-2" data-line-number="2"><span class="kw"><a href="../reference/group_samples.html">group_samples</a></span>(my_counts_dir, mbuti, <span class="st">'Mbuti'</span>)</a>
-<a class="sourceLine" id="cb28-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb28-4" data-line-number="4">inds_v4 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb28-5" data-line-number="5">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb28-6" data-line-number="6">f2_blocks_v4 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v4)</a></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" data-line-number="1">mbuti =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>)</a>
+<a class="sourceLine" id="cb32-2" data-line-number="2"><span class="kw"><a href="../reference/group_samples.html">group_samples</a></span>(my_counts_dir, mbuti, <span class="st">'Mbuti'</span>)</a>
+<a class="sourceLine" id="cb32-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb32-4" data-line-number="4">inds_v4 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb32-5" data-line-number="5">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb32-6" data-line-number="6">f2_blocks_v4 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v4)</a></code></pre></div>
 <p>Data from these groups can be deleted like this:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" data-line-number="1"><span class="kw"><a href="../reference/delete_groups.html">delete_groups</a></span>(my_counts_dir, <span class="st">'Mbuti'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" data-line-number="1"><span class="kw"><a href="../reference/delete_groups.html">delete_groups</a></span>(my_counts_dir, <span class="st">'Mbuti'</span>)</a></code></pre></div>
 <p><br></p>
 </div>
 </div>
@@ -362,16 +390,16 @@
 <p>The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the <code>resample_snps</code> functions generalize this approach in two ways. First, they evaluate and returns <em>all</em> model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn’t give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.</p>
 <p>Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of <strong>n times</strong> the sampling variance.</p>
 <p>In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted.</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb30-1" data-line-number="1">snpres =<span class="st"> </span><span class="kw"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span>(example_f2_blocks, <span class="dt">graph =</span> example_graph, <span class="dt">boot =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb30-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span>(snpres<span class="op">$</span>score, <span class="dv">100</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" data-line-number="1">snpres =<span class="st"> </span><span class="kw"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span>(example_f2_blocks, <span class="dt">graph =</span> example_graph, <span class="dt">boot =</span> <span class="dv">1000</span>)</a>
+<a class="sourceLine" id="cb34-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span>(snpres<span class="op">$</span>score, <span class="dv">100</span>)</a></code></pre></div>
 </div>
 <div id="resampling-individuals" class="section level3">
 <h3 class="hasAnchor">
 <a href="#resampling-individuals" class="anchor"></a>Resampling individuals</h3>
 <p>We can also test how robust a model is to changes in the individuals that make up a population. The <code>resample_inds</code> functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" data-line-number="1">pops =<span class="st"> </span><span class="kw">get_leafnames</span>(example_igraph)[<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="kw"><a href="https://rdrr.io/r/base/rep.html">rep</a></span>(<span class="dv">4</span>,<span class="dv">4</span>), <span class="dv">5</span><span class="op">:</span><span class="dv">7</span>)]</a>
-<a class="sourceLine" id="cb31-2" data-line-number="2">indres =<span class="st"> </span><span class="kw"><a href="../reference/resample_inds.html">qpgraph_resample_inds</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops, <span class="dt">graph =</span> example_graph)</a>
-<a class="sourceLine" id="cb31-3" data-line-number="3"><span class="kw">ggplot</span>(indres, <span class="kw">aes</span>(score, score)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_text</span>(<span class="kw">aes</span>(<span class="dt">label =</span> ind))</a></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb35-1" data-line-number="1">pops =<span class="st"> </span><span class="kw">get_leafnames</span>(example_igraph)[<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="kw"><a href="https://rdrr.io/r/base/rep.html">rep</a></span>(<span class="dv">4</span>,<span class="dv">4</span>), <span class="dv">5</span><span class="op">:</span><span class="dv">7</span>)]</a>
+<a class="sourceLine" id="cb35-2" data-line-number="2">indres =<span class="st"> </span><span class="kw"><a href="../reference/resample_inds.html">qpgraph_resample_inds</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops, <span class="dt">graph =</span> example_graph)</a>
+<a class="sourceLine" id="cb35-3" data-line-number="3"><span class="kw">ggplot</span>(indres, <span class="kw">aes</span>(score, score)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_text</span>(<span class="kw">aes</span>(<span class="dt">label =</span> ind))</a></code></pre></div>
 <p>For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.</p>
 <p><br></p>
 </div>
@@ -382,46 +410,46 @@
 <p>Another advantage of being able to quickly evaluate a single model using precomputed f-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits.</p>
 <p><br></p>
 <p>The function <code>find_graphs</code> generates and evaluates <code>numgraphs</code> admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats to find well fitting admixture graphs.</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb32-1" data-line-number="1">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(my_f2_dir, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</a>
-<a class="sourceLine" id="cb32-2" data-line-number="2">                          <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numsel =</span> <span class="dv">5</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" data-line-number="1">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(my_f2_dir, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</a>
+<a class="sourceLine" id="cb36-2" data-line-number="2">                          <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numsel =</span> <span class="dv">5</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>)</a></code></pre></div>
 <p><br></p>
 <p>Once that is done, the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb33-1" data-line-number="1">winner =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score))</a>
-<a class="sourceLine" id="cb33-2" data-line-number="2">winners =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(run) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score)) <span class="op">%&gt;%</span><span class="st"> </span>ungroup</a></code></pre></div>
-<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb34-1" data-line-number="1">winner<span class="op">$</span>score[[<span class="dv">1</span>]]</a></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" data-line-number="1">winner =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score))</a>
+<a class="sourceLine" id="cb37-2" data-line-number="2">winners =<span class="st"> </span>opt_results <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(run) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">top_n</span>(<span class="dv">1</span>, <span class="op">-</span><span class="kw"><a href="https://rdrr.io/r/base/jitter.html">jitter</a></span>(score)) <span class="op">%&gt;%</span><span class="st"> </span>ungroup</a></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" data-line-number="1">winner<span class="op">$</span>score[[<span class="dv">1</span>]]</a></code></pre></div>
 <pre><code>## [1] 4.009599</code></pre>
-<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb36-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(winner<span class="op">$</span>edges[[<span class="dv">1</span>]])</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-35-1.png" width="864" style="display: block; margin: auto;"><br></p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" data-line-number="1"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(winner<span class="op">$</span>edges[[<span class="dv">1</span>]])</a></code></pre></div>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-36-1.png" width="864" style="display: block; margin: auto;"><br></p>
 <div id="parallelization" class="section level3">
 <h3 class="hasAnchor">
 <a href="#parallelization" class="anchor"></a>Parallelization</h3>
 <p>Depending on the input parameters, <code>optimize_admixturegraph</code> can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function <a href="https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map"><code>future_map</code></a> from the <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a> package, this can be sped up by parallelizing across the independent repeats. The function <a href="https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan"><code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code></a> can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.</p>
 <p>Setting it up like this will make it run multithreaded:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb37-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</a></code></pre></div>
 <p><br></p>
 <p>On the O2 cluster, the following command will set up parallelization across compute nodes.</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers =</span> <span class="dv">50</span>,</a>
-<a class="sourceLine" id="cb38-2" data-line-number="2">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory =</span> <span class="dv">1024</span>,</a>
-<a class="sourceLine" id="cb38-3" data-line-number="3">                                  <span class="dt">walltime =</span> <span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition =</span> <span class="st">'short'</span>)))</a></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb42-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers =</span> <span class="dv">50</span>,</a>
+<a class="sourceLine" id="cb42-2" data-line-number="2">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory =</span> <span class="dv">1024</span>,</a>
+<a class="sourceLine" id="cb42-3" data-line-number="3">                                  <span class="dt">walltime =</span> <span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition =</span> <span class="st">'short'</span>)))</a></code></pre></div>
 <p>This specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the <code>short</code> partition.</p>
 <p>This requires the R package <code>future.batchtools</code> and a batchtools template file in the working directory, such as this one: <code>/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl</code>.</p>
 <p>With this setup the <code>find_graphs</code> function will submit each of the 200 repeats as a separate job.</p>
 <p>As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.</p>
 <p>The R script could look like this.</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb39-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</a>
-<a class="sourceLine" id="cb39-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(future.batchtools)</a>
-<a class="sourceLine" id="cb39-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb39-4" data-line-number="4">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers=</span><span class="dv">50</span>,</a>
-<a class="sourceLine" id="cb39-5" data-line-number="5">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory=</span><span class="dv">1024</span>,</a>
-<a class="sourceLine" id="cb39-6" data-line-number="6">                                  <span class="dt">walltime=</span><span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition=</span><span class="st">'short'</span>)))</a>
-<a class="sourceLine" id="cb39-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb39-8" data-line-number="8">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'popA'</span>, <span class="st">'popB'</span>, <span class="st">'popC'</span>, <span class="st">'popD'</span>)</a>
-<a class="sourceLine" id="cb39-9" data-line-number="9">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(<span class="st">'/my/f2/dir/'</span>, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</a>
-<a class="sourceLine" id="cb39-10" data-line-number="10">                          <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb39-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb39-12" data-line-number="12"><span class="kw"><a href="https://rdrr.io/r/base/save.html">save</a></span>(opt_results, <span class="dt">file=</span><span class="st">'opt_results.RData'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb43-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</a>
+<a class="sourceLine" id="cb43-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(future.batchtools)</a>
+<a class="sourceLine" id="cb43-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb43-4" data-line-number="4">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers=</span><span class="dv">50</span>,</a>
+<a class="sourceLine" id="cb43-5" data-line-number="5">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory=</span><span class="dv">1024</span>,</a>
+<a class="sourceLine" id="cb43-6" data-line-number="6">                                  <span class="dt">walltime=</span><span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition=</span><span class="st">'short'</span>)))</a>
+<a class="sourceLine" id="cb43-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb43-8" data-line-number="8">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'popA'</span>, <span class="st">'popB'</span>, <span class="st">'popC'</span>, <span class="st">'popD'</span>)</a>
+<a class="sourceLine" id="cb43-9" data-line-number="9">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(<span class="st">'/my/f2/dir/'</span>, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</a>
+<a class="sourceLine" id="cb43-10" data-line-number="10">                          <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)</a>
+<a class="sourceLine" id="cb43-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb43-12" data-line-number="12"><span class="kw"><a href="https://rdrr.io/r/base/save.html">save</a></span>(opt_results, <span class="dt">file=</span><span class="st">'opt_results.RData'</span>)</a></code></pre></div>
 <p>It could be in a file called <code>opt_graphs.Rscript</code> and be run like this, or submitted as a job.</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" data-line-number="1">Rscript opt_graphs.Rscript</a></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb44-1" data-line-number="1">Rscript opt_graphs.Rscript</a></code></pre></div>
 <p>It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It’s probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.</p>
 <p><br></p>
 </div>
@@ -439,8 +467,8 @@
 </blockquote>
 <p><br></p>
 <p>For any set of populations there may be many graphs which can explain the data about equally well. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs.</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" data-line-number="1">triples =<span class="st"> </span><span class="kw"><a href="../reference/summarize_triples.html">summarize_triples</a></span>(winners)</a></code></pre></div>
-<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb42-1" data-line-number="1">triples <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">arrange</span>(<span class="op">-</span>clade) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">1</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" data-line-number="1">triples =<span class="st"> </span><span class="kw"><a href="../reference/summarize_triples.html">summarize_triples</a></span>(winners)</a></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb46-1" data-line-number="1">triples <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">arrange</span>(<span class="op">-</span>clade) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">1</span>)</a></code></pre></div>
 <pre><code>## # A tibble: 1 x 14
 ##   name1 name2 name3 numgraphs   x13   x23   x31   x32 clade   x12   x21 toptopo
 ##   &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;  
@@ -478,10 +506,10 @@
 <h2 class="hasAnchor">
 <a href="#finding-valid-qpadm-models" class="anchor"></a>Finding valid qpAdm models</h2>
 <p>Every admixture graph maps to a specific set of valid qpAdm models. The function <code>qpadm_models</code> lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb44-1" data-line-number="1">mygraph =<span class="st"> </span>winners <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">6</span>) <span class="op">%$%</span><span class="st"> </span>igraph <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pluck</span>(<span class="dv">1</span>)</a>
-<a class="sourceLine" id="cb44-2" data-line-number="2"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(mygraph)</a></code></pre></div>
-<p><img src="admixtools_files/figure-html/unnamed-chunk-43-1.png" width="864" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb45-1" data-line-number="1"><span class="kw"><a href="../reference/qpadm_models.html">qpadm_models</a></span>(mygraph, <span class="dt">add_outgroup =</span> <span class="ot">TRUE</span>, <span class="dt">nested =</span> <span class="ot">FALSE</span>, <span class="dt">abbr =</span> <span class="dv">3</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb48-1" data-line-number="1">mygraph =<span class="st"> </span>winners <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">slice</span>(<span class="dv">6</span>) <span class="op">%$%</span><span class="st"> </span>igraph <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">pluck</span>(<span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb48-2" data-line-number="2"><span class="kw"><a href="../reference/plot_graph.html">plot_graph</a></span>(mygraph)</a></code></pre></div>
+<p><img src="admixtools_files/figure-html/unnamed-chunk-44-1.png" width="864" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb49-1" data-line-number="1"><span class="kw"><a href="../reference/qpadm_models.html">qpadm_models</a></span>(mygraph, <span class="dt">add_outgroup =</span> <span class="ot">TRUE</span>, <span class="dt">nested =</span> <span class="ot">FALSE</span>, <span class="dt">abbr =</span> <span class="dv">3</span>)</a></code></pre></div>
 <pre><code>## # A tibble: 3 x 3
 ##   target left    right      
 ##   &lt;chr&gt;  &lt;chr&gt;   &lt;chr&gt;      
@@ -503,7 +531,8 @@
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
       <ul class="nav nav-pills nav-stacked">
-<li><a href="#qp3pop">qp3Pop</a></li>
+<li><a href="#introduction">Introduction</a></li>
+      <li><a href="#qp3pop">qp3Pop</a></li>
       <li><a href="#qpdstat">qpDstat</a></li>
       <li><a href="#qpadm">qpAdm</a></li>
       <li><a href="#qpgraph">qpGraph</a></li>

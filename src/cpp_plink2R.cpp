@@ -146,7 +146,8 @@ void Data::read_afs()
 {
   int val, k, pop, npop, nind;
   npop = max(this->indvec);
-  nind = max(this->indvec2);
+  //nindtot = this->indvec.length();
+  nind = this->indvec2.length();
   std::ifstream in(this->bedfile, std::ios::in | std::ios::binary);
 
   if(!in)
@@ -157,9 +158,9 @@ void Data::read_afs()
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes, ignoring first 3 bytes (2byte magic number + 1byte mode)
-  len = (unsigned int)in.tellg() - 3;
+  len = (long)in.tellg() - 3;
   // size of packed data, in bytes, per SNP
-  np = (unsigned int)ceil((double)N / PACK_DENSITY);
+  np = (long)ceil((double)N / PACK_DENSITY);
   nsnps = len / np;
   in.seekg(3, std::ifstream::beg);
   unsigned char* tmp = new unsigned char[np];

@@ -157,17 +157,13 @@ The models are formed by leaving out one or more SNP block at a time (see <code>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qp3pop_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>multicore</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
+    <pre class="usage"><span class='fu'>qp3pop_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
 
-<span class='fu'>qpdstat_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>multicore</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
+<span class='fu'>qpdstat_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
 
-<span class='fu'>qpadm_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>multicore</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
+<span class='fu'>qpadm_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
 
-<span class='fu'>qpgraph_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>multicore</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
+<span class='fu'>qpgraph_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -183,16 +179,16 @@ Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n<
 or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p></td>
     </tr>
     <tr>
-      <th>multicore</th>
-      <td><p>If <code>TRUE</code> (the default), models will run on multiple cores in parallel.</p></td>
-    </tr>
-    <tr>
       <th>verbose</th>
       <td><p>print progress updates</p></td>
     </tr>
     <tr>
       <th>...</th>
       <td><p>named arguments which are passed to the <code>qp</code> function.</p></td>
+    </tr>
+    <tr>
+      <th>multiprocess</th>
+      <td><p>If <code>TRUE</code> (the default), models will run on multiple cores in parallel.</p></td>
     </tr>
     </table>
     

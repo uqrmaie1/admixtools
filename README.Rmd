@@ -69,4 +69,9 @@ qpadm(example_f2_blocks, target, left, right)
 
 More documentation [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html).
 
+Alternatively, you can launch an interactive browser app on your local machine:
+
+```{r, eval = FALSE}
+run_shiny_admixtools()
+```
 

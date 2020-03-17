@@ -6,6 +6,18 @@ output:
     toc_depth: 3
 ---
 
+## Introduction
+
+Admixtools is a set of programs used to infer population histories from genetic data. This implementation divides the computation into two steps: The first step performs most of the expensive computations which are necessary to run analyses on a given set of samples. This results in statistics which are stored on disk and which can be used in the second step for any further analyses on those samples.
+
+This package can either be run through the `R` command line, or through a browser application that can be launched like this:
+
+```{r, eval = FALSE}
+library(admixtools)
+run_shiny_admixtools()
+```
+
+The documentation of the browser application can be accessed through the `?` in the upper right corner of the application window. This website documents the `R` command line interface.
 
 For the examples below the following R packages need to be loaded.
 

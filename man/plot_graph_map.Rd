@@ -4,10 +4,10 @@
 \alias{plot_graph_map}
 \title{Plot an admixture graph on a map}
 \usage{
-plot_graph_map(grph, leafcoords, shapedata = NULL)
+plot_graph_map(graph, leafcoords, shapedata = NULL)
 }
 \arguments{
-\item{grph}{a two column matrix specifying the admixture graph. first column is source node,
+\item{graph}{a two column matrix specifying the admixture graph. first column is source node,
 second column is target node. the first edge has to be root -> outgroup.
 admixture nodes are inferred as those nodes which are the targets of two different sources.}
 

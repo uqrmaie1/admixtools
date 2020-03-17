@@ -6,8 +6,10 @@
 \usage{
 find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
   numgraphs = 50, numgen = 5, numsel = 5, numadmix = 0,
-  keep = c("all", "best", "last"), f2_denom = 1, verbose = TRUE,
-  cpp = TRUE, debug = numrep == 1, ...)
+  keep = c("all", "best", "last"), f2_denom = 1, cpp = TRUE,
+  initgraph = NULL, mutfuns = c("spr_leaves", "spr_all", "swap_leaves",
+  "move_admixedge_once", "flipadmix_random"), parallel = TRUE,
+  debug = numrep == 1, fudge = 0.001, verbose = TRUE, ...)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
@@ -32,12 +34,16 @@ graph from each repeat and each generation. \code{last} will return all graphs f
 
 \item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
-\item{verbose}{print progress updates}
-
 \item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
+
+\item{initgraph}{optional graph to start out with}
+
+\item{parallel}{Parallelize over repeats (if \code{numrep > 1}) or graphs (if \code{numrep == 1}) by replacing \code{purrr::map} with \code{furrr::future_map}. Will only be effective if \code{future::plan()} has been set.}
 
 \item{debug}{If \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
 Errors will interrupt execution. This is the default if \code{numrep = 1}}
+
+\item{verbose}{print progress updates}
 }
 \value{
 a nested data frame with one model per line

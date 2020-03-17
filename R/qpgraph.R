@@ -114,16 +114,19 @@ optimweightsfun = function(weights, args) {
   path_admixedge_table = args[[5]]
   #index3 = args[[6]]
   cmb = args[[7]]
+  qpsolve = args[[8]]
+  lower = args[[9]]
+  upper = args[[10]]
 
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, args[[8]])
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper)
   f3_fit = ppwts_2d %*% branch_lengths
   get_score(f3_fit, f3_est, ppinv)
 }
 
 
-opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve) {
+opt_edge_lengths_old = function(ppwts_2d, ppinv, f3_est, qpsolve) {
   # finds optimal edge lengths
   # pwts2d: npair x nedge design matrix with paths to outpop
   # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
@@ -136,6 +139,21 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve) {
   q1 = -(pppp %*% f3_est)[,1]
   nc = ncol(cc)
   -qpsolve(cc, q1, -diag(nc), rep(0, nc))
+}
+
+opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper) {
+  # finds optimal edge lengths
+  # pwts2d: npair x nedge design matrix with paths to outpop
+  # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
+  # f3_est: estimated f3 stats
+
+  pppp = t(ppwts_2d) %*% ppinv
+  cc = pppp %*% ppwts_2d
+  diag(cc) = diag(cc) + mean(diag(cc))*0.0001
+  cc = (cc+t(cc))/2
+  q1 = (pppp %*% f3_est)[,1]
+  nc = ncol(cc)
+  qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))
 }
 
 get_score = function(f3_fit, f3_est, ppinv) {
@@ -185,20 +203,22 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
 qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fnscale = 1e-6, lsqmode = FALSE,
-                   numstart = NULL, seed = NULL, cpp = TRUE, return_f4 = FALSE, verbose = FALSE) {
+                   numstart = NULL, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
+                   low_q = 0, high_q = 1, verbose = FALSE) {
   # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
-  if('data.frame' %in% class(graph) || 'matrix' %in% class(graph)) {
-    edges = as.matrix(graph)
-  } else if(class(graph) == 'character') {
+  if('matrix' %in% class(graph)) {
+    edges = as.data.frame(graph, stringsAsFactors = FALSE)
+  } else if('character' %in% class(graph)) {
     edges = parse_qpgraph_graphfile(graph)
-  } else if(class(graph)[1] == 'igraph') {
-    edges = igraph::as_edgelist(graph)
-  } else {
-    stop(paste0('Cannot parse graph of class ', class(graph),'!'))
-  }
-  if(class(graph)[1] != 'igraph') graph = graph_from_edgelist(edges)
+  } else if('igraph' %in% class(graph)) {
+    edges = igraph::as_edgelist(graph) %>% as.data.frame(stringsAsFactors = FALSE)
+  } else if('data.frame' %in% class(graph)) {
+    edges = graph
+  } else stop(paste0('Cannot parse graph of class ', class(graph),'!'))
+
+  if(class(graph)[1] != 'igraph') graph = graph_from_edgelist(as.matrix(edges[,1:2]))
   nedges = length(E(graph))
   admixnodes = which(degree(graph, mode='in')==2)
   nadmix = length(admixnodes)
@@ -209,12 +229,13 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
   npop = length(pops)
   cmb = combn(0:(npop-1), 2)+(1:0)
 
-  precomp = qpgraph_precompute_f3(f2_data, pops, f2_denom = f2_denom, boot = boot, fudge = fudge, lsqmode = lsqmode)
+  if(!is.null(f3precomp)) precomp = f3precomp
+  else precomp = qpgraph_precompute_f3(f2_data, pops, f2_denom = f2_denom, boot = boot, fudge = fudge, lsqmode = lsqmode)
   f3_est = precomp$f3_est
   ppinv = precomp$ppinv
 
   weightind = graph_to_weightind(graph)
-  weight = rep(NA, nedges)
+  weight = low = high = rep(NA, nedges)
   pwts = graph_to_pwts(graph)
   opt = NULL
 
@@ -224,35 +245,60 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
     fill_pwts = cpp_fill_pwts
   }
 
+  mim = .Machine$integer.max
+  if('lower' %in% names(edges)) {
+    elower = replace_na(edges$lower[normedges], 0)
+    alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
+  } else {
+    elower = rep(0, length(normedges))
+    alower = rep(0, nadmix)
+  }
+  if('upper' %in% names(edges)) {
+    eupper = replace_na(edges$upper[normedges], mim)
+    aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]]), 1)
+    aupper = pmin(1, aupper)
+  } else {
+    eupper = rep(mim, length(normedges))
+    aupper = rep(1, nadmix)
+  }
+
   if(nadmix > 0) {
     if(is.null(numstart)) numstart = 10*nadmix
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
-    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
-    opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
-                     lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
+    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper)
+    oo = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
+                    lower=alower, upper=aupper, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
 
-    best = opt %>% top_n(1, -.data$value)
-    opt = data.frame(parmat, opt, stringsAsFactors = F)
+    best = oo %>% top_n(1, -.data$value)
+    admnames = names(V(graph))[admixnodes]
+    opt = data.frame(parmat, oo, stringsAsFactors = F)
+    colnames(opt)[1:(nadmix*2)] = paste0(rep(c('i.', 'e.'), each = nadmix), rep(admnames, 2))
+    hilo = apply(as.matrix(oo[,1:nadmix]), 2, function(x) quantile(x, c(low_q, high_q)))
 
     wts = as.matrix(best[,1:nadmix])[1,]
     weight[admixedgesfull[1,]] = wts
     weight[admixedgesfull[2,]] = 1-wts
+    low[admixedgesfull[1,]] = pmin(hilo[1,], hilo[2,])
+    low[admixedgesfull[2,]] = pmin(1-hilo[1,], 1-hilo[2,])
+    high[admixedgesfull[1,]] = pmax(hilo[1,], hilo[2,])
+    high[admixedgesfull[2,]] = pmax(1-hilo[1,], 1-hilo[2,])
     pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
   weight[normedges] = branch_lengths
-  edges %<>% as_tibble(.name_repair = ~c('from', 'to')) %>%
-    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight)
+  edges %<>% select(1:2) %>% set_colnames(c('from', 'to')) %>%  as_tibble %>%
+    mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight, low = low, high = high)
+  f2 = precomp$f2out
   f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p.value = ztop(z))
 
-  out = namedList(edges, score, f2 = f2(f2_data, f2_denom = f2_denom), f3, opt)
+  out = namedList(edges, score, f2, f3, opt)
   if(return_f4) out$f4 = f4(f2_data)
   out
 }
@@ -319,14 +365,16 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
   pwts = graph_to_pwts(graph)
   opt = NULL
   cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
+  elower = rep(0, length(normedges))
+  eupper = rep(.Machine$integer.max, length(normedges))
 
   if(nadmix > 0) {
     set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
 
-    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve)
+    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper)
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
-                          lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
+                     lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
 
     best = opt %>% top_n(1, -.data$value)
     opt = data.frame(parmat, opt, stringsAsFactors = F)
@@ -339,7 +387,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
 
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
@@ -347,6 +395,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
   edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight)
 
+  #namedList(edges, score, opt, f3_fit)
   namedList(edges, score, opt)
 }
 
@@ -458,7 +507,8 @@ qpgraph_anorexic = function(graph, f3_est, ppinv, fnscale = 1e-6,
   cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
   ppwts_2d = t(pwts[,cmb[1,]] * pwts[,cmb[2,]])
 
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve,
+                                    lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)))
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
