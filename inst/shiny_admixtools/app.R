@@ -176,7 +176,16 @@ ui = function(request) {
   dashboardSidebar(tags$head(tags$style(HTML(aa))), width = 300,
     sidebarMenu(id = 'navbar',
     menuItem('Data', tabName = 'data', expandedName = 'data', id = 'datax', icon = icon('database'), startExpanded = TRUE,
-             actionLink('data_load', 'Load')),
+             menuItem('Extract settings', tabName = 'extract_settings',
+                      checkboxInput('fix_populations', 'Fix populations'),
+                      numericInput('max_miss', 'max missing', value = 0.1, step = 0.01, min = 0, max = 1),
+                      splitLayout(
+                        numericInput('min_maf', 'min MAF', value = 0, step = 0.01, min = 0, max = 0.5),
+                        numericInput('max_maf', 'max MAF', value = 0.5, step = 0.01, min = 0, max = 0.5)),
+                      radioButtons('trans_extract', 'Mutations', choices = c('both', 'only transitions', 'only transversions')),
+                      fileInput('keepsnps', NULL, buttonLabel = 'SNP list'),
+                      numericInput('maxmem', 'max RAM in GB', value = 15, step = 1, min = 0)
+                      )),
     menuItem('f2', tabName = 'f2', expandedName = 'f2', icon = icon('dice-two'),
              menuItem('Options', tabName = 'f2_options')),
     menuItem('f3', tabName = 'f3', expandedName = 'f3', icon = icon('dice-three'),
@@ -199,6 +208,7 @@ ui = function(request) {
                       checkboxInput('qpadm_constrained', 'Constrain weights'))),
     menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
              actionLink('qpgraph_fit', 'Fit'),
+             menuItem('Load graph', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
              menuItem('Modify graph', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
                       hr(),
                       p('Selected'),
@@ -295,12 +305,12 @@ server = function(input, output, session) {
   dp = '~/Downloads/testinds/'
   dp = '/Users/robert/Downloads/countdata_eas5/'
   dp = '~/Downloads/countdata_iosifgraph/'
-  dp = '~/Documents/countdata_afafam/'
-  dp = '~/Documents/countdata_pavel2/'
+  dp = ''
+  #dp = '~/Documents/countdata_afafam/'
+  #dp = '~/Documents/countdata_pavel2/'
   global = reactiveValues(countdir = dp,
                           allinds = list.dirs(paste0(dp, '/pairs'),F,F),
-                          poplist = list('pop 1' = c(), 'pop 2' = c()))
-                          #poplistbak = list()
+                          poplist = list())
   global$graph = NULL
   home = normalizePath('~')
   volumes = getVolumes()
@@ -315,6 +325,13 @@ server = function(input, output, session) {
 
   dir = reactive(input$dir)
   output$dirout = renderText({global$countdir})
+  #shinyjs::hide('show_extract')
+  #shinyjs::hide('show_popadjust')
+  #shinyjs::hide('show_indselect')
+  output$show_popadjust = renderText({as.numeric(show_popadjust())})
+  output$show_extract = renderText({as.numeric(show_extract())})
+  output$show_indselect = renderText({as.numeric(show_indselect())})
+  output$genofile1out = renderText({parseFilePaths(eval(volumes), input$genofile1)$datapath %>% str_replace('\\.geno$', '')})
 
   observeEvent(input$dir, {
     if (!"path" %in% names(dir())) return()
@@ -329,7 +346,21 @@ server = function(input, output, session) {
     print(str(parseDirPath(volumes, input$dir)))
     print(as.character(parseDirPath(volumes, input$dir)))
     global$countdir = parseDirPath(volumes, input$dir)
-    global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
+    global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
+    global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
+      'block_lengths.rds' %in% list.files(global$countdir)
+    print('global$iscountdata')
+    print(global$iscountdata)
+    if(global$iscountdata) {
+      global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
+    } else if(global$isf2data) {
+      global$allinds = list.dirs(global$countdir,F,F)
+      global$poplist = global$allinds %>% set_names(global$allinds)
+      print('global$allinds')
+      print(global$allinds)
+    } else {
+
+    }
     })
 
   observeEvent(input$navbar, {
@@ -365,7 +396,10 @@ server = function(input, output, session) {
     } else {
 
       nam = map(paste0('pop', seq_len(length(global$poplist))), ~input[[.]])
-      if(is.null(nam[[1]])) return()
+      if(is.null(nam[[1]])) {
+        shinyalert('Error', global$poplist)
+        return()
+      }
       global$poplist = map(nam, ~input[[.]]) %>% set_names(nam)
       print('switch away from data')
       if(length(unlist(global$poplist)) == 0) {
@@ -443,6 +477,8 @@ server = function(input, output, session) {
 
       global$qpg_right = qpg_right_fit()
       global$bod = global$qpgraphbod
+    } else {
+      shinyalert('Error', 'implement tab')
     }
 
     }
@@ -496,7 +532,7 @@ server = function(input, output, session) {
   observeEvent(input$addpop, {
     pops = names(global$poplist)
     i = 0
-    repeat({i=i+1; newpop = paste('pop', i); if(!newpop %in% pops) break})
+    repeat({i=i+1; newpop = paste0('pop', i); if(!newpop %in% pops) break})
     global$poplist[newpop] = NA
   })
   observeEvent(input$removepop, {
@@ -507,6 +543,10 @@ server = function(input, output, session) {
     nam = c('ind', 'sex', 'pop')
     global$poplist = read_table2(input$popfile$datapath, col_names = nam, col_types = cols()) %>%
       select(-sex) %$% split(ind, factor(pop, levels = unique(pop)))
+
+    if(length(global$allinds) == 0) { # f2data dir
+      global$allinds = unlist(global$poplist)
+    }
 
     print('observe')
     imap(names(global$poplist), ~{
@@ -551,9 +591,6 @@ server = function(input, output, session) {
     })
   })
 
-  # observeEvent(input$popfile, {
-  #
-  # })
 
   observeEvent(input$graphfile, {
     gf = input$graphfile$datapath
@@ -740,8 +777,10 @@ server = function(input, output, session) {
     req(poplist, global$countdir)
     if(length(poplist) == 0) return()
     pops = rep(names(poplist), sapply(poplist, length))
+    inds = NULL
+    if(global$iscountdata) inds = unlist(poplist)
     withProgress(message = 'Reading data and computing f2...', {
-      f2blocks = f2_from_precomp(global$countdir, inds = unlist(poplist), pops = pops,
+      f2blocks = f2_from_precomp(global$countdir, inds = inds, pops = pops,
                                  apply_corr = input$f2corr)
     })
     print('get f2 done')
@@ -820,7 +859,9 @@ server = function(input, output, session) {
     namedList(nodes, eg)
   })
 
-
+  show_popadjust = reactive(length(global$poplist) > 0)
+  show_extract = reactive(isFALSE(global$iscountdata) && isFALSE(global$isf2data))
+  show_indselect = reactive(show_extract() || isTRUE(global$iscountdata))
 
   observeEvent(input$minus1_cell_clicked, {
     row = input$minus1_rows_selected
@@ -1085,6 +1126,7 @@ server = function(input, output, session) {
     poplist = global$poplist
     indnames = unique(global$allinds)
     print('popselectors')
+    print(indnames)
 
     sellist = imap(names(poplist), ~{
       #buttlab = ifelse(is.null(global$poplistbak[[.x]]), 'group', 'ungroup')
@@ -1442,33 +1484,56 @@ server = function(input, output, session) {
     bh = '140px'
     div(
       fluidRow(
-        box(width=3, height=bh, background = cols[1], h4('1. Select count directory'),
+        box(width=4, height=bh, background = cols[1], h4('Select data directory'),
           div(
-          shinyDirButton('dir', 'Count directory', 'Upload'),
+          shinyDirButton('dir', 'Browse', 'Upload'),
           verbatimTextOutput('dirout', placeholder = TRUE))),
-        box(width=3, height=bh, background = cols[2], h4('2. Extract count data'),
+        conditionalPanel('output.show_extract == "1"',
+                         fluidRow(box(width=4, height=bh, background = cols[2], h4('Extract data'),
                splitLayout(
-               shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
-               actionButton('extract_counts', 'Extract counts'))),
-        box(width=3, height=bh, background = cols[3], h4('3. Select .ind file'),
-            div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')),
-        box(width=3, height=bh, background = cols[4], h4('4. Select graph file'),
-            div(fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file'), id = 'graphfilediv'))),
-      fluidRow(conditionalPanel('input.extract_counts > 0', verbatimTextOutput('console'))),
+               div(shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
+                   verbatimTextOutput('genofile1out', placeholder = TRUE)),
+               actionButton('extract_counts', 'Extract counts'))))),
+        conditionalPanel('output.show_indselect == "1"', (
+          box(width=4, height=bh, background = cols[3], h4('Select .ind file'),
+            div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')))),
+        #column(3, box(width=12, height=bh, background = cols[4], h4('Select graph file'),
+        #    div(fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file'), id = 'graphfilediv'))),
+      fluidRow(column(12, conditionalPanel('input.extract_counts > 0', verbatimTextOutput('console')))),
       #box(width=6, textOutput('console')),
-      fluidRow(
+      div(style = 'visibility: hidden', verbatimTextOutput('show_popadjust')),
+      div(style = 'visibility: hidden', verbatimTextOutput('show_extract')),
+      div(style = 'visibility: hidden', verbatimTextOutput('show_indselect')),
+      conditionalPanel('output.show_popadjust == "1"', fluidRow(column(12,
         box(width=12, background = cols[5],
-            fluidRow(column(2, h4('5. Adjust populations', id = 'adjpopdiv')),
+            fluidRow(column(2, h4('Adjust populations', id = 'adjpopdiv')),
                     column(1, div(actionButton('removepop', '–'),
                         actionButton('addpop', '+')))),
-            fluidRow(column(11, uiOutput('popselectors'))))))
+            fluidRow(column(11, uiOutput('popselectors')))))))))
   })
 
   observeEvent(input$extract_counts, {
+    if(is.null(input$genofile1)) {
+      shinyalert('Error!', 'Need to select .geno file!')
+      return()
+    }
     volumes %<>% eval
     pref = parseFilePaths(volumes, input$genofile1)$datapath %>% str_replace('\\.geno$', '')
-    #pref = input$popfile$datapath %>% str_replace('\\.ind$', '')
-    inds = unlist(global$poplist)
+
+    oldnam = names(global$poplist)
+    nam = map(paste0('pop', seq_len(length(global$poplist))), ~input[[.]])
+    if(is.null(nam[[1]])) return()
+    global$poplist = map(oldnam, ~input[[.]]) %>% set_names(nam)
+
+    poplist = global$poplist
+    inds = unlist(poplist)
+    pops = rep(names(poplist), sapply(poplist, length))
+    transitions = input$trans_extract %in% c('both', 'only transitions')
+    transversions = input$trans_extract %in% c('both', 'only transversions')
+
+    if(input$fix_populations) extract_data = function(...) extract_f2(pops = pops, ...)
+    else extract_data = extract_counts
+
     print('inds')
     print(inds)
 
@@ -1480,7 +1545,14 @@ server = function(input, output, session) {
 
     withCallingHandlers({
       shinyjs::html('console', '')
-      extract_counts(pref, global$countdir, inds = inds, maxmem = 15000)
+      print(list(pref, global$countdir, inds = inds,
+                 maxmiss = input$max_miss, minmaf = input$min_maf, maxmaf = input$max_maf,
+                 transitions = transitions, transversions = transversions,
+                 keepsnps = input$keepsnps, maxmem = input$maxmem*1e3))
+      extract_data(pref, global$countdir, inds = inds,
+                   maxmiss = input$max_miss, minmaf = input$min_maf, maxmaf = input$max_maf,
+                   transitions = transitions, transversions = transversions,
+                   keepsnps = input$keepsnps, maxmem = input$maxmem*1e3)
     },
     message = function(m) {
       shinyjs::html(id = 'console', html = m$message, add = TRUE)

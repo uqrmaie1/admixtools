@@ -20,8 +20,7 @@ and saves them as \code{.rds} files in \code{outdir}
 }
 \examples{
 \dontrun{
-afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
-                                         na.action = 'none', return_matrix = TRUE)
+afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
 split_mat(afmatall, cols_per_block = 20, outdir = 'afmatall_split_v42.1/')
 }
 }

@@ -18,7 +18,8 @@
 #' @importFrom plotly plot_ly add_trace add_markers layout
 #' @importFrom Rcpp cppFunction
 #' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths
-#' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag
+#' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices
+#' add_edges delete_edges difference set_vertex_attr
 #' @useDynLib admixtools
 
 TRUE

@@ -275,6 +275,32 @@ newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
   rbind(c(node, nodel), edgesleft, c(node, noder), edgesright, edgemat)
 }
 
+
+insert_edge = function(graph, from, to) {
+  # inserts edge from edge 'from' and to edge 'to'
+  # more atomic than 'insert_admix_igraph', for better reusability
+  n1 = as_ids(from)
+  n2 = as_ids(to)
+  v1 = str_split(n1, '\\|')[[1]]
+  v2 = str_split(n2, '\\|')[[1]]
+  o1 = str_replace(n1, '\\|', '_')
+  o2 = str_replace(n2, '\\|', '_')
+  graph %>%
+    add_vertices(2, name = c(o1, o2)) %>%
+    add_edges(c(v1[1], o1, o1, v1[2], v2[1], o2, o2, v2[2], o1, o2)) %>%
+    delete_edges(c(n1, n2))
+}
+
+insert_edges = function(graph, from, to) {
+  # from and to are vectors of node names
+  # edges will be inserted above each node pair
+  stopifnot(length(from) == length(to))
+  reduce2(from, to, .init = graph, .f = function(g, x, y) {
+    e = incident_edges(g, c(x, y), mode = 'in')
+    insert_edge(g, e[[1]], e[[2]])
+  })
+}
+
 #' @export
 insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = FALSE,
                                allow_below_admix = FALSE, desimplify = FALSE) {
@@ -283,7 +309,6 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
   # stopifnot(all(c(sapply(admixedges, `[`, c(2, 4))) %in% names(V(graph))))
   # some nodes will get lost when splitting; insert random amix edges instead
 
-  #ograph = graph
   stopifnot(length(fromnodes) == length(tonodes))
   miss = 0
   for(i in rev(seq_len(length(fromnodes)))) {
@@ -1088,4 +1113,99 @@ insert_leaf = function(graph, leaf, from, to) {
 }
 
 
-#future::plan(list(tweak(batchtools_slurm, workers = 50, resources=list(ncpus = 1, memory = 1024, walltime = 10*60*60, partition = 'short')), 'sequential'))
+generate_all_trees = function(leaves) {
+
+  stopifnot(!'R' %in% leaves)
+  if(any(str_detect(leaves, '\\|'))) stop('Leaves cannot have "|" in name!')
+  init = graph_from_edgelist(matrix(c('R', leaves[1]), 1))
+  add_leaves_rec(init, leaves[-1])
+}
+
+generate_all_graphs = function(leaves, nadmix = 0, sure = FALSE, verbose = TRUE) {
+  #numtot = admixtools:::numtreesadmix(length(leaves), nadmix)
+  #if(numtot > 1000 && !sure) stop(paste0('If you really want to generate ', numtot, ' graphs, set sure to TRUE'))
+  nleaves = length(leaves)
+  if(nleaves > 5 | nadmix > 2) stop('If you really want to generate that many graphs, set sure to TRUE')
+  if(verbose) alert_info(paste0('Generating ', numtrees(nleaves),' trees...\n'))
+  trees = generate_all_trees(leaves)
+  if(verbose) alert_info(paste0('Adding all possible admixutre edges...\n'))
+  graphs = flatten(map(trees, ~add_edges_rec(., nadmix)))
+  if(verbose) alert_info(paste0('Identifying isomorpisms in ', length(graphs),' graphs...\n'))
+  iso = isomorphism_classes2(graphs)
+  graphs[!duplicated(iso)]
+}
+
+add_leaves_rec = function(tree, leaves) {
+  el = tree %>% E %>% as_ids %>% str_split('\\|')
+  newtrees = map(el, ~{
+    from = .[1]
+    to = .[2]
+    nam = paste(from, to, sep='_')
+    tree %>%
+      add_vertices(2, name = c(nam, leaves[1])) %>%
+      add_edges(edges = c(nam, leaves[1])) %>%
+      add_edges(edges = c(from, nam)) %>%
+      add_edges(edges = c(nam, to)) %>%
+      delete_edges(paste(from, to, sep = '|'))
+  })
+  if(length(leaves) == 1) return(newtrees)
+  flatten(map(newtrees, ~add_leaves_rec(., leaves[-1])))
+}
+
+add_all_edges = function(graph) {
+  eg = E(graph)
+  nume = length(eg)
+  newe = expand_grid(from = seq_len(nume), to = seq_len(nume)) %>% filter(from != to)
+  newe %>% mutate(newg = map2(from, to, ~insert_edge(graph, eg[.x], eg[.y]))) %$%
+    newg %>% keep(~is.dag(.))
+}
+
+add_edges_rec = function(graph, nadmix) {
+  if(nadmix == 0) return(list(graph))
+  newgraphs = add_all_edges(graph)
+  flatten(map(newgraphs, ~add_edges_rec(., nadmix-1)))
+}
+
+
+#' Return all graphs created from permuting a subclade
+#'
+#' generates new graphs from basegraph as follows:
+#' 1. generates all possible trees using `addpops`` (which are not in basegraph)
+#' 2. attaches trees to connection_edge, which is defined by two nodes in basegraph
+#' 3. adds edges originating above each edge in `source_node`, to each node above `addpops``
+#'
+#' @export
+#' @param basegraph an admixture graph as igraph object. (convert from edge list using `igraph::graph_from_edgelist`)
+#' @param addpops a vector of population labels which are not in `basegraph`. These populations should form a clade. All possible trees will be generated and those trees will be attached to `basegraph`.
+#' @param connection_edge edge in `basegraph` where the tree made from `addpops` should be attached
+#' @param source_nodes nodes in `basegraph`. edges above these nodes will be added and attached to all terminal edges leading to `addpops`
+#' @examples
+#' \dontrun{
+#' graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
+#'                connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+#' }
+graphmod_pavel = function(basegraph, addpops, connection_edge, source_nodes) {
+
+  c1 = connection_edge[1]
+  c2 = connection_edge[2]
+  cn = 'connection_node'
+  tn = 'tree_R'
+
+  trees = generate_all_trees(addpops) %>% map(~{
+    leaves = get_leaves(.)
+    internal = difference(V(.), leaves)
+    set_vertex_attr(., 'name', index = internal, value = paste0('tree_', names(internal)))
+    })
+  graphs = trees %<>% map(~{
+    igraph::union(basegraph, .) %>%
+      add_vertices(1, name = cn) %>%
+      add_edges(c(c1, cn, cn, c2, cn, tn)) %>%
+      delete_edges(paste(c1, c2, sep='|'))
+    })
+  e = expand_grid(source_nodes, addpops)
+  graphs %>% map(~insert_edges(., e$source_nodes, e$addpops))
+}
+
+
+
+

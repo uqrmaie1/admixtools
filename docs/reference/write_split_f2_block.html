@@ -212,8 +212,7 @@ match the number of SNPs.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>afmatall</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='st'>'path/to/packedancestrymap_prefix'</span>, <span class='no'>allpopulations</span>,
-                                        <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>'none'</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='no'>afmatall</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='st'>'path/to/packedancestrymap_prefix'</span>, <span class='no'>allpopulations</span>)
 <span class='fu'><a href='split_mat.html'>split_mat</a></span>(<span class='no'>afmatall</span>, <span class='kw'>pops_per_block</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>'afmatall_split_v42.1/'</span>)
 <span class='no'>numblocks</span> <span class='kw'>=</span> <span class='fl'>185</span> <span class='co'># this should be the number of split allele frequency files</span>
 <span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='fl'>1</span>:<span class='no'>numblocks</span>) {

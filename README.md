@@ -26,6 +26,9 @@ O2:
 library('admixtools')
 ```
 
+However, if you want to use the interactive browser app, you have to
+install the R package on your local computer.
+
 ## Usage
 
 If you already have precomputed f2-statistics, you can fit an admixture

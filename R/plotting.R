@@ -25,21 +25,24 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
   f2comp = f3comp = NULL
   if(!is.null(out1$f2) && !is.null(out2$f2)) {
 
-    f2comp = out1$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'x') %>%
-      bind_rows(out2$f2 %>% select('pop1', 'pop2', 'est', 'se') %>% mutate(i = 'y')) %>%
-      rename(f2_est = est, f2_se = se) %>%
-      gather('type', 'v', .data$f2_est, .data$f2_se) %>% spread(.data$i, .data$v) %>%
-      rename(from=.data$pop1, to=.data$pop2)
+    show = c('pop1', 'pop2', 'est', 'fit', 'diff', 'se', 'z')
+    common = intersect(names(out1$f2), names(out2$f2))
+    f2comp = out1$f2 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'x') %>%
+      bind_rows(out2$f2 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'y')) %>%
+      gather('type', 'v', -c(pop1, pop2, i)) %>% spread(i, v) %>%
+      rename(from = pop1, to = pop2) %>%
+      mutate(type = paste0('f2_', type))
   }
 
   if(!is.null(out1$f3) && !is.null(out2$f3)) {
 
-    # continue here: autmoatically select all variables that exists in both ('z')
-    f3comp = out1$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'x') %>%
-      bind_rows(out2$f3 %>% select('pop2', 'pop3', 'est', 'fit') %>% mutate(i = 'y')) %>%
-      rename(f3_est = est, f3_fit = fit) %>%
-      gather('type', 'v', f3_est, f3_fit) %>% spread(.data$i, .data$v) %>%
-      rename(from=.data$pop2, to=.data$pop3) %>% filter(!is.na(x), !is.na(y))
+    show = c('pop2', 'pop3', 'est', 'fit', 'diff', 'se', 'z')
+    common = intersect(names(out1$f3), names(out2$f3))
+    f3comp = out1$f3 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'x') %>%
+      bind_rows(out2$f3 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'y')) %>%
+      gather('type', 'v', -c(pop2, pop3, i)) %>% spread(.data$i, .data$v) %>%
+      rename(from = pop2, to = pop3) %>% filter(!is.na(x), !is.na(y)) %>%
+      mutate(type = paste0('f3_', type))
   }
 
   if(!'low' %in% names(out1$edges)) out1$edges %<>% mutate(low = NA)
@@ -58,7 +61,7 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
     geom_errorbarh(aes(xmin = replace_na(xmin, 0), xmax = replace_na(xmax, 0)), height = 0, col = 'grey') +
     geom_errorbar(aes(ymin = replace_na(ymin, 0), ymax = replace_na(ymax, 0)), width = 0, col = 'grey') +
     geom_point(aes(col = from == to)) +
-    facet_wrap('type', scales='free', dir = 'v', ncol = 2) +
+    facet_wrap('type', scales='free', dir = 'v', ncol = 3) +
     geom_abline() +
     xlab(paste0(name1, ' (score: ', round(out1$score, 2),')')) +
     ylab(paste0(name2, ' (score: ', round(out2$score, 2),')')) +

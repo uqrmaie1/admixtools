@@ -3,13 +3,20 @@ block_arr_mean = function(arr, block_lengths) {
   # returns grouped array means
   # arr is 3d, group over third dimension
 
-  blockids = rep(seq_along(block_lengths), block_lengths)
   mat = arr3d_to_mat(arr)
-  sums = rowsum(mat, blockids, na.rm = TRUE)
-  nonmiss = rowsum((!is.na(mat))+0, blockids)
-  out = mat_to_arr3d(sums/nonmiss, dim(arr)[1])
+  bm = block_mat_mean(mat, block_lengths)
+  out = mat_to_arr3d(bm, dim(arr)[1])
   dimnames(out)[1:2] = dimnames(arr)[1:2]
   out
+}
+
+block_mat_mean = function(mat, block_lengths) {
+  # returns grouped matrix means
+  # group over first dimension
+  blockids = rep(seq_along(block_lengths), block_lengths)
+  sums = rowsum(mat, blockids, na.rm = TRUE)
+  nonmiss = rowsum((!is.na(mat))+0, blockids)
+  sums/nonmiss
 }
 
 
@@ -17,14 +24,12 @@ jack_mat_stats = function(loo_mat, block_lengths) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
   # uses mean jackknife estimate instead of overall mean; probably makes very little difference
-  # lengths normalization used to have -1, removed this because it resulted in negative values; where did this come from?
-
-  # todo: make weighted mean; test how big the difference is
+  # should give same results as 'jack_arr_stats'
 
   numblocks = length(block_lengths)
-  est = rowMeans(loo_mat)
-  mnc = t(est - loo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks)
-  var = crossprod(mnc)
+  est = weighted_row_means(loo_mat, 1/block_lengths)
+  mnc = t(est - loo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks/block_lengths)
+  var = crossprod(mnc) / mean(1/block_lengths)
   namedList(est, var)
 }
 
@@ -33,11 +38,13 @@ jack_arr_stats = function(loo_arr, block_lengths) {
   # input is 3d array (n x n x m)
   # output is list with jackknife means and jackknife variances
   # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+  # should give same results as 'jack_mat_stats'
 
   numblocks = length(block_lengths)
-  est = apply(loo_arr, 1:2, weighted.mean, block_lengths)
+  est = apply(loo_arr, 1:2, weighted.mean, 1/block_lengths)
   xtau = (rray(est) - loo_arr)^2 * rray(sum(block_lengths)/block_lengths-1, c(1, 1, numblocks))
-  var = apply(xtau, 1:2, weighted.mean, block_lengths)
+  #var = apply(xtau, 1:2, weighted.mean, block_lengths)
+  var = apply(xtau, 1:2, weighted.mean, 1/block_lengths)
   namedList(est, var)
 }
 
@@ -50,7 +57,7 @@ jack_pairarr_stats = function(loo_arr, block_lengths) {
   # todo: make weighted mean for var; test how big the difference is
 
   numblocks = length(block_lengths)
-  est = c(t(apply(loo_arr, 1:2, weighted.mean, block_lengths)))
+  est = c(t(apply(loo_arr, 1:2, weighted.mean, 1/block_lengths)))
   bj_lo_mat = loo_arr %>% aperm(c(2,1,3)) %>% arr3d_to_mat %>% t
   mnc = t(est - bj_lo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks)
   var = crossprod(mnc)

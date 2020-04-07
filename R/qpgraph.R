@@ -126,20 +126,6 @@ optimweightsfun = function(weights, args) {
 }
 
 
-opt_edge_lengths_old = function(ppwts_2d, ppinv, f3_est, qpsolve) {
-  # finds optimal edge lengths
-  # pwts2d: npair x nedge design matrix with paths to outpop
-  # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
-  # f3_est: estimated f3 stats
-
-  pppp = t(ppwts_2d) %*% ppinv
-  cc = pppp %*% ppwts_2d
-  diag(cc) = diag(cc) + mean(diag(cc))*0.0001
-  cc = (cc+t(cc))/2
-  q1 = -(pppp %*% f3_est)[,1]
-  nc = ncol(cc)
-  -qpsolve(cc, q1, -diag(nc), rep(0, nc))
-}
 
 opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper) {
   # finds optimal edge lengths
@@ -518,7 +504,16 @@ qpgraph_anorexic = function(graph, f3_est, ppinv, fnscale = 1e-6,
   namedList(edges, score, opt = NULL)
 }
 
+f3out_to_fittedf2out = function(f2out, f3out) {
+  # computes fitted f2 statistics data frame from f2 and f3 data frames
+  # will not include f2(outgroup, X)
 
+  f2out %>%
+    right_join(f3out %>% filter(pop2 != pop3) %>% transmute(pop1=pop2, pop2=pop3, f3 = fit), by = c('pop1', 'pop2')) %>%
+    left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop1=pop2, f2_1 = fit), by = c('pop1')) %>%
+    left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop2=pop3, f2_2 = fit), by = c('pop2')) %>%
+    transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = fit - est, z = diff/se, p.value = ztop(z))
+}
 
 
 

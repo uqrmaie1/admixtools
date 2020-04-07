@@ -52,9 +52,7 @@ and extracts data required to compute blocked f-statistics for any sets of sampl
 .rds files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
 The function calls packedancestrymap_to_aftable or plink_to_aftable
-and afs_to_f2_blocks. The default treatment of missing data is na.action = 'none'
-which is similar to useallsnps: YES. To get results that are closer to useallsnps: NO,
-use na.action = 'remove'." />
+and afs_to_f2_blocks." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -163,13 +161,12 @@ and extracts data required to compute blocked f-statistics for any sets of sampl
 <code>.rds</code> files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
 The function calls <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code> or <code><a href='plink_to_aftable.html'>plink_to_aftable</a></code>
-and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. The default treatment of missing data is <code>na.action = 'none'</code>
-which is similar to <code>useallsnps: YES</code>. To get results that are closer to <code>useallsnps: NO</code>,
-use <code>na.action = 'remove'</code>.</p>
+and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>extract_counts</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
+    <pre class="usage"><span class='fu'>extract_counts</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>0.25</span>, <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>, <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
@@ -190,12 +187,28 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>the individuals for which to extract data</p></td>
     </tr>
     <tr>
-      <th>na.action</th>
-      <td><p>what to do with SNPs with missing data.</p><ul>
-<li><p><code>none</code> (default) output table will have missing data</p></li>
-<li><p><code>impute</code> allele frequencies will be imputed from other populations</p></li>
-<li><p><code>remove</code> SNPs with missing data will be removed</p></li>
-</ul></td>
+      <th>maxmiss</th>
+      <td><p>discard SNPs which are missing in a fraction of individuals greater than <code>maxmiss</code></p></td>
+    </tr>
+    <tr>
+      <th>minmaf</th>
+      <td><p>discard SNPs with minor allele frequency less than <code>minmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>maxmaf</th>
+      <td><p>discard SNPs which minor allele frequency greater than than <code>maxmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>transitions</th>
+      <td><p>set to <code>FALSE</code> to exclude transition SNPs</p></td>
+    </tr>
+    <tr>
+      <th>transversions</th>
+      <td><p>set to <code>FALSE</code> to exclude transversion SNPs</p></td>
+    </tr>
+    <tr>
+      <th>keepsnps</th>
+      <td><p>SNP IDs of SNPs to keep. overrides other SNP filtering options</p></td>
     </tr>
     <tr>
       <th>maxmem</th>

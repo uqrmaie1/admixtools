@@ -69,6 +69,18 @@ mat_to_arr3d = function(mat, dim1) {
   array(t(mat), c(dim1, ncol(mat)/dim1, nrow(mat)))
 }
 
+# for a m*m*n 3d array, return the m*n diagonal matrix
+diag_3d = function(arr) {
+  arr %<>% as.array
+  d1 = dim(arr)[1]
+  d3 = dim(arr)[3]
+  matrix(arr[as.matrix(expand.grid(1:d1, 1:d3)[,c(1,1,2)])], d1)
+}
+
+weighted_row_means = function(mat, weights, ...) {
+  rowMeans(mat * rep(weights, each = nrow(mat)), ...) / mean(weights, na.rm = TRUE)
+}
+
 
 treat_missing = function(afmatrix, countmatrix = NULL, snpfile = NULL,
                          na.action = 'none', verbose = TRUE) {

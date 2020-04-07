@@ -4,8 +4,9 @@
 \alias{extract_f2}
 \title{Compute and store blocked f2 statistics}
 \usage{
-extract_f2(pref, outdir, inds = NULL, pops = NULL,
-  na.action = "none", maxmem = 8000, overwrite = FALSE,
+extract_f2(pref, outdir, inds = NULL, pops = NULL, maxmem = 8000,
+  maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE,
+  transversions = TRUE, keepsnps = NULL, overwrite = FALSE,
   format = NULL, verbose = TRUE)
 }
 \arguments{
@@ -19,14 +20,19 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
 
-\item{na.action}{what to do with SNPs with missing data.
-\itemize{
-\item \code{none} (default) output table will have missing data
-\item \code{impute} allele frequencies will be imputed from other populations
-\item \code{remove} SNPs with missing data will be removed
-}}
-
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
+
+\item{maxmiss}{discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
+
+\item{minmaf}{discard SNPs with minor allele frequency less than \code{minmaf}}
+
+\item{maxmaf}{discard SNPs which minor allele frequency greater than than \code{maxmaf}}
+
+\item{transitions}{set to \code{FALSE} to exclude transition SNPs}
+
+\item{transversions}{set to \code{FALSE} to exclude transversion SNPs}
+
+\item{keepsnps}{SNP IDs of SNPs to keep. overrides other SNP filtering options}
 
 \item{overwrite}{should existing files be overwritten?}
 
@@ -40,13 +46,11 @@ Prepare data for various admixtools functions. Reads data from packedancestrymap
 and computes allele frequencies and f2 block jackknife statistics for selected populations.
 Data is either written to disk in files for each population and population pair, or returned as list.
 This function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
-and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'}
-which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO},
-use \code{na.action = 'remove'}.
+and \code{\link{afs_to_f2_blocks}}.
 }
 \examples{
 \dontrun{
 pref = 'my/genofiles/prefix'
-extract_f2(pref, pops = c('Protoss', 'Zerg', 'Terran'))
+extract_f2(pref, pops = c('popA', 'popB', 'popC'))
 }
 }

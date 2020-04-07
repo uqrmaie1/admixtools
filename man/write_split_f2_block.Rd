@@ -34,8 +34,7 @@ which takes a (sub-)block of pairwise f2-statistics, and writes to disk one pair
 }
 \examples{
 \dontrun{
-afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations,
-                                        na.action = 'none', return_matrix = TRUE)
+afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
 split_mat(afmatall, pops_per_block = 20, outdir = 'afmatall_split_v42.1/')
 numblocks = 185 # this should be the number of split allele frequency files
 for(j in 1:numblocks) {

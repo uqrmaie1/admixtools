@@ -4,20 +4,12 @@
 \alias{read_plink}
 \title{Read genotype data from \code{PLINK} files}
 \usage{
-read_plink(pref, inds = NULL, na.action = "none", auto_only = TRUE,
-  verbose = FALSE)
+read_plink(pref, inds = NULL, auto_only = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
 
 \item{inds}{optional vector of samples to read in}
-
-\item{na.action}{what to do with SNPs with missing data.
-\itemize{
-\item \code{none} (default) output table will have missing data
-\item \code{impute} allele frequencies will be imputed from other populations
-\item \code{remove} SNPs with missing data will be removed
-}}
 
 \item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
 

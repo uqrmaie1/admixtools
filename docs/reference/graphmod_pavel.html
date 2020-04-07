@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read f2 jackknife blocks from genotype data — f2_from_geno • admixtools</title>
+<title>Return all graphs created from permuting a subclade — graphmod_pavel • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,13 +45,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Read f2 jackknife blocks from genotype data — f2_from_geno" />
+<meta property="og:title" content="Return all graphs created from permuting a subclade — graphmod_pavel" />
 
-<meta property="og:description" content="Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-and computes allele frequencies and f2 block jackknife statistics for selected populations.
-Data is either written to disk in files for each population and population pair, or returned as list.
-This function calls packedancestrymap_to_aftable / plink_to_aftable
-and afs_to_f2_blocks." />
+<meta property="og:description" content="generates new graphs from basegraph as follows:
+generates all possible trees using `addpops`` (which are not in basegraph)
+attaches trees to connection_edge, which is defined by two nodes in basegraph
+adds edges originating above each edge in source_node, to each node above `addpops``
+
+" />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -148,61 +149,50 @@ and afs_to_f2_blocks." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read f2 jackknife blocks from genotype data</h1>
+    <h1>Return all graphs created from permuting a subclade</h1>
     
-    <div class="hidden name"><code>f2_from_geno.Rd</code></div>
+    <div class="hidden name"><code>graphmod_pavel.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-and computes allele frequencies and f2 block jackknife statistics for selected populations.
-Data is either written to disk in files for each population and population pair, or returned as list.
-This function calls <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code> / <code><a href='plink_to_aftable.html'>plink_to_aftable</a></code>
-and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
+    <p>generates new graphs from basegraph as follows:</p><ol>
+<li><p>generates all possible trees using `addpops`` (which are not in basegraph)</p></li>
+<li><p>attaches trees to connection_edge, which is defined by two nodes in basegraph</p></li>
+<li><p>adds edges originating above each edge in <code>source_node</code>, to each node above `addpops``</p></li>
+</ol>
+
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2_from_geno</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
-  <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>graphmod_pavel</span>(<span class='no'>basegraph</span>, <span class='no'>addpops</span>, <span class='no'>connection_edge</span>, <span class='no'>source_nodes</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>pref</th>
-      <td><p>prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
-PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
+      <th>basegraph</th>
+      <td><p>an admixture graph as igraph object. (convert from edge list using <code><a href='https://rdrr.io/pkg/igraph/man/graph_from_edgelist.html'>igraph::graph_from_edgelist</a></code>)</p></td>
     </tr>
     <tr>
-      <th>inds</th>
-      <td><p>the individuals for which data should be extracted.</p></td>
+      <th>addpops</th>
+      <td><p>a vector of population labels which are not in <code>basegraph</code>. These populations should form a clade. All possible trees will be generated and those trees will be attached to <code>basegraph</code>.</p></td>
     </tr>
     <tr>
-      <th>pops</th>
-      <td><p>the populations for which data should be extracted. <code>pops</code> and <code>inds</code> cannot be specified
-at the same time. If none are specified, all populations will be extracted.</p></td>
+      <th>connection_edge</th>
+      <td><p>edge in <code>basegraph</code> where the tree made from <code>addpops</code> should be attached</p></td>
     </tr>
     <tr>
-      <th>maxmem</th>
-      <td><p>split up allele frequency data into blocks, if memory requirements exceed <code>maxmem</code> MB.</p></td>
-    </tr>
-    <tr>
-      <th>format</th>
-      <td><p>supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read</p></td>
-    </tr>
-    <tr>
-      <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <th>source_nodes</th>
+      <td><p>nodes in <code>basegraph</code>. edges above these nodes will be added and attached to all terminal edges leading to <code>addpops</code></p></td>
     </tr>
     </table>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>pref</span> <span class='kw'>=</span> <span class='st'>'my/genofiles/prefix'</span>
-<span class='no'>f2_blocks</span> <span class='kw'>=</span> <span class='fu'>f2_from_geno</span>(<span class='no'>pref</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Protoss'</span>, <span class='st'>'Zerg'</span>, <span class='st'>'Terran'</span>))
+<span class='fu'>graphmod_pavel</span>(<span class='no'>example_igraph</span>, <span class='kw'>addpops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>),
+               <span class='kw'>connection_edge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'N2N0'</span>, <span class='st'>'N1N'</span>), <span class='kw'>source_nodes</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'N2N2'</span>))
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

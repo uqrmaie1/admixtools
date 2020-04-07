@@ -37,6 +37,7 @@ library('admixtools')
 ```{r, echo=FALSE}
 library('admixtools')
 ```
+However, if you want to use the interactive browser app, you have to install the R package on your local computer.
 
 
 ## Usage

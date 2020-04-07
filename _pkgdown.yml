@@ -45,7 +45,9 @@ reference:
       - random_admixturegraph
       - summarize_triples
       - qpadm_models
-
+  - title: "Everything"
+    contents:
+          - starts_with(".")
 
 
 

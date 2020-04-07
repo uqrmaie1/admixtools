@@ -155,8 +155,7 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>,
-  <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_matrix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -171,25 +170,7 @@
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>vector of populations from which to compute allele frequencies.
-<code>pops</code> and <code>inds</code> cannot be specified at the same time. If none are specified,
-populations will be extracted from the third column in the <code>.ind</code> file</p></td>
-    </tr>
-    <tr>
-      <th>na.action</th>
-      <td><p>what to do with SNPs with missing data.</p><ul>
-<li><p><code>none</code> (default) output table will have missing data</p></li>
-<li><p><code>impute</code> allele frequencies will be imputed from other populations</p></li>
-<li><p><code>remove</code> SNPs with missing data will be removed</p></li>
-</ul></td>
-    </tr>
-    <tr>
-      <th>auto_only</th>
-      <td><p>If <code>TRUE</code> (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.</p></td>
-    </tr>
-    <tr>
-      <th>return_matrix</th>
-      <td><p>return data as list of matrices</p></td>
+      <td><p>vector of populations from which to compute allele frequencies. If <code>NULL</code> (default), populations will be extracted from the third column in the <code>.ind</code> file</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -199,8 +180,7 @@ populations will be extracted from the third column in the <code>.ind</code> fil
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with two items: allele frequency data and individual counts.
-Unless <code>return_matrix</code> is specified, first six columns are bimfile, remaining columns are data for each population.</p>
+    <p>a list with two items: allele frequency data and individual counts.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

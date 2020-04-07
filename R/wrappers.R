@@ -277,11 +277,11 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/
 #'                 parfile = 'path/to/parfile')
 #' }
 qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
-                           printonly = FALSE, badsnps = NULL, lambdascale = -1, inbreed = 'NO',
-                           diag = 0.0001, outpop = 'NULL',
+                           printonly = FALSE, badsnps = NULL, lambdascale = NULL, inbreed = 'NO',
+                           diag = 0.0001, outpop = 'NULL', loadf3 = NULL,
                            lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 2,
-                           useallsnps = 'NO', doanalysis = 'YES',
-                           bigiter = 100, env = '', verbose = TRUE) {
+                           allsnps = 'NO', oldallsnps = 'NO', doanalysis = 'YES',
+                           bigiter = 100, initmix = 40000, env = '', verbose = TRUE) {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
   stopifnot(!is.null(parfile) | !is.null(pref))
@@ -304,13 +304,20 @@ qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parf
                      'hires: ', hires, '\n',
                      'forcezmode: ', forcezmode, '\n',
                      'zthresh: ', zthresh, '\n',
-                     'useallsnps: ', useallsnps, '\n',
-                     'lambdascale: ', lambdascale, '\n',
+                     # 'allsnps: ', allsnps, '\n',
+                     # 'oldallsnps: ', oldallsnps, '\n',
+                     # 'lambdascale: ', lambdascale, '\n',
+                     'fstatsoutname: ', fstatsfile, '\n',
                      'badsnpname: ', badsnpfile, '\n',
                      'inbreed: ', inbreed, '\n',
                      'bigiter: ', bigiter, '\n',
-                     'fstatsname: ', fstatsfile, '\n',
+                     'initmix: ', initmix, '\n',
                      'doanalysis: ', doanalysis, '\n')
+    if(!is.null(loadf3) && loadf3 == 'YES') parfile %<>% paste0('fstatsname: ', fstatsfile, '\n')
+    if(!is.null(lambdascale)) parfile %<>% paste0('lambdascale: ', lambdascale, '\n')
+    if(allsnps == 'YES') parfile %<>% paste0('allsnps: YES\nloadf3: YES\n')
+    if(oldallsnps == 'YES') parfile %<>% paste0('oldallsnps: YES\nallsnps: YES\nloadf3: NO\n')
+
     pf = paste0(outdir, '/parfile')
     write(parfile, pf)
     write(badsnps, badsnpfile)
@@ -475,7 +482,7 @@ parse_qpgraph_output = function(outfile) {
              separate('X1', c('a', 'b', 'score'), sep=' +', convert = T, extra='drop', fill='right'))$score
 
   f2 = dat %>% filter(grepl(' f2: ', .data$X1)) %>%
-    separate('X1', c('pop1', 'pop2', 'fst','fit','est2','diff','se','z'), sep=' +', convert = TRUE) %>%
+    separate('X1', c('pop1', 'pop2', 'fst','fit','est','diff','se','z'), sep=' +', convert = TRUE) %>%
     select(-.data$fst)
 
   f3 = dat %>% filter(grepl(' ff3fit: ', .data$X1)) %>%
@@ -484,12 +491,13 @@ parse_qpgraph_output = function(outfile) {
 
   outlierstart = str_which(dat$X1, '^outliers:')[1]+2
   outlierend = str_which(dat$X1, '^worst f-stat:')[1]-1
-  popstart = str_which(dat$X1, '^fst:')[1]+2
-  fststart = str_which(dat$X1, '^fst:')[1]+2
-  fstend = str_which(dat$X1, '^f2:')[1]-2
-  f2start = fstend+4
-  f2end = str_which(dat$X1, '^ff3:')[1]-2
+  #fststart = str_which(dat$X1, '^fst:')[1]+2
+  #fstend = str_which(dat$X1, '^f2:')[1]-2
+  #f2start = fstend+4
+  #f2end = str_which(dat$X1, '^ff3:')[1]-2
   pops = dat$X1 %>% str_subset('^population:') %>% str_squish %>% word(3)
+  #if(is.na(pops)[1]) pops = dat$X1 %>% str_subset('^label') %>% str_split(' ') %>% map(2) %>% unlist
+  if(is.na(pops)[1]) pops = dat$X1 %>% str_subset('^zzaddw') %>% str_split(' ') %>% map(2) %>% unlist %>% unique
   denom = 1000
   amb = names(which(table(str_sub(pops, 1, 3)) > 1))
   if(length(amb) > 0) warning(paste('Ambiguous populations ommited from outliers: ', amb))
@@ -500,14 +508,14 @@ parse_qpgraph_output = function(outfile) {
   numpop = length(pops)
   f2 %<>% mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
   f3 %<>% mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
-  f21 = dat %>% slice(f2start:f2end) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
-    mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'est') %>% mutate(est = est/denom)
-  fst = dat %>% slice(fststart:fstend) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
-    mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
-  f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) #%>%
+  #f21 = dat %>% slice(f2start:f2end) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
+  #  mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'est') %>% mutate(est = est/denom)
+  #fst = dat %>% slice(fststart:fstend) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
+  #  mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
+  #f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) #%>%
     #mutate(pop1 = str_sub(pop1, 1, 3), pop2 = str_sub(pop2, 1, 3))
 
-  f2 %<>% left_join(f2before, by = c('pop1', 'pop2'))
+  #f2 %<>% left_join(f2before, by = c('pop1', 'pop2'))
 
   namedList(edges, score, f2, f3, f4=outliers)
 }

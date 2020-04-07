@@ -4,8 +4,8 @@
 \alias{f2_from_geno}
 \title{Read f2 jackknife blocks from genotype data}
 \usage{
-f2_from_geno(pref, inds = NULL, pops = NULL, na.action = "none",
-  maxmem = 8000, format = NULL, verbose = TRUE)
+f2_from_geno(pref, inds = NULL, pops = NULL, maxmem = 8000,
+  format = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -15,13 +15,6 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
-
-\item{na.action}{what to do with SNPs with missing data.
-\itemize{
-\item \code{none} (default) output table will have missing data
-\item \code{impute} allele frequencies will be imputed from other populations
-\item \code{remove} SNPs with missing data will be removed
-}}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 
@@ -35,9 +28,7 @@ Prepare data for various admixtools functions. Reads data from packedancestrymap
 and computes allele frequencies and f2 block jackknife statistics for selected populations.
 Data is either written to disk in files for each population and population pair, or returned as list.
 This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}}
-and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'}
-which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO},
-use \code{na.action = 'remove'}.
+and \code{\link{afs_to_f2_blocks}}.
 }
 \examples{
 \dontrun{

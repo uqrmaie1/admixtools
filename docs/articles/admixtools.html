@@ -132,12 +132,12 @@
 <pre><code>## # A tibble: 6 x 7
 ##   pop1        pop2                 pop3                  est      se     z     p
 ##   &lt;chr&gt;       &lt;chr&gt;                &lt;chr&gt;               &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1 Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.0459 4.81e-4  95.5     0
-## 2 Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.0560 5.19e-4 108.      0
-## 3 Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.0577 5.60e-4 103.      0
-## 4 Denisova.DG Vindija.DG           Chimp.REF          0.0461 4.75e-4  97.2     0
-## 5 Denisova.DG Vindija.DG           Mbuti.DG           0.0563 5.08e-4 111.      0
-## 6 Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.0583 5.55e-4 105.      0</code></pre>
+## 1 Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.0459 3.61e-4 127.      0
+## 2 Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.0560 4.65e-4 120.      0
+## 3 Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.0577 6.03e-4  95.7     0
+## 4 Denisova.DG Vindija.DG           Chimp.REF          0.0461 4.43e-4 104.      0
+## 5 Denisova.DG Vindija.DG           Mbuti.DG           0.0563 5.07e-4 111.      0
+## 6 Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.0583 5.94e-4  98.2     0</code></pre>
 <p><br></p>
 </div>
 <div id="qpdstat" class="section level2">
@@ -148,12 +148,12 @@
 <pre><code>## # A tibble: 6 x 8
 ##   pop1     pop2        pop3        pop4             est      se      z         p
 ##   &lt;chr&gt;    &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
-## 1 Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.16e-2 3.65e-4 31.9   1.88e-223
-## 2 Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  1.58e-3 2.76e-4  5.72  1.04e-  8
-## 3 Denisov… Altai_Nean… Russia_Ust… Switzerlan… -1.68e-4 2.93e-4 -0.575 5.65e-  1
-## 4 Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.20e-2 3.76e-4 31.9   1.14e-222
-## 5 Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  1.81e-3 2.83e-4  6.39  1.67e- 10
-## 6 Denisov… Vindija.DG  Russia_Ust… Switzerlan… -1.86e-4 3.04e-4 -0.614 5.39e-  1</code></pre>
+## 1 Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.16e-2 4.05e-4 28.7   1.17e-181
+## 2 Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  1.58e-3 2.32e-4  6.80  1.08e- 11
+## 3 Denisov… Altai_Nean… Russia_Ust… Switzerlan… -1.68e-4 2.37e-4 -0.708 4.79e-  1
+## 4 Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.20e-2 3.00e-4 39.9   0.       
+## 5 Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  1.81e-3 2.14e-4  8.48  2.21e- 17
+## 6 Denisov… Vindija.DG  Russia_Ust… Switzerlan… -1.86e-4 2.49e-4 -0.747 4.55e-  1</code></pre>
 <p><br></p>
 </div>
 <div id="qpadm" class="section level2">
@@ -171,36 +171,36 @@
 ## # A tibble: 2 x 5
 ##   target      left                 weight    se     z
 ##   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1 Denisova.DG Altai_Neanderthal.DG   50.2  24.0  2.10
-## 2 Denisova.DG Vindija.DG            -49.2  24.0 -2.06
+## 1 Denisova.DG Altai_Neanderthal.DG   49.7  23.3  2.13
+## 2 Denisova.DG Vindija.DG            -48.7  23.3 -2.08
 ## 
 ## $f4
 ## # A tibble: 36 x 9
 ##    pop1    pop2       pop3    pop4            est      se     z         p weight
 ##    &lt;chr&gt;   &lt;chr&gt;      &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;
-##  1 Deniso… Altai_Nea… Chimp.… Mbuti.DG    0.0101  2.82e-4  35.6 4.79e-278   50.2
-##  2 Deniso… fit        Chimp.… Mbuti.DG   -0.00616 3.91e-4 -15.7 9.78e- 56   NA  
-##  3 Deniso… Vindija.DG Chimp.… Mbuti.DG    0.0102  2.90e-4  35.1 1.28e-269  -49.2
-##  4 Deniso… Altai_Nea… Chimp.… Russia_Us…  0.0118  3.48e-4  34.0 4.75e-253   50.2
-##  5 Deniso… fit        Chimp.… Russia_Us…  0.0144  8.93e-4  16.1 1.64e- 58   NA  
-##  6 Deniso… Vindija.DG Chimp.… Russia_Us…  0.0122  3.53e-4  34.5 4.40e-260  -49.2
-##  7 Deniso… Altai_Nea… Chimp.… Switzerla…  0.0116  3.65e-4  31.9 1.88e-223   50.2
-##  8 Deniso… fit        Chimp.… Switzerla…  0.0846  4.96e-4 171.  0.          NA  
-##  9 Deniso… Vindija.DG Chimp.… Switzerla…  0.0120  3.76e-4  31.9 1.14e-222  -49.2
-## 10 Deniso… Altai_Nea… Mbuti.… Chimp.REF  -0.0101  2.82e-4 -35.6 4.79e-278   50.2
+##  1 Deniso… Altai_Nea… Chimp.… Mbuti.DG    0.0101  2.96e-4  34.0 9.79e-253   49.7
+##  2 Deniso… fit        Chimp.… Mbuti.DG   -0.00615 3.33e-4 -18.5 3.98e- 76   NA  
+##  3 Deniso… Vindija.DG Chimp.… Mbuti.DG    0.0102  2.44e-4  41.7 0.         -48.7
+##  4 Deniso… Altai_Nea… Chimp.… Russia_Us…  0.0118  4.53e-4  26.1 5.11e-150   49.7
+##  5 Deniso… fit        Chimp.… Russia_Us…  0.0144  6.98e-4  20.6 1.46e- 94   NA  
+##  6 Deniso… Vindija.DG Chimp.… Russia_Us…  0.0122  3.18e-4  38.2 0.         -48.7
+##  7 Deniso… Altai_Nea… Chimp.… Switzerla…  0.0116  4.05e-4  28.7 1.17e-181   49.7
+##  8 Deniso… fit        Chimp.… Switzerla…  0.0846  3.96e-4 214.  0.          NA  
+##  9 Deniso… Vindija.DG Chimp.… Switzerla…  0.0120  3.00e-4  39.9 0.         -48.7
+## 10 Deniso… Altai_Nea… Mbuti.… Chimp.REF  -0.0101  2.96e-4 -34.0 9.79e-253   49.7
 ## # … with 26 more rows
 ## 
 ## $rankdrop
 ## # A tibble: 1 x 7
 ##   f4rank   dof chisq      p dofdiff chisqdiff p_nested
 ## *  &lt;int&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;
-## 1      1     2  7.14 0.0281      NA        NA       NA
+## 1      1     2  7.21 0.0272      NA        NA       NA
 ## 
 ## $popdrop
 ## # A tibble: 1 x 13
 ##   pat      wt   dof chisq      p f4rank Altai_Neanderth… Vindija.DG feasible
 ##   &lt;chr&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;int&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;lgl&gt;   
-## 1 00        0     2  7.14 0.0281      1             50.2      -49.2 FALSE   
+## 1 00        0     2  7.21 0.0272      1             49.7      -48.7 FALSE   
 ## # … with 4 more variables: best &lt;lgl&gt;, dofdiff &lt;int&gt;, chisqdiff &lt;dbl&gt;,
 ## #   p_nested &lt;dbl&gt;</code></pre>
 <div id="caveats" class="section level3">
@@ -237,15 +237,15 @@
 <pre><code>## # A tibble: 27 x 6
 ##    from  to                   type     weight   low  high
 ##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-##  1 R     Chimp.REF            edge   2.03e- 1    NA    NA
-##  2 R     N4N                  edge   2.03e- 1    NA    NA
-##  3 N0N   Altai_Neanderthal.DG edge   7.66e- 3    NA    NA
-##  4 N0N   N3N0                 edge   2.92e- 2    NA    NA
-##  5 N1N   N0N                  edge   2.34e- 1    NA    NA
-##  6 N1N   N3N1                 edge   9.81e- 2    NA    NA
-##  7 N2N0  N1N                  edge   1.06e- 1    NA    NA
-##  8 N2N0  N3N6                 edge   4.28e- 2    NA    NA
-##  9 N2N1  Vindija.DG           edge  -1.73e-18    NA    NA
+##  1 R     Chimp.REF            edge   1.97e- 1    NA    NA
+##  2 R     N4N                  edge   1.97e- 1    NA    NA
+##  3 N0N   Altai_Neanderthal.DG edge   1.13e- 2    NA    NA
+##  4 N0N   N3N0                 edge   3.33e- 2    NA    NA
+##  5 N1N   N0N                  edge   2.16e- 1    NA    NA
+##  6 N1N   N3N1                 edge   9.73e- 2    NA    NA
+##  7 N2N0  N1N                  edge   1.01e- 1    NA    NA
+##  8 N2N0  N3N6                 edge   5.16e- 2    NA    NA
+##  9 N2N1  Vindija.DG           edge  -3.44e-13    NA    NA
 ## 10 N2N1  N2N3                 edge   0.          NA    NA
 ## # … with 17 more rows</code></pre>
 <p><br></p>

@@ -51,7 +51,7 @@ afs_to_f2_blocks = function(afmat, countmat, block_lengths, f2_denom=1, maxmem =
                                          choose(numsplits2+1,2), ' block pairs)\n'))
   }
 
-  f2_blocks = get_split_f2_blocks(afmat, countmat, block_lengths, starts=starts,
+  f2_blocks = get_split_f2_blocks(afmat, countmat, block_lengths, starts = starts,
                                   ends=ends, outdir = outdir, overwrite = overwrite,
                                   f2_denom = f2_denom, verbose = verbose)
   f2_blocks
@@ -67,6 +67,7 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
   arrlist = replicate(numsplits2, list())
   nsnp = nrow(afmat)
   numblocks = length(block_lengths)
+  totafs = rowSums(afmat*countmat, na.rm=T)/rowSums(countmat, na.rm=T)
 
   for(i in 1:ncol(cmb)) {
     if(numsplits2 > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', ncol(cmb)))
@@ -80,7 +81,7 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
     nam2 = colnames(b2)
     #numer = mats_to_f2arr(afmat[,s1,drop=F], afmat[,s2,drop=F], countmat[,s1,drop=F], countmat[,s2,drop=F])
     #f2_subblock = bj_arr_lo_mean(numer, block_lengths, loo = loo) / f2_denom
-    f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F]) %>%
+    f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F], totafs) %>%
       block_arr_mean(block_lengths) %>%
       `/`(f2_denom) %>%
       `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
@@ -103,7 +104,7 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
 }
 
 
-mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
+mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, totafs) {
   # Compute f2 stats for all SNPs and all population pairs from two af matrices
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
@@ -115,15 +116,85 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
   d2 = c(1, ncol(afmat2), nsnp)
   afrr1 = rray(t(afmat1), dim = d1)
   afrr2 = rray(t(afmat2), dim = d2)
-  denom1 = pmax(1, colMeans(countmat1, na.rm = T)-1)
-  denom2 = t(pmax(1, colMeans(countmat2, na.rm = T)-1))
+  #denom1 = pmax(1, colMeans(countmat1, na.rm = T)-1)
+  #denom2 = t(pmax(1, colMeans(countmat2, na.rm = T)-1))
+  denom1 = rray(t(matrix(pmax(1, countmat1-1), nrow(countmat1))), dim = d1)
+  denom2 = rray(t(matrix(pmax(1, countmat2-1), nrow(countmat2))), dim = d2)
   pq1 = afrr1*(1-afrr1)
   pq2 = afrr2*(1-afrr2)
   pqarr = pq1/denom1 + pq2/denom2
-  arr = as.array((afrr1 - afrr2)^2 - pqarr)
+  arr = (afrr1 - afrr2)^2 - pqarr
+  harr = rray(totafs*(1-totafs), dim = c(1, 1, nsnp))
+  #harr = sqrt(pq1 * pq2)
+  arr = as.array(arr/sqrt(harr))
+  # arr = array(pmax(arr, 0), dim(arr))
+  # f2 to fst
+  # countarr1 = rray(t(countmat1), dim = d1)
+  # countarr2 = rray(t(countmat2), dim = d2)
+  # arr = arr / (arr + pq1 * (denom1+1)/denom1  + pq2 * (denom2+1)/denom2 + 1e-9) # f2 to fst
   dimnames(arr)[[1]] = colnames(afmat1)
   dimnames(arr)[[2]] = colnames(afmat2)
   arr
+}
+
+mats_to_f2arr2 = function(afmat1, afmat2, countmat1, countmat2, block_lengths) {
+  # Compute f2 stats for all SNPs and all population pairs from two af matrices
+  # in contrast to mats_to_f2arr, everything is averaged across SNP blocks first
+  # resulting array has 3rd dimension nblocks, not nsnps
+  # should be equivalent to count data f2blocks
+
+  stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
+  stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
+  stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
+
+  nsnp = nrow(afmat1)
+  nblock = length(block_lengths)
+  dd1 = c(ncol(afmat1), 1, nsnp)
+  dd2 = c(1, ncol(afmat2), nsnp)
+  d1 = c(ncol(afmat1), 1, nblock)
+  d2 = c(1, ncol(afmat2), nblock)
+  nmat1 = countmat1
+  nmat2 = countmat2
+  amat1 = afmat1 * nmat1
+  amat2 = afmat2 * nmat2
+  arr1 = rray(t(amat1), dim = dd1)
+  arr2 = rray(t(amat2), dim = dd2)
+  nrr1 = rray(t(nmat1), dim = dd1)
+  nrr2 = rray(t(nmat2), dim = dd2)
+  aa = block_arr_mean(arr1*arr2, block_lengths)
+  nn = block_arr_mean(nrr1*nrr2, block_lengths)
+
+  a1rr1 = rray(t(block_mat_mean(amat1, block_lengths)), dim = d1)
+  a1rr2 = rray(t(block_mat_mean(amat2, block_lengths)), dim = d2)
+  n1rr1 = rray(t(block_mat_mean(nmat1, block_lengths)), dim = d1)
+  n1rr2 = rray(t(block_mat_mean(nmat2, block_lengths)), dim = d2)
+  a2rr1 = rray(t(block_mat_mean(amat1^2, block_lengths)), dim = d1)
+  a2rr2 = rray(t(block_mat_mean(amat2^2, block_lengths)), dim = d2)
+  n2rr1 = rray(t(block_mat_mean(nmat1^2, block_lengths)), dim = d1)
+  n2rr2 = rray(t(block_mat_mean(nmat2^2, block_lengths)), dim = d2)
+  n3rr1 = rray(t(block_mat_mean(nmat1^3, block_lengths)), dim = d1)
+  n3rr2 = rray(t(block_mat_mean(nmat2^3, block_lengths)), dim = d2)
+
+  x = a2rr1/n2rr1 + a2rr2/n2rr2 - 2*aa/nn
+  y11 = a1rr1/pmax(as.array(n1rr1), as.array(n2rr1 - n1rr1))
+  y21 = a1rr2/pmax(as.array(n1rr2), as.array(n2rr2 - n1rr2))
+  y12 = a2rr1/pmax(as.array(n2rr1), as.array(n3rr1 - n2rr1))
+  y22 = a2rr2/pmax(as.array(n2rr2), as.array(n3rr2 - n2rr2))
+  y1 = y11 - y12
+  y2 = y21 - y22
+
+  p1rr1 = a1rr1/n1rr1
+  p1rr2 = a1rr2/n1rr2
+  p2rr1 = a2rr1/n2rr1
+  p2rr2 = a2rr2/n2rr2
+  y1 = (p1rr1 - p2rr1) / pmax(array(1, d1), as.array(n1rr1 - 1))
+  y2 = (p1rr2 - p2rr2) / pmax(array(1, d2), as.array(n1rr2 - 1))
+
+  f2 = x - y1 - y2
+
+  dimnames(f2)[[1]] = colnames(afmat1)
+  dimnames(f2)[[2]] = colnames(afmat2)
+  f2
 }
 
 xmats_to_pairarrs = function(xmat1, xmat2) {
@@ -167,10 +238,11 @@ indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths, return_ar
   pairsums = pairs %>%
     left_join(poplist %>% transmute(ind1 = ind, pop1 = pop), by = 'ind1') %>%
     left_join(poplist %>% transmute(ind2 = ind, pop2 = pop), by = 'ind2') %>%
-    #mutate(p1 = pmin(pop1, pop2), p2 = pmax(pop1, pop2), pop1 = p1, pop2 = p2) %>%
     group_by(pop1, pop2, bl) %>%
+    #mutate(aa2 = ifelse(ind1 == ind2, mean(aa[ind1 != ind2], na.rm=T), aa),
+    #       nn2 = ifelse(ind1 == ind2, mean(nn[ind1 != ind2], na.rm=T), nn)) %>%
     summarize(pp = mean(aa[nn>0]/nn[nn>0]), aa = sum(aa), nn = sum(nn)) %>% ungroup
-  # check if it should rather be pp = sum(aa/nn)
+    #summarize(pp = weighted.mean(aa[nn>0]/nn[nn>0], nn2), aa = sum(aa), nn = sum(nn)) %>% ungroup
 
   pairsums_samepop = pairsums %>% filter(pop1 == pop2) %>% transmute(pop = pop1, bl, aa, nn, pp)
 
@@ -181,7 +253,6 @@ indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths, return_ar
 
   # corr = pairsums_samepop %>% left_join(indsums, by=c('bl', 'pop')) %>%
   #   mutate(den1 = pmax(nn - n, n),
-  #   # used to be mutate(den1 = pmax(nn - n, 1)
   #          n3unfix = n*nn, n3fix = nn/n^2, n3 = n3unfix * n3fix,
   #          den2 = pmax(n3 - nn, nn),
   #          # used to be den2 = pmax(n3 - nn, 1),
@@ -190,7 +261,7 @@ indpairs_to_f2blocks = function(indivs, pairs, poplist, block_lengths, return_ar
 
   corr = pairsums_samepop %>%
     left_join(indsums, by=c('bl', 'pop')) %>%
-    mutate(corr = pmax(0, (p-pp))/pmax(1, (n-1)))
+    mutate(corr = pmax(0, (p-pp))/pmax(1, n-1))
 
   if(!apply_corr) corr$corr = 0
 

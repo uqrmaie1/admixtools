@@ -161,8 +161,7 @@ reading and writing <code>PLINK</code> files.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>read_plink</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>na.action</span> <span class='kw'>=</span> <span class='st'>"none"</span>, <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>read_plink</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -174,14 +173,6 @@ reading and writing <code>PLINK</code> files.</p>
     <tr>
       <th>inds</th>
       <td><p>optional vector of samples to read in</p></td>
-    </tr>
-    <tr>
-      <th>na.action</th>
-      <td><p>what to do with SNPs with missing data.</p><ul>
-<li><p><code>none</code> (default) output table will have missing data</p></li>
-<li><p><code>impute</code> allele frequencies will be imputed from other populations</p></li>
-<li><p><code>remove</code> SNPs with missing data will be removed</p></li>
-</ul></td>
     </tr>
     <tr>
       <th>auto_only</th>

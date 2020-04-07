@@ -5,7 +5,6 @@
 \title{Read genotype data from packedancestrymap files}
 \usage{
 read_packedancestrymap(pref, inds = NULL, blocksize = 1000,
-  na.action = "none", keepsnps = NULL, auto_only = TRUE,
   verbose = TRUE)
 }
 \arguments{
@@ -14,15 +13,6 @@ read_packedancestrymap(pref, inds = NULL, blocksize = 1000,
 \item{inds}{optional vector of samples to read in}
 
 \item{blocksize}{number of SNPs read in each block.}
-
-\item{na.action}{what to do with SNPs with missing data.
-\itemize{
-\item \code{none} (default) output table will have missing data
-\item \code{impute} allele frequencies will be imputed from other populations
-\item \code{remove} SNPs with missing data will be removed
-}}
-
-\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
 
 \item{verbose}{print progress updates}
 }

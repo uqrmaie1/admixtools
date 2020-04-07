@@ -4,7 +4,8 @@
 \alias{extract_counts}
 \title{Extract and store data needed to compute blocked f2}
 \usage{
-extract_counts(pref, outdir, inds = NULL, na.action = "none",
+extract_counts(pref, outdir, inds = NULL, maxmiss = 0.25, minmaf = 0,
+  maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
   keepsnps = NULL, maxmem = 8000, overwrite = FALSE, format = NULL,
   verbose = TRUE)
 }
@@ -16,12 +17,17 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{the individuals for which to extract data}
 
-\item{na.action}{what to do with SNPs with missing data.
-\itemize{
-\item \code{none} (default) output table will have missing data
-\item \code{impute} allele frequencies will be imputed from other populations
-\item \code{remove} SNPs with missing data will be removed
-}}
+\item{maxmiss}{discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
+
+\item{minmaf}{discard SNPs with minor allele frequency less than \code{minmaf}}
+
+\item{maxmaf}{discard SNPs which minor allele frequency greater than than \code{maxmaf}}
+
+\item{transitions}{set to \code{FALSE} to exclude transition SNPs}
+
+\item{transversions}{set to \code{FALSE} to exclude transversion SNPs}
+
+\item{keepsnps}{SNP IDs of SNPs to keep. overrides other SNP filtering options}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 
@@ -38,9 +44,7 @@ and extracts data required to compute blocked f-statistics for any sets of sampl
 \code{.rds} files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
 The function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
-and \code{\link{afs_to_f2_blocks}}. The default treatment of missing data is \code{na.action = 'none'}
-which is similar to \code{useallsnps: YES}. To get results that are closer to \code{useallsnps: NO},
-use \code{na.action = 'remove'}.
+and \code{\link{afs_to_f2_blocks}}.
 }
 \examples{
 \dontrun{
