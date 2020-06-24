@@ -159,7 +159,9 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
     gl = geom_label(data=nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
   } else {
-    gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
+    #gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
+    #                  arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(label)'),
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
     gl = geom_label(data=nodes, aes_string(label = 'name'), col = 'black', size = textsize)
   }
@@ -689,4 +691,94 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
   gridExtra::grid.arrange(p1, p2, layout_matrix = matrix(c(1, 1, 2, 2), 2))
 }
 
+#' Plot an admixture graph using plotly
+#' @export
+#' @param graph an admixture graph
+#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+#' the number of intersecting edges. This can take very long for large graphs.
+#' By default this is only done for graphs with fewer than 10 leaves.
+#' @param shift_down shift descendent nodes down
+#' @return a plotly object
+#' @examples
+#' plotly_graph(example_graph)
+plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE) {
+
+  if(class(graph)[1] == 'igraph') {
+    graph = graph
+    edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
+  } else {
+    edges = graph %>% as_tibble
+    names(edges)[1:2] = c('from', 'to')
+    graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
+  }
+
+  if(collapse_threshold > 0) {
+      edges %<>% collapse_edges(10^collapse_threshold)
+  }
+
+  admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
+  graph = edges %>% select(1:2) %>% as.matrix %>% igraph::graph_from_edgelist()
+
+  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
+    set_colnames(c('node', 'x', 'y'))
+
+  eg = edges %>% left_join(pos, by=c('from'='node')) %>%
+    left_join(pos %>% transmute(to=node, xend=x, yend=y), by='to') %>%
+    mutate(type = ifelse(to %in% admixnodes, 'admix', 'normal'))
+
+  if(fix) {
+    eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
+  }
+  if(shift_down) {
+      eg = admixtools:::fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
+  }
+
+  if('weight' %in% names(edges) && TRUE) {
+    edgemul = 1000
+    fa = function(x) paste0(round(x*100), '%')
+    fe = function(x) round(x*edgemul)
+    edges$label = ifelse(edges$type == 'admix', fa(edges$weight), fe(edges$weight))
+    # if(!is.null(qpgraph_ranges)) {
+    #   edges %<>% left_join(qpgraph_ranges, by = c('from', 'to')) %>%
+    #     mutate(label = ifelse(type == 'admix',
+    #                           paste(fa(mid), paste0('[', fa(lo), '-', fa(hi), ']'), sep = '\n'),
+    #                           paste(fe(mid), paste0('[', fe(lo), '-', fe(hi), ']'), sep = '\n')))
+    # }
+  }
+  if(!'label' %in% names(edges)) edges %<>% mutate(label='')
+  e2 = edges %>% transmute(from, to, label) %>% left_join(count(., to), by = c('from'='to'))
+  eg %<>% left_join(e2, by=c('from', 'to')) %>% mutate(indegree = replace_na(n, 0))
+  nodes = eg %>% filter(to %in% admixtools:::get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+    transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
+
+  nadmix = length(admixnodes)
+  textsize = 2.5
+
+  allnodes = eg %>% transmute(from, x, y, xend=0, yend=0, to=0) %>% filter(!duplicated(.))
+  segtext = "ifelse(indegree == 1, to, from)"
+  segtext = "paste(from, to, sep = ' -> ')"
+
+  gg = eg %>% mutate(rownum = 1:n()) %>%
+    ggplot(aes(x = x, xend = xend, y = y, yend = yend, from = from, to = to)) +
+    geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
+                 arrow=arrow(type = 'closed', angle = 10, length = unit(0.15, 'inches'))) +
+    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
+              size = textsize) +
+    geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
+                                       from = NA), size = textsize) +
+    geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
+    theme(panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          legend.position = 'none') +
+    xlab('') + ylab('') +
+    scale_linetype_manual(values = c(admix=3, normal=1)) +
+    ggtitle('') +
+    scale_x_continuous(expand = c(0.1, 0.1))
+
+  plt = plotly::ggplotly(gg, tooltip=c('text'))
+  plt
+
+}
 

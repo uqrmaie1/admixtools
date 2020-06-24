@@ -4,8 +4,8 @@
 \alias{qpgraph_slim}
 \title{Compute the fit of an admixturegraph.}
 \usage{
-qpgraph_slim(graph, f3_est, ppinv, fnscale = 1e-06, numstart = 10,
-  seed = NULL, cpp = TRUE, verbose = FALSE)
+qpgraph_slim(graph, f3_est, ppinv, fudge = 1e-04, fnscale = 1e-06,
+  numstart = 10, seed = NULL, cpp = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{graph}{an admixture graph represented as an \code{\link{igraph}} object}

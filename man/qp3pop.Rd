@@ -11,7 +11,7 @@ qp3pop(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
 
 \item{pop1}{one of the following four:
 \enumerate{

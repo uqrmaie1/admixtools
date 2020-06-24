@@ -1,8 +1,18 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+//#include <RcppEigen.h>
+
+#include <iostream>
+#include <sstream>
+#include <string>
+
+//#include <Eigen/Dense>
+//#include "eiquadprog.h"
+
 using namespace Rcpp;
 using namespace arma;
+//using namespace Eigen;
 
 // #include "eigen-qp.hpp"
 //
@@ -18,45 +28,39 @@ using namespace arma;
 // }
 
 
+struct QPException : public std::exception
+{
+  std::string s;
+  QPException(const std::string &ss) : s(ss) {}
+  ~QPException() throw () {} // Updated
+  const char* what() const throw() { return s.c_str(); }
+};
+
+
+
 // [[Rcpp::export]]
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv,
                                const arma::vec& f3_est, Function qpsolve,
-                               const arma::vec& lower, const arma::vec& upper) {
+                               const arma::vec& lower, const arma::vec& upper, double fudge) {
   mat pppp = ppwts_2d.t() * ppinv;
   mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
+  double trace = 0.0;
   for(int i = 0; i < nc; i++) {
-    for(int j = i+1; j < nc; j++) {
+    for(int j = i; j < nc; j++) {
       cc(i,j) = cc(j,i);
+      if(i == j) trace += cc(j,i);
     }
   }
   for(int i = 0; i < nc; i++) {
-    cc(i,i) += 0.0001;
+    //cc(i,i) += fudge;
+    cc(i,i) += fudge * trace;
   }
   vec q1 = pppp * f3_est;
   mat CI(nc, nc, fill::eye);
   return as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)));
 }
 
-// [[Rcpp::export]]
-arma::vec cpp_opt_edge_lengths_old(const arma::mat& ppwts_2d, const arma::mat& ppinv,
-                                   const arma::vec& f3_est, Function qpsolve) {
-  mat pppp = ppwts_2d.t() * ppinv;
-  mat cc = pppp * ppwts_2d;
-  int nc = cc.n_cols;
-  for(int i = 0; i < nc; i++) {
-    for(int j = i+1; j < nc; j++) {
-      cc(i,j) = cc(j,i);
-    }
-  }
-  for(int i = 0; i < nc; i++) {
-    cc(i,i) += 0.0001;
-  }
-  vec q1 = -(pppp * f3_est);
-  mat CI(nc, nc, fill::eye);
-  vec ci0 = zeros<vec>(nc);
-  return -as<vec>(qpsolve(cc, q1, -CI, ci0));
-}
 
 
 // [[Rcpp::export]]
@@ -97,7 +101,6 @@ arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
 
 // [[Rcpp::export]]
 double cpp_optimweightsfun(arma::vec weights, List args) {
-
   mat pwts = args[0];
   mat ppinv = args[1];
   vec f3_est = args[2];
@@ -108,7 +111,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   Function qpsolve = args[7];
   vec lower = args[8];
   vec upper = args[9];
-
+  double fudge = args[10];
   double nr = pwts.n_rows;
   double nc = pwts.n_cols;
   cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
@@ -122,7 +125,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
       }
     }
   }
-  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper);
+  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge);
   vec w2 = (ppwts_2d * q2) - f3_est;
   vec lik = w2.t() * ppinv * w2;
   return lik(0);
@@ -246,7 +249,6 @@ List cpp_lbfgsb(arma::vec weights, const arma::mat &pwts, const arma::mat &ppinv
 }
 
 */
-
 
 
 

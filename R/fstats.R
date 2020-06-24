@@ -11,7 +11,6 @@
 #' @param countmat matrix of allele counts for all populations (columns) and SNPs (rows).
 #' @param block_lengths vector with lengths of each block. \code{sum(block_lengths)}
 #' has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}
-#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.
 #' @param outdir directory into which to write f2 data (if \code{NULL}, data is returned instead)
 #' @param overwrite should existing files be overwritten? only relevant if \code{outdir} is not \code{NULL}
@@ -27,7 +26,7 @@
 #' \dontrun{
 #' f2_blocks = afs_to_f2_blocks(afmat, countmat, block_lengths)
 #' }
-afs_to_f2_blocks = function(afmat, countmat, block_lengths, f2_denom=1, maxmem = 8000,
+afs_to_f2_blocks = function(afmat, countmat, block_lengths, maxmem = 8000,
                             outdir = NULL, overwrite = FALSE, verbose = TRUE) {
 
   #if('data.frame' %in% class(afs)) afs %<>% select(-seq_len(infocols)) %>% as.matrix
@@ -42,24 +41,25 @@ afs_to_f2_blocks = function(afmat, countmat, block_lengths, f2_denom=1, maxmem =
   ends = c(lead(starts)[-numsplits2]-1, nc)
 
   if(verbose) {
-    alert_info(paste0('allele frequency matrix for ', nrow(afmat), ' SNPs and ',
+    reqmem = round(mem2/1e6)
+    alert_info(paste0('Allele frequency matrix for ', nrow(afmat), ' SNPs and ',
                       nc, ' populations is ', round(mem1/1e6), ' MB\n'))
-    alert_warning(paste0('computing pairwise f2 for all SNPs and population pairs requires ',
-                         round(mem2/1e6), ' MB RAM without splitting\n'))
+    alert_info(paste0('Computing pairwise f2 for all SNPs and population pairs requires ',
+                      reqmem, ' MB RAM without splitting\n'))
     if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ',
                                          width, ' populations and up to ', maxmem, ' MB (',
                                          choose(numsplits2+1,2), ' block pairs)\n'))
+    else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
   }
 
   f2_blocks = get_split_f2_blocks(afmat, countmat, block_lengths, starts = starts,
-                                  ends=ends, outdir = outdir, overwrite = overwrite,
-                                  f2_denom = f2_denom, verbose = verbose)
+                                  ends=ends, outdir = outdir, overwrite = overwrite, verbose = verbose)
   f2_blocks
 }
 
 
 get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, outdir = NULL,
-                               overwrite = FALSE, f2_denom = 1, verbose = TRUE) {
+                               overwrite = FALSE, verbose = TRUE) {
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
   numsplits2 = length(starts)
@@ -79,11 +79,9 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
     b2 = afmat[, s2, drop=F]
     nam1 = colnames(b1)
     nam2 = colnames(b2)
-    #numer = mats_to_f2arr(afmat[,s1,drop=F], afmat[,s2,drop=F], countmat[,s1,drop=F], countmat[,s2,drop=F])
-    #f2_subblock = bj_arr_lo_mean(numer, block_lengths, loo = loo) / f2_denom
-    f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F], totafs) %>%
+    f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F]) %>%
       block_arr_mean(block_lengths) %>%
-      `/`(f2_denom) %>%
+      replace_nan_with_na() %>%
       `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
 
     if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
@@ -104,7 +102,7 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
 }
 
 
-mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, totafs) {
+mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
   # Compute f2 stats for all SNPs and all population pairs from two af matrices
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
@@ -114,88 +112,21 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, totafs) {
   nsnp = nrow(afmat1)
   d1 = c(ncol(afmat1), 1, nsnp)
   d2 = c(1, ncol(afmat2), nsnp)
-  afrr1 = rray(t(afmat1), dim = d1)
-  afrr2 = rray(t(afmat2), dim = d2)
-  #denom1 = pmax(1, colMeans(countmat1, na.rm = T)-1)
-  #denom2 = t(pmax(1, colMeans(countmat2, na.rm = T)-1))
-  denom1 = rray(t(matrix(pmax(1, countmat1-1), nrow(countmat1))), dim = d1)
-  denom2 = rray(t(matrix(pmax(1, countmat2-1), nrow(countmat2))), dim = d2)
-  pq1 = afrr1*(1-afrr1)
-  pq2 = afrr2*(1-afrr2)
-  pqarr = pq1/denom1 + pq2/denom2
-  arr = (afrr1 - afrr2)^2 - pqarr
-  harr = rray(totafs*(1-totafs), dim = c(1, 1, nsnp))
-  #harr = sqrt(pq1 * pq2)
-  arr = as.array(arr/sqrt(harr))
-  # arr = array(pmax(arr, 0), dim(arr))
-  # f2 to fst
-  # countarr1 = rray(t(countmat1), dim = d1)
-  # countarr2 = rray(t(countmat2), dim = d2)
-  # arr = arr / (arr + pq1 * (denom1+1)/denom1  + pq2 * (denom2+1)/denom2 + 1e-9) # f2 to fst
+  nc1 = ncol(afmat1)
+  nc2 = ncol(afmat2)
+
+  denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
+  denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
+  pq1 = afmat1*(1-afmat1)/denom1
+  pq2 = afmat2*(1-afmat2)/denom2
+  pqarr = outer_array(pq1, pq2, `+`)
+  arr = outer_array(afmat1, afmat2, `-`)^2 - pqarr
+
   dimnames(arr)[[1]] = colnames(afmat1)
   dimnames(arr)[[2]] = colnames(afmat2)
   arr
 }
 
-mats_to_f2arr2 = function(afmat1, afmat2, countmat1, countmat2, block_lengths) {
-  # Compute f2 stats for all SNPs and all population pairs from two af matrices
-  # in contrast to mats_to_f2arr, everything is averaged across SNP blocks first
-  # resulting array has 3rd dimension nblocks, not nsnps
-  # should be equivalent to count data f2blocks
-
-  stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
-  stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
-  stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
-
-  nsnp = nrow(afmat1)
-  nblock = length(block_lengths)
-  dd1 = c(ncol(afmat1), 1, nsnp)
-  dd2 = c(1, ncol(afmat2), nsnp)
-  d1 = c(ncol(afmat1), 1, nblock)
-  d2 = c(1, ncol(afmat2), nblock)
-  nmat1 = countmat1
-  nmat2 = countmat2
-  amat1 = afmat1 * nmat1
-  amat2 = afmat2 * nmat2
-  arr1 = rray(t(amat1), dim = dd1)
-  arr2 = rray(t(amat2), dim = dd2)
-  nrr1 = rray(t(nmat1), dim = dd1)
-  nrr2 = rray(t(nmat2), dim = dd2)
-  aa = block_arr_mean(arr1*arr2, block_lengths)
-  nn = block_arr_mean(nrr1*nrr2, block_lengths)
-
-  a1rr1 = rray(t(block_mat_mean(amat1, block_lengths)), dim = d1)
-  a1rr2 = rray(t(block_mat_mean(amat2, block_lengths)), dim = d2)
-  n1rr1 = rray(t(block_mat_mean(nmat1, block_lengths)), dim = d1)
-  n1rr2 = rray(t(block_mat_mean(nmat2, block_lengths)), dim = d2)
-  a2rr1 = rray(t(block_mat_mean(amat1^2, block_lengths)), dim = d1)
-  a2rr2 = rray(t(block_mat_mean(amat2^2, block_lengths)), dim = d2)
-  n2rr1 = rray(t(block_mat_mean(nmat1^2, block_lengths)), dim = d1)
-  n2rr2 = rray(t(block_mat_mean(nmat2^2, block_lengths)), dim = d2)
-  n3rr1 = rray(t(block_mat_mean(nmat1^3, block_lengths)), dim = d1)
-  n3rr2 = rray(t(block_mat_mean(nmat2^3, block_lengths)), dim = d2)
-
-  x = a2rr1/n2rr1 + a2rr2/n2rr2 - 2*aa/nn
-  y11 = a1rr1/pmax(as.array(n1rr1), as.array(n2rr1 - n1rr1))
-  y21 = a1rr2/pmax(as.array(n1rr2), as.array(n2rr2 - n1rr2))
-  y12 = a2rr1/pmax(as.array(n2rr1), as.array(n3rr1 - n2rr1))
-  y22 = a2rr2/pmax(as.array(n2rr2), as.array(n3rr2 - n2rr2))
-  y1 = y11 - y12
-  y2 = y21 - y22
-
-  p1rr1 = a1rr1/n1rr1
-  p1rr2 = a1rr2/n1rr2
-  p2rr1 = a2rr1/n2rr1
-  p2rr2 = a2rr2/n2rr2
-  y1 = (p1rr1 - p2rr1) / pmax(array(1, d1), as.array(n1rr1 - 1))
-  y2 = (p1rr2 - p2rr2) / pmax(array(1, d2), as.array(n1rr2 - 1))
-
-  f2 = x - y1 - y2
-
-  dimnames(f2)[[1]] = colnames(afmat1)
-  dimnames(f2)[[2]] = colnames(afmat2)
-  f2
-}
 
 xmats_to_pairarrs = function(xmat1, xmat2) {
   # Compute aa and nn for all SNPs and all population pairs
@@ -306,22 +237,24 @@ fix_ploidy = function(xmat) {
 
 
 # turns f2_data (f2 dir) into f2_blocks; divides by denom
-# returns f2_blocks (a)rray with block_lengths in 3rd dimension names
-get_f2 = function(f2_data, pops, f2_denom = 1, rray = FALSE) {
+# returns f2_blocks array with block_lengths in 3rd dimension names
+get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL) {
 
   stopifnot(!is.character(f2_data) || dir.exists(f2_data))
   if(is.character(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops)
+    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2)
   } else {
     f2_blocks = f2_data
   }
-  blockpops = dimnames(f2_blocks)[[1]]
-  if(!all(pops %in% blockpops)) {
-    stop(paste0('requested: ', paste(pops, collapse=', '),
-                '\navailable pops: ', paste(blockpops, collapse = ', ')))
+  if(is.null(pops2)) pops2 = pops
+  blockpops = union(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]])
+  allpops = union(pops, pops2)
+  if(!all(allpops %in% blockpops)) {
+    stop(paste0('requested: ', paste(allpops, collapse=', '),
+                '\navailable pops: ', paste(blockpops, collapse = ', '),
+                '\ndiff: ', paste(setdiff(allpops, blockpops))))
   }
-  f2_blocks = f2_blocks[pops, pops,] / f2_denom
-  if(rray) f2_blocks = rray::rray(f2_blocks, dim_names = dimnames(f2_blocks))
+  f2_blocks = f2_blocks[pops, pops2, , drop = FALSE] / f2_denom
   f2_blocks
 }
 

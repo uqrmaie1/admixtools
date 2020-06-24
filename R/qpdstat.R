@@ -4,12 +4,14 @@ f3_from_f2 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
 f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 
 
+
+
 #' Estimate f2 statistics
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
 #' @export
 #' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
+#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pop1 one of the following four:
 #' \enumerate{
 #' \item `NULL`: all possible pairs of the populations in `f2_blocks` will be returned
@@ -124,8 +126,8 @@ f3 = qp3pop
 #' \eqn{(f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2}
 #' @export
 #' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-#' output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics.
-#' see \code{\link{extract_indpairs}}.
+#' output of \code{\link{afs_to_f2_blocks}}. Alternatively, a directory with f2 statistics.
+#' see \code{\link{extract_counts}}.
 #' @param pop3 a vector of population labels
 #' @param pop4 a vector of population labels
 #' @inheritParams f2
@@ -144,28 +146,38 @@ f3 = qp3pop
 #' qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 #' }
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-                   f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+                   f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE,
+                   comb = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
 
-  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2, pop3 = pop3, pop4 = pop4,
-                           sure = sure, unique_only = unique_only, fnum = 4)
+  if(!comb) {
+    stopifnot(!is.null(pop2))
+    stopifnot(length(unique(length(pop1), length(pop2), length(pop3), length(pop4))) == 1)
+    out = tibble(pop1, pop2, pop3, pop4)
+  } else {
+    out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2, pop3 = pop3, pop4 = pop4,
+                             sure = sure, unique_only = unique_only, fnum = 4)
+  }
   pops = unique(c(out$pop1, out$pop2, out$pop3, out$pop4))
+  pops1 = unique(c(out$pop1, out$pop2))
+  pops2 = unique(c(out$pop3, out$pop4))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
-  f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+  #f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops1, f2_denom, pops2 = pops2) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f4 -----------------
   if(verbose) alert_info('Computing f4-statistics\n')
 
-  out %<>% group_by(pop1, pop2, pop3, pop4) %>%
-    summarize(f4dat = list(f4_from_f2(f2_blocks[pop1, pop4, ],
-                                      f2_blocks[pop2, pop3, ],
-                                      f2_blocks[pop1, pop3, ],
-                                      f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
+  out %<>% rowwise %>%
+    mutate(f4dat = list(f4_from_f2(f2_blocks[pop1, pop4, ],
+                                   f2_blocks[pop2, pop3, ],
+                                   f2_blocks[pop1, pop3, ],
+                                   f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
     mutate(sts = map(f4dat, ~statfun(t(.), block_lengths))) %>%
     unnest_wider(sts) %>%
     mutate(se = map_dbl(var[,1], sqrt), z = est/se, p = ztop(z)) %>%
@@ -230,14 +242,16 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
         stop('fnum should be 2, 3, or 4!')
       }
     } else {
-      if(fnum^length(pop1) > maxcomb & !sure) {
-        stop(paste0('If you really want to compute close to ', fnum^length(pop1),
-                    ' f-statistics, run this again with "sure = TRUE". Or specify more than just pop1.'))
-      }
+      # if(fnum^length(pop1) > maxcomb & !sure) {
+      #   stop(paste0('If you really want to compute close to ', fnum^length(pop1),
+      #               ' f-statistics, run this again with "sure = TRUE". Or specify more than just pop1.'))
+      # }
       if(fnum == 2) out = expand_grid(pop1 = pop1, pop2 = pop1)
       else if(fnum == 3) out = expand_grid(pop1 = pop1, pop2 = pop1, pop3 = pop1)
-      else if(fnum == 4) out = expand_grid(pop1 = pop1, pop2 = pop1, pop3 = pop1, pop4 = pop1) %>%
-          filter(pop1 != pop3, pop2 != pop4, pop1 != pop2 | pop3 != pop4)
+      else if(fnum == 4) out = as_tibble(t(combn(pop1, 2))) %>%
+          expand_grid(x1=., x2=.) %>%
+          {quietly(flatten_dfc)(.)$result} %>%
+          set_colnames(paste0('pop', 1:4))
       else stop('fnum should be 2, 3, or 4!')
     }
   }

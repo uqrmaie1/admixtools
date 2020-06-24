@@ -11,8 +11,6 @@ read_plink(pref, inds = NULL, auto_only = TRUE, verbose = FALSE)
 
 \item{inds}{optional vector of samples to read in}
 
-\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
-
 \item{verbose}{print progress updates}
 
 \item{blocksize}{number of SNPs read in each block.}

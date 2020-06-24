@@ -7,12 +7,12 @@
 \usage{
 qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
   pop4 = NULL, f2_denom = 1, boot = FALSE, sure = FALSE,
-  unique_only = TRUE, verbose = FALSE)
+  unique_only = TRUE, comb = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{f2_data}{a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-output of \code{\link{afs_to_f2_blocks}}. alternatively, a directory with f2 statistics.
-see \code{\link{extract_indpairs}}.}
+output of \code{\link{afs_to_f2_blocks}}. Alternatively, a directory with f2 statistics.
+see \code{\link{extract_counts}}.}
 
 \item{pop1}{one of the following four:
 \enumerate{

@@ -7,7 +7,6 @@
 #' @import utils
 #' @importFrom shiny isRunning
 #' @importFrom magrittr set_colnames "%$%" "%<>%"
-#' @importFrom rray rray rray_transpose
 #' @importFrom lobstr obj_size
 #' @importFrom abind abind
 #' @importFrom crayon blue red green bold italic

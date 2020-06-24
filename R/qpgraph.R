@@ -117,17 +117,18 @@ optimweightsfun = function(weights, args) {
   qpsolve = args[[8]]
   lower = args[[9]]
   upper = args[[10]]
+  fudge = args[[11]]
 
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge)
   f3_fit = ppwts_2d %*% branch_lengths
   get_score(f3_fit, f3_est, ppinv)
 }
 
 
 
-opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper) {
+opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = 1e-4) {
   # finds optimal edge lengths
   # pwts2d: npair x nedge design matrix with paths to outpop
   # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
@@ -135,11 +136,14 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper) {
 
   pppp = t(ppwts_2d) %*% ppinv
   cc = pppp %*% ppwts_2d
-  diag(cc) = diag(cc) + mean(diag(cc))*0.0001
+  #diag(cc) = diag(cc) + fudge
+  diag(cc) = diag(cc) + fudge*mean(diag(cc))
   cc = (cc+t(cc))/2
   q1 = (pppp %*% f3_est)[,1]
   nc = ncol(cc)
+  #tryCatch({
   qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))
+  #}, error = function(e) browser())
 }
 
 get_score = function(f3_fit, f3_est, ppinv) {
@@ -153,8 +157,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #'
 #' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
 #' @export
-#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
+#' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' @param graph an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of
@@ -164,7 +167,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @param fudge try increasing this, if you get the error message \code{constraints are inconsistent, no solution!}.
 #' @param fnscale optimization parameter passed to `control` in \code{\link{optim}}
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
-#' @param numstart number of random initializations. defaults to 10 times the number of admixture nodes.
+#' @param numstart number of random initializations. defaults to 10.
 #' @param seed seed for generating starting weights.
 #' @param cpp should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.
 #' @param return_f4 return all f4 statistics? Can take a while.
@@ -188,10 +191,9 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @examples
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
-qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fnscale = 1e-6, lsqmode = FALSE,
-                   numstart = NULL, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
+qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fnscale = 1e-6, lsqmode = FALSE,
+                   numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, f2_blocks_test = NULL,
                    low_q = 0, high_q = 1, verbose = FALSE) {
-  # modelled after AdmixTools qpGraph
 
   #----------------- process graph -----------------
   if('matrix' %in% class(graph)) {
@@ -216,7 +218,8 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
   cmb = combn(0:(npop-1), 2)+(1:0)
 
   if(!is.null(f3precomp)) precomp = f3precomp
-  else precomp = qpgraph_precompute_f3(f2_data, pops, f2_denom = f2_denom, boot = boot, fudge = fudge, lsqmode = lsqmode)
+  else precomp = qpgraph_precompute_f3(f2_blocks, pops, f2_denom = f2_denom, boot = boot,
+                                       seed = seed, fudge = fudge, lsqmode = lsqmode)
   f3_est = precomp$f3_est
   ppinv = precomp$ppinv
 
@@ -234,34 +237,38 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
   mim = .Machine$integer.max
   if('lower' %in% names(edges)) {
     elower = replace_na(edges$lower[normedges], 0)
-    alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
+    eupper = replace_na(edges$upper[normedges], mim)
   } else {
     elower = rep(0, length(normedges))
-    alower = rep(0, nadmix)
-  }
-  if('upper' %in% names(edges)) {
-    eupper = replace_na(edges$upper[normedges], mim)
-    aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]]), 1)
-    aupper = pmin(1, aupper)
-  } else {
     eupper = rep(mim, length(normedges))
-    aupper = rep(1, nadmix)
   }
 
   if(nadmix > 0) {
-    if(is.null(numstart)) numstart = 10*nadmix
-    set.seed(seed)
+    #if(is.null(numstart)) numstart = 10*nadmix
+    if(!is.null(seed)) set.seed(seed)
+    if('lower' %in% names(edges)) {
+      alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
+      aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]]), 1)
+      aupper = pmin(1, aupper) + 1e-9
+    } else {
+      alower = rep(0, nadmix)
+      aupper = rep(1, nadmix)
+    }
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
-    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper)
-    oo = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
-                    lower=alower, upper=aupper, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
+    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper, fudge)
+    oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
+                    lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = fnscale),
+                    verbose = verbose)
+    best = oo %>% top_n(1, -value)
+    opt = data.frame(parmat, oo, stringsAsFactors = F) #%>% filter(!is.na(convergence))
 
-    best = oo %>% top_n(1, -.data$value)
+    #if(nrow(opt) == 0) stop('Optimization not successful! Increase fudge or numstart!')
+    #else if(verbose) alert_info(paste0('Optimiztion successful for ', nrow(opt), ' combinations\n'))
+
     admnames = names(V(graph))[admixnodes]
-    opt = data.frame(parmat, oo, stringsAsFactors = F)
     colnames(opt)[1:(nadmix*2)] = paste0(rep(c('i.', 'e.'), each = nadmix), rep(admnames, 2))
-    hilo = apply(as.matrix(oo[,1:nadmix]), 2, function(x) quantile(x, c(low_q, high_q)))
+    hilo = apply(as.matrix(oo[,1:nadmix]), 2, function(x) quantile(x, c(low_q, high_q), na.rm = TRUE))
 
     wts = as.matrix(best[,1:nadmix])[1,]
     weight[admixedgesfull[1,]] = wts
@@ -274,18 +281,29 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
   }
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = fudge)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
+  if(!is.null(f2_blocks_test)) {
+    precomp_test = qpgraph_precompute_f3(f2_blocks_test, pops, f2_denom = f2_denom, boot = boot,
+                                         seed = seed, fudge = fudge, lsqmode = lsqmode)
+    score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
+  } else {
+    score_test = NULL
+  }
 
   weight[normedges] = branch_lengths
   edges %<>% select(1:2) %>% set_colnames(c('from', 'to')) %>%  as_tibble %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight, low = low, high = high)
   f2 = precomp$f2out
-  f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p.value = ztop(z))
+  f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p = ztop(z))
 
-  out = namedList(edges, score, f2, f3, opt)
-  if(return_f4) out$f4 = f4(f2_data)
+  out = namedList(edges, score, score_test, f2, f3, opt, ppinv)
+  #if(return_f4) out$f4 = f4(f2_blocks)
+  if(return_f4) {
+    if(verbose) alert_info(paste0('Computing f4\n'))
+    out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3, cmb)
+  }
   out
 }
 
@@ -320,7 +338,7 @@ qpgraph = function(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 1e-3, fns
 #' ppinv = precomp$ppinv
 #' out = qpgraph_slim(example_igraph, f3_est, ppinv)
 #' plot_graph(out$edges)
-qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
+qpgraph_slim = function(graph, f3_est, ppinv, fudge = 1e-4, fnscale = 1e-6, numstart = 10,
                         seed = NULL, cpp = TRUE, verbose = FALSE) {
   # modelled after AdmixTools qpGraph
   # optimised for testing many topologies for a given set of populations
@@ -355,10 +373,10 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
   eupper = rep(.Machine$integer.max, length(normedges))
 
   if(nadmix > 0) {
-    set.seed(seed)
+    if(!is.null(seed)) set.seed(seed)
     parmat = matrix(runif(numstart*nadmix), numstart)
 
-    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper)
+    arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper, fudge)
     opt = multistart(parmat, optimweightsfun, args=arglist, method='L-BFGS-B',
                      lower=0, upper=1, control=list(maxit=1e4, fnscale=fnscale), verbose=verbose)
 
@@ -373,7 +391,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
 
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
 
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = fudge)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
@@ -417,7 +435,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fnscale = 1e-6, numstart = 10,
 #' qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
 #' }
 qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boot = FALSE,
-                                 fudge = 1e-3, lsqmode = FALSE) {
+                                 seed = NULL, fudge = 1e-4, lsqmode = FALSE) {
   # returns list of f3_est and ppinv for subset of populations.
   # f3_est and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
@@ -426,12 +444,12 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
   #----------------- read f-stats -----------------
   if(!is.null(outpop)) pops = c(outpop, setdiff(pops, outpop))
 
+  if(!is.null(seed)) set.seed(seed)
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
   matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
   f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
-  f2_blocks %<>% rray(dim_names = dimnames(f2_blocks))
 
   npop = length(pops)
   npair = choose(npop, 2)
@@ -443,7 +461,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
                  est = f2[[1]][lower.tri(f2[[1]])],
                  se = sqrt(f2[[2]][lower.tri(f2[[2]])]))
 
-  f3_blocks = (f2_blocks[,1,] + f2_blocks[1,,] - f2_blocks)/2
+  f3_blocks = (f2_blocks[,rep(1, npop),] + f2_blocks[rep(1, npop),,] - f2_blocks)/2
   f3_blocks_2d = arr3d_to_pairmat(f3_blocks[-1,-1,])
   f3dat = matstatfun(f3_blocks_2d, block_lengths)
   f3_est = f3dat$est
@@ -460,7 +478,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
 
   f3_est %<>% structure(pops = pops)
   ppinv %<>% structure(pops = pops)
-  namedList(f3_est, ppinv, f2out, f3out)
+  namedList(f3_est, ppinv, f2out, f3out, f3_blocks_2d)
 }
 
 get_pairindex = function(perm) {
@@ -474,7 +492,7 @@ get_pairindex = function(perm) {
 }
 
 #' @export
-qpgraph_anorexic = function(graph, f3_est, ppinv, fnscale = 1e-6,
+qpgraph_anorexic = function(graph, f3_est, ppinv, fudge = 1e-4, fnscale = 1e-6,
                             numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE) {
 
   # only works for trees at the moment, because weightind order is coupled to pwts order
@@ -494,7 +512,8 @@ qpgraph_anorexic = function(graph, f3_est, ppinv, fnscale = 1e-6,
   ppwts_2d = t(pwts[,cmb[1,]] * pwts[,cmb[2,]])
 
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve,
-                                    lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)))
+                                    lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)),
+                                    fudge = fudge)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
@@ -504,6 +523,7 @@ qpgraph_anorexic = function(graph, f3_est, ppinv, fnscale = 1e-6,
   namedList(edges, score, opt = NULL)
 }
 
+# not used
 f3out_to_fittedf2out = function(f2out, f3out) {
   # computes fitted f2 statistics data frame from f2 and f3 data frames
   # will not include f2(outgroup, X)
@@ -512,8 +532,157 @@ f3out_to_fittedf2out = function(f2out, f3out) {
     right_join(f3out %>% filter(pop2 != pop3) %>% transmute(pop1=pop2, pop2=pop3, f3 = fit), by = c('pop1', 'pop2')) %>%
     left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop1=pop2, f2_1 = fit), by = c('pop1')) %>%
     left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop2=pop3, f2_2 = fit), by = c('pop2')) %>%
-    transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = fit - est, z = diff/se, p.value = ztop(z))
+    transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = fit - est, z = diff/se, p = ztop(z))
 }
 
 
+
+
+fitf4 = function(f2_blocks, f2, f3, cmb) {
+  # returns a tibble with estimated and fitted f4-statistics
+
+  f2_out = f3 %>% filter(pop2 == pop3) %$% fit
+  f2_fit = f3 %>% mutate(f21 = f2_out[cmb[1,]], f22 = f2_out[cmb[2,]], f2fit = (f21 + f22 - fit*2))
+  f2_fit2 = f2 %>%
+    left_join(f2_fit, by = c('pop1'='pop2', 'pop2'='pop3')) %>%
+    filter(!is.na(f2fit)) %>%
+    select(pop1, pop2, f2fit) %>%
+    bind_rows(f2_fit %>% filter(pop2 == pop3) %>% transmute(pop1, pop2, f2fit = fit)) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+    bind_rows(tibble(pop1 = unique(.$pop1), pop2 = pop1, f2fit = 0))
+  x = f4(f2_blocks, unique_only = F) %>% select(-z, -p)
+  x %>%
+    left_join(f2_fit2 %>% rename(c1 = f2fit), by = c('pop1' = 'pop1', 'pop4' = 'pop2')) %>%
+    left_join(f2_fit2 %>% rename(c2 = f2fit), by = c('pop2' = 'pop1', 'pop3' = 'pop2')) %>%
+    left_join(f2_fit2 %>% rename(c3 = f2fit), by = c('pop1' = 'pop1', 'pop3' = 'pop2')) %>%
+    left_join(f2_fit2 %>% rename(c4 = f2fit), by = c('pop2' = 'pop1', 'pop4' = 'pop2')) %>%
+    mutate(fit = (c1 + c2 - c3 - c4)/2, diff = fit - est, z = diff/se, p = ztop(z)) %>%
+    select(-c1:-c4)
+}
+
+
+
+#' Compare the fit of two qpgraph models
+#'
+#' Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other
+#' @export
+#' @param fits1 The fits of the first graph
+#' @param fits2 The fits of the second graph
+#' @param boot should match the `boot` parameter in `qpgraph_resample_snps` (`FALSE` by default)
+#' @examples
+#' \dontrun{
+#' nblocks = dim(example_f2_blocks)[3]
+#' train = sample(1:nblocks, round(nblocks/2))
+#' fits1 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph1, f2_blocks_test = example_f2_blocks[,,-train])
+#' fits2 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph2, f2_blocks_test = example_f2_blocks[,,-train])
+#' compare_fits2(fit1, fit2)
+#' }
+compare_fits2 = function(fits1, fits2, boot = FALSE) {
+
+  matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  stats = matstatfun(t(fits1$score_test - fits2$score_test), rep(1, length(fits1$score_test)))
+
+  diff = stats$est
+  se = sqrt(stats$var)
+  z = diff/se
+  p = ztop(z)
+  namedList(diff, se, z, p, scores1 = fits1$score_test, scores2 = fits2$score_test, boot)
+
+}
+
+#' Compare the fit of two qpgraph models
+#'
+#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
+#' @export
+#' @param fits1 The first graph
+#' @param fits2 The second graph
+#' @examples
+#' \dontrun{
+#' boo = boo_list(f2_blocks, nboot = 100)
+#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
+#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
+#' compare_fits3(fits1$score_test, fits2$score_test)
+#' }
+compare_fits3 = function(scores1, scores2) {
+
+  scorediff = scores1 - scores2
+  ci_low = unname(quantile(scorediff, 0.025, na.rm = T))
+  ci_high = unname(quantile(scorediff, 0.975, na.rm = T))
+
+  scorediff = na.omit(scores1 - scores2)
+  stats = boot_mat_stats(t(scorediff), rep(1, length(scorediff)))
+
+  diff = stats$est
+  se = sqrt(stats$var)
+  z = diff/se
+  p = ztop(z)
+  frac = mean(scorediff < 0)
+  p_emp = min(frac, 1-frac)*2
+  c(diff=diff, se=se, z=z, p=p, p_emp=p_emp, ci_low=ci_low, ci_high=ci_high)
+}
+
+#' @export
+qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
+
+  fun = function(f2dat, f2dat_test, g) safely(qpgraph)(f2_blocks = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+  tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
+    mutate(out = furrr::future_pmap(list(f2_blocks, f2_blocks_test, graph), fun, .progress = verbose),
+           result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
+    select(-out) %>% unnest_wider(result)
+}
+
+
+
+#' Compare the fit of two qpgraph models
+#'
+#' Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
+#' @export
+#' @param fit1 The fit of the first graph
+#' @param fit2 The fit of the second graph
+#' @param f2_blocks f2 blocks used for fitting `fit1` and `fit2`. Used in combination with `f2_blocks_test` to compute f-statistics covariance matrix.
+#' @param f2_blocks_test f2 blocks which were not used for fitting `fit1` and `fit2`
+#' @param boot if `TRUE`, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to the number of blocks. If `FALSE` jackknife will be used. If set to a number, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to `boot`. If bootstrap resampling is enabled, empirical p-values (`p_emp`) and 95\% confidence intervals (`ci_low` and `ci_high`) will be reported.
+#' @param seed random seed used if `boot` is `TRUE`. does not need to match a seed used in fitting the models
+#' @examples
+#' \dontrun{
+#' nblocks = dim(example_f2_blocks)[3]
+#' train = sample(1:nblocks, round(nblocks/2))
+#' fit1 = qpgraph(example_f2_blocks[,,train], graph1)
+#' fit2 = qpgraph(example_f2_blocks[,,train], graph2)
+#' compare_fits4(fit1, fit2, example_f2_blocks[,,train], example_f2_blocks[,,-train])
+#' }
+compare_fits4 = function(fit1, fit2, f2_blocks, f2_blocks_test, boot = FALSE, seed = NULL) {
+
+  stopifnot(all.equal(sort(attr(fit1$ppinv, 'pops')), sort(attr(fit2$ppinv, 'pops'))))
+  #samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
+  matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+
+  pops = attr(fit1$ppinv, 'pops')
+  ppinv = qpgraph_precompute_f3(abind::abind(f2_blocks, f2_blocks_test), pops, boot = boot, seed = seed)$ppinv
+  f3_test = qpgraph_precompute_f3(f2_blocks_test, pops, boot = boot, seed = seed)$f3_blocks_2d
+  f3_fit = fit1$f3 %>%
+    left_join(fit2$f3 %>% bind_rows(rename(., pop2=pop3, pop3=pop2) %>% filter(pop2 != pop3)),
+              by = c('pop1', 'pop2', 'pop3'))
+  scores1 = map_dbl(1:dim(f2_blocks_test)[3], ~get_score(f3_fit$fit.x, f3_test[,.], ppinv))
+  scores2 = map_dbl(1:dim(f2_blocks_test)[3], ~get_score(f3_fit$fit.y, f3_test[,.], ppinv))
+
+  scorediff = na.omit(scores1 - scores2)
+  stats = matstatfun(t(scorediff), rep(1, length(scorediff)))
+
+  diff = stats$est
+  se = sqrt(stats$var)
+  z = diff/se
+  p = ztop(z)
+  frac = mean(scorediff < 0)
+  p_emp = ci_low = ci_high = NA
+  if(boot) {
+    p_emp = min(frac, 1-frac)*2
+    ci_low = unname(quantile(scorediff, 0.025, na.rm = T))
+    ci_high = unname(quantile(scorediff, 0.975, na.rm = T))
+  }
+  namedList(diff, se, z, p, p_emp, ci_low, ci_high, scores1, scores2)
+}
+
+
+#a = replicate(100, {train = sample(1:dim(ff)[3], round(dim(ff)[3]/2)); fit1 = qpgraph(ff[,,train], g1, numstart = 10); fit3 = qpgraph(ff[,,train], g3, numstart = 10); compare_fits4(fit1, fit3, ff[,,train], ff[,,-train], boot = T, seed = 1)[1:4]})
 

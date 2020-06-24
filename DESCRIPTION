@@ -19,6 +19,7 @@ Imports:
     abind,
     cli,
     crayon,
+    cubelyr,
     digest,
     dplyr,
     furrr,
@@ -36,7 +37,6 @@ Imports:
     RcppEigen,
     readr,
     rlang,
-    rray,
     stats,
     stringr,
     tibble,
@@ -51,8 +51,6 @@ Imports:
     shinythemes,
     shinyWidgets,
     shinydashboard
-Remotes:
-    r-lib/rray
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 

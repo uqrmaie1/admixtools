@@ -9,7 +9,8 @@ find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
   keep = c("all", "best", "last"), f2_denom = 1, cpp = TRUE,
   initgraph = NULL, mutfuns = c("spr_leaves", "spr_all", "swap_leaves",
   "move_admixedge_once", "flipadmix_random"), parallel = TRUE,
-  debug = numrep == 1, fudge = 0.001, verbose = TRUE, ...)
+  stop_at = NULL, debug = numrep == 1, fudge = 1e-04,
+  verbose = TRUE, ...)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.

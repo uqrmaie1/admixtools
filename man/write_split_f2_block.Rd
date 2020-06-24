@@ -4,46 +4,58 @@
 \alias{write_split_f2_block}
 \title{Compute f2 blocks and write them to disk}
 \usage{
-write_split_f2_block(afmatprefix, outdir, block1, block2, popcounts,
-  block_lengths, f2_denom = 1, verbose = TRUE)
+write_split_f2_block(afmatprefix, countmatprefix, outdir, chunk1, chunk2,
+  block_lengths, verbose = TRUE)
 }
 \arguments{
 \item{afmatprefix}{prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
 
+\item{countmatprefix}{prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
+
 \item{outdir}{directory where the f2 blocks will be stored}
 
-\item{block1}{block number of the first block of populations}
+\item{chunk1}{index of the first chunk of populations}
 
-\item{block2}{block number of the second block of populations}
-
-\item{popcounts}{named vector with number of samples for each population.}
+\item{chunk2}{index of the second chunk of populations}
 
 \item{block_lengths}{vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs.}
 
-\item{f2_denom}{scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
-
 \item{verbose}{print progress updates}
+
+\item{popcounts}{named vector with number of samples for each population.}
+
+\item{f2_denom}{scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
 }
 \description{
 This is intended for computing f2-statistics for a large number of populations,
 too many to do everything in working memory.
 It assumes that the allele frequencies have already been computed and are stored in \code{.rds} files,
 split into consecutive blocks for a set of populations. This function calls \code{\link{write_f2}},
-which takes a (sub-)block of pairwise f2-statistics, and writes to disk one pair at a time.
+which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time.
 }
 \examples{
 \dontrun{
-afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
-split_mat(afmatall, pops_per_block = 20, outdir = 'afmatall_split_v42.1/')
-numblocks = 185 # this should be the number of split allele frequency files
-for(j in 1:numblocks) {
-  for(j in i:numblocks) {
-    write_split_f2_block('afmatall_split_v42.1/afmatall_', 'f2blocks_v42.1/',
-                         block1 = i, block2 = j, popcounts, block_lengths)
+afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
+split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
+split_mat(afdat$counts, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/counts')
+numchunks = 185 # this should be the number of split allele frequency files
+block_lengths = get_block_lengths(afdat$snpfile)
+for(j in 1:numchunks) {
+  for(j in i:numchunks) {
+    write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
+                         chunk1 = i, chunk2 = j, block_lengths)
     }
   }
 }
+expand_grid(i = 1:numchunks, j = 1:numchunks) \%>\%
+  filter(j >= i) \%$\%
+  furrr::future_map2(i, j, ~write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
+                                                  chunk1 = .x, chunk2 = .y, block_lengths))
+furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
+  write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
+    chunk1 = i, chunk2 = ., block_lengths)
+  })})
 }
 \seealso{
 \code{\link{split_mat}} for creating split allele frequency data,

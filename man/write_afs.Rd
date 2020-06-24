@@ -13,14 +13,14 @@ will be stored in a variable called \code{allele_frequencies} under \code{{path}
 \item{path}{directory into which to write the files.}
 
 \item{countmat}{optional matrix with allele counts for each SNP and population.
-Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.RData})
+Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.rds})
 in the variable \code{num_individuals}}
 
-\item{overwrite}{should existing \code{.RData} files be overwritten?}
+\item{overwrite}{should existing \code{.rds} files be overwritten?}
 }
 \description{
 This function takes a 3d array of f2 block jackknife estimates, splits it by population pair,
-and writes each pair to a separate \code{.RData} file.
+and writes each pair to a separate \code{.rds} file.
 }
 \examples{
 \dontrun{

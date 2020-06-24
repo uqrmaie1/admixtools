@@ -4,8 +4,8 @@
 \alias{f2_from_precomp}
 \title{Read blocked f2 statistics from disk}
 \usage{
-f2_from_precomp(dir, inds = NULL, pops = NULL, return_array = TRUE,
-  apply_corr = TRUE, verbose = TRUE)
+f2_from_precomp(dir, inds = NULL, pops = NULL, pops2 = NULL,
+  return_array = TRUE, apply_corr = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{dir}{directory with precomputed f2 statistics, or precomputed individual pair data}
@@ -18,9 +18,12 @@ which may require a lot of memory.}
 
 \item{return_array}{should a 3d array or a data frame be returned}
 
-\item{apply_corr}{should f2 correction factor be subtracted. mostly used for testing}
+\item{apply_corr}{should f2 correction factor be subtracted. mostly used for testing, and only applicable for counts}
 
 \item{verbose}{print progress updates}
+}
+\value{
+a 3d array of f2 statistics
 }
 \description{
 Read blocked f2 statistics from disk
@@ -28,6 +31,6 @@ Read blocked f2 statistics from disk
 \examples{
 \dontrun{
 dir = 'my/f2/dir/'
-f2_blocks = f2_from_precomp(dir, pops = c('Protoss', 'Zerg', 'Terran'))
+f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 }
 }

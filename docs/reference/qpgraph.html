@@ -155,18 +155,17 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph</span>(<span class='no'>f2_data</span>, <span class='no'>graph</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>0.001</span>,
-  <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph</span>(<span class='no'>f2_blocks</span>, <span class='no'>graph</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_data</th>
-      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
-alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
+      <th>f2_blocks</th>
+      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
     </tr>
     <tr>
       <th>graph</th>
@@ -197,7 +196,7 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>numstart</th>
-      <td><p>number of random initializations. defaults to 10 times the number of admixture nodes.</p></td>
+      <td><p>number of random initializations. defaults to 10.</p></td>
     </tr>
     <tr>
       <th>seed</th>

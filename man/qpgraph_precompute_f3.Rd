@@ -5,7 +5,7 @@
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
 qpgraph_precompute_f3(f2_data, pops, outpop = NULL, f2_denom = 1,
-  boot = FALSE, fudge = 0.001, lsqmode = FALSE)
+  boot = FALSE, seed = NULL, fudge = 1e-04, lsqmode = FALSE)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.

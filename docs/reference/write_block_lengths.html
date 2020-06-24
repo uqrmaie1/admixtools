@@ -166,12 +166,12 @@
 <span class='no'>outdir</span> <span class='kw'>=</span> <span class='st'>'indpairs_v42.1'</span>
 <span class='fu'>write_block_lengths</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>)
 <span class='no'>dat</span> <span class='kw'>=</span> <span class='fu'><a href='read_packedancestrymap.html'>read_packedancestrymap</a></span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='no'>inds</span>)
-<span class='fu'><a href='split_mat.html'>split_mat</a></span>(<span class='no'>dat</span>$<span class='no'>geno</span>, <span class='kw'>cols_per_block</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='no'>genodir</span>)
+<span class='fu'><a href='split_mat.html'>split_mat</a></span>(<span class='no'>dat</span>$<span class='no'>geno</span>, <span class='kw'>cols_per_chunk</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='no'>genodir</span>)
 <span class='fu'>write_split_inddat</span>(<span class='no'>genodir</span>, <span class='no'>outdir</span>)
-<span class='no'>numblocks</span> <span class='kw'>=</span> <span class='fl'>185</span> <span class='co'># this should be the number of split allele frequency files</span>
-<span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='fl'>1</span>:<span class='no'>numblocks</span>) {
-  <span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='no'>i</span>:<span class='no'>numblocks</span>) {
-    <span class='fu'>write_split_pairdat</span>(<span class='no'>genodir</span>, <span class='no'>outdir</span>, <span class='kw'>block1</span> <span class='kw'>=</span> <span class='no'>i</span>, <span class='kw'>block2</span> <span class='kw'>=</span> <span class='no'>j</span>)
+<span class='no'>numchunks</span> <span class='kw'>=</span> <span class='fl'>185</span> <span class='co'># this should be the number of split allele frequency files</span>
+<span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='fl'>1</span>:<span class='no'>numchunks</span>) {
+  <span class='kw'>for</span>(<span class='no'>j</span> <span class='kw'>in</span> <span class='no'>i</span>:<span class='no'>numchunks</span>) {
+    <span class='fu'>write_split_pairdat</span>(<span class='no'>genodir</span>, <span class='no'>outdir</span>, <span class='kw'>chunk1</span> <span class='kw'>=</span> <span class='no'>i</span>, <span class='kw'>chunk2</span> <span class='kw'>=</span> <span class='no'>j</span>)
     }
   }
 }</div></pre>

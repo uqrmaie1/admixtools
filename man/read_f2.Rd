@@ -21,7 +21,7 @@ and returns a 3d array of f2 block jackknife estimates.
 }
 \examples{
 \dontrun{
-read_f2(f2_dir, pops = c('Zerg', 'Terran', 'Protoss'))
+read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 }
 }
 \seealso{

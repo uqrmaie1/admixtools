@@ -159,7 +159,7 @@
 
     <pre class="usage"><span class='fu'>qpdstat</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -167,8 +167,8 @@
     <tr>
       <th>f2_data</th>
       <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. alternatively, a directory with f2 statistics.
-see <code>extract_indpairs</code>.</p></td>
+output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. Alternatively, a directory with f2 statistics.
+see <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
     </tr>
     <tr>
       <th>pop1</th>

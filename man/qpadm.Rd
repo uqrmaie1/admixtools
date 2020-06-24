@@ -10,8 +10,7 @@ qpadm(f2_data, target = NULL, left = NULL, right = NULL,
   getcov = TRUE, constrained = FALSE, cpp = TRUE, verbose = TRUE)
 }
 \arguments{
-\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
+\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}
 
 \item{target}{target population}
 

@@ -30,11 +30,6 @@ get_leafnames = function(graph) {
   graph %>% V %>% {names(which(degree(graph, ., mode='out') == 0))}
 }
 
-#' @export
-get_outpop = function(graph) {
-  graph %>% V %>% names %>% pluck(2)
-}
-
 get_leaves = function(graph) {
   graph %>% V %>% {.[degree(graph, ., mode='out') == 0]}
 }
@@ -44,7 +39,23 @@ get_leaves2 = function(graph) {
   graph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(graph))
 }
 
-unify_vertex_names_rec = function(graph, node, vnamemap) {
+get_root = function(graph) {
+  root = names(which(igraph::degree(graph, mode = 'in') == 0))
+  if(length(root) != 1) stop(paste0('Root problem ', root))
+  root
+}
+
+#' @export
+get_outpop = function(graph) {
+  # returns outpop, if there is an edge from the root to a leave, NULL otherwise
+  #graph %>% V %>% names %>% pluck(2)
+  stopifnot(class(graph) == 'igraph')
+  root = get_root(graph)
+  outpop = intersect(names(igraph::neighbors(graph, root)), get_leafnames(graph))
+  if(length(outpop) == 1) return(outpop)
+}
+
+unify_vertex_names_rec = function(graph, node, vnamemap, sep1 = '.', sep2 = '_') {
   # recursive function which returns a vector of new, unique node names for all nodes which are reachable from 'node'
   children = neighbors(graph, node, mode='out')
   oldnam = names(node)
@@ -55,16 +66,16 @@ unify_vertex_names_rec = function(graph, node, vnamemap) {
 
   newnam = rep(NA, length(children))
   for(i in seq_along(children)) {
-    vnamemap = unify_vertex_names_rec(graph, children[i], vnamemap)
+    vnamemap = unify_vertex_names_rec(graph, children[i], vnamemap, sep1 = sep1, sep2 = sep2)
     newnam[i] = vnamemap[names(children[i])]
   }
   stopifnot(all(!is.na(newnam)))
-  vnamemap[oldnam] = paste0(sort(newnam), '.', collapse='_')
+  vnamemap[oldnam] = paste0(sort(newnam), sep1, collapse = sep2)
   vnamemap
 }
 
 
-unify_vertex_names = function(graph, keep_unique = TRUE) {
+unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_') {
   # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices,
   # so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
   leaves = get_leaves(graph)
@@ -73,7 +84,7 @@ unify_vertex_names = function(graph, keep_unique = TRUE) {
   ormap = names(V(g))
   names(ormap) = ormap
 
-  nammap = unify_vertex_names_rec(g, V(g)[1], ormap)
+  nammap = unify_vertex_names_rec(g, V(g)[1], ormap, sep1 = sep1, sep2 = sep2)
   nammap[lv] = names(leaves)
   names(nammap)[match(lv, names(nammap))] = names(leaves)
   nammap['R'] = 'R'
@@ -81,6 +92,7 @@ unify_vertex_names = function(graph, keep_unique = TRUE) {
     changed = setdiff(names(nammap), c('R', names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
   }
+  nammap %<>% map_chr(digest::digest) %>% paste0('x', .)
   set_vertex_attr(graph, 'name', names(nammap), nammap)
 }
 
@@ -311,6 +323,7 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
 
   stopifnot(length(fromnodes) == length(tonodes))
   miss = 0
+  maxprev = max(degree(graph))
   for(i in rev(seq_len(length(fromnodes)))) {
     fromnode = fromnodes[i]
     tonode = tonodes[i]
@@ -340,7 +353,7 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
     graph = igraph::add_vertices(graph, 2, name=c(new1, new2))
     newedges = c(fromnode_parent, new1, new1, fromnode, tonode_parent, new2, new2, tonode, new1, new2)
     graph = igraph::add_edges(graph, newedges)
-    stopifnot(max(degree(graph)) <= 3)
+    stopifnot(max(degree(graph)) <= maxprev)
   }
   if (miss > 0) {
     if(substitute_missing) graph = insert_admix_igraph_random(graph, miss)
@@ -382,6 +395,16 @@ insert_admix_igraph_random = function(graph, nadmix) {
     stopifnot(numadmix(graphnew) > numadmix(graph))
     stopifnot(igraph::is_simple(graphnew))
     graph = graphnew
+  }
+  graph
+}
+
+
+insert_admix_igraph_random2 = function(graph, nadmix) {
+  leaves = get_leafnames(graph)[-1]
+  for(i in 1:nadmix) {
+    sel = sample(leaves)[1:2]
+    graph %<>% insert_edges(sel[1], sel[2])
   }
   graph
 }
@@ -525,6 +548,29 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
   oldmodels = models %>% filter(generation == lastgen, !is.na(score))
   numsel = min(nrow(oldmodels), numsel)
   numeach = ceiling(numgraphs/numsel)
+  winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob) %>% select(-prob)
+  winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score, amount = 1e-9)) %>% slice(1))
+  sq = (numsel+1):numgraphs
+  newmodels = tibble(generation = lastgen+1, index = sq,
+                     igraph = rep(winners$igraph, numeach)[sq],
+                     oldscore = rep(winners$score, numeach)[sq])
+  mutations = sample(mutfuns, numgraphs-numsel, replace = TRUE)
+  if(parallel) map = furrr::future_map
+  newmodels %<>%
+    mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x))) %>%
+    mutate(out = map(igraph, qpgfun)) %>%
+    unnest_wider(out)
+  winners %>%
+    mutate(generation = lastgen+1, index = 1:n()) %>%
+    bind_rows(newmodels)
+}
+
+add_generation_old = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE) {
+
+  lastgen = max(models$generation)
+  oldmodels = models %>% filter(generation == lastgen, !is.na(score))
+  numsel = min(nrow(oldmodels), numsel)
+  numeach = ceiling(numgraphs/numsel)
   winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob)
   winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score)))
   sq = 1:numgraphs
@@ -533,11 +579,14 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
                      oldscore = rep(winners$score, numeach)[sq])
   mutations = c(replicate(numsel, namedList(identity)),
                 sample(mutfuns, numgraphs-numsel, replace = TRUE))
-  newmodels %<>% mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x)))
-  #newmodels %>% mutate(out = furrr::future_map(igraph, qpgfun)) %>% unnest_wider(out)
   if(parallel) map = furrr::future_map
-  newmodels %>% mutate(out = map(igraph, qpgfun)) %>% unnest_wider(out)
+  newmodels %>%
+    mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x))) %>%
+    mutate(out = map(igraph, qpgfun)) %>%
+    unnest_wider(out)
 }
+
+
 
 # sample_mutations = function(n) {
 #   # returns a random mutation function
@@ -560,31 +609,39 @@ score_to_prob = function(score) {
 
 
 evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, parallel = TRUE,
-                           keep = 'all', verbose=TRUE) {
+                           keep = 'all', stop_at = NULL, verbose = TRUE) {
   out = init
   for(i in seq_len(numgen)) {
+    if(!is.null(stop_at) && stop_at < Sys.time()) break
     newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns, parallel = parallel)
+    #if(min(newmodels$score) > min(out$score)) browser()
+    if(T) {
+      w = newmodels %>% top_n(1, -score) %>% slice(1)
+      g = w %$% igraph[[1]]
+      fl = paste0('/n/groups/reich/robert/projects/admixprograms/sikora_et_al/sc', round(w$score[[1]]), '_adm', numadmix(g), '.rds')
+      saveRDS(g, fl)
+    }
     if(keep == 'all') out %<>% bind_rows(newmodels)
-    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>%
+    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score, amount = 1e-9)) %>%
       ungroup %>% bind_rows(newmodels)
     else out = newmodels
     if(verbose) {
-      best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score)) %$% score
+      best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score
       cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best, 3), collapse=', '),
                  paste(rep(' ', 30), collapse=''), '\r'))
     }
   }
   if(verbose) cat('\n')
-  if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score)) %>% ungroup
+  if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score, amount = 1e-9)) %>% ungroup
   out
 }
 
 
 optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, outpop = NA, initgraph = NULL,
-                                          mutfuns = NULL, parallel = TRUE,
+                                          mutfuns = NULL, parallel = TRUE, stop_at = NULL,
                                           cpp = TRUE, debug = FALSE, keep = 'all', verbose = TRUE) {
-  if(numadmix == 0) {
+  if(numadmix == 0 && is.null(initgraph)) {
     qpgfun0 = qpgraph_anorexic
     mutfuns = mutfuns[setdiff(names(mutfuns), c('move_admixedge_once'))]
   } else {
@@ -604,13 +661,13 @@ optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, n
 
   init %<>% select(-isn) %>% unnest_wider(out) %>% mutate(oldscore = score)
   if(verbose) {
-    best = init %>% filter(index > numsel, !is.na(score)) %>% top_n(min(numsel, n()), -jitter(score)) %$% score
+    best = init %>% filter(index > numsel, !is.na(score)) %>% top_n(min(numsel, n()), -jitter(score, amount = 1e-9)) %$% score
     cat(paste0('Generation 0  Best new scores: ', paste(round(best), collapse=', '),
                paste(rep(' ', 30), collapse=''), '\r'))
   }
 
   evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, parallel = parallel,
-                  verbose = verbose, keep = keep)
+                  keep = keep, stop_at = stop_at, verbose = verbose)
 }
 
 
@@ -652,8 +709,8 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
                        numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
                        f2_denom = 1, cpp = TRUE, initgraph = NULL,
                        mutfuns = c('spr_leaves', 'spr_all', 'swap_leaves', 'move_admixedge_once', 'flipadmix_random'),
-                       parallel = TRUE,
-                       debug = numrep==1, fudge = 0.001, verbose = TRUE, ...) {
+                       parallel = TRUE, stop_at = NULL,
+                       debug = numrep==1, fudge = 1e-4, verbose = TRUE, ...) {
 
   keep = rlang::arg_match(keep)
   if(is.character(f2_data) && file.exists(f2_data) && !isTRUE(file.info(f2_data)$isdir)) {
@@ -685,7 +742,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
                                                  numgraphs = numgraphs, numadmix = numadmix,
                                                  outpop = outpop, cpp = cpp, initgraph = initgraph,
                                                  mutfuns = mutfuns, parallel = parallel && numrep == 1,
-                                                 debug = debug, keep = keep, verbose = verbose)
+                                                 stop_at = stop_at, debug = debug, keep = keep, verbose = verbose)
   if(!debug) {
     oa = possibly(oa, otherwise=NULL)
     #res = furrr::future_map(as.list(seq_len(numrep)), oa)
@@ -695,6 +752,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
     res = list()
     for(i in seq_len(numrep)) {
       res[[i]] = oa()
+      if(is.null(res[[i]])) browser()
     }
   }
   bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
@@ -754,7 +812,7 @@ summarize_triples = function(results, maxscore = NA) {
   # results is output from 'optimize_admixturegraph'
   # takes at most one graph from each independent run
 
-  sel = results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
+  sel = results %>% group_by(run) %>% top_n(1, -jitter(score, amount = 1e-9)) %>% ungroup
   if(!is.na(maxscore)) sel %<>% filter(score <= maxscore)
 
   sel %>% mutate(topo = map(igraph, summarize_graph)) %>%
@@ -1181,8 +1239,12 @@ add_edges_rec = function(graph, nadmix) {
 #' @param source_nodes nodes in `basegraph`. edges above these nodes will be added and attached to all terminal edges leading to `addpops`
 #' @examples
 #' \dontrun{
-#' graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
-#'                connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+  #' graphlist = graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
+  #'                            connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+  #' results = tibble(graph = graphlist) %>%
+  #'   mutate(res = map(graph, ~qpgraph(example_f2_blocks, .))) %>%
+  #'   unnest_wider(res) %>%
+  #'   mutate(worstz = map_dbl(f3, ~max(abs(.$z))))
 #' }
 graphmod_pavel = function(basegraph, addpops, connection_edge, source_nodes) {
 
@@ -1205,6 +1267,177 @@ graphmod_pavel = function(basegraph, addpops, connection_edge, source_nodes) {
   e = expand_grid(source_nodes, addpops)
   graphs %>% map(~insert_edges(., e$source_nodes, e$addpops))
 }
+
+
+split_multifurcations = function(graph) {
+  # graph is a four column edge list matrix
+  # returns graph as tibble with ''
+
+  stopifnot(class(graph)[1] == 'matrix')
+  multi = names(which(table(graph[,1]) > 2))
+  newedges = matrix(0, 0, 4)
+
+  for(i in seq_len(length(multi))) {
+    rows = which(graph[,1] == multi[i])
+    torows = which(graph[,2] == multi[i])
+    newnam = paste0(graph[rows, 1], '_multi', i, '_', seq_along(rows))
+    graph[rows, 1] = newnam
+    graph[torows, 2] = newnam[1]
+    newedges = rbind(newedges, cbind(newnam[-length(newnam)], newnam[-1], '0', '1e-9'))
+  }
+  if(ncol(graph) == 2) graph = cbind(graph, NA, NA)
+  graph %>% rbind(newedges) %>%
+    as_tibble(.name_repair = ~c('from', 'to', 'lower', 'upper')) %>%
+    type_convert(col_types = cols())
+}
+
+
+
+#' Returns a signature of a graph consisting of the left and right descendent leaf nodes of each internal node (sorted and concatenated)
+#'
+#' Can be used to determine how often internal nodes occur in a list of other well fitting models
+#' @export
+#' @examples
+#' \dontrun{
+#' sigs = example_winners %>% mutate(sig = map(igraph, node_signature)) %$% sig %>% unlist %>% table %>% c
+#' node_signature(example_winners$igraph[[1]])
+#' }
+node_signature = function(graph) {
+  graph %<>% simplify_graph
+  inner = setdiff(names(V(graph)), get_leafnames(graph))
+  inner2 = inner %>%
+    map(~neighbors(graph, ., mode = 'out')) %>%
+    map(names)
+  leaves = get_leafnames(graph)
+  map(inner2, ~map(., ~names(subcomponent(graph, ., mode = 'out'))) %>%
+        map(~intersect(., leaves)) %>%
+        map(sort) %>%
+        map(~paste(., collapse=':')) %>%
+        flatten_chr) %>%
+    map(sort) %>%
+    map(~paste(., collapse=' ')) %>%
+    flatten_chr %>%
+    set_names(inner)
+}
+
+#' Count how often each node in graph occurs in other graphs
+#'
+#' @examples
+#' \dontrun{
+#' sigs = example_winners %>% mutate(sig = map(igraph, node_signature)) %$% sig %>% unlist %>% table %>% c
+#' node_signature(example_winners$igraph[[1]])
+#' }
+node_counts = function(graph, graphlist) {
+  counts = map(graphlist, node_signature) %>%
+    map(unique) %>%
+    unlist %>%
+    table %>%
+    c %>%
+    enframe(name = 'signature', value = 'count')
+  graph %>%
+    node_signature %>%
+    enframe(name = 'node', value = 'signature') %>%
+    left_join(counts, by = 'signature')
+}
+
+
+match_graphs = function(graph1, graph2) {
+
+  v1 = names(V(graph1))
+  v2 = names(V(graph2))
+  l1 = get_leafnames(graph1)
+  l2 = get_leafnames(graph2)
+  stopifnot(all.equal(sort(l1), sort(l2)))
+
+  vmap = cbind(l1, l1, l1)
+  for(i in rep(seq_along(v1), 2)) {
+    if(v1[i] %in% vmap[,1]) next
+    parents = neighbors(graph1, v1[i], mode = 'in')
+    children = neighbors(graph1, v1[i], mode = 'out')
+    np = length(parents)
+    nc = length(children)
+    cl = sort(intersect(l1, names(children)))
+    indeg = unname(sort(degree(graph1, children, mode = 'in')))
+    if(length(cl) > 0) {
+      cands = names(neighbors(graph2, cl[1], mode = 'in'))
+      for(cand in cands) {
+        print(cand)
+        cancchildren = neighbors(graph2, cand, mode = 'out')
+        cl2 = sort(intersect(l1, names(cancchildren)))
+        if(isTRUE(all.equal(cl, cl2))) {
+          if(!v1[i] %in% vmap[,1] && !cand %in% vmap[,2]) {
+            vmap = rbind(vmap, c(v1[i], cand, v1[i]))
+            break
+          }
+        }
+      }
+      if(v1[i] %in% vmap[,1]) next
+    }
+    matchedparents = intersect(vmap[,1], names(parents))
+    if(length(matchedparents) == 0) next
+    mp2 = vmap[vmap[,1] == matchedparents[1], 2]
+    stopifnot(mp2 %in% names(V(graph2)))
+    if(length(mp2) == 1 && !is.na(mp2)) {
+      cands = names(neighbors(graph2, mp2, mode = 'out'))
+    }
+    for(cand in cands) {
+      print(cand)
+      cancchildren = neighbors(graph2, cand, mode = 'out')
+      if(length(cl) > 0) {
+        cl2 = sort(intersect(l1, names(cancchildren)))
+        if(isTRUE(all.equal(cl, cl2))) {
+          if(!v1[i] %in% vmap[,1] && !cand %in% vmap[,2]) {
+            vmap = rbind(vmap, c(v1[i], cand, v1[i]))
+            break
+          }
+        }
+      } else {
+        if(!v1[i] %in% vmap[,1] && !cand %in% vmap[,2]) {
+          vmap = rbind(vmap, c(v1[i], cand, v1[i]))
+          break
+        }
+        # indeg2 = unname(sort(degree(graph2, names(cancchildren), mode = 'in')))
+        # if(isTRUE(all.equal(indeg, indeg2))) {
+        #   vmap = rbind(vmap, c(v1[i], cand, v1[i]))
+        #   break
+        # }
+      }
+    }
+  }
+
+  # add non-matched nodes
+  rem1 = setdiff(v1, vmap[,1])
+  rem2 = setdiff(v2, vmap[,2])
+  vmap = rbind(vmap, cbind(rem1, NA, paste0('newnode1_', 1:length(rem1))))
+  vmap = rbind(vmap, cbind(NA, rem2, paste0('newnode2_', 1:length(rem2))))
+
+  # edge lists with new names
+  el1 = as_edgelist(graph1)
+  el2 = as_edgelist(graph2)
+  el1[,1] = vmap[match(el1[,1], vmap[,1]), 3]
+  el1[,2] = vmap[match(el1[,2], vmap[,1]), 3]
+  el2[,1] = vmap[match(el2[,1], vmap[,2]), 3]
+  el2[,2] = vmap[match(el2[,2], vmap[,2]), 3]
+  ee1 = paste(el1[,1], el1[,2])
+  ee2 = paste(el2[,1], el2[,2])
+
+  comb = rbind(el1, el2)
+  comb = comb[!duplicated(comb),]
+  in1 = paste(comb[,1], comb[,2]) %in% ee1
+  in2 = paste(comb[,1], comb[,2]) %in% ee2
+  comb = cbind(comb, ifelse(in1 & in2, 'both', ifelse(in1, 'g1', 'g2')))
+  comb
+}
+
+
+
+
+
+
+
+
+
+
 
 
 

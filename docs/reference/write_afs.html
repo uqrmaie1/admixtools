@@ -48,7 +48,7 @@
 <meta property="og:title" content="Write allele frequency estimates to disk — write_afs" />
 
 <meta property="og:description" content="This function takes a 3d array of f2 block jackknife estimates, splits it by population pair,
-and writes each pair to a separate .RData file." />
+and writes each pair to a separate .rds file." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -153,7 +153,7 @@ and writes each pair to a separate .RData file." />
     <div class="ref-description">
     
     <p>This function takes a 3d array of f2 block jackknife estimates, splits it by population pair,
-and writes each pair to a separate <code>.RData</code> file.</p>
+and writes each pair to a separate <code>.rds</code> file.</p>
     
     </div>
 
@@ -174,12 +174,12 @@ will be stored in a variable called <code>allele_frequencies</code> under <code>
     <tr>
       <th>countmat</th>
       <td><p>optional matrix with allele counts for each SNP and population.
-Dimensions have to match <code>afmat</code>. Data will be stored in same file (<code>{path}/{pop}.RData</code>)
+Dimensions have to match <code>afmat</code>. Data will be stored in same file (<code>{path}/{pop}.rds</code>)
 in the variable <code>num_individuals</code></p></td>
     </tr>
     <tr>
       <th>overwrite</th>
-      <td><p>should existing <code>.RData</code> files be overwritten?</p></td>
+      <td><p>should existing <code>.rds</code> files be overwritten?</p></td>
     </tr>
     </table>
     

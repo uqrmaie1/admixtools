@@ -26,15 +26,13 @@ or equal to the number of blocks if \code{boot} is \code{TRUE}.}
 \item{verbose}{print progress updates}
 
 \item{...}{named arguments which are passed to the \code{qp} function.}
-
-\item{multiprocess}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs
 }
 \description{
-These are wrapper functions around various \code{qp} functions, which will evaluate many models at once.
-The models are formed by leaving out one or more SNP block at a time (see \code{boot} for details).
+These are wrapper functions around various \code{qp} functions, which will evaluate a model on multiple subdivisions of the data.
+The subdivisions are formed by leaving out one or more SNP block at a time (see \code{boot} for details).
 }
 \examples{
 \dontrun{

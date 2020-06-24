@@ -4,8 +4,8 @@
 \alias{afs_to_f2_blocks}
 \title{Compute all pairwise f2 statistics}
 \usage{
-afs_to_f2_blocks(afmat, countmat, block_lengths, f2_denom = 1,
-  maxmem = 8000, outdir = NULL, overwrite = FALSE, verbose = TRUE)
+afs_to_f2_blocks(afmat, countmat, block_lengths, maxmem = 8000,
+  outdir = NULL, overwrite = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{afmat}{matrix of allele frequencies for all populations (columns) and SNPs (rows).}
@@ -14,8 +14,6 @@ afs_to_f2_blocks(afmat, countmat, block_lengths, f2_denom = 1,
 
 \item{block_lengths}{vector with lengths of each block. \code{sum(block_lengths)}
 has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}}
-
-\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 

@@ -16,28 +16,20 @@ knitr::opts_chunk$set(
 
 # admixtools
 
-Lightweight R implementations of some [AdmixTools](https://github.com/DReichLab/AdmixTools) programs.
+Lighting fast R implementations of [AdmixTools](https://github.com/DReichLab/AdmixTools) programs qpAdm, qpGraph, and more.
 
 ## Installation
 
 To install and load `admixtools`, follow these steps:
 
 ```{r, eval=FALSE}
-install.packages(c('tidyverse', 'devtools'))
-pkg = 'file:///n/groups/reich/robert/projects/admixprograms/admixtools_0.1.0.tar.gz'
-devtools::install_url(pkg, dependencies='Imports', upgrade='never')
-library('admixtools')
+devtools::install_github("uqrmaie1/admixtools")
+library("admixtools")
 ```
 
-Or, if you don't want to install it, the following might work instead if you use R 3.5 on O2:
-```{r, eval=FALSE}
-.libPaths(c(.libPaths(), '/home/rm360/R/x86_64-pc-linux-gnu-library/3.5/'))
-library('admixtools')
-```
 ```{r, echo=FALSE}
 library('admixtools')
 ```
-However, if you want to use the interactive browser app, you have to install the R package on your local computer.
 
 
 ## Usage
@@ -45,7 +37,7 @@ However, if you want to use the interactive browser app, you have to install the
 If you already have precomputed f2-statistics, you can fit an admixture graph like this:
 
 ```{r, eval = FALSE}
-f2_dir = '/n/groups/reich/robert/projects/admixprograms/f2blocks_v42.1/'
+f2_dir = "/my/f2/directory/"
 fit = qpgraph(f2_dir, example_graph)
 plot_graph(fit$edges)
 ```
@@ -53,13 +45,15 @@ plot_graph(fit$edges)
 
 ![example graph](man/figures/graph1.png)
 
+Clearly not a historically accurate model, but it gets the idea across.
+
 <br>
 
 You can also use the f2-statistics to estimate admixture weights: 
 ```{r}
-target = 'Denisova.DG'
-left = c('Altai_Neanderthal.DG', 'Vindija.DG')
-right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+target = "Denisova.DG"
+left = c("Altai_Neanderthal.DG", "Vindija.DG")
+right = c("Chimp.REF", "Mbuti.DG", "Russia_Ust_Ishim.DG", "Switzerland_Bichon.SG")
 ```
 ```{r, eval = FALSE}
 qpadm(f2_dir, target, left, right)

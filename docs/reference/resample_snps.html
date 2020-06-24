@@ -47,8 +47,8 @@
 
 <meta property="og:title" content="Run models while leaving out SNP blocks — resample_snps" />
 
-<meta property="og:description" content="These are wrapper functions around various qp functions, which will evaluate many models at once.
-The models are formed by leaving out one or more SNP block at a time (see boot for details)." />
+<meta property="og:description" content="These are wrapper functions around various qp functions, which will evaluate a model on multiple subdivisions of the data.
+The subdivisions are formed by leaving out one or more SNP block at a time (see boot for details)." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -152,8 +152,8 @@ The models are formed by leaving out one or more SNP block at a time (see boot f
 
     <div class="ref-description">
     
-    <p>These are wrapper functions around various <code>qp</code> functions, which will evaluate many models at once.
-The models are formed by leaving out one or more SNP block at a time (see <code>boot</code> for details).</p>
+    <p>These are wrapper functions around various <code>qp</code> functions, which will evaluate a model on multiple subdivisions of the data.
+The subdivisions are formed by leaving out one or more SNP block at a time (see <code>boot</code> for details).</p>
     
     </div>
 
@@ -185,10 +185,6 @@ or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p><
     <tr>
       <th>...</th>
       <td><p>named arguments which are passed to the <code>qp</code> function.</p></td>
-    </tr>
-    <tr>
-      <th>multiprocess</th>
-      <td><p>If <code>TRUE</code> (the default), models will run on multiple cores in parallel.</p></td>
     </tr>
     </table>
     

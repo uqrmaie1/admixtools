@@ -4,24 +4,24 @@
 \alias{split_mat}
 \title{Split a matrix into blocks}
 \usage{
-split_mat(mat, cols_per_block, outdir, overwrite = FALSE,
+split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE,
   verbose = TRUE)
 }
 \arguments{
 \item{mat}{the matrix to be split}
 
-\item{cols_per_block}{the number of columns per block}
+\item{cols_per_chunk}{the number of columns per block}
 
-\item{outdir}{output directory}
+\item{prefix}{prefix of output files}
 }
 \description{
-This function splits a large matrix into smaller blocks with \code{cols_per_block} columns per block,
-and saves them as \code{.rds} files in \code{outdir}
+This function splits a large matrix into smaller blocks with \code{cols_per_chunk} columns per block,
+and saves them as \code{.rds} files with prefix \code{prefix}
 }
 \examples{
 \dontrun{
-afmatall = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
-split_mat(afmatall, cols_per_block = 20, outdir = 'afmatall_split_v42.1/')
+afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
+split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
 }
 }
 \seealso{

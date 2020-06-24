@@ -21,12 +21,8 @@ cpp_get_weights_covariance <- function(f4_lo, qinv, block_lengths, fudge = 0.000
     .Call('_admixtools_cpp_get_weights_covariance', PACKAGE = 'admixtools', f4_lo, qinv, block_lengths, fudge, boot, constrained, qpsolve)
 }
 
-cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper) {
-    .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper)
-}
-
-cpp_opt_edge_lengths_old <- function(ppwts_2d, ppinv, f3_est, qpsolve) {
-    .Call('_admixtools_cpp_opt_edge_lengths_old', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve)
+cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge) {
+    .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge)
 }
 
 cpp_fill_pwts <- function(pwts, weights, path_edge_table, path_admixedge_table, numpaths) {

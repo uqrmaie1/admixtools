@@ -47,6 +47,7 @@ List cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv,
                        int rnk, double fudge = 0.0001, int iterations = 20,
                        bool constrained = false, Function qpsolve = R_NilValue) {
 
+  if(rnk == 0) return Rcpp::List::create(_["weights"] = 1.0);
   mat U, V, x, y, rhs, lhs;
   vec s;
   svd(U, s, V, xmat);
@@ -77,6 +78,7 @@ vec cpp_qpadm_weights2(const arma::mat& xmat, const arma::mat& qinv,
                        int rnk, double fudge = 0.0001, bool constrained = false,
                        Function qpsolve = R_NilValue, int iterations = 20) {
 
+  if(rnk == 0) return ones(1);
   mat U, V, x, y, rhs, lhs;
   vec s;
   svd(U, s, V, xmat);

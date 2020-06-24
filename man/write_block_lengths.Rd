@@ -17,12 +17,12 @@ genodir = 'split_v42.1'
 outdir = 'indpairs_v42.1'
 write_block_lengths(pref, outdir)
 dat = read_packedancestrymap(pref, inds = inds)
-split_mat(dat$geno, cols_per_block = 20, outdir = genodir)
+split_mat(dat$geno, cols_per_chunk = 20, outdir = genodir)
 write_split_inddat(genodir, outdir)
-numblocks = 185 # this should be the number of split allele frequency files
-for(j in 1:numblocks) {
-  for(j in i:numblocks) {
-    write_split_pairdat(genodir, outdir, block1 = i, block2 = j)
+numchunks = 185 # this should be the number of split allele frequency files
+for(j in 1:numchunks) {
+  for(j in i:numchunks) {
+    write_split_pairdat(genodir, outdir, chunk1 = i, chunk2 = j)
     }
   }
 }

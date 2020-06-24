@@ -163,8 +163,8 @@ non-missing haplotypes in populations \(1\) and \(2\). See <code>details</code><
     
     </div>
 
-    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afmat</span>, <span class='no'>countmat</span>, <span class='no'>block_lengths</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(<span class='no'>afmat</span>, <span class='no'>countmat</span>, <span class='no'>block_lengths</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
+  <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -181,10 +181,6 @@ non-missing haplotypes in populations \(1\) and \(2\). See <code>details</code><
       <th>block_lengths</th>
       <td><p>vector with lengths of each block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code>
 has to match <code><a href='https://rdrr.io/r/base/nrow.html'>nrow(afmat)</a></code>. See <code><a href='get_block_lengths.html'>get_block_lengths</a></code></p></td>
-    </tr>
-    <tr>
-      <th>f2_denom</th>
-      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>maxmem</th>

@@ -279,9 +279,9 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/
 qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
                            printonly = FALSE, badsnps = NULL, lambdascale = NULL, inbreed = 'NO',
                            diag = 0.0001, outpop = 'NULL', loadf3 = NULL,
-                           lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 2,
+                           lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 0,
                            allsnps = 'NO', oldallsnps = 'NO', doanalysis = 'YES',
-                           bigiter = 100, initmix = 40000, env = '', verbose = TRUE) {
+                           bigiter = 100, initmix = 0, env = '', verbose = TRUE) {
   # wrapper around AdmixTools qpGraph
   # makes parfile and graphfile
   stopifnot(!is.null(parfile) | !is.null(pref))
@@ -446,6 +446,23 @@ fit_to_qpgraph_format = function(edges, decimals = 3, sep = '\t') {
   c(vertex, label, norm, admix)
 }
 
+igraph_to_qpgraph = function(graph, outfile, sep = '\t') {
+  edges = igraph::as_edgelist(graph) %>%
+    set_colnames(c('from', 'to')) %>%
+    as_tibble %>%
+    add_count(to) %>%
+    mutate(type = ifelse(n == 2, 'admix', 'edge'))
+  leaves = setdiff(edges$to, edges$from)
+  root = paste('root', setdiff(edges$from, edges$to), sep = sep)
+  label = paste('label', leaves, leaves, sep = sep)
+  norm = edges %>% filter(type == 'edge') %$%
+    paste('edge', paste0(from, '_', to), from, to, sep = sep)
+  admix = edges %>% filter(type == 'admix') %>% group_by(to) %>%
+    summarize(from = paste(from, collapse = sep)) %$%
+    paste(rep('admix', length(to)), to, from, sep = sep)
+  c(root, label, norm, admix) %>%
+  write(outfile)
+}
 
 #' Read qpGraph output file
 #' @export
@@ -481,72 +498,94 @@ parse_qpgraph_output = function(outfile) {
   score = (dat %>% filter(grepl('^final score', .data$X1)) %>%
              separate('X1', c('a', 'b', 'score'), sep=' +', convert = T, extra='drop', fill='right'))$score
 
+  pops = dat$X1 %>% str_subset('^population:') %>% str_squish %>% word(3)
+  numpop = length(pops)
+  numpair = choose(numpop, 2)
+
   f2 = dat %>% filter(grepl(' f2: ', .data$X1)) %>%
     separate('X1', c('pop1', 'pop2', 'fst','fit','est','diff','se','z'), sep=' +', convert = TRUE) %>%
-    select(-.data$fst)
+    select(-.data$fst) %>%
+    mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
 
   f3 = dat %>% filter(grepl(' ff3fit: ', .data$X1)) %>%
     separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
-    select(-.data$ff3fit)
+    select(-.data$ff3fit) %>%
+    mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
 
   outlierstart = str_which(dat$X1, '^outliers:')[1]+2
-  outlierend = str_which(dat$X1, '^worst f-stat:')[1]-1
-  #fststart = str_which(dat$X1, '^fst:')[1]+2
-  #fstend = str_which(dat$X1, '^f2:')[1]-2
-  #f2start = fstend+4
-  #f2end = str_which(dat$X1, '^ff3:')[1]-2
-  pops = dat$X1 %>% str_subset('^population:') %>% str_squish %>% word(3)
-  #if(is.na(pops)[1]) pops = dat$X1 %>% str_subset('^label') %>% str_split(' ') %>% map(2) %>% unlist
+  outlierend = str_which(dat$X1, '^worst f-stat:')[1]-3
+
+  numalloutliers = choose(choose(numpop, 2)+1, 2)
+  if(outlierend - outlierstart + 1 != numalloutliers) warning('Outliers are missing')
+
   if(is.na(pops)[1]) pops = dat$X1 %>% str_subset('^zzaddw') %>% str_split(' ') %>% map(2) %>% unlist %>% unique
   denom = 1000
   amb = names(which(table(str_sub(pops, 1, 3)) > 1))
   if(length(amb) > 0) warning(paste('Ambiguous populations ommited from outliers: ', amb))
 
-  outliers = dat$X1[outlierstart:outlierend] %>% str_split(' +') %>% do.call(rbind, .) %>% as_tibble(.name_repair = ~c(paste0('pop', 1:4), c('fit', 'est', 'diff', 'se', 'z'))) %>% type_convert(col_types = cols()) %>% mutate(diff = -diff, z = -z) %>% filter(length(intersect(amb, c(pop1, pop2, pop3, pop4))) == 0)
-  f3 %<>% left_join(outliers %>% filter(pop1 == pop3, pop1 == str_sub(pops[1], 1, 3)) %>% select(pop2, pop4, diff, se, z), by = c('pop2', 'pop3'='pop4'))
+  poppairs = t(combn(pops, 2))
+  popquads = cbind(poppairs[rep(1:numpair, numpair:1),], poppairs[unlist(map(1:numpair, ~(.:numpair))),])
+  outliers = dat$X1[outlierstart:outlierend] %>%
+    str_split(' +') %>%
+    do.call(rbind, .) %>%
+    `[`(,-1:-4) %>%
+    cbind(popquads, .) %>%
+    as_tibble(.name_repair = ~c(paste0('pop', 1:4), c('fit', 'est', 'diff', 'se', 'z'))) %>%
+    type_convert(col_types = cols()) %>%
+    mutate(diff = -diff, z = -z) #%>%
+    #filter(length(intersect(amb, c(pop1, pop2, pop3, pop4))) == 0)
+  #f3 %<>% left_join(outliers %>% filter(pop1 == pop3, pop1 == str_sub(pops[1], 1, 3)) %>%
+  #                    select(pop2, pop4, diff, se, z), by = c('pop2', 'pop3'='pop4'))
 
-  numpop = length(pops)
-  f2 %<>% mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
-  f3 %<>% mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
-  #f21 = dat %>% slice(f2start:f2end) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
-  #  mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'est') %>% mutate(est = est/denom)
-  #fst = dat %>% slice(fststart:fstend) %>% separate(X1, c('pop1', pops), ' +', T, T) %>%
-  #  mutate(pop1 = pops) %>% pivot_longer(-pop1, 'pop2', values_to = 'fst') %>% mutate(fst = fst/denom)
-  #f2before = f21 %>% left_join(fst, by = c('pop1', 'pop2')) #%>%
-    #mutate(pop1 = str_sub(pop1, 1, 3), pop2 = str_sub(pop2, 1, 3))
+  # if(length(unique(str_sub(pops, 1, 3))) == length(unique(pops))) {
+  #   outliers %<>% mutate(across(pop1:pop4, ~pops[match(., str_sub(pops, 1, 3))]))
+  # }
 
-  #f2 %<>% left_join(f2before, by = c('pop1', 'pop2'))
+  #f2 %<>% mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
+  #f3 %<>% mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
 
-  namedList(edges, score, f2, f3, f4=outliers)
+  namedList(edges, score, f2, f3, f4 = outliers)
 }
 
 
 #' Read qpGraph graph file
 #' @export
 #' @param graphfile file with admixture graph in qpGraph format.
-#' @return graph represented as two column edge matrix.
-parse_qpgraph_graphfile = function(graphfile) {
+#' @return graph represented as two column edge matrix. Can have four columns if edges are locked
+parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE) {
   # reads graph in qpGraph format
   # returns edge matrix (adjacency list)
   lines = read_lines(graphfile) %>%
     tibble %>% set_colnames('V1')
-  namemap = lines %>% filter(grepl('^label', .data$V1)) %>%
+  namemap = lines %>% filter(grepl('^label', V1)) %>%
     separate('V1', c('type', 'label', 'name'), sep = '\\s+', extra = 'drop') %>%
     select(-type) %>% deframe
 
   dat = lines %>%
-    filter(grepl('^edge|redge|ledge|admix', .data$V1)) %>%
-    separate('V1', c('type', 'name', 'from', 'to'), sep = '\\s+', extra = 'drop') %>%
+    filter(grepl('^edge|^redge|^ledge|^admix|^lock', V1)) %>%
+    separate('V1', c('type', 'name', 'from', 'to', 'l1', 'l2'),
+             sep = '\\s+', extra = 'drop', fill = 'right') %>%
     mutate(type = recode(type, ledge = 'edge', redge = 'edge'))
-  admix1 = dat %>% filter(.data$type=='admix') %>% mutate(type='edge', to=.data$name, name='')
-  admix2 = dat %>% filter(.data$type=='admix') %>% mutate(type='edge', from=.data$to, to=.data$name, name='')
-  dat %>%
+  locks = dat %>% filter(type=='lock') %$% name
+  admix = dat %>% filter(type == 'admix')
+  admix1 = admix %>% mutate(type = 'edge', to = name,
+                            lower = ifelse(name %in% locks, as.numeric(l1)/100, NA),
+                            upper = lower, name = '')
+  admix2 = admix %>% mutate(type = 'edge', from = to, to = name,
+                            lower = ifelse(name %in% locks, as.numeric(l2)/100, NA),
+                            upper = lower, name = '')
+  out = dat %>%
+    filter(type != 'lock') %>%
     bind_rows(admix1) %>%
     bind_rows(admix2) %>%
-    filter(.data$type != 'admix') %>%
+    filter(type != 'admix') %>%
     mutate(from = recode(from, !!!namemap),
            to = recode(to, !!!namemap)) %>%
-    select(.data$from, .data$to) %>% as.matrix
+    select(from, to, lower, upper)
+  if(all(is.na(out$lower)) && all(is.na(out$upper))) out %<>% select(-lower, -upper)
+  out %<>% as.matrix
+  if(split_multi) out %<>% split_multifurcations
+  out
 }
 
 

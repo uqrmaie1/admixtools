@@ -24,7 +24,8 @@ pl = 15
 do = list(pageLength = pl, lengthMenu = list(c(pl, -1), c(pl, 'All')),
           buttons = c('copy', 'csv', 'excel'), scrollX = TRUE, dom = 'Blfrtip')
 actionButton = function(...) actionBttn(..., style = 'unite', size = 'sm')
-cols = gg_color_hue(5, 97, 15)
+#cols = gg_color_hue(5, 97, 15)
+cols = c("#FFF1F0", "#F7F8E4", "#E2FDF2", "#E8F9FF", "#FFF1FF")
 mutfuns = c(`SPR leaves`='spr_leaves', `SPR all`='spr_all', `Swap leaves`='swap_leaves', `Move admixture edge`='move_admixedge_once', `Flip admix`='flipadmix_random')
 
 box = function (..., title = NULL, footer = NULL, status = NULL, solidHeader = FALSE,
@@ -151,7 +152,7 @@ format_table = function(dat) {
   numcols = setdiff(which(sapply(dat, class) == 'numeric'), pcols)
   print('ft4')
 
-  if(length(popcols) > 0) dat %<>% mutate_at(popcols, ~recode(., !!!set_names(nam, names)))
+  if(length(popcols) > 0) dat %<>% mutate_at(popcols, ~recode(., !!!purrr::set_names(nam, names)))
   if('graph' %in% names(dat)) dat %<>% select(-graph)
   if('edges' %in% names(dat)) dat %<>% select(-edges)
   print('ft5')
@@ -166,136 +167,136 @@ aa = '.shiny-notification { height: 100px; width: 400px; position: fixed; top: 2
 
 ui = function(request) {
   tagList(useShinyjs(),
-  useShinyalert(),
-  chooseSliderSkin('Modern', color = 'black'),
-  bsTooltip('tooltips', 'Click this to turn tooltips on or off. Needs to be reactivated after switching tabs.'),
-  dashboardPage(
-    dashboardHeader(title = 'AdmixTools', titleWidth = 300,
-                    tags$li(class = 'dropdown', actionLink('tooltips', label = '', icon = icon('question'))),
-                    tags$li(class = 'dropdown', id = 'bookmarkdiv', actionLink('._bookmark_', label = '', icon = icon('save')))),
-  dashboardSidebar(tags$head(tags$style(HTML(aa))), width = 300,
-    sidebarMenu(id = 'navbar',
-    menuItem('Data', tabName = 'data', expandedName = 'data', id = 'datax', icon = icon('database'), startExpanded = TRUE,
-             menuItem('Extract settings', tabName = 'extract_settings',
-                      checkboxInput('fix_populations', 'Fix populations'),
-                      numericInput('max_miss', 'max missing', value = 0.1, step = 0.01, min = 0, max = 1),
-                      splitLayout(
-                        numericInput('min_maf', 'min MAF', value = 0, step = 0.01, min = 0, max = 0.5),
-                        numericInput('max_maf', 'max MAF', value = 0.5, step = 0.01, min = 0, max = 0.5)),
-                      radioButtons('trans_extract', 'Mutations', choices = c('both', 'only transitions', 'only transversions')),
-                      fileInput('keepsnps', NULL, buttonLabel = 'SNP list'),
-                      numericInput('maxmem', 'max RAM in GB', value = 15, step = 1, min = 0)
-                      )),
-    menuItem('f2', tabName = 'f2', expandedName = 'f2', icon = icon('dice-two'),
-             menuItem('Options', tabName = 'f2_options')),
-    menuItem('f3', tabName = 'f3', expandedName = 'f3', icon = icon('dice-three'),
-             menuItem('Options', tabName = 'f3_options')),
-    menuItem('f4', tabName = 'f4', expandedName = 'f4', icon = icon('dice-four'),
-             menuItem('Options', tabName = 'f4_options')),
-    menuItem('qpAdm', tabName = 'qpadm', expandedName = 'qpadm', icon = icon('balance-scale'),
-             actionLink('qpadm_fit', 'Fit'),
-             menuItem('Compare', href = 'qpadm_comparison', tabName = 'qpadm_comparison',
-                      splitLayout(
-                        shinyFilesButton('qpadmbin', 'qpAdm bin', 'Select qpAdm bin', FALSE),
-                        shinyFilesButton('qpadm_genofile', 'Geno file', 'Select Packedancestrymap geno file', FALSE)),
-                      p(HTML('<center>or</center>')),
-                      fileInput('qpadm_out', NULL, buttonLabel = 'qpAdm output'),
-                      hr(),
-                      actionButton('run_qpadm', 'Run')),
-             menuItem('Resample', tabName = 'qpadm_resample'),
-             menuItem('Options', tabName = 'qpadm_options',
-                      numericInput('qpadm_diag', 'diag', value = 0.001, step = 0.001),
-                      checkboxInput('qpadm_constrained', 'Constrain weights'))),
-    menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
-             actionLink('qpgraph_fit', 'Fit'),
-             menuItem('Load graph', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
-             menuItem('Modify graph', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
-                      hr(),
-                      p('Selected'),
-                      div(verbatimTextOutput('showseledge', placeholder = TRUE), tags$head(tags$style('#showseledge{max-height: 300px; background: white}'))),
-                      splitLayout(
-                        actionButton('clear_edge', 'Clear'),
-                        actionButton('delete_edge', 'Delete'),
-                        actionButton('add_edge', 'Add')),
-                      hr(),
-                      p('Randomize graph'),
-                      uiOutput('nadmix'),
-                      #splitLayout(checkboxInput('fixoutgroup', 'Fix outgroup', value = TRUE),
-                      actionButton('randgraph', 'Randomize'),
-                      hr()),
-             menuItem('Similar graphs', tabName = 'qpgraph_similar', expandedName = 'qpgraph_similar',
-                      actionLink('qpgraph_similar_minus1', 'Less admixture'),
-                      actionLink('qpgraph_similar_minusplus', 'Same admixture'),
-                      actionLink('qpgraph_similar_plus1', 'More admixture'),
-                      actionLink('qpgraph_similar_decomposed', 'Component trees'),
-                      actionLink('qpgraph_similar_treeneighbors', 'Tree neighbors'),
-                      actionLink('qpgraph_similar_flipadmix', 'Flip admixture'),
-                      menuItem('Add population', tabName = 'qpgraph_add',
-                               uiOutput('qpgraph_add'),
-                               actionBttn('qpgraph_add_run', 'Run')),
-                      hr(),
-                      actionLink('qpgraph_similar_update', 'Update graph'),
-                      actionLink('qpgraph_similar_revert', 'Revert graph')),
-             menuItem('Optimize', tabName = 'qpgraph_optim',
-                      actionButton('optim_run', 'Run'),
-                      sliderInput('optim_ngraphs', '# graphs', 1, 100, 10),
-                      sliderInput('optim_ngen', '# generations', 1, 20, 1),
-                      conditionalPanel('input.optim_ngen > 1', sliderInput('optim_nsel', '# selected', 1, 10, 3)),
-                      sliderInput('optim_nrep', '# repeats', 1, 50, 1),
-                      checkboxInput('optim_initrand', 'Start randomly'),
-                      checkboxGroupInput('mutfuns', 'Graph modifications', choices = mutfuns, selected = mutfuns)),
-             menuItem('Constrain', tabName = 'qpgraph_constraints',
-                      menuItem('Drift', tabName = 'qpgraph_econstraints',
-                        uiOutput('econstraints')),
-                      menuItem('Admixture', tabName = 'qpgraph_aconstraints',
-                        uiOutput('aconstraints'))),
-             menuItem('Compare', tabName = 'qpgraph_comparison',
-                      splitLayout(
-                        shinyFilesButton('qpgraphbin', 'qpGraph bin', 'Select qpGraph bin', FALSE),
-                        shinyFilesButton('qpgraph_genofile', 'Geno file', 'Select Packedancestrymap geno file', FALSE)),
-                      checkboxInput('usef3precomp', 'Use qpGraph fstats in R'),
-                      p(HTML('<center>or</center>')),
-                      fileInput('qpgraph_out', NULL, buttonLabel = 'qpGraph output'),
-                      hr(),
-                      actionButton('run_qpgraph', 'Run')),
-             menuItem('Resample', tabName = 'qpgraph_resample',
-                      menuItem('Initial weights', tabName = 'qpgraph_resample_init',
-                               sliderInput('numstart2', '# init', 1, 100, 10),
-                               actionButton('init_resample', 'Run')),
-                      menuItem('Individuals', tabName = 'qpgraph_resample_individuals',
-                               actionButton('ind_resample', 'Run')),
-                      menuItem('SNPs', tabName = 'qpgraph_resample_snps',
-                               checkboxInput('boot', 'Bootstrap'),
-                               conditionalPanel('input.boot',
-                                 sliderInput('bootnum', '# boot', 0, 1000, 100)),
-                               actionButton('snp_resample', 'Run'))),
-             menuItem('Options', tabName = 'qpgraph_options',
-                      menuItem('Fit', tabName = 'qpgraph_options_fit',
-                        actionButton('options_update', 'Update'),
-                        numericInput('qpgraph_diag', 'diag', value = 0.001, step = 0.001),
-                        numericInput('numstart', '# init', value = 10, min = 1),
-                        numericInput('f2_denom', 'f2 scale', value = 0.278, step = 0.001),
-                        numericInput('seed', 'Random seed', value = NULL),
-                        checkboxInput('lsqmode', 'lsqmode')),
-                      menuItem('Plot', tabName = 'qpgraph_options_plot',
-                        checkboxGroupInput('plotopt', '',
-                          choices = c(`Reorder edges`='reorder_edges',
-                                      `Shift edges down`='shift_down',
-                                      `Collapse edges`='collapse_edges'),
-                          selected = c('shift_down')),
-                        sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
-             menuItem('Download', tabName = 'qpgraph_download', expandedName = 'qpgraph_download',
-                      div(radioButtons('downloadgraph_format', 'Graph format',
-                                  choices = c(`ADMIXTOOLS`='admixtools', `Edge list`='edgelist'),
-                                  selected = 'admixtools'),
-                      downloadButton('downloadgraph', 'Save graph')))),
-    menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
-             checkboxInput('multiprocess', 'multiprocess', value = TRUE),
-             checkboxInput('f2corr', 'f2 bias correction', value = TRUE)))),
-  dashboardBody(uiOutput('dashboardbody'), tags$head(tags$style(HTML('.skin-black .sidebar .shiny-download-link a { color: #444; } .content {background-color: white } .main-header .logo {font-family: "GillSans", "Skia", "Avenir-Medium", "Herculanum", "Hiragino Maru Gothic Pro", "Maru Gothic Pro", "Hiragino", "Comic Sans MS"; font-weight: normal;};')))),
-  skin = 'black'
-  ))
-  }
+          useShinyalert(),
+          chooseSliderSkin('Modern', color = 'black'),
+          bsTooltip('tooltips', 'Click this to turn tooltips on or off. Needs to be reactivated after switching tabs.'),
+          dashboardPage(
+            dashboardHeader(title = 'AdmixTools', titleWidth = 300,
+                            tags$li(class = 'dropdown', actionLink('tooltips', label = '', icon = icon('question'))),
+                            tags$li(class = 'dropdown', id = 'bookmarkdiv', actionLink('._bookmark_', label = '', icon = icon('save')))),
+            dashboardSidebar(tags$head(tags$style(HTML(aa))), width = 300,
+                             sidebarMenu(id = 'navbar',
+                                         menuItem('Data', tabName = 'data', expandedName = 'data', id = 'datax', icon = icon('database'), startExpanded = TRUE,
+                                                  menuItem('Extract settings', tabName = 'extract_settings',
+                                                           checkboxInput('fix_populations', 'Fix populations'),
+                                                           numericInput('max_miss', 'max missing', value = 0.1, step = 0.01, min = 0, max = 1),
+                                                           splitLayout(
+                                                             numericInput('min_maf', 'min MAF', value = 0, step = 0.01, min = 0, max = 0.5),
+                                                             numericInput('max_maf', 'max MAF', value = 0.5, step = 0.01, min = 0, max = 0.5)),
+                                                           radioButtons('trans_extract', 'Mutations', choices = c('both', 'only transitions', 'only transversions')),
+                                                           fileInput('keepsnps', NULL, buttonLabel = 'SNP list'),
+                                                           numericInput('maxmem', 'max RAM in GB', value = 15, step = 1, min = 0)
+                                                  )),
+                                         menuItem('f2', tabName = 'f2', expandedName = 'f2', icon = icon('dice-two'),
+                                                  menuItem('Options', tabName = 'f2_options')),
+                                         menuItem('f3', tabName = 'f3', expandedName = 'f3', icon = icon('dice-three'),
+                                                  menuItem('Options', tabName = 'f3_options')),
+                                         menuItem('f4', tabName = 'f4', expandedName = 'f4', icon = icon('dice-four'),
+                                                  menuItem('Options', tabName = 'f4_options')),
+                                         menuItem('qpAdm', tabName = 'qpadm', expandedName = 'qpadm', icon = icon('balance-scale'),
+                                                  actionLink('qpadm_fit', 'Fit'),
+                                                  menuItem('Compare', href = 'qpadm_comparison', tabName = 'qpadm_comparison',
+                                                           splitLayout(
+                                                             shinyFilesButton('qpadmbin', 'qpAdm bin', 'Select qpAdm bin', FALSE),
+                                                             shinyFilesButton('qpadm_genofile', 'Geno file', 'Select Packedancestrymap geno file', FALSE)),
+                                                           p(HTML('<center>or</center>')),
+                                                           fileInput('qpadm_out', NULL, buttonLabel = 'qpAdm output'),
+                                                           hr(),
+                                                           actionButton('run_qpadm', 'Run')),
+                                                  menuItem('Resample', tabName = 'qpadm_resample'),
+                                                  menuItem('Options', tabName = 'qpadm_options',
+                                                           numericInput('qpadm_diag', 'diag', value = 0.001, step = 0.001),
+                                                           checkboxInput('qpadm_constrained', 'Constrain weights'))),
+                                         menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
+                                                  actionLink('qpgraph_fit', 'Fit'),
+                                                  menuItem('Load graph', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
+                                                  menuItem('Modify graph', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
+                                                           hr(),
+                                                           p('Selected'),
+                                                           div(verbatimTextOutput('showseledge', placeholder = TRUE), tags$head(tags$style('#showseledge{max-height: 300px; background: white}'))),
+                                                           splitLayout(
+                                                             actionButton('clear_edge', 'Clear'),
+                                                             actionButton('delete_edge', 'Delete'),
+                                                             actionButton('add_edge', 'Add')),
+                                                           hr(),
+                                                           p('Randomize graph'),
+                                                           uiOutput('nadmix'),
+                                                           #splitLayout(checkboxInput('fixoutgroup', 'Fix outgroup', value = TRUE),
+                                                           actionButton('randgraph', 'Randomize'),
+                                                           hr()),
+                                                  menuItem('Similar graphs', tabName = 'qpgraph_similar', expandedName = 'qpgraph_similar',
+                                                           actionLink('qpgraph_similar_minus1', 'Less admixture'),
+                                                           actionLink('qpgraph_similar_minusplus', 'Same admixture'),
+                                                           actionLink('qpgraph_similar_plus1', 'More admixture'),
+                                                           actionLink('qpgraph_similar_decomposed', 'Component trees'),
+                                                           actionLink('qpgraph_similar_treeneighbors', 'Tree neighbors'),
+                                                           actionLink('qpgraph_similar_flipadmix', 'Flip admixture'),
+                                                           menuItem('Add population', tabName = 'qpgraph_add',
+                                                                    uiOutput('qpgraph_add'),
+                                                                    actionBttn('qpgraph_add_run', 'Run')),
+                                                           hr(),
+                                                           actionLink('qpgraph_similar_update', 'Update graph'),
+                                                           actionLink('qpgraph_similar_revert', 'Revert graph')),
+                                                  menuItem('Optimize', tabName = 'qpgraph_optim',
+                                                           actionButton('optim_run', 'Run'),
+                                                           sliderInput('optim_ngraphs', '# graphs', 1, 100, 10),
+                                                           sliderInput('optim_ngen', '# generations', 1, 20, 1),
+                                                           conditionalPanel('input.optim_ngen > 1', sliderInput('optim_nsel', '# selected', 1, 10, 3)),
+                                                           sliderInput('optim_nrep', '# repeats', 1, 50, 1),
+                                                           checkboxInput('optim_initrand', 'Start randomly'),
+                                                           checkboxGroupInput('mutfuns', 'Graph modifications', choices = mutfuns, selected = mutfuns)),
+                                                  menuItem('Constrain', tabName = 'qpgraph_constraints',
+                                                           menuItem('Drift', tabName = 'qpgraph_econstraints',
+                                                                    uiOutput('econstraints')),
+                                                           menuItem('Admixture', tabName = 'qpgraph_aconstraints',
+                                                                    uiOutput('aconstraints'))),
+                                                  menuItem('Compare', tabName = 'qpgraph_comparison',
+                                                           splitLayout(
+                                                             shinyFilesButton('qpgraphbin', 'qpGraph bin', 'Select qpGraph bin', FALSE),
+                                                             shinyFilesButton('qpgraph_genofile', 'Geno file', 'Select Packedancestrymap geno file', FALSE)),
+                                                           checkboxInput('usef3precomp', 'Use qpGraph fstats in R'),
+                                                           p(HTML('<center>or</center>')),
+                                                           fileInput('qpgraph_out', NULL, buttonLabel = 'qpGraph output'),
+                                                           hr(),
+                                                           actionButton('run_qpgraph', 'Run')),
+                                                  menuItem('Resample', tabName = 'qpgraph_resample',
+                                                           menuItem('Initial weights', tabName = 'qpgraph_resample_init',
+                                                                    sliderInput('numstart2', '# init', 1, 100, 10),
+                                                                    actionButton('init_resample', 'Run')),
+                                                           menuItem('Individuals', tabName = 'qpgraph_resample_individuals',
+                                                                    actionButton('ind_resample', 'Run')),
+                                                           menuItem('SNPs', tabName = 'qpgraph_resample_snps',
+                                                                    checkboxInput('boot', 'Bootstrap'),
+                                                                    conditionalPanel('input.boot',
+                                                                                     sliderInput('bootnum', '# boot', 0, 1000, 100)),
+                                                                    actionButton('snp_resample', 'Run'))),
+                                                  menuItem('Options', tabName = 'qpgraph_options',
+                                                           menuItem('Fit', tabName = 'qpgraph_options_fit',
+                                                                    actionButton('options_update', 'Update'),
+                                                                    numericInput('qpgraph_diag', 'diag', value = 0.001, step = 0.001),
+                                                                    numericInput('numstart', '# init', value = 10, min = 1),
+                                                                    numericInput('f2_denom', 'f2 scale', value = 0.278, step = 0.001),
+                                                                    numericInput('seed', 'Random seed', value = NULL),
+                                                                    checkboxInput('lsqmode', 'lsqmode')),
+                                                           menuItem('Plot', tabName = 'qpgraph_options_plot',
+                                                                    checkboxGroupInput('plotopt', '',
+                                                                                       choices = c(`Reorder edges`='reorder_edges',
+                                                                                                   `Shift edges down`='shift_down',
+                                                                                                   `Collapse edges`='collapse_edges'),
+                                                                                       selected = c('shift_down')),
+                                                                    sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
+                                                  menuItem('Download', tabName = 'qpgraph_download', expandedName = 'qpgraph_download',
+                                                           div(radioButtons('downloadgraph_format', 'Graph format',
+                                                                            choices = c(`ADMIXTOOLS`='admixtools', `Edge list`='edgelist'),
+                                                                            selected = 'admixtools'),
+                                                               downloadButton('downloadgraph', 'Save graph')))),
+                                         menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
+                                                  checkboxInput('multiprocess', 'multiprocess', value = FALSE),
+                                                  checkboxInput('f2corr', 'f2 bias correction', value = TRUE)))),
+            dashboardBody(uiOutput('dashboardbody'), tags$head(tags$style(HTML('.skin-black .sidebar .shiny-download-link a { color: #444; } .content {background-color: white } .main-header .logo {font-family: "GillSans", "Skia", "Avenir-Medium", "Herculanum", "Hiragino Maru Gothic Pro", "Maru Gothic Pro", "Hiragino", "Comic Sans MS"; font-weight: normal;};')))),
+            skin = 'black'
+          ))
+}
 
 
 server = function(input, output, session) {
@@ -314,7 +315,7 @@ server = function(input, output, session) {
   global$graph = NULL
   home = normalizePath('~')
   volumes = getVolumes()
-  volumes = expr(c(home = normalizePath('~'), getVolumes()() %>% set_names))
+  #volumes = expr(c(home = normalizePath('~'), getVolumes()() %>% purrr::set_names()))
 
   shinyDirChoose(input, 'dir', roots = volumes)
   shinyFileChoose(input, 'genofile1', roots = volumes)
@@ -323,22 +324,31 @@ server = function(input, output, session) {
   shinyFileChoose(input, 'qpgraphbin', roots = volumes)
   shinyFileChoose(input, 'qpadmbin', roots = volumes)
 
-  dir = reactive(input$dir)
+  global$show_qpadm_rotate = FALSE
+  global$show_qpadm_results = TRUE
+
   output$dirout = renderText({global$countdir})
+  output$dirout = renderText({str_replace(global$countdir, '/Users/robert', '')})
   #shinyjs::hide('show_extract')
   #shinyjs::hide('show_popadjust')
   #shinyjs::hide('show_indselect')
   output$show_popadjust = renderText({as.numeric(show_popadjust())})
   output$show_extract = renderText({as.numeric(show_extract())})
   output$show_indselect = renderText({as.numeric(show_indselect())})
-  output$genofile1out = renderText({parseFilePaths(eval(volumes), input$genofile1)$datapath %>% str_replace('\\.geno$', '')})
+  output$genofile1out = renderText({parseFilePaths(eval(volumes), input$genofile1)$datapath %>% str_replace('\\.geno$', '') %>% str_replace('/Users/robert', '')})
+
+  # mydir = '/Users/robert/Downloads/test04/'
+  # global$countdir = mydir
+  # global$iscountdata = F
+  # global$isf2data = T
+  # global$allinds = list.dirs(mydir,F,F)
+  # global$poplist = list.dirs(mydir,F,F) %>% purrr::set_names()
 
   observeEvent(input$dir, {
-    if (!"path" %in% names(dir())) return()
-    volumes = eval(volumes)
+    #if (!"path" %in% names(dir())) return()
+    #volumes = eval(volumes)
     print('volumes')
     print(volumes)
-    print(dir()$path)
     print('input$dir')
     print(c(input$dir, class(input$dir)))
     print('xxx')
@@ -355,13 +365,33 @@ server = function(input, output, session) {
       global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
     } else if(global$isf2data) {
       global$allinds = list.dirs(global$countdir,F,F)
-      global$poplist = global$allinds %>% set_names(global$allinds)
+      global$poplist = global$allinds %>% purrr::set_names(global$allinds)
       print('global$allinds')
       print(global$allinds)
     } else {
 
     }
-    })
+  })
+
+  observeEvent(input$textdir, {
+
+    global$countdir = normalizePath(input$textdirinput)
+    global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
+    global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
+      'block_lengths.rds' %in% list.files(global$countdir)
+    print('global$iscountdata')
+    print(global$iscountdata)
+    if(global$iscountdata) {
+      global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
+    } else if(global$isf2data) {
+      global$allinds = list.dirs(global$countdir,F,F)
+      global$poplist = global$allinds %>% purrr::set_names(global$allinds)
+      print('global$allinds')
+      print(global$allinds)
+    } else {
+
+    }
+  })
 
   observeEvent(input$navbar, {
 
@@ -370,22 +400,19 @@ server = function(input, output, session) {
 
   })
 
-  # observeEvent(input$navbar == 'data', {
-  #
-  #   print('navbar == data!')
-  #   global$databod = get_loaddata()
-  #   global$bod = global$databod
-  #
-  # })
+  tolisten = reactive({
+    list(input$sidebarItemExpanded, input$qpadm_rotate, input$qpadm_results)
+  })
 
-  observeEvent(input$sidebarItemExpanded, {
+  get_bod = eventReactive(tolisten(), {
     print('expanded!')
     exp = input$sidebarItemExpanded
     print(exp)
+    if(is.null(exp)) exp = global$exp
+    else global$exp = exp
+    print(exp)
 
     if(exp == 'options') {
-
-      return()
 
     } else if(exp == 'data') {
 
@@ -397,10 +424,10 @@ server = function(input, output, session) {
 
       nam = map(paste0('pop', seq_len(length(global$poplist))), ~input[[.]])
       if(is.null(nam[[1]])) {
-        shinyalert('Error', global$poplist)
+        shinyalert('Global poplist is NULL or has not been processed correctly!', global$poplist)
         return()
       }
-      global$poplist = map(nam, ~input[[.]]) %>% set_names(nam)
+      global$poplist = map(nam, ~input[[.]]) %>% purrr::set_names(nam)
       print('switch away from data')
       if(length(unlist(global$poplist)) == 0) {
         shinyalert('No samples selected!', '')
@@ -409,91 +436,89 @@ server = function(input, output, session) {
 
       if(exp == 'f2') {
 
-      print('switch to f2')
+        print('switch to f2')
 
-      global$bod = fluidRow(
-        tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
-                    tabPanel('Ind pairs', plotlyOutput(outputId = 'f2heatmap_indiv', height = '800', width='auto')),
-                    tabPanel('Pop table', div(DT::DTOutput('f2stats'), style = dtstyle))))
+        global$bod = fluidRow(
+          tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
+                      tabPanel('Ind pairs', plotlyOutput(outputId = 'f2heatmap_indiv', height = '800', width='auto')),
+                      tabPanel('Pop table', div(DT::DTOutput('f2stats'), style = dtstyle))))
 
-    } else if(exp == 'f4') {
+      } else if(exp == 'f4') {
 
-      print('switch to f4')
-      choices = names(global$poplist)
-      global$f4_left = div(map(1:4, ~selectizeInput(paste0('f4pops', .),
-                                 paste0('Population ', .),
-                                 choices = choices,
-                                 multiple = TRUE,
-                                 selected = choices[seq(.*(.-1)/2+1, .*(.-1)/2+.)])),
-                           checkboxInput('f4_allowdup', 'Allow duplicates'),
-                           checkboxInput('f4_se', 'Show standard errors'))
-      popsinuse = unique(c(input$f4pops1, input$f4pops2, input$f4pops3, input$f4pops4))
+        print('switch to f4')
+        choices = names(global$poplist)
+        global$f4_left = div(map(1:4, ~selectizeInput(paste0('f4pops', .),
+                                                      paste0('Population ', .),
+                                                      choices = choices,
+                                                      multiple = TRUE,
+                                                      selected = choices[seq(.*(.-1)/2+1, .*(.-1)/2+.)])),
+                             checkboxInput('f4_allowdup', 'Allow duplicates'),
+                             sliderInput('f4_se', 'Standard errors', min = 0, max = 5, value = 0, step = 0.01))
+                             #checkboxInput('f4_se', 'Show standard errors'))
+        popsinuse = unique(c(input$f4pops1, input$f4pops2, input$f4pops3, input$f4pops4))
 
-      # update
-      map(1:4, ~{
-        fp = paste0('f4pops', .)
-        sel = input[[fp]]
-        updateSelectizeInput(session, fp, selected = sel,
-                             choices = union(sel, setdiff(names(global$poplist), popsinuse)))})
+        # update
+        map(1:4, ~{
+          fp = paste0('f4pops', .)
+          sel = input[[fp]]
+          updateSelectizeInput(session, fp, selected = sel,
+                               choices = union(sel, setdiff(names(global$poplist), popsinuse)))})
 
-      global$bod = fluidRow(
-        column(3, global$f4_left),
-        column(9, tabsetPanel(tabPanel('Plot', plotlyOutput(outputId = 'f4plot', height = '800', width='auto')),
-                              tabPanel('Table', div(DT::DTOutput('f4stats'), style = dtstyle)))))
+        global$bod = fluidRow(
+          column(3, global$f4_left),
+          column(9, tabsetPanel(tabPanel('Plot', plotlyOutput(outputId = 'f4plot', height = '800', width='auto')),
+                                tabPanel('Plot2', plotlyOutput(outputId = 'f4plot2', height = '800', width='auto')),
+                                tabPanel('Table', div(DT::DTOutput('f4stats'), style = dtstyle)))))
 
-    } else if(exp == 'qpadm') {
+      } else if(exp == 'qpadm') {
 
-      print('switch to qpAdm')
-      choices = names(global$poplist)
-      if(is.null(input$qpadmpops1) || is.null(input$qpadmpops2) || is.null(input$qpadmpops3)) {
-        global$qpadmpops1 = choices[1]
-        global$qpadmpops2 = choices[2:3]
-        global$qpadmpops3 = choices[4:6]
+        print('switch to qpAdm')
+        choices = names(global$poplist)
+        if(is.null(input$qpadmpops1) || is.null(input$qpadmpops2) || is.null(input$qpadmpops3)) {
+          global$qpadmpops1 = choices[1]
+          global$qpadmpops2 = choices[2:3]
+          global$qpadmpops3 = choices[4:6]
+        } else {
+          global$qpadmpops1 = input$qpadmpops1
+          global$qpadmpops2 = input$qpadmpops2
+          global$qpadmpops3 = input$qpadmpops3
+        }
+
+        #global$qpadm_leftpanel = qpadm_leftpanel()
+        global$bod = fluidRow(
+          column(3, qpadm_leftpanel()),
+          column(9, qpadm_rightpanel()))
+
+      } else if(exp == 'qpgraph') {
+
+        print('switch to qpGraph')
+
+        if(is.null(global$graph)) {
+          #shinyalert('Generating random graph', '')
+          global$graph = random_admixturegraph(names(global$poplist), 2)
+        } else if(!all(get_leafnames(global$graph) %in% names(global$poplist))) {
+          shinyalert('Generating random graph because populations don\'t match',
+                     setdiff(get_leafnames(global$graph), names(global$poplist)))
+          global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)))
+        }
+
+        global$qpg_right = qpg_right_fit()
+        global$bod = fluidRow(
+          column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
+          column(4, global$qpg_right))
       } else {
-        global$qpadmpops1 = input$qpadmpops1
-        global$qpadmpops2 = input$qpadmpops2
-        global$qpadmpops3 = input$qpadmpops3
+        shinyalert('Error', 'implement tab')
       }
 
-      #global$qpadm_leftpanel = qpadm_leftpanel()
-      #global$qpadm_rightpanel = qpadm_rightpanel_fit()
-
-      global$bod = fluidRow(
-        column(3, qpadm_leftpanel()),
-        column(9, qpadm_rightpanel_fit()))
-
-    } else if(exp == 'qpgraph') {
-
-      print('switch to qpGraph')
-
-      if(is.null(global$graph)) {
-        #shinyalert('Generating random graph', '')
-        global$graph = random_admixturegraph(names(global$poplist), 2)
-      } else if(!all(get_leafnames(global$graph) %in% names(global$poplist))) {
-        shinyalert('Generating random graph because populations don\'t match',
-                   setdiff(get_leafnames(global$graph), names(global$poplist)))
-        global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)))
-      }
-
-      global$qpg_right = qpg_right_fit()
-      global$bod = global$qpgraphbod
-    } else {
-      shinyalert('Error', 'implement tab')
     }
-
-    }
-
-    if(input$tooltips %% 2 == 1) {
-      print('add tt')
-      imap(tt, ~addTooltip(session, .y, .x))
-    }
+    global$bod
   })
 
 
   observeEvent(global$graph, {
     print('observe global$graph')
     updateSelectInput(session, 'addleaf',
-      choices = setdiff(names(global$poplist), get_leafnames(global$graph)))
+                      choices = setdiff(names(global$poplist), get_leafnames(global$graph)))
   })
 
   get_graph = reactive({
@@ -501,28 +526,15 @@ server = function(input, output, session) {
     global$graph
   })
 
-
-  observeEvent(global$qpadm_rightpanel, {
-    print('global$qpadm_rightpanel change detected!')
-    choices = names(global$poplist)
-    global$qpadmbod = fluidRow(
-      column(3, div(
-          selectizeInput('qpadmpops1', 'Target', choices = choices, multiple = FALSE, selected = global$qpadmpops1),
-          selectizeInput('qpadmpops2', 'Sources', choices = choices, multiple = TRUE, selected = global$qpadmpops2),
-          selectizeInput('qpadmpops3', 'Outgroups', choices = choices, multiple = TRUE, selected = global$qpadmpops3),
-               actionButton('qpadm_randomize', 'Randomize'))),
-      column(9, global$qpadm_rightpanel))
-  })
-  observeEvent(global$qpg_right, {
-    print('global$qpg_right change detected!')
-    global$qpgraphbod = fluidRow(
-      column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
-      column(4, global$qpg_right))
-  })
-
-  observeEvent(global$databod, {global$bod = global$databod})
-  observeEvent(global$qpadmbod, {global$bod = global$qpadmbod})
-  observeEvent(global$qpgraphbod, {global$bod = global$qpgraphbod})
+  # observeEvent(global$qpg_right, {
+  #   print('global$qpg_right change detected!')
+  #   global$qpgraphbod = fluidRow(
+  #     column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
+  #     column(4, global$qpg_right))
+  # })
+  # observeEvent(global$databod, {global$bod = global$databod})
+  # observeEvent(global$qpadmbod, {global$bod = global$qpadmbod})
+  # observeEvent(global$qpgraphbod, {global$bod = global$qpgraphbod})
 
   observeEvent(input$navbar, {
     print('navbar selected')
@@ -615,13 +627,16 @@ server = function(input, output, session) {
 
   observeEvent(input$randgraph, {
     print('randg')
-    #if(input$fixoutgroup) outpop = as_edgelist(global$graph)[1,2]
     global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, outpop = input$outpop)
   })
 
   observeEvent(input$qpgraph_similar_update, {
     print('qpgraph_similar_update')
     global$graph = global$selgraph
+    fit = get_fit()
+    global$edges = fit$edges
+    global$score = fit$score
+    global$tempgraph = FALSE
   })
   observeEvent(input$qpgraph_similar_revert, {
     print('qpgraph_similar_revert')
@@ -629,6 +644,7 @@ server = function(input, output, session) {
     fit = get_fit()
     global$edges = fit$edges
     global$score = fit$score
+    global$tempgraph = FALSE
     print(global$score)
   })
 
@@ -661,10 +677,10 @@ server = function(input, output, session) {
     print(mutfuns)
 
     withProgress(message = paste('Evaluating ', numsel+(numgraphs-numsel)*numgen*numrep,' graphs...'), {
-    opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
-                              numgraphs = numgraphs, numgen = numgen, numsel = numsel,
-                              numadmix = nadmix, initgraph = g, mutfuns = mutfuns, debug = FALSE,
-                              fudge = fudge, f2_denom = f2_denom)
+      opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
+                                numgraphs = numgraphs, numgen = numgen, numsel = numsel,
+                                numadmix = nadmix, initgraph = g, mutfuns = mutfuns, debug = FALSE,
+                                fudge = fudge, f2_denom = f2_denom)
     })
     print(opt_results)
     opt_results %<>% filter(!is.na(score))
@@ -711,19 +727,19 @@ server = function(input, output, session) {
     else f3precomp = NULL
 
     isolate({
-    numstart = as.numeric(input$numstart)
-    f2_denom = as.numeric(input$f2_denom)
-    if(is.null(f2_denom) || length(f2_denom) == 0) f2_denom = 1
-    fudge = input$qpgraph_diag
-    lsqmode = input$lsqmode
-    print(paste('qpgraphfun:', numstart, seed, fudge, lsqmode, f2_denom))
-    function(x, y, ...) {
-      args = list(...)
-      if(!'numstart' %in% names(args)) args[['numstart']] = numstart
-      args = c(list(x, y), args, fudge = fudge, f2_denom = f2_denom, lsqmode = lsqmode,
-               seed = seed, f3precomp = list(f3precomp))
-      do.call(quietly(qpgraph), args)$result
-    }
+      numstart = as.numeric(input$numstart)
+      f2_denom = as.numeric(input$f2_denom)
+      if(is.null(f2_denom) || length(f2_denom) == 0) f2_denom = 1
+      fudge = input$qpgraph_diag
+      lsqmode = input$lsqmode
+      print(paste('qpgraphfun:', numstart, seed, fudge, lsqmode, f2_denom))
+      function(x, y, ...) {
+        args = list(...)
+        if(!'numstart' %in% names(args)) args[['numstart']] = numstart
+        args = c(list(x, y), args, fudge = fudge, f2_denom = f2_denom, lsqmode = lsqmode,
+                 seed = seed, f3precomp = list(f3precomp))
+        do.call(quietly(qpgraph), args)$result
+      }
     })
   })
 
@@ -802,13 +818,14 @@ server = function(input, output, session) {
   init_plotdata = reactive({
 
     print('init')
+    input$qpgraph_similar_update
     input$qpgraph_similar_revert
     input$options_update
     graph = global$edges
     if('igraph' %in% class(graph)) {
-      edges = graph %>% as_edgelist %>% as_tibble
+      edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
     } else {
-      edges = graph %>% as_tibble
+      edges = graph %>% as_tibble(.name_repair = make.unique)
       graph %<>% select(1:2) %>% as.matrix %>% graph_from_edgelist()
     }
     names(edges)[1:2] = c('from', 'to')
@@ -870,6 +887,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
     print('newgraph set...')
     print(numadmix(global$graph))
   })
@@ -880,6 +898,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$minusplus_cell_clicked, {
     row = input$minusplus_rows_selected
@@ -888,6 +907,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$decomposed_cell_clicked, {
     row = input$decomposed_rows_selected
@@ -896,6 +916,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$treeneighbors_cell_clicked, {
     row = input$treeneighbors_rows_selected
@@ -904,6 +925,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$flipadmix_cell_clicked, {
     row = input$flipadmix_rows_selected
@@ -912,6 +934,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$addleaf_cell_clicked, {
     row = input$addleaf_rows_selected
@@ -920,6 +943,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
 
   observeEvent(input$initresample_cell_clicked, {
@@ -928,6 +952,7 @@ server = function(input, output, session) {
     sel = get_initresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$indresample_cell_clicked, {
     row = input$indresample_rows_selected
@@ -935,6 +960,7 @@ server = function(input, output, session) {
     sel = get_indresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
   })
   observeEvent(input$snpresample_cell_clicked, {
     row = input$snpresample_rows_selected
@@ -942,6 +968,14 @@ server = function(input, output, session) {
     sel = get_snpresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$tempgraph = TRUE
+  })
+  observeEvent(input$qpadm_rot_cell_clicked, {
+    row = input$qpadm_rot_rows_selected
+    req(row)
+    sel = get_qpadm_rotate() %>% slice(row)
+    global$qpadmpops2remain = sel$left[[1]]
+    global$qpadmpops3add = sel$right[[1]]
   })
 
 
@@ -953,7 +987,7 @@ server = function(input, output, session) {
 
 
   make_reactive_graphtabs = function(graphfun, inp) {
-    eventReactive(inp, {
+    reactive({
       print('graph neighbors')
       f2blocks = get_f2blocks()
       print('graph neighbors2')
@@ -968,8 +1002,8 @@ server = function(input, output, session) {
       withProgress(message = paste('Evaluating', nrow(out), 'graphs...'), {
         qpgfun = qpgraphfun()
         out %<>% mutate(res = furrr::future_map(graph, ~qpgfun(f2blocks, .))) %>%
-        unnest_wider(res) %>%
-        select(starts_with('from'), starts_with('to'), starts_with('score'), starts_with('graph'), starts_with('edges'))
+          unnest_wider(res) %>%
+          select(starts_with('from'), starts_with('to'), starts_with('score'), starts_with('graph'), starts_with('edges'))
       })
       if(nrow(out) == 0) {
         shinyalert('No graphs could be evaluated!')
@@ -1002,21 +1036,22 @@ server = function(input, output, session) {
     out
   })
 
-  qpgraph_scorerange = function(out) {
+  qpgraph_scorerange = function(out, low = 0, high = 1) {
     out %>%
       select(score) %>%
       filter(!is.na(score)) %>%
       arrange(score) %>%
-      slice(1, round(n()/2), n()) %>%
+      slice(ceiling((low+1e-10)*n()), round(n()/2), ceiling(n()*high)) %>%
       add_column(type = c('lo', 'mid', 'hi'), .before = 1) %>%
       deframe
   }
-  qpgraph_ranges = function(out) {
+  qpgraph_ranges = function(out, low = 0, high = 1) {
     out %>%
+      select(from, to, weight) %>%
       filter(!is.na(weight)) %>%
       group_by(from, to) %>%
       arrange(weight) %>%
-      slice(1, round(n()/2), n()) %>%
+      slice(ceiling((low+1e-10)*n()), round(n()/2), ceiling(n()*high)) %>%
       mutate(type = c('lo', 'mid', 'hi')) %>%
       ungroup %>%
       select(from, to, type, weight) %>%
@@ -1041,9 +1076,9 @@ server = function(input, output, session) {
   get_initresample = reactive({
     out = get_initresample0()
     if(nrow(out) > 0 && 'edges' %in% names(out)) {
-      global$qpgraph_scorerange = qpgraph_scorerange(out)
+      global$qpgraph_scorerange = qpgraph_scorerange(out, low = 0.025, high = 0.975)
       out %<>% unnest(edges)
-      global$qpgraph_ranges = qpgraph_ranges(out)
+      global$qpgraph_ranges = qpgraph_ranges(out, low = 0.025, high = 0.975)
       out %<>% mutate(edge = paste(from, to, sep = ' -> ')) %>%
         select(id, opt, score, edge, weight) %>%
         pivot_wider(names_from = edge, values_from = weight) %>%
@@ -1076,9 +1111,9 @@ server = function(input, output, session) {
       print('head(out)')
       print(head(out))
       print(head(out$error))
-      global$qpgraph_scorerange = qpgraph_scorerange(out)
+      global$qpgraph_scorerange = qpgraph_scorerange(out, low = 0.025, high = 0.975)
       out %<>% unnest(edges)
-      global$qpgraph_ranges = qpgraph_ranges(out)
+      global$qpgraph_ranges = qpgraph_ranges(out, low = 0.025, high = 0.975)
       out %<>%
         mutate(edge = paste(from, to, sep = ' -> ')) %>%
         select(ind, pop, edge, score, weight) %>%
@@ -1102,9 +1137,9 @@ server = function(input, output, session) {
     if(nrow(out) > 0 && 'edges' %in% names(out)) {
       print('head(out)')
       print(head(out))
-      global$qpgraph_scorerange = qpgraph_scorerange(out)
+      global$qpgraph_scorerange = qpgraph_scorerange(out, low = 0.025, high = 0.975)
       out %<>% unnest(edges)
-      global$qpgraph_ranges = qpgraph_ranges(out)
+      global$qpgraph_ranges = qpgraph_ranges(out, low = 0.025, high = 0.975)
       out %<>%
         mutate(edge = paste(from, to, sep = ' -> ')) %>%
         select(id, edge, score, weight) %>%
@@ -1114,10 +1149,16 @@ server = function(input, output, session) {
     out
   })
 
+  get_qpadm_rightpanel = reactive({
+    print('get qpadm_rightpanel')
+    global$qpadm_rightpanel
+  })
+
   output$dashboardbody = renderUI({
 
     print('dashboardbody')
-    global$bod
+
+    get_bod()
 
   })
 
@@ -1135,9 +1176,9 @@ server = function(input, output, session) {
       fillCol(tagList(textInput(paste0('pop', .y), NULL, .x, placeholder = 'pop name'),
                       shiny::actionButton(paste0('group', .y), buttlab),
                       selectizeInput(.x, NULL, indnames,
-                            poplist[[.x]],
-                            multiple = TRUE, width = 'auto'),
-                   tags$style(type="text/css", paste0('.selectize-control{white-space:pre-wrap}'))), height = '1000px')})
+                                     poplist[[.x]],
+                                     multiple = TRUE, width = 'auto'),
+                      tags$style(type="text/css", paste0('.selectize-control{white-space:pre-wrap}'))), height = '1000px')})
     print('popselectors2')
     do.call(splitLayout, sellist)
   })
@@ -1157,9 +1198,9 @@ server = function(input, output, session) {
     div(div(id = 'econstraints_update_div', actionButton('econstraints_update', 'Update')),
         sliderInput('any_econstraints', 'All edges', 0, maxlen, c(0, maxlen), dragRange = FALSE),
         edges %>%
-        pmap(~{div(tags$style(HTML(paste0('[for=',..2,']+span>.irs-bar, [for=',..2,']+span>.irs>.irs-from, [for=',..2,']+span>.irs>.irs-to {background: ', ..4,'}'))),
-                   sliderInput(..2, ..1, min = 0, max = maxlen, value = c(0, maxlen),
-                           dragRange = FALSE, width = '100%'))}))
+          pmap(~{div(tags$style(HTML(paste0('[for=',..2,']+span>.irs-bar, [for=',..2,']+span>.irs>.irs-from, [for=',..2,']+span>.irs>.irs-to {background: ', ..4,'}'))),
+                     sliderInput(..2, ..1, min = 0, max = maxlen, value = c(0, maxlen),
+                                 dragRange = FALSE, width = '100%'))}))
   })
 
   output$aconstraints = renderUI({
@@ -1175,9 +1216,9 @@ server = function(input, output, session) {
 
     div(div(id = 'aconstraints_update_div', actionButton('aconstraints_update', 'Update')),
         edges %>%
-        pmap(~{div(tags$style(HTML(paste0('[for=',..2,']+span>.irs-bar, [for=',..2,']+span>.irs>.irs-from, [for=',..2,']+span>.irs>.irs-to {background: ', ..4,'}'))),
-                   sliderInput(..2, ..1, min = 0, max = 1, value = c(0, 1),
-                               dragRange = FALSE, width = '100%'))})
+          pmap(~{div(tags$style(HTML(paste0('[for=',..2,']+span>.irs-bar, [for=',..2,']+span>.irs>.irs-from, [for=',..2,']+span>.irs>.irs-to {background: ', ..4,'}'))),
+                     sliderInput(..2, ..1, min = 0, max = 1, value = c(0, 1),
+                                 dragRange = FALSE, width = '100%'))})
     )
   })
 
@@ -1185,7 +1226,7 @@ server = function(input, output, session) {
     nad = 3
     if(!is.null(global$graph)) nad = numadmix(global$graph)
     div(sliderInput('nadmix', '# admix', 0, 10, nad),
-    selectizeInput('outpop', 'Outgroup', names(global$poplist), selected = get_outpop(global$graph)))
+        selectizeInput('outpop', 'Outgroup', c(names(global$poplist), NA), selected = names(global$poplist)[1]))
   })
 
   output$qpgraph_add = renderUI({
@@ -1287,7 +1328,7 @@ server = function(input, output, session) {
     alert = function(x) shinyalert('Could not insert edge!', as.character(x))
     tryCatch({
       gnew = insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
-      }, warning = alert, error = alert)
+    }, warning = alert, error = alert)
     if(!exists('gnew') || is.null(gnew)) return()
     if(!igraph::is.dag(gnew)) {
       shinyalert('Could not insert edge!', 'Edge would create a cycle!')
@@ -1306,21 +1347,21 @@ server = function(input, output, session) {
     global$qpadm_rightpanel = plotOutput('qpadmcomparison')
   })
   observeEvent(input$run_qpgraph, {
-      print('observe run_qpgraph')
-      global$qpgraphout = get_qpgraphout()
-      global$qpg_right = plotlyOutput('graphcomparison')
+    print('observe run_qpgraph')
+    global$qpgraphout = get_qpgraphout()
+    global$qpg_right = plotlyOutput('graphcomparison')
   })
 
   map(1:4,
-  ~observeEvent(input[[paste0('f4pops', .)]], {
-    if(input$f4_allowdup) return()
-    popsinuse = unique(c(input$f4pops1, input$f4pops2, input$f4pops3, input$f4pops4))
-    map(setdiff(1:4, .), ~{
-      fp = paste0('f4pops', .)
-      sel = input[[fp]]
-    updateSelectizeInput(session, fp, selected = sel,
-      choices = union(sel, setdiff(names(global$poplist), popsinuse)))})
-  }))
+      ~observeEvent(input[[paste0('f4pops', .)]], {
+        if(input$f4_allowdup) return()
+        popsinuse = unique(c(input$f4pops1, input$f4pops2, input$f4pops3, input$f4pops4))
+        map(setdiff(1:4, .), ~{
+          fp = paste0('f4pops', .)
+          sel = input[[fp]]
+          updateSelectizeInput(session, fp, selected = sel,
+                               choices = union(sel, setdiff(names(global$poplist), popsinuse)))})
+      }))
 
   observeEvent(input$f4_allowdup, {
     map(1:4, ~{
@@ -1330,16 +1371,14 @@ server = function(input, output, session) {
                            choices = names(global$poplist))})
   })
 
-  map(1:3,
-      ~observeEvent(input[[paste0('qpadmpops', .)]], {
-        print('qpadmpops change')
+  map(1:3, ~observeEvent(input[[paste0('qpadmpops', .)]], {
         popsinuse = unique(c(input$qpadmpops1, input$qpadmpops2, input$qpadmpops3))
         map(setdiff(1:3, .), ~{
           fp = paste0('qpadmpops', .)
           sel = input[[fp]]
           global[[fp]] = sel
-          updateSelectizeInput(session, fp, selected = sel,
-                               choices = union(sel, setdiff(names(global$poplist), popsinuse)))})
+          choices = union(sel, setdiff(names(global$poplist), popsinuse))
+          updateSelectizeInput(session, fp, selected = sel, choices = choices)})
       }))
 
   observeEvent(input$qpadm_randomize, {
@@ -1349,7 +1388,37 @@ server = function(input, output, session) {
     map(1:3, ~{
       global[[paste0('qpadmpops', .)]] = choices[[.]]
       updateSelectizeInput(session, paste0('qpadmpops', .),
-                                  selected = choices[[.]], choices = nam)})
+                           selected = choices[[.]], choices = nam)})
+  })
+  observeEvent(input$qpadm_rotate, {
+    global$qpadmpops1 = input$qpadmpops1
+    global$qpadmpops2 = input$qpadmpops2
+    global$qpadmpops3 = input$qpadmpops3
+    global$show_qpadm_rotate = input$qpadm_rotate
+  })
+
+  observeEvent(input$qpadm_results, {
+    global$qpadmpops1 = input$qpadmpops1
+    global$qpadmpops2 = input$qpadmpops2
+    global$qpadmpops3 = input$qpadmpops3
+    global$show_qpadm_results = input$qpadm_results
+  })
+
+  get_qpadm_rotate = reactive({
+    f2blocks = get_f2blocks()
+    p1 = input$qpadmpops1
+    p2 = input$qpadmpops2
+    p3 = input$qpadmpops3
+    req(f2blocks, p1, p2, p3)
+
+    withProgress(message = paste0('Generating qpadm models...'), {
+      lr = admixtools:::all_lr2(p2, length(p3))
+    })
+    withProgress(message = paste0('Evaluating ', length(lr[[1]]), ' qpadm models...'), {
+      out = admixtools:::qpadm_eval_rotate(f2blocks, p1, lr, p3, verbose = F) %>%
+        select(chisq, p, feasible, left, right)
+    })
+    out
   })
 
   get_qpadmout = reactive({
@@ -1403,7 +1472,8 @@ server = function(input, output, session) {
       out = qpgraph_wrapper(g, bin, pref, outdir = dir, zthresh = 0)
       out$f2 = NULL
       print('parse fstats')
-      global$precomp = parse_fstats(paste0(dir, '/fstats.out'))
+      fstatsfile = paste0(dir, '/fstats.out')
+      if(file.exists(fstatsfile)) global$precomp = parse_fstats(fstatsfile)
     })
     out
   })
@@ -1455,13 +1525,19 @@ server = function(input, output, session) {
 
   qpadm_leftpanel = reactive({
     print('reactive qpadm_leftpanel')
-    choices = names(global$poplist)
+    all = names(global$poplist)
+    choices1 = setdiff(all, c(global$qpadmpops2, global$qpadmpops3))
+    choices2 = setdiff(all, c(global$qpadmpops1, global$qpadmpops3))
+    choices3 = setdiff(all, c(global$qpadmpops1, global$qpadmpops2))
     div(
-      selectizeInput('qpadmpops1', 'Target', choices = choices, multiple = FALSE, selected = global$qpadmpops1),
-      selectizeInput('qpadmpops2', 'Sources', choices = choices, multiple = TRUE, selected = global$qpadmpops2),
-      selectizeInput('qpadmpops3', 'Outgroups', choices = choices, multiple = TRUE, selected = global$qpadmpops3),
-      actionButton('qpadm_randomize', 'Randomize'))
-})
+      selectizeInput('qpadmpops1', 'Target', choices = choices1, multiple = FALSE, selected = global$qpadmpops1),
+      selectizeInput('qpadmpops2', 'Left', choices = choices2, multiple = TRUE, selected = global$qpadmpops2),
+      selectizeInput('qpadmpops3', 'Right', choices = choices3, multiple = TRUE, selected = global$qpadmpops3),
+      splitLayout(actionButton('qpadm_randomize', 'Randomize')),
+      checkboxInput('qpadm_results', 'Show results', value = global$show_qpadm_results),
+      checkboxInput('qpadm_rotate', 'Rotate left', value = global$show_qpadm_rotate)
+    )
+  })
 
   qpadm_rightpanel_fit = reactive({
     tabsetPanel(id = 'qpadm_tabset',
@@ -1470,6 +1546,18 @@ server = function(input, output, session) {
                 tabPanel('Rank drop', div(DT::DTOutput('qpadm_rankdrop'), style = dtstyle)),
                 tabPanel('Pop drop', div(DT::DTOutput('qpadm_popdrop'), style = dtstyle)))
   })
+  qpadm_rightpanel_rotate = reactive({
+    div(div(DT::DTOutput('qpadm_rot'), style = dtstyle), style='padding-right:50px;')
+  })
+
+  qpadm_rightpanel = reactive({
+    res = global$show_qpadm_results
+    rot = global$show_qpadm_rotate
+    if(rot && res) splitLayout(cellWidths = c('50%', '50%'), qpadm_rightpanel_rotate(), qpadm_rightpanel_fit())
+    else if(rot) qpadm_rightpanel_rotate()
+    else if(res) qpadm_rightpanel_fit()
+    else div()
+    })
 
   qpg_right_fit = reactive({
     tabsetPanel(tabPanel('f2', id = 'f2', div(DT::DTOutput('f2'), style = dtstyle)),
@@ -1485,31 +1573,30 @@ server = function(input, output, session) {
     div(
       fluidRow(
         box(width=4, height=bh, background = cols[1], h4('Select data directory'),
-          div(
-          shinyDirButton('dir', 'Browse', 'Upload'),
-          verbatimTextOutput('dirout', placeholder = TRUE))),
+            #div(splitLayout(shinyDirButton('dir', 'Browse', 'Upload'),verbatimTextOutput('dirout', placeholder = TRUE))),
+            div(splitLayout(textInput('textdirinput', NULL, placeholder = 'Data directory'), actionButton('textdir', 'Load')))),
         conditionalPanel('output.show_extract == "1"',
                          fluidRow(box(width=4, height=bh, background = cols[2], h4('Extract data'),
-               splitLayout(
-               div(shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
-                   verbatimTextOutput('genofile1out', placeholder = TRUE)),
-               actionButton('extract_counts', 'Extract counts'))))),
+                                      splitLayout(
+                                        div(shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
+                                            verbatimTextOutput('genofile1out', placeholder = TRUE)),
+                                        actionButton('extract_counts', 'Extract counts'))))),
         conditionalPanel('output.show_indselect == "1"', (
           box(width=4, height=bh, background = cols[3], h4('Select .ind file'),
-            div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')))),
+              div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')))),
         #column(3, box(width=12, height=bh, background = cols[4], h4('Select graph file'),
         #    div(fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file'), id = 'graphfilediv'))),
-      fluidRow(column(12, conditionalPanel('input.extract_counts > 0', verbatimTextOutput('console')))),
-      #box(width=6, textOutput('console')),
-      div(style = 'visibility: hidden', verbatimTextOutput('show_popadjust')),
-      div(style = 'visibility: hidden', verbatimTextOutput('show_extract')),
-      div(style = 'visibility: hidden', verbatimTextOutput('show_indselect')),
-      conditionalPanel('output.show_popadjust == "1"', fluidRow(column(12,
-        box(width=12, background = cols[5],
-            fluidRow(column(2, h4('Adjust populations', id = 'adjpopdiv')),
-                    column(1, div(actionButton('removepop', '–'),
-                        actionButton('addpop', '+')))),
-            fluidRow(column(11, uiOutput('popselectors')))))))))
+        fluidRow(column(12, conditionalPanel('input.extract_counts > 0', verbatimTextOutput('console')))),
+        #box(width=6, textOutput('console')),
+        div(style = 'visibility: hidden', verbatimTextOutput('show_popadjust')),
+        div(style = 'visibility: hidden', verbatimTextOutput('show_extract')),
+        div(style = 'visibility: hidden', verbatimTextOutput('show_indselect')),
+        conditionalPanel('output.show_popadjust == "1"', fluidRow(column(12,
+                                                                         box(width=12, background = cols[5],
+                                                                             fluidRow(column(2, h4('Adjust populations', id = 'adjpopdiv')),
+                                                                                      column(1, div(actionButton('removepop', '–'),
+                                                                                                    actionButton('addpop', '+')))),
+                                                                             fluidRow(column(11, uiOutput('popselectors')))))))))
   })
 
   observeEvent(input$extract_counts, {
@@ -1523,7 +1610,7 @@ server = function(input, output, session) {
     oldnam = names(global$poplist)
     nam = map(paste0('pop', seq_len(length(global$poplist))), ~input[[.]])
     if(is.null(nam[[1]])) return()
-    global$poplist = map(oldnam, ~input[[.]]) %>% set_names(nam)
+    global$poplist = map(oldnam, ~input[[.]]) %>% purrr::set_names(nam)
 
     poplist = global$poplist
     inds = unlist(poplist)
@@ -1578,11 +1665,11 @@ server = function(input, output, session) {
     if(!is.null(newe) && !is.null(oldedge) && newe != oldedge) global$seledge = paste(c(oldedge, newe), collapse = '\n')
   })
 
-    get_seledge = reactive({
-      print('get_seledge')
-      print(global$seledge)
-      global$seledge
-    })
+  get_seledge = reactive({
+    print('get_seledge')
+    print(global$seledge)
+    global$seledge
+  })
 
   ed_to_name = function(ed, plt) {
     dat = plt$x$data[[ed$curveNumber + 1]]
@@ -1634,6 +1721,8 @@ server = function(input, output, session) {
     sr = global$qpgraph_scorerange
     scoretext = ifelse(is.null(sr), round(global$score, 2),
                        paste0(round(sr['mid'], 2), '\n[', round(sr['lo'], 0), ' - ', round(sr['hi'], 0), ']'))
+    temp = ifelse(global$tempgraph, 'PREVIEW!', '')
+    temp = ''
 
     gg = eg %>% mutate(rownum = 1:n()) %>%
       ggplot(aes(x=x, xend=xend, y=y, yend=yend, from=from, to=to)) +
@@ -1645,7 +1734,9 @@ server = function(input, output, session) {
                                          from = NA, text = 'text'), size = textsize) +
       geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
       annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0,
-                label = paste0('score: ', scoretext, '\nadmix: ', nadmix)) +
+               label = paste0('score: ', scoretext, '\nadmix: ', nadmix)) +
+      annotate('text', x = mean(nodes$x), y = max(nodes$yend), hjust = 0,
+               label = temp, color = 'red') +
       theme(panel.background = element_blank(),
             axis.line = element_blank(),
             axis.text = element_blank(),
@@ -1693,6 +1784,10 @@ server = function(input, output, session) {
     p2 = input$qpadmpops2
     p3 = input$qpadmpops3
     req(f2blocks, p1, p2, p3)
+    if(global$show_qpadm_rotate) {
+      p2 = global$qpadmpops2remain
+      p3 = union(p3, global$qpadmpops3add)
+    }
     qpadm(f2blocks, p1, p2, p3)
   })
 
@@ -1757,15 +1852,16 @@ server = function(input, output, session) {
     print('get f4')
     input$f4_run
     #isolate({
-      f2blocks = get_f2blocks()
-      p1 = input$f4pops1[1]
-      p2 = input$f4pops2[1:2]
-      f4dat = get_f4() %>% filter(pop1 == p1, pop2 %in% p2)
-      req(f4dat)
+    f2blocks = get_f2blocks()
+    p1 = input$f4pops1[1]
+    p2 = input$f4pops2[1:2]
+    f4dat = get_f4() %>% filter(pop1 == p1, pop2 %in% p2)
+    req(f4dat)
     #})
     f4dat %<>%
-        mutate(pop2 = recode(pop2, !!sym(p2[1]):='x', !!sym(p2[2]):='y')) %>%
-        pivot_wider(names_from = pop2, values_from = c(est, se, z, p))
+      mutate(pop2 = recode(pop2, !!sym(p2[1]):='x', !!sym(p2[2]):='y')) %>%
+      pivot_wider(names_from = pop2, values_from = c(est, se, z, p)) %>%
+      mutate(mul = input$f4_se)
     xmin = min(f4dat$est_x - f4dat$se_x)
     xmax = max(f4dat$est_x + f4dat$se_x)
     ymin = min(f4dat$est_y - f4dat$se_y)
@@ -1781,12 +1877,42 @@ server = function(input, output, session) {
       ylab(paste0('f4(', p1, ', ', p2[2], '; Pop 3, Pop 4)' )) +
       scale_x_continuous(limits = c(xmin, xmax)) +
       scale_y_continuous(limits = c(ymin, ymax))
-    if(input$f4_se) {
+    if(input$f4_se > 0) {
       gg = gg +
-        geom_errorbar(aes(ymin = est_y - se_y, ymax = est_y + se_y), width = 0) +
-        geom_errorbarh(aes(xmin = est_x - se_x, xmax = est_x + se_x), height = 0)
+        geom_errorbar(aes(ymin = est_y - se_y*mul, ymax = est_y + se_y*mul), width = 0) +
+        geom_errorbarh(aes(xmin = est_x - se_x*mul, xmax = est_x + se_x*mul), height = 0)
     }
     plt = plotly::ggplotly(gg, source = 'src_f4', tooltip=c('text'))
+  })
+
+  plotly_f42 = reactive({
+
+    print('get f4')
+    input$f4_run
+    #isolate({
+    f2blocks = get_f2blocks()
+    f4dat = get_f4() %>% filter(pop1 == input$f4pops1[1], pop3 == input$f4pops3[1], pop4 == input$f4pops4[1])
+    req(f4dat)
+    #})
+    # f4dat %<>%
+    #   mutate(pop2 = recode(pop2, !!sym(p2[1]):='x', !!sym(p2[2]):='y')) %>%
+    #   pivot_wider(names_from = pop2, values_from = c(est, se, z, p))
+    # xmin = min(f4dat$est_x - f4dat$se_x)
+    # xmax = max(f4dat$est_x + f4dat$se_x)
+    # ymin = min(f4dat$est_y - f4dat$se_y)
+    # ymax = max(f4dat$est_y + f4dat$se_y)
+    gg = f4dat %>%
+      ggplot(aes(pop2, est, col = pop2)) +
+      geom_hline(yintercept = 0) +
+      geom_point() +
+      theme(panel.background = element_blank()) +
+      xlab(paste0('' )) +
+      ylab(paste0('f4(', input$f4pops1[1], ', X; ', input$f4pops3[1], ', ', input$f4pops4[1],')' ))
+    if(input$f4_se > 0) {
+      mul = input$f4_se
+      gg = gg + geom_errorbar(aes(ymin = est - se*mul, ymax = est + se*mul), width = 0)
+    }
+    plt = plotly::ggplotly(gg, source = 'src_f42')
   })
 
   output$f2heatmap = renderPlotly({
@@ -1807,6 +1933,12 @@ server = function(input, output, session) {
 
     print('f4plot')
     plt = plotly_f4()
+    plt
+  })
+  output$f4plot2 = renderPlotly({
+
+    print('f4plot')
+    plt = plotly_f42()
     plt
   })
 
@@ -1832,6 +1964,7 @@ server = function(input, output, session) {
     })
 
     original = global$qpgraphout
+    qpgraph_R$f3 = qpgraph_R$f3 %>% select(pop2, pop3, fit, est) # temporary; line should be removed
     gg = plot_comparison(original, qpgraph_R)
     plotly::ggplotly(gg, tooltip = 'label')
   })
@@ -1867,11 +2000,12 @@ server = function(input, output, session) {
 
   output$f4stats = dtfun({format_table(get_f4())})
 
-  output$qpadm_weights = dtfun({format_table(get_qpadm()$weights %>% rename(source = left))})
+  output$qpadm_weights = dtfun({format_table(get_qpadm()$weights)})
   output$qpadm_f4 = dtfun({format_table(get_qpadm()$f4)})
   output$qpadm_rankdrop = dtfun({format_table(get_qpadm()$rankdrop)})
   output$qpadm_popdrop = dtfun({format_table(get_qpadm()$popdrop)})
 
+  output$qpadm_rot = dtfun({format_table(get_qpadm_rotate())})
 
   onBookmark(function(state) {
     names(global) %>% map(~{state$values[[.]] = global[[.]]})

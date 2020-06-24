@@ -35,14 +35,14 @@ jack_mat_stats = function(loo_mat, block_lengths) {
 
 
 jack_arr_stats = function(loo_arr, block_lengths) {
-  # input is 3d array (n x n x m)
+  # input is 3d array (n x n x m) with leave-one-out statistics
   # output is list with jackknife means and jackknife variances
   # uses mean jackknife estimate instead of overall mean; probably makes very little difference
   # should give same results as 'jack_mat_stats'
 
   numblocks = length(block_lengths)
   est = apply(loo_arr, 1:2, weighted.mean, 1/block_lengths)
-  xtau = (rray(est) - loo_arr)^2 * rray(sum(block_lengths)/block_lengths-1, c(1, 1, numblocks))
+  xtau = (replicate(numblocks, est) - loo_arr)^2 * rep(sum(block_lengths)/block_lengths-1, each = length(est))
   #var = apply(xtau, 1:2, weighted.mean, block_lengths)
   var = apply(xtau, 1:2, weighted.mean, 1/block_lengths)
   namedList(est, var)
@@ -125,18 +125,20 @@ get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
 }
 
 
+
 #' @export
 est_to_loo = function(arr) {
   # turns block estimates into leave-one-block-out estimates
   # assumes blocks are along 3rd dimension
 
   block_lengths = parse_number(dimnames(arr)[[3]])
-  tot = rray(apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T))
-  rel_bl = rray(block_lengths/sum(block_lengths), dim = c(1,1,dim(arr)[3]))
-  out = as.array((tot - arr*rel_bl) / (1-rel_bl))
+  tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
+  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
+  out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
   dimnames(out) = dimnames(arr)
   out
 }
+
 
 
 #' @export
@@ -144,12 +146,14 @@ loo_to_est = function(arr) {
   # inverse of est_to_res
 
   block_lengths = parse_number(dimnames(arr)[[3]])
-  rel_bl = rray(block_lengths/sum(block_lengths), dim = c(1,1,dim(arr)[3]))
-  tot = rray(apply(arr, 1:2, weighted.mean, 1-as.vector(rel_bl), na.rm=T))
-  out = as.array((tot - arr * (1-rel_bl))/rel_bl)
+  rel_bl = block_lengths/sum(block_lengths)
+  tot = apply(arr, 1:2, weighted.mean, 1-rel_bl, na.rm=T)
+  rel_bl = rep(rel_bl, each = length(tot))
+  out = (replicate(dim(arr)[3], tot) - arr * (1-rel_bl))/rel_bl
   dimnames(out) = dimnames(arr)
   out
 }
+
 
 #' @export
 est_to_loo_nafix = function(arr) {
@@ -157,11 +161,11 @@ est_to_loo_nafix = function(arr) {
   # assumes blocks are along 3rd dimension
 
   block_lengths = parse_number(dimnames(arr)[[3]])
-  tot = rray(apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T))
-  rel_bl = rray(block_lengths/sum(block_lengths), dim = c(1,1,dim(arr)[3]))
+  tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
+  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
   if(any(is.na(arr))) warning(paste0('Replacing ', sum(is.na(arr)), ' NAs with 0!'))
   arr %<>% replace_na(0)
-  out = as.array((tot - arr*rel_bl) / (1-rel_bl))
+  out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
   dimnames(out) = dimnames(arr)
   out
 }
@@ -187,34 +191,44 @@ est_to_boo = function(arr, nboot = dim(arr)[3]) {
 
 # returns list of arrays, with each block left out at a time.
 # arr is k x k x n; output is length n, output arrs are k x k x (n-1)
+#' @export
 loo_list = function(arr) map(1:dim(arr)[3], ~arr[,,-.])
 
+#' @export
 boo_list = function(arr, nboot = dim(arr)[3]) {
   # returns list of arrays, with each block left out at a time.
   # arr is k x k x n; output is length nboot, output arrs are k x k x n
-
-  rerun(nboot, arr[,,sample(1:dim(arr)[3], replace = TRUE)])
+  sel = rerun(nboot, sample(1:dim(arr)[3], replace = TRUE))
+  list(boo = map(sel, ~arr[,,.]), sel = sel, test = map(sel, ~arr[,,-.]))
 }
 
+#' Takes a function `qpfun` which takes f2_blocks as input
+#' Returns a function which will repeadetly evaluate `qpfun` on
+#' jackknife or bootstrap resamplings of the f2_blocks, returning a nested data frame
 #' @export
 make_resample_snps_fun = function(qpfun) {
   function(f2_blocks, boot = FALSE, verbose = TRUE, ...) {
     if(boot) {
       if(boot == 1) boot = dim(f2_blocks)[3]
-      f2dat = boo_list(f2_blocks, boot)
+      boo = boo_list(f2_blocks, boot)
+      f2dat = boo$boo
+      sel = boo$sel
     } else {
       f2dat = loo_list(f2_blocks)
+      sel = map(seq_len(length(f2dat)), ~setdiff(seq_len(length(f2dat)), .))
     }
-
     if(verbose) alert_info(paste0('Running models...\n'))
     fun = function(x) safely(qpfun)(x, verbose = FALSE, ...)
-    tibble(id = seq_len(length(f2dat)), f2dat) %>%
+    tibble(id = seq_len(length(f2dat)), f2dat, sel) %>%
       mutate(out = furrr::future_map(f2dat, fun, .progress = verbose),
              result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
       select(-out) %>% unnest_wider(result)
   }
 }
 
+#' Takes a function `qpfun` which takes f2_blocks as input
+#' Returns a function which will repeadetly evaluate `qpfun` on
+#' a subset of all samples, returning a nested data frame
 #' @export
 make_resample_inds_fun = function(qpfun) {
   function(dir, inds, pops, verbose = TRUE, ...) {
@@ -224,7 +238,7 @@ make_resample_inds_fun = function(qpfun) {
       ungroup %>% filter(cnt > 1) %>% select(-cnt)
 
     if(verbose) alert_info('Reading data...\n')
-    f2dat = lo_samples$ind %>% set_names %>%
+    f2dat = lo_samples$ind %>% rlang::set_names() %>%
       furrr::future_map(~f2_from_precomp_indivs(dir, filter(poplist, ind != .), verbose = FALSE)$f2_blocks,
                         .progress = verbose)
 
@@ -240,14 +254,13 @@ make_resample_inds_fun = function(qpfun) {
 
 #' Run models while leaving out SNP blocks
 #'
-#' These are wrapper functions around various `qp` functions, which will evaluate many models at once.
-#' The models are formed by leaving out one or more SNP block at a time (see `boot` for details).
+#' These are wrapper functions around various `qp` functions, which will evaluate a model on multiple subdivisions of the data.
+#' The subdivisions are formed by leaving out one or more SNP block at a time (see `boot` for details).
 #' @name resample_snps
 #' @param f2_blocks a 3d array of blocked f2 statistics
 #' @param boot If `FALSE` (the default), each block will be left out at a time.
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`.
-#' @param multiprocess If `TRUE` (the default), models will run on multiple cores in parallel.
 #' @param verbose print progress updates
 #' @param ... named arguments which are passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs

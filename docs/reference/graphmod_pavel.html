@@ -191,8 +191,12 @@ adds edges originating above each edge in source_node, to each node above `addpo
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>graphmod_pavel</span>(<span class='no'>example_igraph</span>, <span class='kw'>addpops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>),
-               <span class='kw'>connection_edge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'N2N0'</span>, <span class='st'>'N1N'</span>), <span class='kw'>source_nodes</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'N2N2'</span>))
+<span class='no'>graphlist</span> <span class='kw'>=</span> <span class='fu'>graphmod_pavel</span>(<span class='no'>example_igraph</span>, <span class='kw'>addpops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>),
+                           <span class='kw'>connection_edge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'N2N0'</span>, <span class='st'>'N1N'</span>), <span class='kw'>source_nodes</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'N2N2'</span>))
+<span class='no'>results</span> <span class='kw'>=</span> <span class='fu'>tibble</span>(<span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graphlist</span>) <span class='kw'>%&gt;%</span>
+  <span class='fu'>mutate</span>(<span class='kw'>res</span> <span class='kw'>=</span> <span class='fu'>map</span>(<span class='no'>graph</span>, ~<span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>example_f2_blocks</span>, <span class='no'>.</span>))) <span class='kw'>%&gt;%</span>
+  <span class='fu'>unnest_wider</span>(<span class='no'>res</span>) <span class='kw'>%&gt;%</span>
+  <span class='fu'>mutate</span>(<span class='kw'>worstz</span> <span class='kw'>=</span> <span class='fu'>map_dbl</span>(<span class='no'>f3</span>, ~<span class='fu'><a href='https://rdrr.io/r/base/Extremes.html'>max</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>abs</a></span>(<span class='no'>.</span>$<span class='no'>z</span>))))
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

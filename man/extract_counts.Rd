@@ -4,10 +4,10 @@
 \alias{extract_counts}
 \title{Extract and store data needed to compute blocked f2}
 \usage{
-extract_counts(pref, outdir, inds = NULL, maxmiss = 0.25, minmaf = 0,
-  maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-  keepsnps = NULL, maxmem = 8000, overwrite = FALSE, format = NULL,
-  verbose = TRUE)
+extract_counts(pref, outdir, inds = NULL, dist = 0.05,
+  maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE,
+  transversions = TRUE, keepsnps = NULL, maxmem = 8000,
+  overwrite = FALSE, format = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -16,6 +16,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{outdir}{the directory to which to write data}
 
 \item{inds}{the individuals for which to extract data}
+
+\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM).}
 
 \item{maxmiss}{discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
 

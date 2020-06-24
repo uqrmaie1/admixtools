@@ -4,12 +4,11 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(f2_data, target = NULL, left = NULL, right = NULL,
+lazadm(f2_blocks, target = NULL, left = NULL, right = NULL,
   f2_denom = 1, boot = FALSE, getcov = FALSE, constrained = TRUE)
 }
 \arguments{
-\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
+\item{f2_blocks}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
 \item{target}{target population}
 

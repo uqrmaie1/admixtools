@@ -5,7 +5,7 @@
 \title{Read allele frequencies from packedancestrymap files}
 \usage{
 packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
-  blocksize = 1000, auto_only = TRUE, verbose = TRUE)
+  blocksize = 1000, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
@@ -15,8 +15,6 @@ packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
 \item{pops}{vector of populations from which to compute allele frequencies. If \code{NULL} (default), populations will be extracted from the third column in the \code{.ind} file}
 
 \item{blocksize}{number of SNPs read in each block.}
-
-\item{auto_only}{If \code{TRUE} (the default), all SNPs with chromosome outside the range of 1 to 22 will be discarded.}
 
 \item{verbose}{print progress updates}
 }

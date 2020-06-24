@@ -25,7 +25,11 @@ generates new graphs from basegraph as follows:
 }
 \examples{
 \dontrun{
-graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
-               connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+graphlist = graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
+                           connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+results = tibble(graph = graphlist) \%>\%
+  mutate(res = map(graph, ~qpgraph(example_f2_blocks, .))) \%>\%
+  unnest_wider(res) \%>\%
+  mutate(worstz = map_dbl(f3, ~max(abs(.$z))))
 }
 }

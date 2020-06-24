@@ -4,10 +4,10 @@
 \alias{extract_f2}
 \title{Compute and store blocked f2 statistics}
 \usage{
-extract_f2(pref, outdir, inds = NULL, pops = NULL, maxmem = 8000,
-  maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE,
-  transversions = TRUE, keepsnps = NULL, overwrite = FALSE,
-  format = NULL, verbose = TRUE)
+extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
+  maxmem = 8000, maxmiss = 0.25, minmaf = 0, maxmaf = 0.5,
+  transitions = TRUE, transversions = TRUE, keepsnps = NULL,
+  overwrite = FALSE, format = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -19,6 +19,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
+
+\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM).}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 

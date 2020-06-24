@@ -4,14 +4,13 @@
 \alias{qpgraph}
 \title{Compute the fit of an admixture graph}
 \usage{
-qpgraph(f2_data, graph, f2_denom = 1, boot = FALSE, fudge = 0.001,
-  fnscale = 1e-06, lsqmode = FALSE, numstart = NULL, seed = NULL,
-  cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, low_q = 0,
-  high_q = 1, verbose = FALSE)
+qpgraph(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-04,
+  fnscale = 1e-06, lsqmode = FALSE, numstart = 10, seed = NULL,
+  cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
+  f2_blocks_test = NULL, low_q = 0, high_q = 1, verbose = FALSE)
 }
 \arguments{
-\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
+\item{f2_blocks}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
 \item{graph}{an admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
 
@@ -28,7 +27,7 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 
 \item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
-\item{numstart}{number of random initializations. defaults to 10 times the number of admixture nodes.}
+\item{numstart}{number of random initializations. defaults to 10.}
 
 \item{seed}{seed for generating starting weights.}
 
