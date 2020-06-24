@@ -3,7 +3,7 @@
 
 # admixtools
 
-Lighting fast R implementations of
+Lightning fast R implementations of
 [AdmixTools](https://github.com/DReichLab/AdmixTools) programs qpAdm,
 qpGraph, and more.
 
