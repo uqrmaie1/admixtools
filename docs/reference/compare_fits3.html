@@ -162,11 +162,11 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>fits1</th>
-      <td><p>The first graph</p></td>
+      <td><p>Fitted models for the first graph</p></td>
     </tr>
     <tr>
       <th>fits2</th>
-      <td><p>The second graph</p></td>
+      <td><p>Fitted models for the second graph</p></td>
     </tr>
     </table>
     
@@ -176,6 +176,14 @@
 <span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'>boo_list</span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
 <span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
 <span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
+<span class='fu'>compare_fits3</span>(<span class='no'>fits1</span>$<span class='no'>score_test</span>, <span class='no'>fits2</span>$<span class='no'>score_test</span>)
+}
+<span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'>boo_list</span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
+<span class='no'>f3precomp1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'>get_leafnames</span>(<span class='no'>graph1</span>))
+<span class='no'>f3precomp2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'>get_leafnames</span>(<span class='no'>graph2</span>))
+<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='no'>f3precomp1</span>)
+<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='no'>f3precomp2</span>)
 <span class='fu'>compare_fits3</span>(<span class='no'>fits1</span>$<span class='no'>score_test</span>, <span class='no'>fits2</span>$<span class='no'>score_test</span>)
 }</div></pre>
   </div>

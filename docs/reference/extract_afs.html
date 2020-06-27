@@ -157,7 +157,7 @@ and computes allele frequencies for selected populations and stores it as <code>
     
     </div>
 
-    <pre class="usage"><span class='fu'>extract_afs</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+    <pre class="usage"><span class='fu'>extract_afs</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
   <span class='kw'>cols_per_chunk</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>0.25</span>, <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
   <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
@@ -182,6 +182,10 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <th>pops</th>
       <td><p>the populations for which data should be extracted. <code>pops</code> and <code>inds</code> cannot be specified
 at the same time. If none are specified, all populations will be extracted.</p></td>
+    </tr>
+    <tr>
+      <th>dist</th>
+      <td><p>genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>cols_per_chunk</th>

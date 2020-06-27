@@ -7,9 +7,9 @@
 compare_fits3(scores1, scores2)
 }
 \arguments{
-\item{fits1}{The first graph}
+\item{fits1}{Fitted models for the first graph}
 
-\item{fits2}{The second graph}
+\item{fits2}{Fitted models for the second graph}
 }
 \description{
 Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
@@ -19,6 +19,14 @@ Takes the bootstrap score distribution of two fits on the same populations and t
 boo = boo_list(f2_blocks, nboot = 100)
 fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
 fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
+compare_fits3(fits1$score_test, fits2$score_test)
+}
+\dontrun{
+boo = boo_list(f2_blocks, nboot = 100)
+f3precomp1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))
+f3precomp2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))
+fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, f3precomp = f3precomp1)
+fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, f3precomp = f3precomp2)
 compare_fits3(fits1$score_test, fits2$score_test)
 }
 }

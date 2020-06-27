@@ -4,7 +4,7 @@
 \alias{extract_afs}
 \title{Compute and store blocked allele frequency data}
 \usage{
-extract_afs(pref, outdir, inds = NULL, pops = NULL,
+extract_afs(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   cols_per_chunk = 20, maxmiss = 0.25, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
   format = NULL, verbose = TRUE)
@@ -19,6 +19,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
+
+\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM).}
 
 \item{cols_per_chunk}{number of populations per chunk. higher value will lead to fewer,
 but more memory intensive jobs when computing f2}
