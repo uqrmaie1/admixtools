@@ -594,13 +594,21 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #'
 #' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
 #' @export
-#' @param fits1 The first graph
-#' @param fits2 The second graph
+#' @param fits1 Fitted models for the first graph
+#' @param fits2 Fitted models for the second graph
 #' @examples
 #' \dontrun{
 #' boo = boo_list(f2_blocks, nboot = 100)
 #' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
 #' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
+#' compare_fits3(fits1$score_test, fits2$score_test)
+#' }
+#' \dontrun{
+#' boo = boo_list(f2_blocks, nboot = 100)
+#' f3precomp1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))
+#' f3precomp2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))
+#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, f3precomp = f3precomp1)
+#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, f3precomp = f3precomp2)
 #' compare_fits3(fits1$score_test, fits2$score_test)
 #' }
 compare_fits3 = function(scores1, scores2) {
@@ -624,11 +632,14 @@ compare_fits3 = function(scores1, scores2) {
 #' @export
 qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
 
-  fun = function(f2dat, f2dat_test, g) safely(qpgraph)(f2_blocks = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+  ell = list(...)
+  fun = function(f2dat, f2dat_test, g) function() safely(qpgraph)(f2_blocks = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+
   tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
-    mutate(out = furrr::future_pmap(list(f2_blocks, f2_blocks_test, graph), fun, .progress = verbose),
+    mutate(fun2 = pmap(list(f2_blocks, f2_blocks_test, graph), fun)) %>%
+    mutate(out = furrr::future_invoke_map(fun2, .progress = verbose),
            result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
-    select(-out) %>% unnest_wider(result)
+    select(-out, -fun2) %>% unnest_wider(result)
 }
 
 

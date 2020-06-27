@@ -240,7 +240,7 @@ discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRU
 
   if(!is.null(keepsnps)) {
     snpdat %<>% filter(SNP %in% keepsnps)
-    return(snpdat)
+    return(snpdat$.snpindex)
   }
 
   snpdat %<>% mutate(mutation = NA)
@@ -1041,6 +1041,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' @param inds the individuals for which data should be extracted.
 #' @param pops the populations for which data should be extracted. `pops` and `inds` cannot be specified
 #' at the same time. If none are specified, all populations will be extracted.
+#' @param dist genetic distance in Morgan. Default is 0.05 (50 cM).
 #' @param cols_per_chunk number of populations per chunk. higher value will lead to fewer,
 #' but more memory intensive jobs when computing f2
 #' @param maxmiss discard SNPs which are missing in a fraction of populations higher than `maxmiss`
@@ -1058,7 +1059,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' outdir = 'dir/for/afdata/'
 #' extract_afs(pref, outdir)
 #' }
-extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 20,
+extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 20,
                        maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, verbose = TRUE) {
 
@@ -1067,12 +1068,13 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE)
+  if(verbose) alert_info(paste0(nrow(afdat$afs), ' SNPs remain after filtering\n'))
 
   # split allele frequency data into chunks and write to disk
   split_mat(afdat$afs, cols_per_chunk = cols_per_chunk, prefix = paste0(outdir, '/afs'), verbose = verbose)
   split_mat(afdat$counts, cols_per_chunk = cols_per_chunk, prefix = paste0(outdir, '/counts'), verbose = verbose)
   # compute jackknife blocks
-  block_lengths = get_block_lengths(afdat$snpfile, dist = 0.05, distcol = 'cm')
+  block_lengths = get_block_lengths(afdat$snpfile, dist = dist, distcol = 'cm')
   saveRDS(block_lengths, file = paste0(outdir, '/block_lengths.rds'))
 }
 

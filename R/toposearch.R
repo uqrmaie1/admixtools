@@ -713,6 +713,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
                        debug = numrep==1, fudge = 1e-4, verbose = TRUE, ...) {
 
   keep = rlang::arg_match(keep)
+  if(numsel >= numgraphs || numsel < 1) stop("'numsel' has to be smaller than 'numgraphs' and greater than 0!")
   if(is.character(f2_data) && file.exists(f2_data) && !isTRUE(file.info(f2_data)$isdir)) {
     # parse Nick's fstats
     precomp = parse_fstats(f2_data)
