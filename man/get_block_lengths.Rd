@@ -23,7 +23,7 @@ A new block begins at the SNP after the first SNP which is not within \code{dist
 \examples{
 \dontrun{
 prefix = 'path/to/packedancestrymap_prefix'
-pops = c('Zerg', 'Protoss', 'Terran')
+pops = c('pop1', 'pop2', 'pop3')
 afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 block_lengths = get_block_lengths(afdat)
 }

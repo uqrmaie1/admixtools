@@ -21,6 +21,14 @@ cpp_get_weights_covariance <- function(f4_lo, qinv, block_lengths, fudge = 0.000
     .Call('_admixtools_cpp_get_weights_covariance', PACKAGE = 'admixtools', f4_lo, qinv, block_lengths, fudge, boot, constrained, qpsolve)
 }
 
+cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4) {
+    .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4)
+}
+
+cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4) {
+    .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4)
+}
+
 cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge) {
     .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge)
 }
@@ -35,5 +43,9 @@ cpp_optimweightsfun <- function(weights, args) {
 
 cpp_get_pairindex <- function(perm) {
     .Call('_admixtools_cpp_get_pairindex', PACKAGE = 'admixtools', perm)
+}
+
+cpp_read_packedancestrymap <- function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
+    .Call('_admixtools_cpp_read_packedancestrymap', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
 

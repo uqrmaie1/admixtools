@@ -41,12 +41,20 @@ jack_arr_stats = function(loo_arr, block_lengths) {
   # should give same results as 'jack_mat_stats'
 
   numblocks = length(block_lengths)
-  est = apply(loo_arr, 1:2, weighted.mean, 1/block_lengths)
+  est = apply(loo_arr, 1:2, weighted.mean, 1/block_lengths, na.rm = TRUE)
   xtau = (replicate(numblocks, est) - loo_arr)^2 * rep(sum(block_lengths)/block_lengths-1, each = length(est))
   #var = apply(xtau, 1:2, weighted.mean, block_lengths)
-  var = apply(xtau, 1:2, weighted.mean, 1/block_lengths)
+  var = apply(xtau, 1:2, weighted.mean, 1/block_lengths, na.rm = TRUE)
   namedList(est, var)
 }
+
+jack_dat_stats = function(dat) {
+  # input is a grouped data frame with columns 'loo' and 'block'
+  dat %>%
+    mutate(est = weighted.mean(loo, 1/length, na.rm = TRUE),
+           xtau = (est-loo)^2 * (sum(length)/length-1)) %>%
+    summarize(est = est[1], var = weighted.mean(xtau, 1/length, na.rm = TRUE), n = sum(!is.na(xtau)))
+  }
 
 
 jack_pairarr_stats = function(loo_arr, block_lengths) {
@@ -94,7 +102,7 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
   newdat = do.call(rbind,
                    accumulate2(.x=dat$CHR, .y=dat[[distcol]], .f=sb,
                                .init=c(0, 0, dat[[distcol]][1]))) %>%
-    as_tibble(.name_repair = NULL)
+    as_tibble(.name_repair = ~paste0('V', 1:3))
   dat %<>% bind_cols(newdat %>% slice(-1))
   dat %>% mutate(newblock = .data$V2 > lead(.data$V2, default=0) &
                    .data$CHR == lead(.data$CHR, default=0) |
@@ -114,7 +122,7 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 #' @examples
 #' \dontrun{
 #' prefix = 'path/to/packedancestrymap_prefix'
-#' pops = c('Zerg', 'Protoss', 'Terran')
+#' pops = c('pop1', 'pop2', 'pop3')
 #' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
@@ -201,6 +209,28 @@ boo_list = function(arr, nboot = dim(arr)[3]) {
   sel = rerun(nboot, sample(1:dim(arr)[3], replace = TRUE))
   list(boo = map(sel, ~arr[,,.]), sel = sel, test = map(sel, ~arr[,,-.]))
 }
+
+
+est_to_loo_dat = function(dat) {
+  # like est_to_loo, but for a grouped data frame with columns 'est', 'block', and 'length'
+  # adds column 'loo'
+  dat %>%
+    mutate(.rel_bl = length/sum(length),
+           .tot = weighted.mean(est, length, na.rm=TRUE),
+           loo = (.tot - est*.rel_bl) / (1-.rel_bl)) %>%
+    select(-.rel_bl, -.tot)
+}
+
+loo_to_est_dat = function(dat) {
+  # like loo_to_est, but for a grouped data frame with columns 'loo', 'block', and 'length'
+  # adds column 'est'
+  dat %>%
+    mutate(.rel_bl = length/sum(length),
+           .tot = weighted.mean(loo, 1-.rel_bl, na.rm=TRUE),
+           est = (.tot - loo*(1-.rel_bl)) / .rel_bl) %>%
+    select(-.rel_bl, -.tot)
+}
+
 
 #' Takes a function `qpfun` which takes f2_blocks as input
 #' Returns a function which will repeadetly evaluate `qpfun` on

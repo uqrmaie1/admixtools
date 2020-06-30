@@ -252,5 +252,3 @@ List cpp_lbfgsb(arma::vec weights, const arma::mat &pwts, const arma::mat &ppinv
 
 
 
-
-

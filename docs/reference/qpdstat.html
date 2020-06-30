@@ -159,16 +159,20 @@
 
     <pre class="usage"><span class='fu'>qpdstat</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-output of <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>. Alternatively, a directory with f2 statistics.
-see <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
+      <td><p>f2 data in one of the following formats</p><ol>
+<li><p>A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
+output of <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code></p></li>
+<li><p>A directory with f2 statistics</p></li>
+<li><p>Prefix of a packedancestrymap file. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.</p></li>
+</ol></td>
     </tr>
     <tr>
       <th>pop1</th>
@@ -212,6 +216,19 @@ from accidently computing all combinations if that number is large.</p></td>
     <tr>
       <th>unique_only</th>
       <td><p>If <code>TRUE</code> (the default), redundant combinations will be returned as well.</p></td>
+    </tr>
+    <tr>
+      <th>dist</th>
+      <td><p>genetic distance in Morgan. Default is 0.05 (50 cM). only used when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
+    </tr>
+    <tr>
+      <th>block_lengths</th>
+      <td><p>vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to
+match the number of SNPs. only used when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
+    </tr>
+    <tr>
+      <th>f4mode</th>
+      <td><p>if <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
     </tr>
     <tr>
       <th>verbose</th>

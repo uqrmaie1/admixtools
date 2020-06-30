@@ -135,8 +135,8 @@ diag_3d = function(arr) {
   matrix(arr[as.matrix(expand.grid(1:d1, 1:d3)[,c(1,1,2)])], d1)
 }
 
-weighted_row_means = function(mat, weights, ...) {
-  rowMeans(mat * rep(weights, each = nrow(mat)), ...) / mean(weights, na.rm = TRUE)
+weighted_row_means = function(mat, weights, na.rm = TRUE) {
+  rowMeans(mat * rep(weights, each = nrow(mat)), na.rm = na.rm) / mean(weights, na.rm = na.rm)
 }
 
 

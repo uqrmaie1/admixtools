@@ -125,11 +125,19 @@ f3 = qp3pop
 #' Computes f4 statistics from f2 blocks of the form \eqn{f4(A, B; C, D)}. Equivalent to
 #' \eqn{(f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2}
 #' @export
-#' @param f2_data a 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-#' output of \code{\link{afs_to_f2_blocks}}. Alternatively, a directory with f2 statistics.
-#' see \code{\link{extract_counts}}.
+#' @param f2_data f2 data in one of the following formats
+#' \enumerate{
+#' \item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
+#' output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
+#' \item A directory with f2 statistics
+#' \item Prefix of a packedancestrymap file. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
+#' }
 #' @param pop3 a vector of population labels
 #' @param pop4 a vector of population labels
+#' @param dist genetic distance in Morgan. Default is 0.05 (50 cM). only used when `f2_data` is the prefix of packedancestrymap files
+#' @param block_lengths vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
+#' match the number of SNPs. only used when `f2_data` is the prefix of packedancestrymap files
+#' @param f4mode if `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of packedancestrymap files
 #' @inheritParams f2
 #' @return a data frame with f4 statistics
 #' @aliases f4
@@ -147,10 +155,16 @@ f3 = qp3pop
 #' }
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE,
-                   comb = TRUE, verbose = FALSE) {
+                   comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
+
+  if(is_packedancestrymap_prefix(f2_data)) {
+    if(verbose) alert_info('Computing from f4 from genotype data...\n')
+    return(f4_from_geno(f2_data, pop1, pop2, pop3, pop4, dist = ifelse(is.null(dist), 0.05, dist),
+                        f4mode = f4mode, block_lengths = block_lengths, verbose = TRUE))
+  }
 
   if(!comb) {
     stopifnot(!is.null(pop2))
@@ -255,7 +269,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
       else stop('fnum should be 2, 3, or 4!')
     }
   }
-  out
+  out %>% distinct
 }
 
 

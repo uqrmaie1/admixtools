@@ -280,7 +280,7 @@ discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRU
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, verbose = TRUE) {
+read_packedancestrymap_old = function(pref, inds = NULL, blocksize = 1000, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
@@ -355,6 +355,81 @@ read_packedancestrymap = function(pref, inds = NULL, blocksize = 1000, verbose =
   outlist = list(geno = afmatrix, ind = indfile, snp = snpfile)
   outlist
 }
+
+#' Read genotype data from packedancestrymap files
+#'
+#' This is currently slower than `read_plink` because it is implemented only in `R`, not in `C++`.
+#' @export
+#' @param pref prefix of the packedancestrymap files
+#' @param inds optional vector of samples to read in
+#' @param first index of first SNP to read
+#' @param last index of last SNP to read
+#' @param transpose transpose genotype matrix
+#' @return a list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @examples
+#' \dontrun{
+#' samples = c('Ind1', 'Ind2', 'Ind3')
+#' geno = read_packedancestrymap(prefix, samples)
+#' }
+read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
+                                  transpose = FALSE, verbose = TRUE) {
+  # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
+  # inds: optional vector of individual IDs
+  # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
+
+  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), skip = first-1,
+                        n_max = last-first+1, progress = FALSE)
+
+  indfile$.keep = indfile$X1
+  if(!is.null(inds)) {
+    stopifnot(all(inds %in% indfile$X1))
+    indfile$.keep[!indfile$.keep %in% inds] = NA
+    inds = intersect(inds, indfile$X1)
+  } else {
+    inds = indfile$X1
+  }
+  indvec = 1-is.na(indfile$.keep)
+  indfile %<>% filter(!is.na(.keep)) %>% select(-.keep)
+
+  fl = paste0(pref, '.geno')
+  conn = file(fl, 'rb')
+  hd = strsplit(readBin(conn, 'character', n = 1), ' +')[[1]]
+  close(conn)
+  nindall = as.numeric(hd[2])
+  nsnpall = as.numeric(hd[3])
+  nind = length(inds)
+  nsnp = min(last, nsnpall) - first + 1
+
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs.\n'))
+    alert_info(paste0('Reading data for ', nind, ' samples and ', nsnp, ' SNPs\n'))
+    alert_info(paste0('Expected size of genotype data: ', round((nsnp*nind*8+nsnp*112)/1e6), ' MB\n'))
+    # 8, 112: estimated scaling factors for AF columns and annotation columns
+  }
+
+  #print(c(fl, nsnpall, nindall, indvec, first = first-1,
+  #        last = min(last, nsnpall), transpose = transpose, verbose = verbose))
+  geno = cpp_read_packedancestrymap(fl, nsnpall, nindall, indvec, first = first-1,
+                                    last = min(last, nsnpall), transpose = transpose, verbose = verbose)
+
+  if(!transpose) {
+    colnames(geno) = inds
+    rownames(geno) = snpfile$SNP
+  } else {
+    rownames(geno) = inds
+    colnames(geno) = snpfile$SNP
+  }
+
+  if(verbose) {
+    alert_success(paste0(length(snpfile$SNP), ' SNPs read in total\n'))
+  }
+
+  outlist = list(geno = geno, ind = indfile, snp = snpfile)
+  outlist
+}
+
 
 
 #' Read genotype data from ancestrymap files
@@ -1600,7 +1675,10 @@ is_binfile = function(filename) {
   max(dat) > 128 || length(unique(dat)) > 5
 }
 
-
-
+is_packedancestrymap_prefix = function(input) {
+  if(!is.character(input) || length(input) > 1) return(FALSE)
+  filesexist = all(file.exists(paste0(input, c('.geno', '.ind', '.snp'))))
+  filesexist && is_binfile(paste0(input, c('.geno')))
+}
 
 
