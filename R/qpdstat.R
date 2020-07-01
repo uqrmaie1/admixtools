@@ -32,7 +32,8 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' @param unique_only If `TRUE` (the default), redundant combinations will be returned as well.
 #' @param verbose print progress updates
 #' @return a data frame with f2 statistics
-#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
+#' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @examples
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
@@ -75,7 +76,8 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 #' @param pop3 a vector of population labels
 #' @inheritParams f2
 #' @return a data frame with f3 statistics
-#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
+#' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @aliases f3
 #' @section Alias:
 #' `f3`
@@ -143,7 +145,8 @@ f3 = qp3pop
 #' @aliases f4
 #' @section Alias:
 #' `f4`
-#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
+#' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @examples
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
@@ -290,5 +293,73 @@ qpfstats = function(f2_blocks) {
 }
 
 
+
+gmat_to_aftable = function(gmat, popvec) {
+  # raw genotype matrix, not corrected for ploidy, nind x nsnp
+  rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+}
+
+
+f4_from_geno = function(pref, pop1, pop2, pop3, pop4, dist = 0.05, block_lengths = NULL,
+                        f4mode = TRUE, summarize = TRUE, verbose = TRUE) {
+
+  pref = normalizePath(pref, mustWork = FALSE)
+  popcombs = fstat_get_popcombs(NULL, pop1, pop2, pop3, pop4, fnum = 4, sure = TRUE)
+  pops = unique(c(pop1, pop2, pop3, pop4))
+
+  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+  if(verbose) alert_info('Reading metadata...\n')
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  nsnpall = nrow(snpfile)
+  nindall = nrow(indfile)
+  snpfile %<>% filter(CHR <= 22)
+  nsnpaut = nrow(snpfile)
+
+  if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut) stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
+  allinds = indfile$X1
+  allpops = indfile$X3
+  indfile %<>% filter(X3 %in% pops)
+  indvec = (allinds %in% indfile$X1)+0
+  popvec = match(indfile$X3, pops)
+  p1 = match(popcombs$pop1, pops)
+  p2 = match(popcombs$pop2, pops)
+  p3 = match(popcombs$pop3, pops)
+  p4 = match(popcombs$pop4, pops)
+
+  if(verbose) alert_info('Computing block lengths...\n')
+  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, dist = dist)
+  numblocks = length(block_lengths)
+  start = lag(cumsum(block_lengths)-1, default = 0)
+  end = cumsum(block_lengths)
+
+  fl = paste0(pref, '.geno')
+  out = tibble()
+  numer = matrix(NA, numblocks, nrow(popcombs))
+  if(!f4mode) denom = numer
+  for(i in 1:numblocks) {
+    if(verbose) alert_info(paste0('Computing ', nrow(popcombs),' f4-statistics for block ', i, ' out of ', numblocks, '...\r'))
+    gmat = cpp_read_packedancestrymap(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
+    at = gmat_to_aftable(gmat, popvec)
+    numer[i,] = unname(rowMeans(cpp_aftable_to_dstatnum(at, p1, p2, p3, p4), na.rm = TRUE))
+    if(!f4mode) denom[i,] = unname(rowMeans(cpp_aftable_to_dstatden(at, p1, p2, p3, p4), na.rm = TRUE))
+  }
+  if(verbose) cat('\n')
+  out = popcombs %>%
+    expand_grid(block = 1:numblocks) %>%
+    mutate(est = c(numer))
+  if(!f4mode) out %<>% mutate(est = est/c(denom))
+
+  if(!summarize) return(out)
+  if(verbose) alert_info('Summarize across blocks...\n')
+  out %>%
+    mutate(length = block_lengths[block]) %>%
+    group_by(pop1, pop2, pop3, pop4) %>%
+    est_to_loo_dat() %>%
+    jack_dat_stats() %>%
+    ungroup %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    select(-var, -n)
+}
 
 

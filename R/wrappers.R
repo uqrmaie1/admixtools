@@ -477,23 +477,9 @@ parse_qpgraph_output = function(outfile) {
 
   # addition of outliers currently not safe when two population have the same three-letter-prefix
 
-  #dat = read_table(outfile, col_names=F, col_types = cols(), guess_max = 1e6)
-  dat = readLines(outfile) %>% str_squish() %>% enframe(value = 'X1') %>% select(X1)
+  edges = parse_qpgraph_output_edges(outfile)
 
-  edges = dat %>%
-    filter(grepl('^ledge|^redge|^admix', .data$X1)) %>%
-    separate('X1', c('type', 'name', 'from', 'to', 'weight', 'w2'),
-             sep=' +', convert = T, extra='drop', fill='right')
-  admix1 = edges %>% filter(.data$type=='admix') %>%
-    mutate(type='aedge', to=.data$name, name='', w2=NA)
-  admix2 = edges %>% filter(.data$type=='admix') %>%
-    mutate(type='aedge', from=.data$to, to=.data$name, name='', weight=.data$w2, w2=NA)
-  edges %<>%
-    bind_rows(admix1) %>%
-    bind_rows(admix2) %>%
-    filter(!.data$type == 'admix') %>%
-    mutate(type = ifelse(.data$type=='aedge', 'admix', 'edge')) %>%
-    select(from, to, type, weight)
+  dat = readLines(outfile) %>% str_squish() %>% enframe(value = 'X1') %>% select(X1)
 
   score = (dat %>% filter(grepl('^final score', .data$X1)) %>%
              separate('X1', c('a', 'b', 'score'), sep=' +', convert = T, extra='drop', fill='right'))$score
@@ -507,10 +493,15 @@ parse_qpgraph_output = function(outfile) {
     select(-.data$fst) %>%
     mutate(pop1 = rep(head(pops, -1), (numpop-1):1), pop2 = unlist(map(2:numpop, ~pops[.:numpop])))
 
-  f3 = dat %>% filter(grepl(' ff3fit: ', .data$X1)) %>%
-    separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
-    select(-.data$ff3fit) %>%
-    mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
+  f3dat = dat %>% filter(grepl(' ff3fit: ', .data$X1))
+  if(nrow(f3dat) > 0) {
+    f3 = f3dat %>%
+      separate('X1', c('pop2', 'pop3', 'ff3fit','fit','est'), sep=' +', convert = TRUE) %>%
+      select(-.data$ff3fit) %>%
+      mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
+  } else {
+    f3 = NULL
+  }
 
   outlierstart = str_which(dat$X1, '^outliers:')[1]+2
   outlierend = str_which(dat$X1, '^worst f-stat:')[1]-3
@@ -546,6 +537,28 @@ parse_qpgraph_output = function(outfile) {
 
   namedList(edges, score, f2, f3, f4 = outliers)
 }
+
+parse_qpgraph_output_edges = function(outfile) {
+
+  dat = readLines(outfile) %>% str_squish() %>% enframe(value = 'X1') %>% select(X1)
+
+  edges = dat %>%
+    filter(grepl('^ledge|^redge|^admix', .data$X1)) %>%
+    separate('X1', c('type', 'name', 'from', 'to', 'weight', 'w2'),
+             sep=' +', convert = T, extra='drop', fill='right')
+  admix1 = edges %>% filter(.data$type=='admix') %>%
+    mutate(type='aedge', to=.data$name, name='', w2=NA)
+  admix2 = edges %>% filter(.data$type=='admix') %>%
+    mutate(type='aedge', from=.data$to, to=.data$name, name='', weight=.data$w2, w2=NA)
+  edges %<>%
+    bind_rows(admix1) %>%
+    bind_rows(admix2) %>%
+    filter(!.data$type == 'admix') %>%
+    mutate(type = ifelse(.data$type=='aedge', 'admix', 'edge')) %>%
+    select(from, to, type, weight)
+
+}
+
 
 
 #' Read qpGraph graph file

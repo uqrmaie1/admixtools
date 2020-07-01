@@ -174,7 +174,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 10
 
 
 discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, auto_only = TRUE,
-                                transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
+                                poly_only = TRUE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
   # keepsnps overrides maxmiss and auto_only
@@ -187,14 +187,20 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, au
   if(minmaf > 0 | maxmaf < 0.5) snpdat %<>% mutate(af = rowMeans(afdat$afs, na.rm=TRUE)/2, maf = pmin(af, 1-af))
   else snpdat %<>% mutate(af = 0.2, maf = 0.2)
 
-  remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, minmaf = minmaf, maxmaf = maxmaf,
+  if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
+  else snpdat %<>% mutate(poly = TRUE)
+
+
+  remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
+                           minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
   map(afdat, ~.[remaining,])
 }
 
 
-discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, minmaf = 0, maxmaf = 0.5,
+discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, poly_only = TRUE,
+                             minmaf = 0, maxmaf = 0.5,
                              transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
@@ -218,8 +224,12 @@ discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, minmaf = 0,
   if(maxmiss < 1) snpdat %<>% mutate(miss = rowMeans(is.na(geno[[bed]])))
   else snpdat %<>% mutate(miss = 0)
 
+  if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
+  else snpdat %<>% mutate(poly = TRUE)
+
   allsnps = snpdat[['SNP']]
-  remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, minmaf = minmaf, maxmaf = maxmaf,
+  remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
+                           minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   stopifnot(length(remaining) > 0)
 
@@ -229,7 +239,7 @@ discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, minmaf = 0,
   geno
 }
 
-discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRUE,
+discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRUE, poly_only = TRUE,
                         minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE) {
   # input is a data frame with columns 'SNP', 'CHR', 'A1', 'A2', 'miss', 'maf'
   # output is vector of remaining row indices
@@ -260,6 +270,7 @@ discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRU
     miss <= maxmiss,
     between(maf, minmaf, maxmaf),
     !auto_only | as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22,
+    !poly_only | poly == 1,
     transitions | mutation != 'transition',
     transversions | mutation != 'transversion'
   ) %$% .snpindex
@@ -950,14 +961,14 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
                       maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                      keepsnps = NULL, overwrite = FALSE, format = NULL, verbose = TRUE) {
+                      keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
-  if(length(list.files(outdir)) > 0 && verbose) alert_danger('output directory not empty!')
+  if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
-                                  keepsnps = keepsnps, auto_only = TRUE)
+                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
   block_lengths = get_block_lengths(afdat$snpfile, dist = dist)
   afs_to_f2_blocks(afdat$afs, afdat$counts, block_lengths,
                    outdir = outdir, overwrite = overwrite,
@@ -1034,7 +1045,7 @@ extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 0.2
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
   dir.create(outdir, showWarnings = FALSE)
-  if(length(list.files(outdir)) > 0) stop('output directory not empty!')
+  if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
   bfile = paste0(outdir, '/block_lengths.rds')
   if(file.exists(bfile)) {
     # todo: snp filters
@@ -1046,7 +1057,7 @@ extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 0.2
   g = read_anygeno(pref, inds, format = format, verbose = verbose)
   g %<>% discard_from_geno(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions,
-                           keepsnps = keepsnps, auto_only = TRUE)
+                           keepsnps = keepsnps, auto_only = TRUE, poly_only = TRUE)
   randsnps = sample(1:nrow(g$bed), floor(nrow(g$bed)/2))
   g$bed[randsnps, ] = 2 - g$bed[randsnps, ]
 
@@ -1142,7 +1153,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
-                                  keepsnps = keepsnps, auto_only = TRUE)
+                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = TRUE)
   if(verbose) alert_info(paste0(nrow(afdat$afs), ' SNPs remain after filtering\n'))
 
   # split allele frequency data into chunks and write to disk
@@ -1680,5 +1691,7 @@ is_packedancestrymap_prefix = function(input) {
   filesexist = all(file.exists(paste0(input, c('.geno', '.ind', '.snp'))))
   filesexist && is_binfile(paste0(input, c('.geno')))
 }
+
+
 
 

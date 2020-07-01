@@ -117,6 +117,9 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
 }
 
 
+
+
+
 // // [[Rcpp::export]]
 // List cpp_packedancestrymap_to_aftable(String genofile, int nind, int nsnp,
 //                                       IntegerVector popind, bool verbose) {

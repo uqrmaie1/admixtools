@@ -29,6 +29,10 @@ cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4) {
     .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4)
 }
 
+cpp_is_polymorphic <- function(geno) {
+    .Call('_admixtools_cpp_is_polymorphic', PACKAGE = 'admixtools', geno)
+}
+
 cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge) {
     .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge)
 }

@@ -164,3 +164,36 @@ arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& 
   return den;
 }
 
+
+
+
+// [[Rcpp::export]]
+arma::vec cpp_is_polymorphic(arma::mat geno) {
+
+  int nr = geno.n_rows;
+  int nc = geno.n_cols;
+  double first, val;
+  bool isfirst = true;
+  vec out = zeros<vec>(nr);
+  for(int i = 0; i < nr; i++) {
+    isfirst = true;
+    for(int j = 0; j < nc; j++) {
+      val = geno(i,j);
+      if(is_finite(val)) {
+        if(isfirst) {
+          first = val;
+          isfirst = false;
+        } else {
+          if(first != val) {
+            out(i) = 1;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+
+

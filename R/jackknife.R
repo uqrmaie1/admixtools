@@ -33,6 +33,25 @@ jack_mat_stats = function(loo_mat, block_lengths) {
   namedList(est, var)
 }
 
+jack_mat_stats_new = function(loo_mat, block_lengths) {
+  # input is matrix (one block per column)
+  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+  # should give same results as 'jack_arr_stats'
+
+  numblocks = length(block_lengths)
+  est = weighted_row_means(loo_mat, 1/block_lengths)
+  y1 = sum(block_lengths)/block_lengths-1
+  wa = t(loo_mat) * y1
+  estmat = matrix(rep(est, numblocks), numblocks, byrow = T)
+  y1mat = matrix(rep(y1, nrow(loo_mat)), numblocks, byrow = F)
+  xtau = estmat * (y1mat+1) - wa - estmat
+
+  mnc = t(est - loo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks/block_lengths)
+  var = crossprod(mnc) / mean(1/block_lengths)
+  namedList(est, var)
+}
+
 
 jack_arr_stats = function(loo_arr, block_lengths) {
   # input is 3d array (n x n x m) with leave-one-out statistics
@@ -88,27 +107,7 @@ boot_arr_stats = make_bootfun(jack_arr_stats)
 boot_pairarr_stats = make_bootfun(jack_pairarr_stats)
 
 
-set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 
-  sb = function(cumpos, CHR, POS) {
-    o = cumpos
-    cumpos[3] = POS
-    cumpos[1] = o[2]
-    cumpos[2] = pmax(0, POS-o[3]+o[2])
-    if(o[2] %% dist < o[1] %% dist && o[2] > dist) cumpos[2] = POS-o[3]
-    cumpos
-  }
-
-  newdat = do.call(rbind,
-                   accumulate2(.x=dat$CHR, .y=dat[[distcol]], .f=sb,
-                               .init=c(0, 0, dat[[distcol]][1]))) %>%
-    as_tibble(.name_repair = ~paste0('V', 1:3))
-  dat %<>% bind_cols(newdat %>% slice(-1))
-  dat %>% mutate(newblock = .data$V2 > lead(.data$V2, default=0) &
-                   .data$CHR == lead(.data$CHR, default=0) |
-                   .data$CHR > lag(.data$CHR, default=0),
-                 block=cumsum(.data$newblock))
-}
 
 #' Find LD-independent blocks
 #'
@@ -126,11 +125,38 @@ set_blocks = function(dat, dist = 0.05, distcol = 'cm') {
 #' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
-get_block_lengths = function(afdat, dist = 0.05, distcol = 'cm') {
-  afdat %>%
-    set_blocks(dist = dist, distcol = 'cm') %$% block %>%
-    rle %$% lengths
+get_block_lengths = function(dat, dist = 0.05, distcol = 'cm') {
+  # re-do in cpp
+
+  fpos = -1e20
+  lchrom = -1
+  xsize = 0
+  dist = 0.05
+  n = 0
+  bsize = c()
+  for(i in 1:nrow(dat)) {
+    chrom = dat$CHR[i]
+    gpos = dat[[distcol]][i]
+    dis = gpos - fpos
+    if ((chrom != lchrom) || (dis >= dist)) {
+      if (xsize > 0) {
+        bsize[n+1] = xsize
+        n = n+1
+      }
+      lchrom = chrom
+      fpos = gpos
+      xsize = 0
+    }
+    xsize = xsize + 1
+  }
+  if (xsize > 0) {
+    bsize[n+1] = xsize
+  }
+  bsize
 }
+
+
+
 
 
 
