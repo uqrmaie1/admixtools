@@ -446,7 +446,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
 
   if(!is.null(seed)) set.seed(seed)
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  #matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
   f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
@@ -463,8 +463,8 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
 
   f3_blocks = (f2_blocks[,rep(1, npop),] + f2_blocks[rep(1, npop),,] - f2_blocks)/2
   f3_blocks_2d = arr3d_to_pairmat(f3_blocks[-1,-1,])
-  f3dat = matstatfun(f3_blocks_2d, block_lengths)
-  #f3dat = jack_mat_stats(f3_blocks_2d, block_lengths)
+  #f3dat = matstatfun(f3_blocks_2d, block_lengths)
+  f3dat = jack_mat_stats(f3_blocks_2d, block_lengths)
   f3_est = f3dat$est
   f3_var = f3dat$var
   f3out = tibble(pop1 = pops[1],
