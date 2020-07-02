@@ -126,6 +126,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_get_block_lengths
+IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double dist);
+RcppExport SEXP _admixtools_cpp_get_block_lengths(SEXP chrSEXP, SEXP posSEXP, SEXP distSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type chr(chrSEXP);
+    Rcpp::traits::input_parameter< DoubleVector >::type pos(posSEXP);
+    Rcpp::traits::input_parameter< double >::type dist(distSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_get_block_lengths(chr, pos, dist));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_opt_edge_lengths
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv, const arma::vec& f3_est, Function qpsolve, const arma::vec& lower, const arma::vec& upper, double fudge);
 RcppExport SEXP _admixtools_cpp_opt_edge_lengths(SEXP ppwts_2dSEXP, SEXP ppinvSEXP, SEXP f3_estSEXP, SEXP qpsolveSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP fudgeSEXP) {
@@ -209,6 +222,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 5},
     {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 5},
     {"_admixtools_cpp_is_polymorphic", (DL_FUNC) &_admixtools_cpp_is_polymorphic, 1},
+    {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 7},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},

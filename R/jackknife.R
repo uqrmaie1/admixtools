@@ -149,33 +149,33 @@ boot_pairarr_stats = make_bootfun(jack_pairarr_stats)
 #' block_lengths = get_block_lengths(afdat)
 #' }
 get_block_lengths = function(dat, dist = 0.05, distcol = 'cm') {
-  # re-do in cpp
 
-  fpos = -1e20
-  lchrom = -1
-  xsize = 0
-  dist = 0.05
-  n = 0
-  bsize = c()
-  for(i in 1:nrow(dat)) {
-    chrom = dat$CHR[i]
-    gpos = dat[[distcol]][i]
-    dis = gpos - fpos
-    if ((chrom != lchrom) || (dis >= dist)) {
-      if (xsize > 0) {
-        bsize[n+1] = xsize
-        n = n+1
-      }
-      lchrom = chrom
-      fpos = gpos
-      xsize = 0
-    }
-    xsize = xsize + 1
-  }
-  if (xsize > 0) {
-    bsize[n+1] = xsize
-  }
-  bsize
+  cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], dist)
+
+  # fpos = -1e20
+  # lchrom = -1
+  # xsize = 0
+  # n = 0
+  # bsize = c()
+  # for(i in 1:nrow(dat)) {
+  #   chrom = dat$CHR[i]
+  #   gpos = dat[[distcol]][i]
+  #   dis = gpos - fpos
+  #   if ((chrom != lchrom) || (dis >= dist)) {
+  #     if (xsize > 0) {
+  #       bsize[n+1] = xsize
+  #       n = n+1
+  #     }
+  #     lchrom = chrom
+  #     fpos = gpos
+  #     xsize = 0
+  #   }
+  #   xsize = xsize + 1
+  # }
+  # if (xsize > 0) {
+  #   bsize[n+1] = xsize
+  # }
+  # bsize
 }
 
 

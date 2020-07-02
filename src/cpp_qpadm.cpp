@@ -195,5 +195,37 @@ arma::vec cpp_is_polymorphic(arma::mat geno) {
   return out;
 }
 
+// [[Rcpp::export]]
+IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double dist = 0.05) {
 
+  double fpos = -1e20;
+  int chrom;
+  int lchrom = -1;
+  int xsize = 0;
+  int n = 0;
+  int nsnps = chr.length();
+  double gpos, dis;
+  IntegerVector bsize(nsnps);
+
+  for(int i = 0; i < nsnps; i++) {
+    chrom = chr(i);
+    gpos = pos(i);
+    dis = gpos - fpos;
+    if((chrom != lchrom) || (dis >= dist)) {
+      if(xsize > 0) {
+        bsize(n) = xsize;
+        n++;
+      }
+      lchrom = chrom;
+      fpos = gpos;
+      xsize = 0;
+    }
+    xsize++;
+  }
+  if (xsize > 0) {
+    bsize(n) = xsize;
+    n++;
+  }
+  return bsize[Rcpp::Range(0, n-1)];
+}
 
