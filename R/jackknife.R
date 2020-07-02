@@ -68,6 +68,10 @@ jack_arr_stats_old = function(loo_arr, block_lengths) {
 jack_arr_stats = function(loo_arr, block_lengths) {
   # input is 3d array (n x n x m) with leave-one-out statistics
   # output is list with jackknife means and jackknife variances
+<<<<<<< HEAD
+=======
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+>>>>>>> 7cca98a5e03573ba8cec144391725a3344c95cf4
   # should give same results as 'jack_mat_stats'
 
   numblocks = length(block_lengths)
@@ -99,6 +103,12 @@ jack_dat_stats = function(dat) {
 jack_pairarr_stats = function(loo_arr, block_lengths) {
   # input is 3d array (m x n x p)
   # output is list with jackknife means and jackknife covariances
+<<<<<<< HEAD
+=======
+  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
+
+  # todo: make equivalent to jack_mat_stats
+>>>>>>> 7cca98a5e03573ba8cec144391725a3344c95cf4
 
   numblocks = length(block_lengths)
   est = c(t(apply(loo_arr, 1:2, mean)))
