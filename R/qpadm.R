@@ -192,7 +192,7 @@ qpwave = qpadm
 f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
+  #statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
 
   # f4_blocks = (f2_blocks[left, right[1], ] +
   #              f2_blocks[target, right[-1], ] -
@@ -209,7 +209,8 @@ f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
   f4_lo = f4_blocks %>% samplefun
   block_lengths = parse_number(dimnames(f4_lo)[[3]])
 
-  out = f4_lo %>% statfun(block_lengths)
+  #out = f4_lo %>% statfun(block_lengths)
+  out = f4_lo %>% jack_pairarr_stats(block_lengths)
   out$f4_lo = f4_lo
   out$block_lengths = block_lengths
   out
