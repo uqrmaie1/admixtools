@@ -8,17 +8,17 @@
 using namespace Rcpp;
 
 // cpp_read_plink_afs
-List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool ignore_pleuidy, bool verbose);
-RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP ignore_pleuidySEXP, SEXP verboseSEXP) {
+List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool ignore_ploidy, bool verbose);
+RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP ignore_ploidySEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< String >::type bedfile(bedfileSEXP);
     Rcpp::traits::input_parameter< const NumericVector >::type indvec(indvecSEXP);
     Rcpp::traits::input_parameter< const NumericVector >::type indvec2(indvec2SEXP);
-    Rcpp::traits::input_parameter< bool >::type ignore_pleuidy(ignore_pleuidySEXP);
+    Rcpp::traits::input_parameter< bool >::type ignore_ploidy(ignore_ploidySEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_read_plink_afs(bedfile, indvec, indvec2, ignore_pleuidy, verbose));
+    rcpp_result_gen = Rcpp::wrap(cpp_read_plink_afs(bedfile, indvec, indvec2, ignore_ploidy, verbose));
     return rcpp_result_gen;
 END_RCPP
 }

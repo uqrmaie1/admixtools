@@ -49,12 +49,12 @@ public:
   unsigned int np, nsnps;
   unsigned char* data;
   const char *bedfile, *famfile, *bimfile;
-  bool verbose, ignore_pleuidy;
+  bool verbose, ignore_ploidy;
   NumericVector indvec, indvec2;
 
   Data(const char* bedfile, const char* famfile, bool verbose);
   Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2,
-       bool ignore_pleuidy, bool verbose);
+       bool ignore_ploidy, bool verbose);
   ~Data();
   void read_bed();
   void read_afs();
@@ -63,7 +63,7 @@ public:
 
 
 Data::Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2,
-           bool ignore_pleuidy, bool verbose) {
+           bool ignore_ploidy, bool verbose) {
   srand48(time(NULL));
   N = indvec.length();
   p = 0;
@@ -183,7 +183,7 @@ void Data::read_afs() {
     for(unsigned int i = 0; i < nind; i++) {
       k = this->indvec2(i)-1;
       val = (double)tmp2[k];
-      if(val == 1 || ignore_pleuidy) ploidy(i) = 2;
+      if(val == 1 || ignore_ploidy) ploidy(i) = 2;
       //ploidy(i) = 2;
     }
   }
@@ -226,10 +226,10 @@ void Data::read_afs() {
 
 // [[Rcpp::export]]
 List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2,
-                        bool ignore_pleuidy, bool verbose)
+                        bool ignore_ploidy, bool verbose)
 {
   // indvec: assignes each individual to population; indvec2: which individuals to keep
-  Data data(bedfile.get_cstring(), indvec, indvec2, ignore_pleuidy, verbose);
+  Data data(bedfile.get_cstring(), indvec, indvec2, ignore_ploidy, verbose);
   data.read_afs();
   return List::create(data.afmat, data.countmat);
 }
