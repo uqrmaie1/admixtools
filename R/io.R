@@ -15,7 +15,8 @@
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000, verbose = TRUE) {
+packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
+                                        ignore_pleuidy = FALSE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -86,7 +87,9 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
     for(i in seq_len(numpop)) {
       gm = gmat[popindmat[,i],, drop=FALSE]
       popfreqs[,i] = colMeans(gm, na.rm=TRUE)/2
-      popcounts[,i] = colSums((!is.na(gm))*ploidy[popindmat[,i]])
+      if(!ignore_pleuidy) popcounts[,i] = colSums((!is.na(gm))*ploidy[popindmat[,i]])
+      else popcounts[,i] = colSums((!is.na(gm))*2)
+
     }
     popfreqs[is.nan(popfreqs)] = NA
     sumna = sumna + sum(is.na(popfreqs))
@@ -506,7 +509,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_aftable = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
+plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_pleuidy = FALSE, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -530,7 +533,8 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
   indvec = pop_indices(fam, pops = pops, inds = inds)
   indvec2 = which(indvec > 0)
   keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
-  afs = read_plink_afs_cpp(normalizePath(bedfile), indvec, indvec2, verbose = verbose)
+  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, ignore_pleuidy = ignore_pleuidy,
+                           verbose = verbose)
   afmatrix = afs[[1]]
   countmatrix = afs[[2]]
   rownames(afmatrix) = rownames(countmatrix) = bim$SNP
@@ -591,7 +595,8 @@ read_plink = function(pref, inds = NULL, auto_only = TRUE, verbose = FALSE) {
   #indvec2 = which(fam[[2]] %in% inds)
   keepinds = fam[[2]][indvec2]
 
-  g = 2 * read_plink_afs_cpp(normalizePath(bedfile), indvec=indvec, indvec2, verbose = verbose)[[1]]
+  g = 2 * cpp_read_plink_afs(normalizePath(bedfile), indvec=indvec, indvec2,
+                             ignore_pleuidy = FALSE, verbose = verbose)[[1]]
   rownames(g) = bim$SNP
   colnames(g) = keepinds
 
@@ -953,6 +958,8 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param overwrite should existing files be overwritten?
 #' @param format supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read
+#' @param poly_only if `TRUE`, sites with identical allele frequencies in all populations will be excluded
+#' @param ignore_pleuidy if `TRUE`, pseudohaploid samples will be treated as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
 #' @param verbose print progress updates
 #' @examples
 #' \dontrun{
@@ -961,11 +968,13 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
                       maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                      keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE, verbose = TRUE) {
+                      keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
+                      ignore_pleuidy = FALSE, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, verbose = verbose)
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
+                             ignore_pleuidy = ignore_pleuidy, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
@@ -980,7 +989,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 }
 
 
-anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, verbose = TRUE) {
+anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ignore_pleuidy = FALSE,
+                              verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -992,7 +1002,8 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ver
   }
   geno_to_aftable = paste0(format, '_to_aftable')
   stopifnot(exists(geno_to_aftable))
-  afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, verbose = verbose)
+  afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, ignore_pleuidy = ignore_pleuidy,
+                               verbose = verbose)
   afdat
 }
 

@@ -52,6 +52,7 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
       if(i == j) trace += cc(j,i);
     }
   }
+  trace /= (nc+0.0);
   for(int i = 0; i < nc; i++) {
     //cc(i,i) += fudge;
     cc(i,i) += fudge * trace;

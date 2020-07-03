@@ -49,11 +49,12 @@ public:
   unsigned int np, nsnps;
   unsigned char* data;
   const char *bedfile, *famfile, *bimfile;
-  bool verbose;
+  bool verbose, ignore_pleuidy;
   NumericVector indvec, indvec2;
 
   Data(const char* bedfile, const char* famfile, bool verbose);
-  Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2, bool verbose);
+  Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2,
+       bool ignore_pleuidy, bool verbose);
   ~Data();
   void read_bed();
   void read_afs();
@@ -61,8 +62,8 @@ public:
 
 
 
-Data::Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2, bool verbose)
-{
+Data::Data(const char* bedfile, const NumericVector indvec, const NumericVector indvec2,
+           bool ignore_pleuidy, bool verbose) {
   srand48(time(NULL));
   N = indvec.length();
   p = 0;
@@ -142,18 +143,15 @@ void decode_plink(unsigned char *out,
 
 
 // Expects PLINK BED in SNP-major format
-void Data::read_afs()
-{
+void Data::read_afs() {
   int val, k, pop, npop, nind;
   npop = max(this->indvec);
   //nindtot = this->indvec.length();
   nind = this->indvec2.length();
   std::ifstream in(this->bedfile, std::ios::in | std::ios::binary);
 
-  if(!in)
-  {
-    std::cerr << "[read_afs] Error reading file "
-              << this->bedfile << std::endl;
+  if(!in) {
+    std::cerr << "[read_afs] Error reading file " << this->bedfile << std::endl;
     throw std::runtime_error("io error");
   }
   in.seekg(0, std::ifstream::end);
@@ -185,7 +183,8 @@ void Data::read_afs()
     for(unsigned int i = 0; i < nind; i++) {
       k = this->indvec2(i)-1;
       val = (double)tmp2[k];
-      if(val == 1) ploidy(i) = 2;
+      if(val == 1 || ignore_pleuidy) ploidy(i) = 2;
+      //ploidy(i) = 2;
     }
   }
 
@@ -226,10 +225,11 @@ void Data::read_afs()
 }
 
 // [[Rcpp::export]]
-List read_plink_afs_cpp(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool verbose)
+List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2,
+                        bool ignore_pleuidy, bool verbose)
 {
   // indvec: assignes each individual to population; indvec2: which individuals to keep
-  Data data(bedfile.get_cstring(), indvec, indvec2, verbose);
+  Data data(bedfile.get_cstring(), indvec, indvec2, ignore_pleuidy, verbose);
   data.read_afs();
   return List::create(data.afmat, data.countmat);
 }
