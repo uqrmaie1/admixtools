@@ -102,6 +102,7 @@ arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
 
 // [[Rcpp::export]]
 double cpp_optimweightsfun(arma::vec weights, List args) {
+
   mat pwts = args[0];
   mat ppinv = args[1];
   vec f3_est = args[2];
@@ -130,7 +131,43 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   vec w2 = (ppwts_2d * q2) - f3_est;
   vec lik = w2.t() * ppinv * w2;
   return lik(0);
+
 }
+
+// [[Rcpp::export]]
+double cpp_optimweightsfun_new(arma::vec weights, List args) {
+
+  mat pwts = args[0];
+  mat ppinv = args[1];
+  vec f3_est = args[2];
+  mat path_edge_table = args[3];
+  mat path_admixedge_table = args[4];
+  int numpaths = args[5];
+  // args[6] is cmb matrix with column combinations; not needed here
+  Function qpsolve = args[7];
+  vec lower = args[8];
+  vec upper = args[9];
+  double fudge = args[10];
+  double nr = pwts.n_rows;
+  double nc = pwts.n_cols;
+  cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
+  mat ppwts_2d(nc*(nc-1)/2, nr);
+  for(int i=0; i<nr; i++) {
+    int c=0;
+    for(int j=1; j<nc; j++) {
+      pwts(i, j) -= pwts(i, 0);
+      for(int k=j; k<nc; k++) {
+        ppwts_2d(c, i) = pwts(i, j) * pwts(i, k);
+        c++;
+      }
+    }
+  }
+  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge);
+  vec w2 = (ppwts_2d * q2) - f3_est;
+  vec lik = w2.t() * ppinv * w2;
+  return lik(0);
+}
+
 
 int choose2(int k) {
   return k*(k-1)/2;

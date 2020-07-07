@@ -4,7 +4,7 @@
 \alias{qpadm_rotate}
 \title{Compute all pairwise qpadm p-values}
 \usage{
-qpadm_rotate(f2_blocks, target, leftright, rightfix, verbose = TRUE)
+qpadm_rotate(f2_blocks, target, left, right, verbose = TRUE)
 }
 \arguments{
 \item{f2_blocks}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}

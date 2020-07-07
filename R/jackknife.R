@@ -1,37 +1,42 @@
-
-block_arr_mean = function(arr, block_lengths) {
-  # returns grouped array means
+block_arr_sum = function(arr, block_lengths, na.rm = TRUE) {
+  # returns grouped array sums
   # arr is 3d, group over third dimension
 
   mat = arr3d_to_mat(arr)
-  bm = block_mat_mean(mat, block_lengths)
+  bm = block_mat_sum(mat, block_lengths, na.rm = na.rm)
   out = mat_to_arr3d(bm, dim(arr)[1])
   dimnames(out)[1:2] = dimnames(arr)[1:2]
   out
 }
 
-block_mat_mean = function(mat, block_lengths) {
+
+block_arr_mean = function(arr, block_lengths, na.rm = TRUE) {
+  # returns grouped array means
+  # arr is 3d, group over third dimension
+
+  mat = arr3d_to_mat(arr)
+  bm = block_mat_mean(mat, block_lengths, na.rm = na.rm)
+  out = mat_to_arr3d(bm, dim(arr)[1])
+  dimnames(out)[1:2] = dimnames(arr)[1:2]
+  out
+}
+
+block_mat_sum = function(mat, block_lengths, na.rm = TRUE) {
+  # returns grouped matrix sums
+  # group over first dimension
+  blockids = rep(seq_along(block_lengths), block_lengths)
+  rowsum(mat, blockids, na.rm = na.rm)
+}
+
+block_mat_mean = function(mat, block_lengths, na.rm = TRUE) {
   # returns grouped matrix means
   # group over first dimension
   blockids = rep(seq_along(block_lengths), block_lengths)
-  sums = rowsum(mat, blockids, na.rm = TRUE)
+  sums = rowsum(mat, blockids, na.rm = na.rm)
   nonmiss = rowsum((!is.na(mat))+0, blockids)
   sums/nonmiss
 }
 
-
-jack_mat_stats_old = function(loo_mat, block_lengths) {
-  # input is matrix (one block per column)
-  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
-  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
-  # should give same results as 'jack_arr_stats'
-
-  numblocks = length(block_lengths)
-  est = weighted_row_means(loo_mat, 1/block_lengths)
-  mnc = t(est - loo_mat) * sqrt((sum(block_lengths)/block_lengths-1)/numblocks/block_lengths)
-  var = crossprod(mnc) / mean(1/block_lengths)
-  namedList(est, var)
-}
 
 jack_mat_stats = function(loo_mat, block_lengths) {
   # input is matrix (one block per column)
@@ -45,25 +50,13 @@ jack_mat_stats = function(loo_mat, block_lengths) {
   estmat = replicate(numblocks, est)
   y = rep(sum(block_lengths)/block_lengths, each = nrow(loo_mat))
   xtau = (totmat * y - loo_mat * (y-1) - estmat) / sqrt(y-1)
-  var = tcrossprod(xtau)/numblocks
+  #var = tcrossprod(xtau)/numblocks
+  var = tcrossprod(replace_na(xtau, 0))/tcrossprod(!is.na(xtau))
 
   namedList(est, var)
 }
 
 
-jack_arr_stats_old = function(loo_arr, block_lengths) {
-  # input is 3d array (n x n x m) with leave-one-out statistics
-  # output is list with jackknife means and jackknife variances
-  # uses mean jackknife estimate instead of overall mean; probably makes very little difference
-  # should give same results as 'jack_mat_stats'
-
-  numblocks = length(block_lengths)
-  est = apply(loo_arr, 1:2, weighted.mean, 1/block_lengths, na.rm = TRUE)
-  xtau = (replicate(numblocks, est) - loo_arr)^2 * rep(sum(block_lengths)/block_lengths-1, each = length(est))
-  #var = apply(xtau, 1:2, weighted.mean, block_lengths)
-  var = apply(xtau, 1:2, weighted.mean, 1/block_lengths, na.rm = TRUE)
-  namedList(est, var)
-}
 
 jack_arr_stats = function(loo_arr, block_lengths) {
   # input is 3d array (n x n x m) with leave-one-out statistics

@@ -5,7 +5,8 @@
 \title{Read allele frequencies from packedancestrymap files}
 \usage{
 packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
-  blocksize = 1000, verbose = TRUE)
+  blocksize = 1000, ignore_ploidy = FALSE, randomize_alleles = TRUE,
+  seed = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
@@ -16,13 +17,19 @@ packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
 
 \item{blocksize}{number of SNPs read in each block.}
 
+\item{ignore_ploidy}{treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. The default (\code{FALSE}) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.}
+
+\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
+
+\item{seed}{random seed for \code{randomize_alleles}}
+
 \item{verbose}{print progress updates}
 }
 \value{
 a list with two items: allele frequency data and allele counts.
 }
 \description{
-This is currently slower than \code{plink_to_aftable} because it is implemented only in \code{R}, not in \code{C++}.
+Read allele frequencies from packedancestrymap files
 }
 \examples{
 \dontrun{

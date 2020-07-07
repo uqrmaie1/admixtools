@@ -22,6 +22,6 @@ Copy a subset of f2-statistics to a new directory
 \dontrun{
 pref = 'my/genofiles/prefix'
 outdir = 'dir/for/afdata/'
-extract_afs(pref, outdir)
+extract_f2_subset(pref, outdir)
 }
 }

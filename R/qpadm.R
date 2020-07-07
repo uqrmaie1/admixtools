@@ -143,7 +143,7 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   #----------------- prepare f4 stats -----------------
   if(verbose) alert_info('Computing f4 stats...\n')
   #f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right)
-  f2_blocks = get_f2(f2_data, pops = pops, f2_denom = f2_denom)
+  f2_blocks = get_f2(f2_data, pops = pops, f2_denom = f2_denom, afprod = TRUE)
   f4dat = f2_to_f4(f2_blocks, target, left, right, boot = boot)
 
   f4_est = f4dat$est
@@ -222,7 +222,7 @@ f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
 #' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
 #' based non-negative least squares of f4 matrix.
 #' @export
-#' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' @param target target population
 #' @param left source populations (or `leftlist` file)
 #' @param right outgroup populations (or `rightlist` file)
@@ -241,7 +241,7 @@ f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' lazadm(example_f2_blocks, target, left, right)
 #' lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
-lazadm = function(f2_blocks, target = NULL, left = NULL, right = NULL,
+lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
                   f2_denom = 1, boot = FALSE, getcov = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
@@ -255,7 +255,7 @@ lazadm = function(f2_blocks, target = NULL, left = NULL, right = NULL,
   stopifnot(!any(duplicated(pops)))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  f2_blocks = get_f2(f2_blocks, pops, f2_denom) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops, f2_denom, afprod = TRUE) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
@@ -356,9 +356,8 @@ drop_pops = function(f4_est, qinv, fudge, constrained, cpp, left) {
 
 
 
-qpadm_evaluate_fit = function(xmat, qinv, A, B) {
+qpadm_evaluate_fit = function(xmat, qinv, A, B, f4rank) {
 
-  f4rank = ncol(A)
   res = t(xmat - A %*% B)
   chisq = (t(c(res)) %*% qinv %*% c(res))[,1]
   dof = qpadm_dof(nrow(A), ncol(B), f4rank)
@@ -377,7 +376,7 @@ qpadm_fit = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
   } else {
     fit = qpadm_weights(xmat, qinv, rnk, fudge = fudge, constrained = constrained, qpsolve = qpsolve)
   }
-  out = qpadm_evaluate_fit(xmat, qinv, fit$A, fit$B)
+  out = qpadm_evaluate_fit(xmat, qinv, fit$A, fit$B, rnk)
   if(addweights) {
     #out %<>% bind_cols(fit$weights %>% t %>% as_data_frame %>% set_names(rownames(xmat)))
     out %<>% bind_cols(fit$weights %>% t %>% as_tibble(.name_repair = ~rownames(xmat)))
@@ -416,7 +415,7 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, boot = FALSE,
                    constrained = FALSE, cpp = TRUE, weights = TRUE) {
 
-  f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right)
+  f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right, afprod = TRUE)
   f4dat = f2_to_f4(f2_data, target, left, right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
@@ -541,13 +540,11 @@ qpadm_pairs = function(f2_blocks, left, right) {
 #' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' @param left left populations
 #' @param right right populations
-qpadm_rotate = function(f2_blocks, target, leftright, rightfix, verbose = TRUE) {
+qpadm_rotate = function(f2_blocks, target, left, right, verbose = TRUE) {
 
-  lr = all_lr2(leftright, length(rightfix))
-
+  lr = all_lr2(left, length(right))
   if(verbose) alert_info(paste0('Evaluating ', length(lr[[1]]), ' models...\n'))
-
-  qpadm_eval_rotate(f2_blocks, target, leftright_dat, rightfix, verbose = verbose)
+  qpadm_eval_rotate(f2_blocks, target, leftright_dat, right, verbose = verbose)
 
 }
 

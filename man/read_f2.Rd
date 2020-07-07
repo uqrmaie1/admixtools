@@ -2,22 +2,26 @@
 % Please edit documentation in R/io.R
 \name{read_f2}
 \alias{read_f2}
-\title{Read f2 block jackknife estimates from disk}
+\title{Read blocked f2 estimates from disk}
 \usage{
-read_f2(f2_dir, pops = NULL)
+read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = FALSE)
 }
 \arguments{
 \item{f2_dir}{directory from which to read files}
 
 \item{pops}{the populations for which f2 statistics should be read. Defaults to all populations,
 which may require a lot of memory.}
+
+\item{afprod}{return allele frequency products instead of f2 estimates}
+
+\item{remove_na}{remove blocks with missing values}
 }
 \value{
 a 3d array of block jackknife estimates
 }
 \description{
-This function reads f2 block jackknife estimates which were writtend to disk by \code{\link{write_f2}}
-and returns a 3d array of f2 block jackknife estimates.
+This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by \code{\link{write_f2}}
+and returns them as a 3d array.
 }
 \examples{
 \dontrun{

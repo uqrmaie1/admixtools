@@ -5,7 +5,8 @@
 \title{Read blocked f2 statistics from disk}
 \usage{
 f2_from_precomp(dir, inds = NULL, pops = NULL, pops2 = NULL,
-  return_array = TRUE, apply_corr = TRUE, verbose = TRUE)
+  return_array = TRUE, apply_corr = TRUE, afprod = FALSE,
+  remove_na = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{dir}{directory with precomputed f2 statistics, or precomputed individual pair data}
@@ -19,6 +20,10 @@ which may require a lot of memory.}
 \item{return_array}{should a 3d array or a data frame be returned}
 
 \item{apply_corr}{should f2 correction factor be subtracted. mostly used for testing, and only applicable for counts}
+
+\item{afprod}{return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used for qpdstat and qpadm.}
+
+\item{remove_na}{remove blocks with missing values}
 
 \item{verbose}{print progress updates}
 }

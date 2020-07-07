@@ -79,5 +79,7 @@ qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 }
 }
 \references{
-Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
+
+Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 }

@@ -4,14 +4,14 @@
 \alias{get_block_lengths}
 \title{Find LD-independent blocks}
 \usage{
-get_block_lengths(afdat, dist = 0.05, distcol = "cm")
+get_block_lengths(dat, dist = 0.05, distcol = "cm")
 }
 \arguments{
-\item{afdat}{data frame with columns 'CHR' and either 'POS' or 'cm'}
-
 \item{dist}{minimum distance between blocks}
 
 \item{distcol}{which column should be used as distance column}
+
+\item{afdat}{data frame with columns 'CHR' and either 'POS' or 'cm'}
 }
 \value{
 a numeric vector where the ith element lists the number of SNPs in the ith block.

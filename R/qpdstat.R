@@ -158,7 +158,8 @@ f3 = qp3pop
 #' }
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE,
-                   comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE, verbose = FALSE) {
+                   comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
+                   afprod = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
@@ -181,10 +182,10 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   pops1 = unique(c(out$pop1, out$pop2))
   pops2 = unique(c(out$pop3, out$pop4))
 
-  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
+  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   #f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
-  f2_blocks = get_f2(f2_data, pops1, f2_denom, pops2 = pops2) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops1, f2_denom, pops2 = pops2, afprod = afprod) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f4 -----------------

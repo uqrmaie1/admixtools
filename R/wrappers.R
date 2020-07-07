@@ -327,21 +327,27 @@ qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parf
 
   if(!'character' %in% class(graph)) {
 
-    if(class(graph)[1] == 'igraph') graph = igraph::as_edgelist(graph)
+    if(class(graph)[1] == 'igraph') {
+      igraph = graph
+      graph = igraph::as_edgelist(graph)
+    } else {
+      igraph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
+    }
     edg = as_tibble(graph) %>% set_colnames(c('from', 'to'))
-    edg %<>% group_by(.data$to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
-    e1 = (edg %>% filter(.data$type == 'edge'))$from
-    e2 = (edg %>% filter(.data$type == 'edge'))$to
-    a1 = (edg %>% filter(.data$type == 'admix'))$from
-    a2 = (edg %>% filter(.data$type == 'admix'))$to
-    leaves = setdiff(edg$to, edg$from)
+    edg %<>% group_by(to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
+    e1 = (edg %>% filter(type == 'edge'))$from
+    e2 = (edg %>% filter(type == 'edge'))$to
+    a1 = (edg %>% filter(type == 'admix'))$from
+    a2 = (edg %>% filter(type == 'admix'))$to
+    leaves = get_leafnames(igraph)
+    root = setdiff(edg$from, edg$to)
     admix = tibble()
     for(m in unique(a2)) {
       admix %<>% bind_rows(tibble(v1='admix', v2=m, v3=(edg %>% filter(.data$to == m))$from[1],
                                   v4=(edg %>% filter(.data$to == m))$from[2]))
     }
 
-    simfile = tibble(v1 = c('root'), v2 = c('R'), v3='', v4='') %>%
+    simfile = tibble(v1 = c('root'), v2 = root, v3='', v4='') %>%
       bind_rows(tibble(v1 = 'label', v2=leaves, v3=leaves, v4='')) %>%
       bind_rows(tibble(v1='edge', v2=paste0('e', 1:length(e1)), v3=e1, v4=e2)) %>%
       bind_rows(admix)

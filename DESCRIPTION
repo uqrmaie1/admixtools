@@ -14,7 +14,7 @@ Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen
+LinkingTo: Rcpp, RcppArmadillo
 Imports:
     abind,
     cli,
@@ -34,7 +34,6 @@ Imports:
     purrr,
     Rcpp,
     RcppArmadillo,
-    RcppEigen,
     readr,
     rlang,
     stats,

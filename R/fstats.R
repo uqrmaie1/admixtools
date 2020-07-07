@@ -79,26 +79,31 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
     b2 = afmat[, s2, drop=F]
     nam1 = colnames(b1)
     nam2 = colnames(b2)
-    f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F]) %>%
-      block_arr_mean(block_lengths) %>%
-      replace_nan_with_na() %>%
-      `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
+    # f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F]) %>%
+    #   block_arr_mean(block_lengths) %>%
+    #   replace_nan_with_na() %>%
+    #   `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
+    # if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
 
-    if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
+    f2arrs = mats_to_f2arrs(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F], block_lengths)
+    if(c1 == c2) for(j in 1:length(nam1)) f2arrs$f2[j,j,] = 0
+
     if(!is.null(outdir)) {
-      write_f2(f2_subblock, outdir = outdir, overwrite = overwrite)
+      write_f2(f2arrs, outdir = outdir, overwrite = overwrite)
     } else {
-      arrlist[[c1]][[c2]] = f2_subblock
+      # continue here: check if non-write-to-disk option is used. if so, return all 3 matrices
+      arrlist[[c1]][[c2]] = f2arrs$f2
       arrlist[[c2]][[c1]] = aperm(arrlist[[c1]][[c2]], c(2,1,3))
     }
   }
   if(numsplits2 > 1 & verbose) cat('\n')
-  if(is.null(outdir)) {
-    f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
-    dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = colnames(afmat)
-    dimnames(f2_blocks)[[3]] = paste0('l', block_lengths)
-    return(f2_blocks)
-  }
+
+  if(!is.null(outdir)) return()
+
+  f2_blocks = do.call(abind, list(lapply(arrlist, function(x) do.call(abind, list(x, along=2))), along=1))
+  dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = colnames(afmat)
+  dimnames(f2_blocks)[[3]] = paste0('l', block_lengths)
+  f2_blocks
 }
 
 
@@ -126,6 +131,44 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
   dimnames(arr)[[2]] = colnames(afmat2)
   arr
 }
+
+mats_to_f2arrs = function(afmat1, afmat2, countmat1, countmat2, block_lengths) {
+  # Compute blocked f2, aa, and count arrays for all SNPs and all population pairs from two af matrices
+
+  stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
+  stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
+  stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
+
+  nsnp = nrow(afmat1)
+  d1 = c(ncol(afmat1), 1, nsnp)
+  d2 = c(1, ncol(afmat2), nsnp)
+  nc1 = ncol(afmat1)
+  nc2 = ncol(afmat2)
+
+  denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
+  denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
+  pq1 = afmat1*(1-afmat1)/denom1
+  pq2 = afmat2*(1-afmat2)/denom2
+  f2 = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`)) %>%
+    block_arr_mean(block_lengths) %>%
+    replace_nan_with_na()
+
+  afprod = outer_array(afmat1, afmat2) %>%
+    block_arr_mean(block_lengths) %>%
+    replace_nan_with_na()
+
+  counts = outer_array(!is.na(afmat1), !is.na(afmat2)) %>%
+    block_arr_sum(block_lengths)
+
+  dimnames(f2)[[1]] = dimnames(afprod)[[1]] = dimnames(counts)[[1]] = colnames(afmat1)
+  dimnames(f2)[[2]] = dimnames(afprod)[[2]] = dimnames(counts)[[2]] = colnames(afmat2)
+  dimnames(f2)[[3]] = dimnames(afprod)[[3]] = dimnames(counts)[[3]] = paste0('l', block_lengths)
+
+  namedList(f2, afprod, counts)
+}
+
+
+
 
 
 xmats_to_pairarrs = function(xmat1, xmat2) {
@@ -238,11 +281,11 @@ fix_ploidy = function(xmat) {
 
 # turns f2_data (f2 dir) into f2_blocks; divides by denom
 # returns f2_blocks array with block_lengths in 3rd dimension names
-get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL) {
+get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL, afprod = FALSE) {
 
   stopifnot(!is.character(f2_data) || dir.exists(f2_data))
   if(is.character(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2)
+    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod)
   } else {
     f2_blocks = f2_data
   }
@@ -259,6 +302,20 @@ get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL) {
 }
 
 
+
+test_structutured_missingness = function(mat) {
+  # tests if missingness in one column is correlated with values in another column
+  # for all column pairs
+
+  # change so that it tests afdiff, not af
+
+  namat = is.na(mat)
+  cormat = cor(mat, namat, use = 'p')
+  nvec = rep(colSums(!namat), ncol(mat))
+  semat = sqrt((1-cormat^2) / (nvec - 2))
+  pmat = pt(-abs(cormat/semat), nvec-2)*2
+  pmat
+}
 
 
 

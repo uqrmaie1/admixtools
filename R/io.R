@@ -7,6 +7,9 @@
 #' @param inds vector of samples from which to compute allele frequencies.
 #' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
 #' @param blocksize number of SNPs read in each block.
+#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
+#' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
 #' @return a list with two items: allele frequency data and allele counts.
 #' @examples
@@ -15,8 +18,8 @@
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
-                                        ignore_ploidy = FALSE, verbose = TRUE) {
+packedancestrymap_to_aftable_old = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
+                                        ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -106,11 +109,104 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
                          round(sumna/numpop), ' per population)\n'))
   }
 
+  if(randomize_alleles) {
+    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
+    if(!is.null(seed)) set.seed(seed)
+    sel = sample(1:nsnp, round(nsnp/2))
+    afmatrix[sel,] = 1 - afmatrix[sel,]
+    snpfile %<>% mutate(flipped = 1:n() %in% sel)
+  }
   #outdat = treat_missing(afmatrix[keepsnps,], countmatrix[keepsnps,], snpfile[keepsnps,],
   #                       na.action = na.action, verbose = verbose)
   outlist = list(afs = afmatrix, counts = countmatrix, snpfile = snpfile)
   outlist
 }
+
+
+#' Read allele frequencies from packedancestrymap files
+#'
+#' @export
+#' @param pref prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`).
+#' @param inds vector of samples from which to compute allele frequencies.
+#' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
+#' @param blocksize number of SNPs read in each block.
+#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
+#' @param seed random seed for `randomize_alleles`
+#' @param verbose print progress updates
+#' @return a list with two items: allele frequency data and allele counts.
+#' @examples
+#' \dontrun{
+#' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
+#' afs = afdat$afs
+#' counts = afdat$counts
+#' }
+packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
+                                        ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
+
+
+  # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
+  # pops is vector of populations for which to calculate AFs
+  # defaults to third column in ind file
+  # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
+  # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
+
+  stopifnot(is.null(pops) || is.null(inds) || length(inds) == length(pops))
+
+  pref %<>% normalizePath(mustWork = FALSE)
+  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  nindall = nrow(indfile)
+  nsnpall = nrow(snpfile)
+  if(is.null(inds)) {
+    inds = indfile$X1
+  } else {
+    indfile$X1[!indfile$X1 %in% inds] = NA
+  }
+  if(is.null(pops)) {
+    pops = indfile$X3
+    indfile$X3[!indfile$X1 %in% inds] = NA
+  } else {
+    indfile$X3[!is.na(indfile$X1)] = pops
+  }
+  upops = unique(na.omit(pops))
+
+  indvec = as.numeric(factor(indfile$X3, levels = upops)) - 1
+  indvec[is.na(indvec)] = -1
+
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
+    alert_info(paste0('Calculating allele frequencies from ', sum(indvec != -1), ' samples in ', length(upops), ' populations\n'))
+    alert_info(paste0('Expected size of allele frequency data: ', round((nsnpall*length(upops)*8+nsnpall*112)/1e6), ' MB\n'))
+    # 8, 112: estimated scaling factors for AF columns and annotation columns
+  }
+
+  afdat = cpp_packedancestrymap_to_aftable(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
+                                     last = nsnpall, ignore_ploidy = ignore_ploidy, transpose = FALSE, verbose = verbose)
+
+  if(verbose) {
+    alert_success(paste0(nrow(afdat$afs), ' SNPs read in total\n'))
+    #alert_warning(paste0(sumna, ' allele frequencies are missing (on average ',
+    #                     round(sumna/numpop), ' per population)\n'))
+  }
+
+  if(randomize_alleles) {
+    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
+    if(!is.null(seed)) set.seed(seed)
+    nsnp = nrow(afdat$afs)
+    sel = sample(1:nsnp, round(nsnp/2))
+    afdat$afs[sel,] = 1 - afdat$afs[sel,]
+    snpfile %<>% mutate(flipped = 1:n() %in% sel)
+  }
+
+  colnames(afdat$afs) = colnames(afdat$counts) = upops
+  rownames(afdat$afs) = rownames(afdat$counts) = snpfile$SNP
+
+  afdat$snpfile = snpfile
+  afdat
+}
+
 
 
 #' Read allele frequencies from ancestrymap files
@@ -202,7 +298,7 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, au
 }
 
 
-discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, poly_only = TRUE,
+discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = TRUE,
                              minmaf = 0, maxmaf = 0.5,
                              transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
@@ -242,7 +338,7 @@ discard_from_geno = function(geno, maxmiss = 0.25, auto_only = TRUE, poly_only =
   geno
 }
 
-discard_snps = function(snpdat, maxmiss = 0.25, keepsnps = NULL, auto_only = TRUE, poly_only = TRUE,
+discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, poly_only = TRUE,
                         minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE) {
   # input is a data frame with columns 'SNP', 'CHR', 'A1', 'A2', 'miss', 'maf'
   # output is vector of remaining row indices
@@ -391,6 +487,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
 
+  pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), skip = first-1,
@@ -509,7 +606,8 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALSE, verbose = FALSE) {
+plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALSE,
+                            randomize_alleles = TRUE, seed = NULL, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -539,6 +637,14 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALS
   countmatrix = afs[[2]]
   rownames(afmatrix) = rownames(countmatrix) = bim$SNP
   colnames(afmatrix) = colnames(countmatrix) = keepinds
+
+  if(randomize_alleles) {
+    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
+    if(!is.null(seed)) set.seed(seed)
+    sel = sample(1:nsnp, round(nsnp/2))
+    afmatrix[sel,] = 1 - afmatrix[sel,]
+    bim %<>% mutate(flipped = 1:n() %in% sel)
+  }
 
   #outdat = treat_missing(afmatrix, countmatrix, bim[keepsnps,], na.action = na.action, verbose = verbose)
   outlist = list(afs = afmatrix, counts = countmatrix, snpfile = bim)
@@ -609,56 +715,60 @@ read_plink = function(pref, inds = NULL, auto_only = TRUE, verbose = FALSE) {
 
 #' Write blocked f2 estimates to disk
 #'
-#' This function takes a 3d array of blocked f2 estimates, splits it by population pair,
-#' and writes each pair to a separate `.rds` file.
+#' This function takes 3d arrays of blocked f2, allele frequency products, and counts, splits them by population pair,
+#' and writes each pair to a separate `.rds` file under \code{{outdir}/{pop1}/{pop2}.rds}.
 #' @export
-#' @param f2_block 3d array with f2 block jackknife estimates. The first two dimensions of
-#' `f2_block` have to have population names. Each file will be stored under \code{{outdir}/{pop1}/{pop2}.rds}.
+#' @param f2_arrs 3d arrays with blocked f2, allele frequency products, and counts for each population pair.
+#' The first two dimensions of each array have to have population names.
 #' @param outdir directory into which to write the files.
 #' @param overwrite should existing `.rds` files be overwritten?
 #' @seealso \code{\link{read_f2}}
 #' @examples
 #' \dontrun{
-#' write_f2(f2_block, outdir = 'path/to/f2stats/')
+#' write_f2(f2_arrs, outdir = 'path/to/f2stats/')
 #' }
-write_f2 = function(f2_block, outdir, overwrite=FALSE) {
+write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 
   if(!dir.exists(outdir)) dir.create(outdir)
-  d1 = dim(f2_block)[1]
-  d2 = dim(f2_block)[2]
-  nam1 = dimnames(f2_block)[[1]]
-  nam2 = dimnames(f2_block)[[2]]
+  d1 = dim(f2_arrs$f2)[1]
+  d2 = dim(f2_arrs$f2)[2]
+  nam1 = dimnames(f2_arrs$f2)[[1]]
+  nam2 = dimnames(f2_arrs$f2)[[2]]
   for(i in seq_len(d1)) {
     for(j in seq_len(d2)) {
       pop1 = min(nam1[i], nam2[j])
       pop2 = max(nam1[i], nam2[j])
-      f2 = as.vector(f2_block[i, j, ])
-      dir = paste0(outdir, '/', pop1, '/')
-      fl = paste0(dir, pop2, '.rds')
-      if(!dir.exists(dir)) dir.create(dir)
-      if(!file.exists(fl) | overwrite) saveRDS(f2, file=fl)
+      if(pop1 <= pop2) {
+        mat = with(f2_arrs, cbind(f2[i, j, ], afprod[i, j, ], counts[i, j, ])) %>%
+          unname %>% set_colnames(c('f2', 'afprod', 'counts'))
+        dir = paste0(outdir, '/', pop1, '/')
+        fl = paste0(dir, pop2, '.rds')
+        if(!dir.exists(dir)) dir.create(dir)
+        if(!file.exists(fl) | overwrite) saveRDS(mat, file = fl)
+      }
     }
   }
 }
 
-#' Read f2 block jackknife estimates from disk
+#' Read blocked f2 estimates from disk
 #'
-#' This function reads f2 block jackknife estimates which were writtend to disk by \code{\link{write_f2}}
-#' and returns a 3d array of f2 block jackknife estimates.
+#' This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by \code{\link{write_f2}}
+#' and returns them as a 3d array.
 #' @export
 #' @param f2_dir directory from which to read files
 #' @param pops the populations for which f2 statistics should be read. Defaults to all populations,
 #' which may require a lot of memory.
+#' @param afprod return allele frequency products instead of f2 estimates
+#' @param remove_na remove blocks with missing values
 #' @return a 3d array of block jackknife estimates
 #' @seealso \code{\link{write_f2}}
 #' @examples
 #' \dontrun{
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-read_f2 = function(f2_dir, pops = NULL) {
-  # reads f2 block jackknife rds files and returns 3d array
-  # pops is vector of populations which should be read. defaults to all populations.
-  remove_na = is.null(pops)
+read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE) {
+  # assumes f2 is in first column, afprod in second column
+
   if(is.null(pops)) {
     pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
   }
@@ -671,16 +781,18 @@ read_f2 = function(f2_dir, pops = NULL) {
   for(pop1 in pops) {
     for(pop2 in pops) {
       if(pop1 <= pop2) {
-        fl = paste0(f2_dir, '/', pop1, '/', pop2, '.rds')
-        f2 = readRDS(fl)
-        f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = f2
-        if(any(is.na(f2))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
+        mat = readRDS(paste0(f2_dir, '/', pop1, '/', pop2, '.rds'))
+        if(afprod) dat = -2*mat[, 2]
+        else dat = mat[, 1]
+        f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = dat
+        if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
       }
     }
   }
   if(remove_na) {
-    keep = apply(f2_blocks, 1, function(x) sum(is.na(x)) == 0)
-    f2_blocks = f2_blocks[keep, keep, ]
+    keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
+    if(!all(keep)) warning(paste0('Discarding ', sum(!keep), ' blocks due to missing values!'))
+    f2_blocks = f2_blocks[,, keep]
   }
   f2_blocks
 }
@@ -719,39 +831,6 @@ write_pairdat = function(aa_arr, nn_arr, outdir, overwrite = FALSE) {
 }
 
 
-#' Write allele frequency estimates to disk
-#'
-#' This function takes a 3d array of f2 block jackknife estimates, splits it by population pair,
-#' and writes each pair to a separate \code{.rds} file.
-#' @export
-#' @param afmat matrix with allele frequency estimates. Has to have column names. Data for each population
-#' will be stored in a variable called \code{allele_frequencies} under \code{{path}/{pop}.RData}
-#' @param path directory into which to write the files.
-#' @param countmat optional matrix with allele counts for each SNP and population.
-#' Dimensions have to match \code{afmat}. Data will be stored in same file (\code{{path}/{pop}.rds})
-#' in the variable \code{num_individuals}
-#' @param overwrite should existing \code{.rds} files be overwritten?
-#' @seealso \code{\link{read_f2}}
-#' @examples
-#' \dontrun{
-#' write_afs(afmat, path = 'path/to/afs/')
-#' }
-write_afs = function(afmat, path, countmat = NULL, overwrite = FALSE) {
-  # needs to be updated
-
-  stopifnot(is.null(countmat) || all(dim(afmat) == dim(countmat)))
-  if(!dir.exists(path)) dir.create(path)
-  pops = colnames(afmat)
-
-  for(i in seq_len(pops)) {
-    allele_frequencies = afmat[,i]
-    num_alleles = countmat[,i]
-    population = pops[i]
-    f2 = as.vector(f2_block[i, j, ])
-    fl = paste0(path, '/', pop, '.rds')
-    if(!file.exists(fl) | overwrite) save(allele_frequencies, num_alleles, population, file=fl)
-  }
-}
 
 
 #' Split a matrix into blocks
@@ -843,12 +922,16 @@ write_split_f2_block = function(afmatprefix, countmatprefix, outdir, chunk1, chu
     transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.rds')) %$% nam
   if(all(file.exists(filenames))) return()
 
-  f2_subblock = mats_to_f2arr(afmat1, afmat2, countmat1, countmat2) %>%
-   block_arr_mean(block_lengths) %>%
-    replace_nan_with_na() %>%
-   `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
-  if(chunk1 == chunk2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
-  write_f2(f2_subblock, outdir = outdir)
+  # f2_subblock = mats_to_f2arr(afmat1, afmat2, countmat1, countmat2) %>%
+  #  block_arr_mean(block_lengths) %>%
+  #   replace_nan_with_na() %>%
+  #  `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
+  # if(chunk1 == chunk2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
+
+  f2arrs = mats_to_f2arrs(afmat1, afmat2, countmat1, countmat2, block_lengths)
+  if(chunk1 == chunk2) for(i in 1:length(nam1)) f2arrs$f2[i,i,] = 0
+
+  write_f2(f2arrs, outdir = outdir)
 }
 
 #' Compute and write block lengths
@@ -958,8 +1041,10 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param overwrite should existing files be overwritten?
 #' @param format supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read
-#' @param poly_only if `TRUE`, sites with identical allele frequencies in all populations will be excluded
-#' @param ignore_ploidy if `TRUE`, pseudohaploid samples will be treated as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param poly_only exclude sites with identical allele frequencies in all populations
+#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
+#' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
 #' @examples
 #' \dontrun{
@@ -967,14 +1052,14 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' extract_f2(pref, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
-                      maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
+                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                       keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
-                      ignore_ploidy = FALSE, verbose = TRUE) {
+                      ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
-                             ignore_ploidy = ignore_ploidy, verbose = verbose)
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, ignore_ploidy = ignore_ploidy,
+                             randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
@@ -990,7 +1075,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 
 
 anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ignore_ploidy = FALSE,
-                              verbose = TRUE) {
+                              randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -1003,7 +1088,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ign
   geno_to_aftable = paste0(format, '_to_aftable')
   stopifnot(exists(geno_to_aftable))
   afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, ignore_ploidy = ignore_ploidy,
-                               verbose = verbose)
+                               randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat
 }
 
@@ -1052,7 +1137,7 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' \dontrun{
 #'
 #' }
-extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 0.25, minmaf = 0, maxmaf = 0.5,
+extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
   dir.create(outdir, showWarnings = FALSE)
@@ -1149,6 +1234,9 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' @param keepsnps SNP IDs of SNPs to keep. overrides other SNP filtering options
 #' @param format supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read
+#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
+#' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
 #' @examples
 #' \dontrun{
@@ -1157,15 +1245,25 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' extract_afs(pref, outdir)
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 20,
-                       maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                       keepsnps = NULL, format = NULL, verbose = TRUE) {
+                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
+                       keepsnps = NULL, format = NULL, poly_only = TRUE, ignore_ploidy = FALSE,
+                       randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   # read data and compute allele frequencies
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, verbose = verbose)
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, ignore_ploidy = ignore_ploidy,
+                             randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
-                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = TRUE)
+                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
   if(verbose) alert_info(paste0(nrow(afdat$afs), ' SNPs remain after filtering\n'))
+
+  if(randomize_alleles) {
+    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
+    nsnp = nrow(afdat$afs)
+    if(!is.null(seed)) set.seed(seed)
+    sel = sample(1:nsnp, round(nsnp/2))
+    afdat$afs[sel,] = 1 - afdat$afs[sel,]
+  }
 
   # split allele frequency data into chunks and write to disk
   split_mat(afdat$afs, cols_per_chunk = cols_per_chunk, prefix = paste0(outdir, '/afs'), verbose = verbose)
@@ -1188,7 +1286,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
 #' outdir = 'dir/for/afdata/'
-#' extract_afs(pref, outdir)
+#' extract_f2_subset(pref, outdir)
 #' }
 extract_f2_subset = function(from, to, pops) {
 
@@ -1289,6 +1387,8 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
 #' which may require a lot of memory.
 #' @param return_array should a 3d array or a data frame be returned
 #' @param apply_corr should f2 correction factor be subtracted. mostly used for testing, and only applicable for counts
+#' @param afprod return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used for qpdstat and qpadm.
+#' @param remove_na remove blocks with missing values
 #' @param verbose print progress updates
 #' @return a 3d array of f2 statistics
 #' @examples
@@ -1297,11 +1397,12 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
 #' f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, return_array = TRUE,
-                           apply_corr = TRUE, verbose = TRUE) {
+                           apply_corr = TRUE, afprod = FALSE, remove_na = FALSE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop('pops and inds are not the same length!')
   indpairs = dir.exists(paste0(dir, '/indivs'))
-  if(!is.null(pops2)) return(f2_from_precomp_nonsquare(dir, pops, pops2, verbose = verbose))
+  if(!is.null(pops2)) return(f2_from_precomp_nonsquare(dir, pops, pops2, afprod = afprod,
+                                                       remove_na = remove_na, verbose = verbose))
 
   if(indpairs) {
     if(is.null(inds)) {
@@ -1319,7 +1420,7 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, return_a
     if(!is.null(inds)) stop('Individual IDs supplied, but no "indivs" directory found!')
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(pops), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops)
+    f2_blocks = read_f2(dir, pops, afprod = afprod, remove_na = remove_na)
   }
 
   f2_blocks
@@ -1342,36 +1443,30 @@ f2_from_precomp_indivs = function(dir, poplist = NULL, return_array = TRUE, appl
   f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths,
                                    apply_corr = apply_corr, return_array = return_array)
   if(remove_na) {
-    keep = apply(f2_blocks, 1, function(x) sum(is.na(x)) == 0)
-    f2_blocks %<>% `[`(keep, keep, )
+    keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
+    f2_blocks = f2_blocks[,,keep]
   }
   namedList(f2_blocks, indivs, pairs, poplist)
 }
 
 
-f2_from_precomp_nonsquare = function(dir, pops1, pops2, verbose = TRUE) {
+f2_from_precomp_nonsquare = function(dir, pops1, pops2, afprod = FALSE, remove_na = TRUE, verbose = TRUE) {
 
   block_lengths = readRDS(paste0(dir, '/block_lengths.rds'))
-
-  # p1 = pmin(pops1, pops2)
-  # p2 = pmax(pops1, pops2)
-  # map2(p1, p2, ~{
-  #   fl = paste0(dir, '/', .x, '/', .y, '.rds')
-  #   tibble(pop1 = .x, pop2 = .y, f2 = readRDS(fl)) %>%
-  #     mutate(block = 1:n(), block_lengths)
-  #   }) %>% bind_rows %>%
-  #   bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
-  #   distinct
-
   arr = array(NA, c(length(pops1), length(pops2), length(block_lengths)),
               list(pops1, pops2, paste0('l', block_lengths)))
   for(pop1 in pops1) {
     for(pop2 in pops2) {
       p1 = min(pop1, pop2)
       p2 = max(pop1, pop2)
-      dat = readRDS(paste0(dir, '/', p1, '/', p2, '.rds'))
-      arr[pop1, pop2, ] = dat
+      mat = readRDS(paste0(dir, '/', p1, '/', p2, '.rds'))
+      if(afprod) arr[pop1, pop2, ] = -2*mat[,2]
+      else arr[pop1, pop2, ] = mat[,1]
     }
+  }
+  if(remove_na) {
+    keep = apply(arr, 3, function(x) sum(is.na(x)) == 0)
+    arr = arr[,,keep]
   }
   arr
 }

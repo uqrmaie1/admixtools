@@ -7,7 +7,9 @@
 extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   maxmem = 8000, maxmiss = 0.25, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-  overwrite = FALSE, format = NULL, verbose = TRUE)
+  overwrite = FALSE, format = NULL, poly_only = TRUE,
+  ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL,
+  verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -40,6 +42,14 @@ at the same time. If none are specified, all populations will be extracted.}
 
 \item{format}{supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read}
+
+\item{poly_only}{exclude sites with identical allele frequencies in all populations}
+
+\item{ignore_ploidy}{treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. The default (\code{FALSE}) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.}
+
+\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
+
+\item{seed}{random seed for \code{randomize_alleles}}
 
 \item{verbose}{print progress updates}
 }

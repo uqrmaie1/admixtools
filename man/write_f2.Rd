@@ -4,23 +4,23 @@
 \alias{write_f2}
 \title{Write blocked f2 estimates to disk}
 \usage{
-write_f2(f2_block, outdir, overwrite = FALSE)
+write_f2(f2_arrs, outdir, overwrite = FALSE)
 }
 \arguments{
-\item{f2_block}{3d array with f2 block jackknife estimates. The first two dimensions of
-\code{f2_block} have to have population names. Each file will be stored under \code{{outdir}/{pop1}/{pop2}.rds}.}
+\item{f2_arrs}{3d arrays with blocked f2, allele frequency products, and counts for each population pair.
+The first two dimensions of each array have to have population names.}
 
 \item{outdir}{directory into which to write the files.}
 
 \item{overwrite}{should existing \code{.rds} files be overwritten?}
 }
 \description{
-This function takes a 3d array of blocked f2 estimates, splits it by population pair,
-and writes each pair to a separate \code{.rds} file.
+This function takes 3d arrays of blocked f2, allele frequency products, and counts, splits them by population pair,
+and writes each pair to a separate \code{.rds} file under \code{{outdir}/{pop1}/{pop2}.rds}.
 }
 \examples{
 \dontrun{
-write_f2(f2_block, outdir = 'path/to/f2stats/')
+write_f2(f2_arrs, outdir = 'path/to/f2stats/')
 }
 }
 \seealso{
