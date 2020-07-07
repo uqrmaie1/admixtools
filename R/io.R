@@ -641,6 +641,7 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALS
   if(randomize_alleles) {
     if(verbose) alert_info(paste0('Randomizing alleles...\n'))
     if(!is.null(seed)) set.seed(seed)
+    nsnp = nrow(afmatrix)
     sel = sample(1:nsnp, round(nsnp/2))
     afmatrix[sel,] = 1 - afmatrix[sel,]
     bim %<>% mutate(flipped = 1:n() %in% sel)

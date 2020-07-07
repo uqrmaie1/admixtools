@@ -45,10 +45,6 @@ cpp_optimweightsfun <- function(weights, args) {
     .Call('_admixtools_cpp_optimweightsfun', PACKAGE = 'admixtools', weights, args)
 }
 
-cpp_optimweightsfun_new <- function(weights, args) {
-    .Call('_admixtools_cpp_optimweightsfun_new', PACKAGE = 'admixtools', weights, args)
-}
-
 cpp_get_pairindex <- function(perm) {
     .Call('_admixtools_cpp_get_pairindex', PACKAGE = 'admixtools', perm)
 }

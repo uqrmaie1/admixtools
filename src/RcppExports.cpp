@@ -168,18 +168,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_optimweightsfun_new
-double cpp_optimweightsfun_new(arma::vec weights, List args);
-RcppExport SEXP _admixtools_cpp_optimweightsfun_new(SEXP weightsSEXP, SEXP argsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter< List >::type args(argsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_optimweightsfun_new(weights, args));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_get_pairindex
 NumericVector cpp_get_pairindex(const NumericVector perm);
 RcppExport SEXP _admixtools_cpp_get_pairindex(SEXP permSEXP) {
@@ -256,7 +244,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 7},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
-    {"_admixtools_cpp_optimweightsfun_new", (DL_FUNC) &_admixtools_cpp_optimweightsfun_new, 2},
     {"_admixtools_cpp_get_pairindex", (DL_FUNC) &_admixtools_cpp_get_pairindex, 1},
     {"_admixtools_cpp_read_packedancestrymap", (DL_FUNC) &_admixtools_cpp_read_packedancestrymap, 8},
     {"_admixtools_cpp_packedancestrymap_to_aftable", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_aftable, 9},

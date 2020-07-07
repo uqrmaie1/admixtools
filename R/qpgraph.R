@@ -1,35 +1,6 @@
 
 
-graph_to_pwts = function(graph) {
-  # input igraph object
-  # output: numedges*(numpops-1) matrix 'pwts' which indicates all paths from pop to outpop; admixture edges are mapped onto parent edges and weighted
-  # assumes first pop is outpop, and 'R' is root
-
-  leaves = get_leafnames(graph)
-  root = get_root(graph)
-  #leaves = V(graph)$name[degree(graph, v = V(graph), mode = c('out')) == 0]
-  pwts = matrix(0, length(E(graph)), length(leaves))
-  colnames(pwts) = leaves
-  rownames(pwts) = attr(E(graph), 'vnames')
-
-  admixnodes = which(degree(graph, mode='in') == 2)
-  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
-
-  allpaths = all_simple_paths(graph, root, leaves, mode='out')
-  pathcounts = table(names(sapply(allpaths, function(x) tail(x, 1))))
-  for(i in seq_len(length(allpaths))) {
-    target = names(tail(allpaths[[i]],1))
-    ln = length(allpaths[[i]])
-    pth2 = allpaths[[i]][c(1, 1+rep(seq_len(ln-2), each=2), ln)]
-    rowind = as.vector(E(graph)[get.edge.ids(graph, pth2)])
-    pwts[rowind,target] = pwts[rowind,target] + 1/pathcounts[target]
-  }
-
-  if(!is.null(admixedges)) pwts = pwts[-admixedges,]
-  pwts[,-1] - pwts[,1]
-}
-
-graph_to_pwts_new = function(graph, leaves) {
+graph_to_pwts = function(graph, leaves) {
   # input igraph object
   # output: numedges*(numpops-1) matrix 'pwts' which indicates all paths from pop to outpop; admixture edges are mapped onto parent edges and weighted
 
@@ -57,12 +28,11 @@ graph_to_pwts_new = function(graph, leaves) {
 }
 
 
-tree_to_pwts = function(graph) {
+tree_to_pwts = function(graph, leaves) {
   # should give same output as graph_to_pwts for trees, but faster
   # returns numedges*(numpops-1) matrix
   # in tree, each edge maps to one node
 
-  leaves = get_leafnames(graph)
   pwts = matrix(0, length(E(graph))+1, length(leaves))
   colnames(pwts) = leaves
   rownames(pwts) = names(V(graph))
@@ -86,38 +56,6 @@ expand_path = function(path) {
 
 
 graph_to_weightind = function(graph) {
-  # input igraph object
-  # output:
-  # map (leaf, edge) -> paths
-  # map path -> weights
-  # ultimately: indices for weights into paths, indices for paths into pwts
-
-  # room for improvement here...
-
-  leaves = get_leaves(graph)
-  root = get_root(graph)
-  admixnodes = which(degree(graph, mode='in') == 2)
-  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
-  normedges = setdiff(1:length(E(graph)), admixedges)
-  paths = all_simple_paths(graph, root, leaves[-1], mode='out')
-  ends = sapply(paths, tail, 1)
-  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, .))
-  weight_per_path = edge_per_path %>% map(~(which(admixedges %in% .)))
-
-  path_edge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
-                                          function(i) tibble(path=i, edge=c(edge_per_path[[i]])))) %>%
-    mutate(edge2 = match(edge, normedges)) %>% filter(!is.na(edge2)) %>%
-    mutate(leaf = as.vector(ends[path]), leaf2 = match(leaf, leaves[-1])) %>%
-    left_join(enframe(c(table(ends))) %>% transmute(leaf=as.numeric(name), numpaths=value), by='leaf') %>%
-    group_by(leaf2, edge2) %>% mutate(cnt = n(), keep = cnt < numpaths) %>% filter(keep) %>% as.matrix
-
-  path_admixedge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
-                                               function(i) tibble(path=i, admixedge=c(weight_per_path[[i]])))) %>%
-    as.matrix
-  list(path_edge_table, path_admixedge_table, length(paths))
-}
-
-graph_to_weightind_new = function(graph) {
   # input igraph object
   # output:
   # map (leaf, edge) -> paths
@@ -166,29 +104,6 @@ fill_pwts = function(pwts, weights, path_edge_table, path_admixedge_table, numpa
 
 
 optimweightsfun = function(weights, args) {
-  # likelihood function used in optimizing admixture weights
-  # weights is vector of admixture weights to be optmized; only values for first incoming edge; 2nd is 1 - first
-
-  pwts = args[[1]]
-  ppinv = args[[2]]
-  f3_est = args[[3]]
-  path_edge_table = args[[4]] # indices into pwts with weight positions
-  path_admixedge_table = args[[5]]
-  #index3 = args[[6]]
-  cmb = args[[7]]
-  qpsolve = args[[8]]
-  lower = args[[9]]
-  upper = args[[10]]
-  fudge = args[[11]]
-
-  pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
-  ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge)
-  f3_fit = ppwts_2d %*% branch_lengths
-  get_score(f3_fit, f3_est, ppinv)
-}
-
-optimweightsfun_new = function(weights, args) {
   # likelihood function used in optimizing admixture weights
   # weights is vector of admixture weights to be optmized; only values for first incoming edge; 2nd is 1 - first
 
@@ -277,7 +192,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @examples
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
-qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fnscale = 1e-6, lsqmode = FALSE,
+qpgraph_old = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fnscale = 1e-6, lsqmode = FALSE,
                    numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, f2_blocks_test = NULL,
                    low_q = 0, high_q = 1, verbose = FALSE) {
 
@@ -394,7 +309,7 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 }
 
 
-qpgraph_new = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fnscale = 1e-6, lsqmode = FALSE,
+qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fnscale = 1e-6, lsqmode = FALSE,
                    numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, f2_blocks_test = NULL,
                    low_q = 0, high_q = 1, verbose = FALSE) {
 
@@ -427,7 +342,7 @@ qpgraph_new = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-
   ppinv = precomp$ppinv
 
   weight = low = high = rep(NA, nedges)
-  pwts = graph_to_pwts_new(graph, pops)
+  pwts = graph_to_pwts(graph, pops)
   opt = NULL
 
   if(cpp) {
@@ -458,9 +373,9 @@ qpgraph_new = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-
     }
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
-    weightind = graph_to_weightind_new(graph)
+    weightind = graph_to_weightind(graph)
     arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper, fudge)
-    oo = multistart(parmat, optimweightsfun_new, args = arglist, method = 'L-BFGS-B',
+    oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
                     lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = fnscale),
                     verbose = verbose)
     best = oo %>% top_n(1, -value)
@@ -570,7 +485,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fudge = 1e-4, fnscale = 1e-6, nums
 
   weightind = graph_to_weightind(graph)
   weight = rep(NA, nedges)
-  pwts = graph_to_pwts(graph)
+  pwts = graph_to_pwts(graph, pops)
   opt = NULL
   cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
   elower = rep(0, length(normedges))
@@ -592,7 +507,7 @@ qpgraph_slim = function(graph, f3_est, ppinv, fudge = 1e-4, fnscale = 1e-6, nums
     weight[admixedgesfull[2,]] = 1-wts
     pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
-
+  pwts = pwts[,-1] - pwts[,1]
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
 
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = fudge)
@@ -675,7 +590,8 @@ qpgraph_precompute_f3 = function(f2_data, pops, outpop = NULL, f2_denom = 1, boo
                  pop2 = pops[cmb[1,]+1],
                  pop3 = pops[cmb[2,]+1],
                  est = f3_est, se = sqrt(diag(f3_var)))
-  diag(f3_var) = diag(f3_var) + sum(diag(f3_var))*fudge
+  #diag(f3_var) = diag(f3_var) + sum(diag(f3_var))*fudge
+  diag(f3_var) = diag(f3_var) + sum(diag(f3_var))*1e-5
   # in qpGraph fudge is 1e-5; sometimes quadprog doesn't converge unless this is larger
   #   has large effect on magnitude of likelihood score
   if(lsqmode) ppinv = diag(1/diag(f3_var))
@@ -710,7 +626,7 @@ qpgraph_anorexic = function(graph, f3_est, ppinv, fudge = 1e-4, fnscale = 1e-6,
 
   graphpops = get_leafnames(graph)
   f3pops = attr(f3_est, 'pops')
-  pwts = tree_to_pwts(graph)
+  pwts = tree_to_pwts(graph, graphpops)
   pwts = pwts[, match(f3pops[-1], setdiff(graphpops, f3pops[1]))]
 
   cmb = combn(0:(length(f3pops)-1), 2)+(1:0)

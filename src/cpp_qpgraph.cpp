@@ -1,41 +1,13 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
-//#include <RcppEigen.h>
 
 #include <iostream>
 #include <sstream>
 #include <string>
 
-//#include <Eigen/Dense>
-//#include "eiquadprog.h"
-
 using namespace Rcpp;
 using namespace arma;
-//using namespace Eigen;
-
-// #include "eigen-qp.hpp"
-//
-// namespace EigenQP {
-// template<typename Scalar, int NVars, int NIneq>
-// void quadprog(Eigen::Matrix<Scalar,NVars,NVars> &Q, Eigen::Matrix<Scalar,NVars,1> &c,
-//              Eigen::Matrix<Scalar,NIneq,NVars> &A, Eigen::Matrix<Scalar,NIneq,1> &b,
-//              Eigen::Matrix<Scalar,NVars,1> &x);
-//
-//
-// template<typename Scalar, int NVars, int NIneq>
-// void quadprog2(Eigen::Matrix<Scalar,NVars,NVars> &Q);
-// }
-
-
-struct QPException : public std::exception
-{
-  std::string s;
-  QPException(const std::string &ss) : s(ss) {}
-  ~QPException() throw () {} // Updated
-  const char* what() const throw() { return s.c_str(); }
-};
-
 
 
 // [[Rcpp::export]]
@@ -117,45 +89,13 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   double nr = pwts.n_rows;
   double nc = pwts.n_cols;
   cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
-  mat ppwts_2d(nc*(nc+1)/2, nr);
-  for(int i=0; i<nr; i++) {
-    int c=0;
-    for(int j=0; j<nc; j++) {
-      for(int k=j; k<nc; k++) {
-        ppwts_2d(c, i) = pwts(i, j) * pwts(i, k);
-        c++;
-      }
-    }
-  }
-  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge);
-  vec w2 = (ppwts_2d * q2) - f3_est;
-  vec lik = w2.t() * ppinv * w2;
-  return lik(0);
-
-}
-
-// [[Rcpp::export]]
-double cpp_optimweightsfun_new(arma::vec weights, List args) {
-
-  mat pwts = args[0];
-  mat ppinv = args[1];
-  vec f3_est = args[2];
-  mat path_edge_table = args[3];
-  mat path_admixedge_table = args[4];
-  int numpaths = args[5];
-  // args[6] is cmb matrix with column combinations; not needed here
-  Function qpsolve = args[7];
-  vec lower = args[8];
-  vec upper = args[9];
-  double fudge = args[10];
-  double nr = pwts.n_rows;
-  double nc = pwts.n_cols;
-  cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
   mat ppwts_2d(nc*(nc-1)/2, nr);
   for(int i=0; i<nr; i++) {
-    int c=0;
     for(int j=1; j<nc; j++) {
       pwts(i, j) -= pwts(i, 0);
+    }
+    int c=0;
+    for(int j=1; j<nc; j++) {
       for(int k=j; k<nc; k++) {
         ppwts_2d(c, i) = pwts(i, j) * pwts(i, k);
         c++;
