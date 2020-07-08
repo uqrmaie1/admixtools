@@ -91,7 +91,7 @@ void decode_plink(unsigned char *out,
 
 // [[Rcpp::export]]
 List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2,
-                        bool ignore_ploidy, bool verbose) {
+                        bool adjust_pseudohaploid, bool verbose) {
   // indvec: assignes each individual to population; indvec2: which individuals to keep
 
   NumericMatrix X, afmat, countmat, scanmat;
@@ -142,7 +142,7 @@ List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const Numeri
     for(unsigned int i = 0; i < nind; i++) {
       k = indvec2(i)-1;
       val = (double)tmp2[k];
-      if(val == 1 || ignore_ploidy) ploidy(i) = 2;
+      if(val == 1 || !adjust_pseudohaploid) ploidy(i) = 2;
       //ploidy(i) = 2;
     }
   }

@@ -5,7 +5,7 @@
 \title{Read allele frequencies from \code{PLINK} files}
 \usage{
 plink_to_aftable(pref, inds = NULL, pops = NULL,
-  ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL,
+  adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL,
   verbose = FALSE)
 }
 \arguments{
@@ -15,7 +15,7 @@ plink_to_aftable(pref, inds = NULL, pops = NULL,
 
 \item{pops}{vector of populations from which to compute allele frequencies. If \code{NULL} (default), populations will be extracted from the third column in the \code{.ind} file}
 
-\item{ignore_ploidy}{treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. The default (\code{FALSE}) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.}
+\item{adjust_pseudohaploid}{genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
 \item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
 

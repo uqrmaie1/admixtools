@@ -1,13 +1,11 @@
 
 #' Read allele frequencies from packedancestrymap files
 #'
-#' This is currently slower than `plink_to_aftable` because it is implemented only in `R`, not in `C++`.
 #' @export
 #' @param pref prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`).
 #' @param inds vector of samples from which to compute allele frequencies.
 #' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
-#' @param blocksize number of SNPs read in each block.
-#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
 #' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
@@ -18,131 +16,8 @@
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-packedancestrymap_to_aftable_old = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
-                                        ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
-  # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
-  # pops is vector of populations for which to calculate AFs
-  # defaults to third column in ind file
-  # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
-  # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
-
-  stopifnot(is.null(pops) || is.null(inds) || length(inds) == length(pops))
-
-  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
-  if(is.null(inds)) {
-    inds = indfile$X1
-  } else {
-    indfile$X1[!indfile$X1 %in% inds] = NA
-  }
-  if(is.null(pops)) {
-    pops = indfile$X3
-    indfile$X3[!indfile$X1 %in% inds] = NA
-  } else {
-    indfile$X3[!is.na(indfile$X1)] = pops
-  }
-  upops = unique(na.omit(pops))
-
-  fl = paste0(pref, '.geno')
-  conn = file(fl, 'rb')
-  on.exit(close(conn))
-  hd = strsplit(readBin(conn, 'character', n = 1), ' +')[[1]]
-  close(conn)
-  nind = as.numeric(hd[2])
-  nsnp = as.numeric(hd[3])
-  numpop = length(upops)
-  popind = which(indfile$X3 %in% upops)
-  popind2 = na.omit(popind)
-
-  if(verbose) {
-    alert_info(paste0(basename(pref), '.geno has ', nind, ' samples and ', nsnp, ' SNPs\n'))
-    alert_info(paste0('Calculating allele frequencies from ', length(popind2), ' samples in ', numpop, ' populations\n'))
-    alert_info(paste0('Expected size of allele frequency data: ', round((nsnp*numpop*8+nsnp*112)/1e6), ' MB\n'))
-    # 8, 112: estimated scaling factors for AF columns and annotation columns
-  }
-
-  rlen = file.info(fl)$size/(nsnp+1)
-  conn = file(fl, 'rb')
-  invisible(readBin(conn, 'raw', n = rlen))
-  afmatrix = countmatrix = matrix(NA, nsnp, numpop)
-  colnames(afmatrix) = colnames(countmatrix) = upops
-  rownames(afmatrix) = rownames(countmatrix) = snpfile$SNP
-  popind3 = c(outer(popind2, ((1:blocksize)-1)*rlen*4, `+`))
-  popindmat = matrix(sapply(1:numpop, function(i) indfile$X3[popind2] == upops[i]), ncol=numpop)
-  cnt = 1
-  sumna = 0
-  modnum = ifelse(shiny::isRunning(), 1e5, 1e3)
-  while(cnt <= nsnp) {
-    if(cnt+blocksize > nsnp) {
-      blocksize = nsnp-cnt+1
-      popind3 = sort(c(outer(popind2, ((1:blocksize)-1)*rlen*4, `+`)))
-    }
-    bitmat = matrix(as.integer(rawToBits(readBin(conn, 'raw', n = rlen*blocksize))), ncol=8, byrow = TRUE)
-    gmat = matrix(c(t(bitmat[,c(8,6,4,2)]*2+bitmat[,c(7,5,3,1)]))[popind3], ncol=blocksize)
-    gmat[gmat==3]=NA # assuming non-missing genotypes are 0, 1, 2 missing is 3
-    if(cnt == 1) {
-      ploidy = apply(gmat, 1, function(x) max(1, length(unique(na.omit(x)))-1))
-      alert_info(paste0('Detected ', sum(ploidy == 2), ' diploid samples and ',
-                        sum(ploidy == 1), ' pseudohaploid samples\n'))
-    }
-    popfreqs = popcounts = matrix(NA, blocksize, numpop)
-    for(i in seq_len(numpop)) {
-      gm = gmat[popindmat[,i],, drop=FALSE]
-      popfreqs[,i] = colMeans(gm, na.rm=TRUE)/2
-      if(!ignore_ploidy) popcounts[,i] = colSums((!is.na(gm))*ploidy[popindmat[,i]])
-      else popcounts[,i] = colSums((!is.na(gm))*2)
-
-    }
-    popfreqs[is.nan(popfreqs)] = NA
-    sumna = sumna + sum(is.na(popfreqs))
-    sq = cnt:(cnt+blocksize-1)
-    afmatrix[sq,] = popfreqs
-    countmatrix[sq,] = popcounts
-    if(verbose && cnt %% modnum == 1) alert_info(paste0((cnt-1)/1e3, 'k SNPs read...\r'))
-    cnt = cnt+blocksize
-  }
-  if(verbose) {
-    alert_info('\n')
-    alert_success(paste0(cnt-1, ' SNPs read in total\n'))
-    alert_warning(paste0(sumna, ' allele frequencies are missing (on average ',
-                         round(sumna/numpop), ' per population)\n'))
-  }
-
-  if(randomize_alleles) {
-    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
-    if(!is.null(seed)) set.seed(seed)
-    sel = sample(1:nsnp, round(nsnp/2))
-    afmatrix[sel,] = 1 - afmatrix[sel,]
-    snpfile %<>% mutate(flipped = 1:n() %in% sel)
-  }
-  #outdat = treat_missing(afmatrix[keepsnps,], countmatrix[keepsnps,], snpfile[keepsnps,],
-  #                       na.action = na.action, verbose = verbose)
-  outlist = list(afs = afmatrix, counts = countmatrix, snpfile = snpfile)
-  outlist
-}
-
-
-#' Read allele frequencies from packedancestrymap files
-#'
-#' @export
-#' @param pref prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`).
-#' @param inds vector of samples from which to compute allele frequencies.
-#' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
-#' @param blocksize number of SNPs read in each block.
-#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
-#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
-#' @param seed random seed for `randomize_alleles`
-#' @param verbose print progress updates
-#' @return a list with two items: allele frequency data and allele counts.
-#' @examples
-#' \dontrun{
-#' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
-#' afs = afdat$afs
-#' counts = afdat$counts
-#' }
-packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000,
-                                        ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
+packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
+                                        randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
 
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
@@ -183,7 +58,8 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
   }
 
   afdat = cpp_packedancestrymap_to_aftable(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
-                                     last = nsnpall, ignore_ploidy = ignore_ploidy, transpose = FALSE, verbose = verbose)
+                                     last = nsnpall, adjust_pseudohaploid = adjust_pseudohaploid,
+                                     transpose = FALSE, verbose = verbose)
 
   if(verbose) {
     alert_success(paste0(nrow(afdat$afs), ' SNPs read in total\n'))
@@ -223,7 +99,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksiz
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 1000, verbose = TRUE) {
+ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -260,13 +136,23 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, blocksize = 10
   rownames(geno) = snpfile$SNP
 
   ploidy = apply(geno, 1, function(x) max(1, length(unique(na.omit(x)))-1))
-  counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
+  if(adjust_pseudohaploid) counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
+  else counts = t(rowsum((!is.na(t(geno)))*2, pops))
   afs = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))/counts
 
   if(verbose) {
     alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnp, ' SNPs\n'))
     alert_info(paste0('Calculating allele frequencies from ', length(popind2), ' samples in ', numpop, ' populations\n'))
   }
+
+  if(randomize_alleles) {
+    if(verbose) alert_info(paste0('Randomizing alleles...\n'))
+    if(!is.null(seed)) set.seed(seed)
+    sel = sample(1:nsnp, round(nsnp/2))
+    afs[sel,] = 1 - afs[sel,]
+    snpfile %<>% mutate(flipped = 1:n() %in% sel)
+  }
+
   outlist = namedList(afs, counts, snpfile)
   outlist
 }
@@ -606,7 +492,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALSE,
+plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
                             randomize_alleles = TRUE, seed = NULL, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
@@ -631,7 +517,7 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, ignore_ploidy = FALS
   indvec = pop_indices(fam, pops = pops, inds = inds)
   indvec2 = which(indvec > 0)
   keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
-  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, ignore_ploidy = ignore_ploidy,
+  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid,
                            verbose = verbose)
   afmatrix = afs[[1]]
   countmatrix = afs[[2]]
@@ -703,7 +589,7 @@ read_plink = function(pref, inds = NULL, auto_only = TRUE, verbose = FALSE) {
   keepinds = fam[[2]][indvec2]
 
   g = 2 * cpp_read_plink_afs(normalizePath(bedfile), indvec=indvec, indvec2,
-                             ignore_ploidy = FALSE, verbose = verbose)[[1]]
+                             adjust_pseudohaploid = TRUE, verbose = verbose)[[1]]
   rownames(g) = bim$SNP
   colnames(g) = keepinds
 
@@ -1043,7 +929,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param format supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read
 #' @param poly_only exclude sites with identical allele frequencies in all populations
-#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
 #' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
@@ -1055,11 +941,12 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                       keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
-                      ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
+                      adjust_pseudohaploid = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, ignore_ploidy = ignore_ploidy,
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
+                             adjust_pseudohaploid = adjust_pseudohaploid,
                              randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
@@ -1075,7 +962,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 }
 
 
-anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ignore_ploidy = FALSE,
+anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adjust_pseudohaploid = TRUE,
                               randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   if(is.null(format)) {
@@ -1088,7 +975,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, ign
   }
   geno_to_aftable = paste0(format, '_to_aftable')
   stopifnot(exists(geno_to_aftable))
-  afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, ignore_ploidy = ignore_ploidy,
+  afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, adjust_pseudohaploid = adjust_pseudohaploid,
                                randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat
 }
@@ -1235,7 +1122,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' @param keepsnps SNP IDs of SNPs to keep. overrides other SNP filtering options
 #' @param format supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read
-#' @param ignore_ploidy treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS `inbreed: NO` option. The default (`FALSE`) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.
+#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.
 #' @param seed random seed for `randomize_alleles`
 #' @param verbose print progress updates
@@ -1247,11 +1134,12 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 20,
                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                       keepsnps = NULL, format = NULL, poly_only = TRUE, ignore_ploidy = FALSE,
+                       keepsnps = NULL, format = NULL, poly_only = TRUE, adjust_pseudohaploid = TRUE,
                        randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   # read data and compute allele frequencies
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, ignore_ploidy = ignore_ploidy,
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
+                             adjust_pseudohaploid = adjust_pseudohaploid,
                              randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,

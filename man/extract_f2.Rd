@@ -5,11 +5,11 @@
 \title{Compute and store blocked f2 statistics}
 \usage{
 extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
-  maxmem = 8000, maxmiss = 0.25, minmaf = 0, maxmaf = 0.5,
+  maxmem = 8000, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
   overwrite = FALSE, format = NULL, poly_only = TRUE,
-  ignore_ploidy = FALSE, randomize_alleles = TRUE, seed = NULL,
-  verbose = TRUE)
+  adjust_pseudohaploid = FALSE, randomize_alleles = TRUE,
+  seed = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -45,7 +45,7 @@ and you want to choose which one to read}
 
 \item{poly_only}{exclude sites with identical allele frequencies in all populations}
 
-\item{ignore_ploidy}{treat pseudohaploid samples as if they were diploid samples (each observed genotype in a sample increases the allele count by two). This is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. The default (\code{FALSE}) produces slightly more accurate f2-statistics by increasing the allele count for each pseudohaploid sample only by one.}
+\item{adjust_pseudohaploid}{genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
 \item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
 

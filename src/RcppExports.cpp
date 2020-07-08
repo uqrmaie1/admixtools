@@ -198,8 +198,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_packedancestrymap_to_aftable
-List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool ignore_ploidy, bool transpose, bool verbose);
-RcppExport SEXP _admixtools_cpp_packedancestrymap_to_aftable(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP ignore_ploidySEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
+List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool adjust_pseudohaploid, bool transpose, bool verbose);
+RcppExport SEXP _admixtools_cpp_packedancestrymap_to_aftable(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP adjust_pseudohaploidSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -209,25 +209,25 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
     Rcpp::traits::input_parameter< int >::type first(firstSEXP);
     Rcpp::traits::input_parameter< int >::type last(lastSEXP);
-    Rcpp::traits::input_parameter< bool >::type ignore_ploidy(ignore_ploidySEXP);
+    Rcpp::traits::input_parameter< bool >::type adjust_pseudohaploid(adjust_pseudohaploidSEXP);
     Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_packedancestrymap_to_aftable(genofile, nsnp, nind, indvec, first, last, ignore_ploidy, transpose, verbose));
+    rcpp_result_gen = Rcpp::wrap(cpp_packedancestrymap_to_aftable(genofile, nsnp, nind, indvec, first, last, adjust_pseudohaploid, transpose, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_read_plink_afs
-List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool ignore_ploidy, bool verbose);
-RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP ignore_ploidySEXP, SEXP verboseSEXP) {
+List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool adjust_pseudohaploid, bool verbose);
+RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP adjust_pseudohaploidSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< String >::type bedfile(bedfileSEXP);
     Rcpp::traits::input_parameter< const NumericVector >::type indvec(indvecSEXP);
     Rcpp::traits::input_parameter< const NumericVector >::type indvec2(indvec2SEXP);
-    Rcpp::traits::input_parameter< bool >::type ignore_ploidy(ignore_ploidySEXP);
+    Rcpp::traits::input_parameter< bool >::type adjust_pseudohaploid(adjust_pseudohaploidSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_read_plink_afs(bedfile, indvec, indvec2, ignore_ploidy, verbose));
+    rcpp_result_gen = Rcpp::wrap(cpp_read_plink_afs(bedfile, indvec, indvec2, adjust_pseudohaploid, verbose));
     return rcpp_result_gen;
 END_RCPP
 }

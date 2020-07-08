@@ -119,7 +119,7 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
 
 // [[Rcpp::export]]
 List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec,
-                                      int first, int last, bool ignore_ploidy,
+                                      int first, int last, bool adjust_pseudohaploid,
                                       bool transpose, bool verbose) {
   //same arguments as cpp_read_packedancestrymap, except indvec assigns populations. indiv not used: -1
 
@@ -177,7 +177,7 @@ List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, Integ
     for(int i = 0; i < nind; i++) {
       if(indvec[i] == -1) continue;
       val = (double)tmp2[i];
-      if(ignore_ploidy || val == 1) ploidy(i) = 2.0;
+      if(!adjust_pseudohaploid || val == 1) ploidy(i) = 2.0;
     }
   }
 

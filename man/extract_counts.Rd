@@ -4,8 +4,8 @@
 \alias{extract_counts}
 \title{Extract and store data needed to compute blocked f2}
 \usage{
-extract_counts(pref, outdir, inds = NULL, dist = 0.05,
-  maxmiss = 0.25, minmaf = 0, maxmaf = 0.5, transitions = TRUE,
+extract_counts(pref, outdir, inds = NULL, dist = 0.05, maxmiss = 1,
+  minmaf = 0, maxmaf = 0.5, transitions = TRUE,
   transversions = TRUE, keepsnps = NULL, maxmem = 8000,
   overwrite = FALSE, format = NULL, verbose = TRUE)
 }
