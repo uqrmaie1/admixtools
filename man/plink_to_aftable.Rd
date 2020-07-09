@@ -5,8 +5,8 @@
 \title{Read allele frequencies from \code{PLINK} files}
 \usage{
 plink_to_aftable(pref, inds = NULL, pops = NULL,
-  adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL,
-  verbose = FALSE)
+  adjust_pseudohaploid = TRUE, randomize_alleles = FALSE,
+  seed = NULL, verbose = FALSE)
 }
 \arguments{
 \item{pref}{prefix of \code{PLINK} files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).}
@@ -17,7 +17,7 @@ plink_to_aftable(pref, inds = NULL, pops = NULL,
 
 \item{adjust_pseudohaploid}{genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
-\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
+\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.}
 
 \item{seed}{random seed for \code{randomize_alleles}}
 

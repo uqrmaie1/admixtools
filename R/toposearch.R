@@ -542,8 +542,10 @@ flipadmix_random = function(graph, desimplify = TRUE) {
 }
 
 
-add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE) {
+add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE, verbose = TRUE) {
 
+  space = paste0(paste(rep(' ', 50), collapse=''), '\r')
+  if(verbose) alert_info(paste0('Select winners...', space))
   lastgen = max(models$generation)
   oldmodels = models %>% filter(generation == lastgen, !is.na(score))
   numsel = min(nrow(oldmodels), numsel)
@@ -555,48 +557,20 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
                      igraph = rep(winners$igraph, numeach)[sq],
                      oldscore = rep(winners$score, numeach)[sq])
   mutations = sample(mutfuns, numgraphs-numsel, replace = TRUE)
-  if(parallel) map = furrr::future_map
-  newmodels %<>%
-    mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x))) %>%
-    mutate(out = map(igraph, qpgfun)) %>%
-    unnest_wider(out)
+  if(parallel) {
+    map = furrr::future_map
+    imap = furrr::future_imap
+  }
+  if(verbose) alert_info(paste0('Generate new graphs...', space))
+  newmodels %<>% mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x)))
+  if(verbose) alert_info(paste0('Evaluate graphs...', space))
+  newmodels %<>% mutate(out = map(igraph, qpgfun))
+  if(verbose) alert_info(paste0('Attach to previous generations...', space))
   winners %>%
     mutate(generation = lastgen+1, index = 1:n()) %>%
-    bind_rows(newmodels)
+    bind_rows(newmodels %>% unnest_wider(out))
 }
 
-add_generation_old = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE) {
-
-  lastgen = max(models$generation)
-  oldmodels = models %>% filter(generation == lastgen, !is.na(score))
-  numsel = min(nrow(oldmodels), numsel)
-  numeach = ceiling(numgraphs/numsel)
-  winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob)
-  winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score)))
-  sq = 1:numgraphs
-  newmodels = tibble(generation = lastgen+1, index = sq,
-                     igraph = rep(winners$igraph, numeach)[sq],
-                     oldscore = rep(winners$score, numeach)[sq])
-  mutations = c(replicate(numsel, namedList(identity)),
-                sample(mutfuns, numgraphs-numsel, replace = TRUE))
-  if(parallel) map = furrr::future_map
-  newmodels %>%
-    mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x))) %>%
-    mutate(out = map(igraph, qpgfun)) %>%
-    unnest_wider(out)
-}
-
-
-
-# sample_mutations = function(n) {
-#   # returns a random mutation function
-#   mutations = list(sprleaves = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = TRUE)),
-#                    sprall = function(x) (admixturegraph_prune_and_regraft(x, only_leaves = FALSE)),
-#                    #permleaves = permute_leaves,
-#                    swapleaves = swap_leaves,
-#                    moveadmix = move_admixedge_once)
-#   sample(mutations, n, replace = TRUE)
-# }
 
 
 score_to_prob = function(score) {
@@ -608,27 +582,26 @@ score_to_prob = function(score) {
 }
 
 
-evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, parallel = TRUE,
-                           keep = 'all', stop_at = NULL, verbose = TRUE) {
+evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, repnum, parallel = TRUE,
+                           keep = 'all', store_intermediate = NULL, stop_at = NULL, verbose = TRUE) {
   out = init
   for(i in seq_len(numgen)) {
     if(!is.null(stop_at) && stop_at < Sys.time()) break
-    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns, parallel = parallel)
+    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns, parallel = parallel, verbose = verbose)
     #if(min(newmodels$score) > min(out$score)) browser()
-    if(T) {
-      w = newmodels %>% top_n(1, -score) %>% slice(1)
-      g = w %$% igraph[[1]]
-      fl = paste0('/n/groups/reich/robert/projects/admixprograms/sikora_et_al/sc', round(w$score[[1]]), '_adm', numadmix(g), '.rds')
-      saveRDS(g, fl)
+    if(!is.null(store_intermediate)) {
+      fl = paste0(store_intermediate, '_rep', repnum, '_gen', i, '.rds')
+      saveRDS(newmodels, fl)
     }
     if(keep == 'all') out %<>% bind_rows(newmodels)
     else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score, amount = 1e-9)) %>%
       ungroup %>% bind_rows(newmodels)
     else out = newmodels
     if(verbose) {
-      best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score
-      cat(paste0('Generation ', i, '  Best new scores: ', paste(round(best, 3), collapse=', '),
-                 paste(rep(' ', 30), collapse=''), '\r'))
+      #best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score %>% sort
+      best = newmodels %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score %>% sort
+      alert_success(paste0('Generation ', i, '  Best scores: ', paste(round(best, 3), collapse=', '),
+                    paste(rep(' ', 30), collapse=''), '\n'))
     }
   }
   if(verbose) cat('\n')
@@ -637,23 +610,26 @@ evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, par
 }
 
 
-optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, numgen = 5,
+optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, outpop = NA, initgraph = NULL,
                                           mutfuns = NULL, parallel = TRUE, stop_at = NULL,
+                                          store_intermediate = NULL,
                                           cpp = TRUE, debug = FALSE, keep = 'all', verbose = TRUE) {
   if(numadmix == 0 && is.null(initgraph)) {
     qpgfun0 = qpgraph_anorexic
     mutfuns = mutfuns[setdiff(names(mutfuns), c('move_admixedge_once'))]
   } else {
-    qpgfun0 = qpgraph_slim
+    qpgfun0 = function(...) qpgraph(f2_blocks = NULL, ...)
   }
 
-  qpgfun = function(graph) qpgfun0(graph, f3_est, ppinv, cpp = cpp, numstart = 1, verbose = FALSE)
+  qpgfun = function(graph) qpgfun0(graph = graph, f3precomp = precomp, cpp = cpp, numstart = 1, verbose = FALSE)
   if(!debug) qpgfun = possibly(qpgfun, otherwise = NULL)
-
+  space = paste0(paste(rep(' ', 50), collapse=''), '\r')
+  if(verbose) alert_info(paste0('Generate new graphs...', space))
   if(is.null(initgraph)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop=outpop), simplify = FALSE)
   else initgraphs = replicate(numgraphs, initgraph, simplify = FALSE)
-
+  if(verbose) alert_info(paste0('Evaluate graphs...', space))
+  if(parallel) map = furrr::future_map
   init = tibble(generation=0, index = seq_len(numgraphs),
                 igraph = initgraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun), isn = map_lgl(out, is.null))
@@ -661,13 +637,12 @@ optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, n
 
   init %<>% select(-isn) %>% unnest_wider(out) %>% mutate(oldscore = score)
   if(verbose) {
-    best = init %>% filter(index > numsel, !is.na(score)) %>% top_n(min(numsel, n()), -jitter(score, amount = 1e-9)) %$% score
-    cat(paste0('Generation 0  Best new scores: ', paste(round(best), collapse=', '),
-               paste(rep(' ', 30), collapse=''), '\r'))
+    best = init %>% filter(!is.na(score)) %>% top_n(min(numsel, n()), -jitter(score, amount = 1e-9)) %$% score
+    alert_success(paste0('Generation 0  Best new scores: ', paste(round(best), collapse=', '), space))
   }
 
-  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, parallel = parallel,
-                  keep = keep, stop_at = stop_at, verbose = verbose)
+  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, repnum, parallel = parallel,
+                  keep = keep, store_intermediate = store_intermediate, stop_at = stop_at, verbose = verbose)
 }
 
 
@@ -681,24 +656,37 @@ optimize_admixturegraph_single = function(pops, f3_est, ppinv, numgraphs = 50, n
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
 #' @export
-#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
-#' @param pops populations for which to fit admixture graphs
-#' @param outpop outgroup population
-#' @param numrep number of independent repetitions (each repetition can be run in parallel)
-#' @param numgraphs number of graphs in each generation
-#' @param numgen number of generations
-#' @param numsel number of graphs which are selected in each generation
-#' @param numadmix number of admixture events within each graph
-#' @param keep by default, all evaluated graphs will be returned. `best` will only return the best fitting
+#' @param pops Populations for which to fit admixture graphs
+#' @param outpop Outgroup population
+#' @param numrep Number of independent repetitions (each repetition can be run in parallel)
+#' @param numgraphs Number of graphs in each generation
+#' @param numgen Number of generations
+#' @param numsel Number of graphs which are selected in each generation. Should be less than `numgraphs`.
+#' @param numadmix Number of admixture events within each graph
+#' @param keep By default (`all`), all evaluated graphs will be returned. `best` will only return the best fitting
 #' graph from each repeat and each generation. `last` will return all graphs from the last generation.
-#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
-#' @param verbose print progress updates
-#' @param cpp should optimization be run in C++ or in R? C++ is faster.
-#' @param initgraph optional graph to start out with
+#' @param f2_denom Scales f2-statistics. A value of around 0.278 converts f2 to Fst.
+#' @param verbose Print progress updates
+#' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
+#' @param mutfuns The names of funcations used to modify graphs.
+#' \itemize{
+#' \item `spr_leaves` Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
+#' \item `spr_all` Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+#' \item `swap_leaves` Swaps two leaf nodes.
+#' \item `move_admixedge_once` Moves an admixture edge to a nearby location.
+#' \item `flipadmix_random` Flips the direction of an admixture edge (if possible).
+#' }
+#' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
 #' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing `purrr::map` with `furrr::future_map`. Will only be effective if `future::plan()` has been set.
+#' @param stop_at Stop execution after finishing the generation running at `stop_at` seconds. Currently not working.
 #' @param debug If `TRUE` each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
 #' Errors will interrupt execution. This is the default if `numrep = 1`
+#' @param fudge_cov Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
+#' @param verbose Print progress updates
+#' @param ... Additional arguments passed to `qpgraph`
 #' @return a nested data frame with one model per line
 #' @examples
 #' \dontrun{
@@ -709,8 +697,9 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
                        numgen = 5, numsel = 5, numadmix = 0, keep = c('all', 'best', 'last'),
                        f2_denom = 1, cpp = TRUE, initgraph = NULL,
                        mutfuns = c('spr_leaves', 'spr_all', 'swap_leaves', 'move_admixedge_once', 'flipadmix_random'),
+                       store_intermediate = NULL,
                        parallel = TRUE, stop_at = NULL,
-                       debug = numrep==1, fudge = 1e-4, verbose = TRUE, ...) {
+                       debug = FALSE, fudge_cov = 1e-5, verbose = TRUE, ...) {
 
   keep = rlang::arg_match(keep)
   if(numsel >= numgraphs || numsel < 1) stop("'numsel' has to be smaller than 'numgraphs' and greater than 0!")
@@ -731,32 +720,34 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
       } else pops = dimnames(f2_data)[[1]]
     }
     #pops = get_leafnames(initgraph)
-    precomp = qpgraph_precompute_f3(f2_data, pops, outpop = outpop, f2_denom = f2_denom, fudge = fudge)
+    precomp = qpgraph_precompute_f3(f2_data, pops, outpop = outpop, f2_denom = f2_denom, fudge_cov = fudge_cov)
   }
 
   if(is.null(outpop)) outpop = pops[1]
   else if(!outpop %in% pops) pops = c(outpop, pops)
   mutfuns = sapply(mutfuns, get)
 
-  oa = function(i) optimize_admixturegraph_single(pops, precomp$f3_est, precomp$ppinv,
+  oa = function(i) optimize_admixturegraph_single(pops, precomp, repnum = i,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix,
                                                  outpop = outpop, cpp = cpp, initgraph = initgraph,
                                                  mutfuns = mutfuns, parallel = parallel && numrep == 1,
-                                                 stop_at = stop_at, debug = debug, keep = keep, verbose = verbose)
-  if(!debug) {
-    oa = possibly(oa, otherwise=NULL)
-    #res = furrr::future_map(as.list(seq_len(numrep)), oa)
-    if(parallel && numrep > 1) map = furrr::future_map
-    res = map(as.list(seq_len(numrep)), oa)
+                                                 stop_at = stop_at, store_intermediate = store_intermediate,
+                                                 debug = debug, keep = keep, verbose = verbose && numrep == 1)
+  if(!debug) oa = possibly(oa, otherwise = NULL)
+  if(parallel && numrep > 1) {
+    res = furrr::future_map(as.list(seq_len(numrep)), oa)
   } else {
     res = list()
     for(i in seq_len(numrep)) {
-      res[[i]] = oa()
-      if(is.null(res[[i]])) browser()
+      if(verbose && numrep > 1) alert_info(paste0('Repeat ', i, ' out of ', numrep, '...\n'))
+      res[[i]] = oa(i)
+      #if(is.null(res[[i]])) browser()
     }
   }
-  bind_rows(res, .id='run') %>% mutate(run = as.numeric(run))
+  res = bind_rows(res, .id='run')
+  if(nrow(res) > 0) res %<>% mutate(run = as.numeric(run))
+  res
 }
 
 

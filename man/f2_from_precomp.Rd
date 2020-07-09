@@ -5,30 +5,33 @@
 \title{Read blocked f2 statistics from disk}
 \usage{
 f2_from_precomp(dir, inds = NULL, pops = NULL, pops2 = NULL,
-  return_array = TRUE, apply_corr = TRUE, afprod = FALSE,
+  afprod = FALSE, return_array = TRUE, apply_corr = TRUE,
   remove_na = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{dir}{directory with precomputed f2 statistics, or precomputed individual pair data}
+\item{dir}{Directory with precomputed f2 statistics, or precomputed individual pair data}
 
-\item{inds}{the individuals for which data should be read. Defaults to all individuals,
+\item{inds}{Individuals for which data should be read. Defaults to all individuals,
 which may require a lot of memory.}
 
-\item{pops}{the populations for which data should be read. Defaults to all populations,
+\item{pops}{Populations for which data should be read. Defaults to all populations,
 which may require a lot of memory.}
 
-\item{return_array}{should a 3d array or a data frame be returned}
+\item{pops2}{Optional second vector of populations. Useful if a f4 statistics of a few against many populations should be computed. \code{pops2} should not be specified in other cases, as most functions depend on f2-statistics for all population pairs in \code{pops}.}
 
-\item{apply_corr}{should f2 correction factor be subtracted. mostly used for testing, and only applicable for counts}
+\item{afprod}{Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for qpdstat and qpadm. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{qpgraph}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+This option is currently ineffective when reading data extracted with \code{extract_counts}.}
 
-\item{afprod}{return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used for qpdstat and qpadm.}
+\item{return_array}{Return a 3d array (default). If false, a data frame will be returned.}
 
-\item{remove_na}{remove blocks with missing values}
+\item{apply_corr}{Subtract the f2 correction factor. Setting this to \code{FALSE} can be useful occasionally.}
 
-\item{verbose}{print progress updates}
+\item{remove_na}{Remove blocks with missing values}
+
+\item{verbose}{Print progress updates}
 }
 \value{
-a 3d array of f2 statistics
+A 3d array of f2 statistics
 }
 \description{
 Read blocked f2 statistics from disk

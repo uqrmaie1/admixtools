@@ -38,6 +38,22 @@ block_mat_mean = function(mat, block_lengths, na.rm = TRUE) {
 }
 
 
+jack_vec_stats = function(loo_vec, block_lengths) {
+  # input is a vector of leave-one-out estimates
+  # output is list with jackknife mean and covariance
+  # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
+
+  numblocks = length(block_lengths)
+  tot = weighted.mean(loo_vec, 1-block_lengths/sum(block_lengths), na.rm = TRUE)
+  est = mean(loo_vec, na.rm = TRUE)
+  y = sum(block_lengths)/block_lengths
+  xtau = (tot * y - loo_vec * (y-1) - est) / sqrt(y-1)
+  var = mean(xtau^2, na.rm = TRUE)
+
+  namedList(est, var)
+}
+
+
 jack_mat_stats = function(loo_mat, block_lengths) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
@@ -118,10 +134,13 @@ make_bootfun = function(jackfun) {
   }
 }
 
+
+boot_vec_stats = make_bootfun(jack_vec_stats)
 boot_mat_stats = make_bootfun(jack_mat_stats)
 boot_arr_stats = make_bootfun(jack_arr_stats)
 boot_pairarr_stats = make_bootfun(jack_pairarr_stats)
 
+cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 
 
 

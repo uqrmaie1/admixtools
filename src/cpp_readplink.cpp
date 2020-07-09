@@ -181,6 +181,6 @@ List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const Numeri
 
   in.close();
 
-  return List::create(afmat, countmat);
+  return Rcpp::List::create(_["afmat"] = afmat, _["countmat"] = countmat);
 }
 

@@ -33,6 +33,10 @@ cpp_get_block_lengths <- function(chr, pos, dist = 0.05) {
     .Call('_admixtools_cpp_get_block_lengths', PACKAGE = 'admixtools', chr, pos, dist)
 }
 
+cpp_jack_vec_stats <- function(loo_vec, block_lengths) {
+    .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths)
+}
+
 cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge) {
     .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge)
 }

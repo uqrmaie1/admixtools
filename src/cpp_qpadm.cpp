@@ -229,3 +229,21 @@ IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double 
   return bsize[Rcpp::Range(0, n-1)];
 }
 
+
+// [[Rcpp::export]]
+List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths) {
+ // input is a vector of leave-one-out estimates
+ // output is list with jackknife mean and covariance
+ // should give same results as 'jack_arr_stats' and 'jack_mat_stats'
+
+  NumericVector w = 1-block_lengths/sum(block_lengths);
+  double tot = sum(loo_vec * w)/sum(w);
+  double est = mean(loo_vec);
+  NumericVector y = sum(block_lengths)/block_lengths;
+  NumericVector xtau = (tot * y - loo_vec * (y-1) - est) / sqrt(y-1);
+  double var = mean(pow(xtau, 2.0));
+
+  //return List::create(est, var);
+  return Rcpp::List::create(_["est"] = est, _["var"] = var);
+}
+

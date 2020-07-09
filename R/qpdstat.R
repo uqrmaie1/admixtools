@@ -49,7 +49,7 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
   pops = unique(c(out$pop1, out$pop2))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
-  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
   f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
@@ -58,10 +58,9 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 
   out %<>% group_by(pop1, pop2) %>%
     summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(f2dat, ~statfun(t(.), block_lengths))) %>%
-    unnest_wider(sts) %>%
-    mutate(se = map_dbl(var[,1], sqrt), z = est/se, p = ztop(z)) %>%
-    select(-f2dat, -var)
+    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    select(-f2dat, -var, -sts)
 
   out
 }
@@ -100,7 +99,7 @@ qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
   pops = unique(c(out$pop1, out$pop2, out$pop3))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
-  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
   f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
@@ -111,10 +110,9 @@ qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
     summarize(f3dat = list(f3_from_f2(f2_blocks[pop1, pop2, ],
                                      f2_blocks[pop1, pop3, ],
                                      f2_blocks[pop2, pop3, ]))) %>% ungroup %>%
-    mutate(sts = map(f3dat, ~statfun(t(.), block_lengths))) %>%
-    unnest_wider(sts) %>%
-    mutate(se = map_dbl(var[,1], sqrt), z = est/se, p = ztop(z)) %>%
-    select(-f3dat, -var)
+    mutate(sts = map(f3dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    select(-f3dat, -var, -sts)
 
   out
 }
@@ -183,7 +181,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   pops2 = unique(c(out$pop3, out$pop4))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
-  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
   #f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
   f2_blocks = get_f2(f2_data, pops1, f2_denom, pops2 = pops2, afprod = afprod) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
@@ -196,10 +194,9 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                                    f2_blocks[pop2, pop3, ],
                                    f2_blocks[pop1, pop3, ],
                                    f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
-    mutate(sts = map(f4dat, ~statfun(t(.), block_lengths))) %>%
-    unnest_wider(sts) %>%
-    mutate(se = map_dbl(var[,1], sqrt), z = est/se, p = ztop(z)) %>%
-    select(-f4dat, -var)
+    mutate(sts = map(f4dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    select(-f4dat, -var, -sts)
   out
 }
 
@@ -283,7 +280,9 @@ qpfstats = function(f2_blocks) {
   pairs = t(combn(sort(pops), 2))
   pp = paste(pairs[,1], pairs[,2])
 
-  a = f4(f2_blocks) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>% mutate(est = -est*2) %>% select(-pop1:-pop4) %>% lm(as.formula(paste0('est ~ 0 + ', paste('`', colnames(.)[-1:-3], '`', sep = '', collapse = ' + '))), weights = 1/se, data = .)
+  a = f4(f2_blocks) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
+    #mutate(est = -est*2) %>%
+    select(-pop1:-pop4) %>% lm(as.formula(paste0('est ~ 0 + ', paste('`', colnames(.)[-1:-3], '`', sep = '', collapse = ' + '))), data = .)
 
 
   summary(a)$coefficients %>% as_tibble(rownames = 'pp') %>% mutate(pp = str_replace_all(pp, '`', '')) %>% separate(pp, c('pop1', 'pop2'), sep = ' ') %>% left_join(f2(f2_blocks[sort(pops), sort(pops),]), by = c('pop1', 'pop2')) %>% ggplot(aes(Estimate, est)) + geom_point() + geom_abline()

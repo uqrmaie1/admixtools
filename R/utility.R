@@ -28,16 +28,19 @@ qpsolve = function(...) quadprog::solve.QP(...)$solution
 qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
                           error = function(e) {
                             if(str_detect(e$message, 'constraints are inconsistent')) {
+                              # warning(e$message)
                               # set lower bounds to -1e3 for solve.QP, then truncate at 0
                               ell = list(...)
                               ilow = (1:(length(ell[[4]])/2))
                               low = ell[[4]][ilow]
                               ell[[4]][ilow] = -1e3
                               cc = solve((ell[[1]]+t(ell[[1]]))/2)
-                              diag(cc) = diag(cc)+0.0001
+                              #diag(cc) = diag(cc)+0.0001
+                              diag(cc) = diag(cc)+0.0001*mean(diag(cc))
                               cc = (cc+t(cc))/2
                               ell[[1]] = solve(cc)
-                              return(pmax(low, do.call(quadprog::solve.QP, ell)$solution))
+                              return(do.call(quadprog::solve.QP, ell)$solution)
+                              #return(pmax(low, do.call(quadprog::solve.QP, ell)$solution))
                             } else {
                               stop(e)
                             }

@@ -8,7 +8,7 @@ extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   maxmem = 8000, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
   overwrite = FALSE, format = NULL, poly_only = TRUE,
-  adjust_pseudohaploid = FALSE, randomize_alleles = TRUE,
+  adjust_pseudohaploid = FALSE, randomize_alleles = FALSE,
   seed = NULL, verbose = TRUE)
 }
 \arguments{
@@ -47,7 +47,7 @@ and you want to choose which one to read}
 
 \item{adjust_pseudohaploid}{genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
-\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. For data with large amounts of missingness, this can help to reduce bias of f4-statistics computed from allele frequency products.}
+\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.}
 
 \item{seed}{random seed for \code{randomize_alleles}}
 

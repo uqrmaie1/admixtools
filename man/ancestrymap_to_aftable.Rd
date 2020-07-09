@@ -5,8 +5,8 @@
 \title{Read allele frequencies from ancestrymap files}
 \usage{
 ancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
-  adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL,
-  verbose = TRUE)
+  adjust_pseudohaploid = TRUE, randomize_alleles = FALSE,
+  seed = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of ancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}

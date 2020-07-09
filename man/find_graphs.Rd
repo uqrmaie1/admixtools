@@ -8,43 +8,62 @@ find_graphs(f2_data, pops = NULL, outpop = NULL, numrep = 10,
   numgraphs = 50, numgen = 5, numsel = 5, numadmix = 0,
   keep = c("all", "best", "last"), f2_denom = 1, cpp = TRUE,
   initgraph = NULL, mutfuns = c("spr_leaves", "spr_all", "swap_leaves",
-  "move_admixedge_once", "flipadmix_random"), parallel = TRUE,
-  stop_at = NULL, debug = numrep == 1, fudge = 1e-04,
-  verbose = TRUE, ...)
+  "move_admixedge_once", "flipadmix_random"), store_intermediate = NULL,
+  parallel = TRUE, stop_at = NULL, debug = FALSE,
+  fudge_cov = 1e-05, verbose = TRUE, ...)
 }
 \arguments{
-\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
 
-\item{pops}{populations for which to fit admixture graphs}
+\item{pops}{Populations for which to fit admixture graphs}
 
-\item{outpop}{outgroup population}
+\item{outpop}{Outgroup population}
 
-\item{numrep}{number of independent repetitions (each repetition can be run in parallel)}
+\item{numrep}{Number of independent repetitions (each repetition can be run in parallel)}
 
-\item{numgraphs}{number of graphs in each generation}
+\item{numgraphs}{Number of graphs in each generation}
 
-\item{numgen}{number of generations}
+\item{numgen}{Number of generations}
 
-\item{numsel}{number of graphs which are selected in each generation}
+\item{numsel}{Number of graphs which are selected in each generation. Should be less than \code{numgraphs}.}
 
-\item{numadmix}{number of admixture events within each graph}
+\item{numadmix}{Number of admixture events within each graph}
 
-\item{keep}{by default, all evaluated graphs will be returned. \code{best} will only return the best fitting
+\item{keep}{By default (\code{all}), all evaluated graphs will be returned. \code{best} will only return the best fitting
 graph from each repeat and each generation. \code{last} will return all graphs from the last generation.}
 
-\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
+\item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts f2 to Fst.}
 
-\item{cpp}{should optimization be run in C++ or in R? C++ is faster.}
+\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
-\item{initgraph}{optional graph to start out with}
+\item{initgraph}{Optional graph to start with. If \code{NULL}, optimization will start with random graphs.}
+
+\item{mutfuns}{The names of funcations used to modify graphs.
+\itemize{
+\item \code{spr_leaves} Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
+\item \code{spr_all} Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+\item \code{swap_leaves} Swaps two leaf nodes.
+\item \code{move_admixedge_once} Moves an admixture edge to a nearby location.
+\item \code{flipadmix_random} Flips the direction of an admixture edge (if possible).
+}}
+
+\item{store_intermediate}{Path and prefix of files for intermediate results to \code{.rds}. Can be useful if \code{find_graphs} doesn't finish sucessfully.}
 
 \item{parallel}{Parallelize over repeats (if \code{numrep > 1}) or graphs (if \code{numrep == 1}) by replacing \code{purrr::map} with \code{furrr::future_map}. Will only be effective if \code{future::plan()} has been set.}
+
+\item{stop_at}{Stop execution after finishing the generation running at \code{stop_at} seconds. Currently not working.}
 
 \item{debug}{If \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
 Errors will interrupt execution. This is the default if \code{numrep = 1}}
 
-\item{verbose}{print progress updates}
+\item{fudge_cov}{Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
+
+\item{verbose}{Print progress updates}
+
+\item{...}{Additional arguments passed to \code{qpgraph}}
+
+\item{verbose}{Print progress updates}
 }
 \value{
 a nested data frame with one model per line
