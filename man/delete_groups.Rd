@@ -7,11 +7,11 @@
 delete_groups(dir, groups = NULL, verbose = TRUE)
 }
 \arguments{
-\item{dir}{directory with precomputed individual pair data}
+\item{dir}{Directory with precomputed individual pair data}
 
-\item{groups}{the groups to delete. defaults to all groups}
+\item{groups}{Groups to delete. Defaults to all groups}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
 invisibly returns sample IDs in deleted groups as character vector

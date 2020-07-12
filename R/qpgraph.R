@@ -159,22 +159,26 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
 #' @export
 #' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' @param graph An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.
+#' @param graph An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled `lower` and `upper` with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.
 #' @param f2_denom Scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of
 #' f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
 #' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
 #' The covariance matrix of f3 statistics will be computed using bootstrapping.
-#' @param fudge Regularization term added to the covariance matrix of fitted branch lengths (after scaling by the matrix trace).
-#' @param fudge_cov Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
+#' @param fudge Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).
+#' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
 #' @param fnscale Optimization parameter passed to `control` in \code{\link{optim}}
 #' @param lsqmode Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
-#' @param numstart Number of random initializations. defaults to 10.
+#' @param numstart Number of random initializations. Defaults to 10.
 #' @param seed Seed for generating starting weights.
-#' @param cpp Should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.
-#' @param return_f4 Return all f4 statistics? Can take a while.
+#' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param return_f4 Return all f4-statistics. Defaults to `FALSE` because this can be slow.
+#' @param f3precomp Precomputed f3-statistics. This should be the output of `qpgraph_precompute_f3` and can be provided instead of `f2_blocks`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
+#' @param f2_blocks_test An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of `f2_blocks`. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step
+#' @param low_q Reported lower quantile of fitted admixture edge weights across random initializations
+#' @param high_q Reported upper quantile of fitted admixture edge weights across random initializations
 #' @param verbose Print progress updates
-#' @return A list with output describing the model fit:
+#' @return A list with data describing the model fit:
 #' \enumerate{
 #' \item `edges` a data frame where each row is an edge in the graph. For regular edges,
 #' the column `weight` is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
@@ -336,7 +340,7 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 #' will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times, where `n` is either
 #' equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix
 #' of f3 statistics will be computed using bootstrapping.
-#' @param fudge_cov The regularization term added to the f3-covariance matrix, after multiplying it by the matrix trace.
+#' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
 #' @param lsqmode Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @return A list with four items
 #' \enumerate{

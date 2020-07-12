@@ -89,9 +89,9 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' admixture events (see `wave`).
 #' @export
 #' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
-#' @param target target population
-#' @param left source populations
-#' @param right outgroup populations
+#' @param target Target population
+#' @param left Source populations
+#' @param right Outgroup populations
 #' @param wave If `TRUE` (the default), lower rank models and models with fewer source populations will also be tested.
 #' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge value added to diagonal matrix elements before inverting
@@ -100,12 +100,11 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
 #' as well as the weight standard errors, will be computed using bootstrapping.
-#' @param getcov should standard errors be returned? Setting this to `FALSE` makes this function much faster.
-#' @param constrained if `FALSE` (default), admixture weights can be negative.
-#' if `TRUE`, they will all be non-negative, as in \code{\link{lazadm}}
-#' @param cpp should optimization be done using C++ or R function? `cpp = TRUE` is much faster.
-#' @param verbose print progress updates
-#' @return a list with output describing the model fit:
+#' @param getcov Return standard errors for weights? Setting this to `FALSE` makes this function much faster.
+#' @param constrained Constrain admixture weights to be non-negative
+#' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param verbose Print progress updates
+#' @return A list with output describing the model fit:
 #' \enumerate{
 #' \item `weights` a data frame with estimated admixture proportions where each row is left population.
 #' estimated edge length, and for admixture edges, it is the estimated admixture weight.
@@ -144,7 +143,7 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   if(verbose) alert_info('Computing f4 stats...\n')
   #f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right)
   f2_blocks = get_f2(f2_data, pops = pops, f2_denom = f2_denom, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, target, left, right, boot = boot)
+  f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
 
   f4_est = f4dat$est
   f4_var = f4dat$var
@@ -189,10 +188,10 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
 qpwave = qpadm
 
 
-f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
+f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  #statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
+  statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
 
   # f4_blocks = (f2_blocks[left, right[1], ] +
   #              f2_blocks[target, right[-1], ] -
@@ -200,17 +199,17 @@ f2_to_f4 = function(f2_blocks, target, left, right, boot = FALSE) {
   #              f2_blocks[left, right[-1], ])/2
 
   nr = length(right) - 1
-  nl = length(left)
-  f4_blocks = (f2_blocks[left, rep(right[1], nr), , drop = FALSE] +
-               f2_blocks[rep(target, nl), right[-1], , drop = FALSE] -
-               f2_blocks[rep(target, nl), rep(right[1], nr), , drop = FALSE] -
-               f2_blocks[left, right[-1], , drop = FALSE])/2
+  nl = length(left) - 1
+  f4_blocks = (f2_blocks[left[-1], rep(right[1], nr), , drop = FALSE] +
+               f2_blocks[rep(left[1], nl), right[-1], , drop = FALSE] -
+               f2_blocks[rep(left[1], nl), rep(right[1], nr), , drop = FALSE] -
+               f2_blocks[left[-1], right[-1], , drop = FALSE])/2
 
   f4_lo = f4_blocks %>% samplefun
   block_lengths = parse_number(dimnames(f4_lo)[[3]])
 
-  #out = f4_lo %>% statfun(block_lengths)
-  out = f4_lo %>% jack_pairarr_stats(block_lengths)
+  out = f4_lo %>% statfun(block_lengths)
+  #out = f4_lo %>% jack_pairarr_stats(block_lengths)
   out$f4_lo = f4_lo
   out$block_lengths = block_lengths
   out
@@ -392,7 +391,6 @@ add_weighted_f2 = function(f2_blocks, weights) {
   stopifnot(all(names(weights) %in% nam))
   matchedweights = rep(0, npop)
   matchedweights[match(names(weights), nam)] = weights
-  #add = apply(f2_blocks*replicate(nblocks, tcrossprod(matchedweights)), 2:3, sum, na.rm=T)
   add = apply(f2_blocks * matchedweights, 2:3, sum, na.rm=T)
   f2_blocks = abind::abind(f2_blocks, add, along = 1)
   f2_blocks = abind::abind(f2_blocks, rbind(add, 0), along = 2)
@@ -416,12 +414,12 @@ qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, b
                    constrained = FALSE, cpp = TRUE, weights = TRUE) {
 
   f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right, afprod = TRUE)
-  f4dat = f2_to_f4(f2_data, target, left, right, boot = boot)
+  f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
-  rnk = length(left)-1
+  rnk = length(left) - 1
   out = qpadm_fit(f4_est, qinv, rnk, fudge = fudge,
                   constrained = constrained, cpp = cpp, addweights = TRUE)
   w = out %>% select(-1:-4) %>% as.matrix
@@ -433,6 +431,25 @@ qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, b
   #                        qpsolve = qpsolve)$weights %>% c
   # out %>% mutate(weights = list(weight), feasible = all(between(weight, 0, 1)))
 }
+
+
+#' Test if two sets of populations form two clades
+#'
+#'
+#' @export
+test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
+
+  f2_blocks = get_f2(f2_data, pops = left, f2_denom = f2_denom, pops2 = right, afprod = TRUE)
+  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
+  f4_est = f4dat$est
+  f4_var = f4dat$var
+  diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
+  qinv = solve(f4_var)
+  out = qpadm_fit(f4_est, qinv, rnk = 0, fudge = fudge,
+                  cpp = cpp, addweights = FALSE)
+  out
+}
+
 
 find_right = function(f2_blocks, target, pops) {
   f4p = f4(f2_blocks) %>%

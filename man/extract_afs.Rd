@@ -8,46 +8,45 @@ extract_afs(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   cols_per_chunk = 20, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
   format = NULL, poly_only = TRUE, adjust_pseudohaploid = TRUE,
-  randomize_alleles = FALSE, seed = NULL, verbose = TRUE)
+  randomize_alleles = TRUE, seed = NULL, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{the directory to which to write data}
+\item{outdir}{Directory data where data will be stored}
 
-\item{inds}{the individuals for which data should be extracted.}
+\item{inds}{Individuals for which data should be extracted}
 
-\item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
+\item{pops}{Populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
 
-\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
 
-\item{cols_per_chunk}{number of populations per chunk. higher value will lead to fewer,
-but more memory intensive jobs when computing f2}
+\item{maxmiss}{Discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
 
-\item{maxmiss}{discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
+\item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
-\item{minmaf}{discard SNPs with minor allele frequency less than \code{minmaf}}
+\item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
 
-\item{maxmaf}{discard SNPs which minor allele frequency greater than than \code{maxmaf}}
+\item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
-\item{transitions}{set to \code{FALSE} to exclude transition SNPs}
+\item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
 
-\item{transversions}{set to \code{FALSE} to exclude transversion SNPs}
+\item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{keepsnps}{SNP IDs of SNPs to keep. overrides other SNP filtering options}
+\item{format}{Supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
 
-\item{format}{supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read}
+\item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 
-\item{adjust_pseudohaploid}{genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
-\item{randomize_alleles}{randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.}
+\item{randomize_alleles}{Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).}
 
-\item{seed}{random seed for \code{randomize_alleles}}
+\item{seed}{Random seed for \code{randomize_alleles}}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \description{
 Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,

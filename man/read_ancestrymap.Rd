@@ -7,14 +7,14 @@
 read_ancestrymap(pref, inds = NULL, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp}).}
+\item{pref}{Prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp})}
 
-\item{inds}{optional vector of samples to read in}
+\item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
-a list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
+A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
 }
 \description{
 Read genotype data from ancestrymap files

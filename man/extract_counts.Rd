@@ -10,35 +10,35 @@ extract_counts(pref, outdir, inds = NULL, dist = 0.05, maxmiss = 1,
   overwrite = FALSE, format = NULL, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{the directory to which to write data}
+\item{outdir}{Directory data where data will be stored}
 
-\item{inds}{the individuals for which to extract data}
+\item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
-\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
 
-\item{maxmiss}{discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
+\item{maxmiss}{Discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
 
-\item{minmaf}{discard SNPs with minor allele frequency less than \code{minmaf}}
+\item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
-\item{maxmaf}{discard SNPs which minor allele frequency greater than than \code{maxmaf}}
+\item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
 
-\item{transitions}{set to \code{FALSE} to exclude transition SNPs}
+\item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
-\item{transversions}{set to \code{FALSE} to exclude transversion SNPs}
+\item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
 
-\item{keepsnps}{SNP IDs of SNPs to keep. overrides other SNP filtering options}
+\item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
+\item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
 
-\item{overwrite}{should existing files be overwritten?}
+\item{overwrite}{Overwrite existing files in \code{outdir}}
 
-\item{format}{supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read}
+\item{format}{Supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \description{
 Prepare data for various admixtools functions. This function reads data from packedancestrymap or PLINK files,

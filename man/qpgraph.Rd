@@ -13,7 +13,7 @@ qpgraph(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-04,
 \arguments{
 \item{f2_blocks}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
-\item{graph}{An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file.}
+\item{graph}{An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled \code{lower} and \code{upper} with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.}
 
 \item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
@@ -22,26 +22,34 @@ f3 statistics will be computed using block-jackknife. Otherwise bootstrap resamp
 where \code{n} is either equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}.
 The covariance matrix of f3 statistics will be computed using bootstrapping.}
 
-\item{fudge}{Regularization term added to the covariance matrix of fitted branch lengths (after scaling by the matrix trace).}
+\item{fudge}{Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).}
 
-\item{fudge_cov}{Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
+\item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 
 \item{fnscale}{Optimization parameter passed to \code{control} in \code{\link{optim}}}
 
 \item{lsqmode}{Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
-\item{numstart}{Number of random initializations. defaults to 10.}
+\item{numstart}{Number of random initializations. Defaults to 10.}
 
 \item{seed}{Seed for generating starting weights.}
 
-\item{cpp}{Should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
+\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
-\item{return_f4}{Return all f4 statistics? Can take a while.}
+\item{return_f4}{Return all f4-statistics. Defaults to \code{FALSE} because this can be slow.}
+
+\item{f3precomp}{Precomputed f3-statistics. This should be the output of \code{qpgraph_precompute_f3} and can be provided instead of \code{f2_blocks}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
+
+\item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
+
+\item{low_q}{Reported lower quantile of fitted admixture edge weights across random initializations}
+
+\item{high_q}{Reported upper quantile of fitted admixture edge weights across random initializations}
 
 \item{verbose}{Print progress updates}
 }
 \value{
-A list with output describing the model fit:
+A list with data describing the model fit:
 \enumerate{
 \item \code{edges} a data frame where each row is an edge in the graph. For regular edges,
 the column \code{weight} is the estimated edge length, and for admixture edges, it is the estimated admixture weight.

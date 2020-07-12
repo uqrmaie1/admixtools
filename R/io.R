@@ -2,14 +2,14 @@
 #' Read allele frequencies from packedancestrymap files
 #'
 #' @export
-#' @param pref prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`).
-#' @param inds vector of samples from which to compute allele frequencies.
-#' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
-#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
-#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.
-#' @param seed random seed for `randomize_alleles`
-#' @param verbose print progress updates
-#' @return a list with two items: allele frequency data and allele counts.
+#' @param pref Prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
+#' @param inds Individuals from which to compute allele frequencies
+#' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param randomize_alleles Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).
+#' @param seed Random seed for `randomize_alleles`
+#' @param verbose Print progress updates
+#' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
 #' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
@@ -17,7 +17,7 @@
 #' counts = afdat$counts
 #' }
 packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
-                                        randomize_alleles = FALSE, seed = NULL, verbose = TRUE) {
+                                        randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
 
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
@@ -88,18 +88,16 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 #' Read allele frequencies from ancestrymap files
 #'
 #' @export
-#' @param pref prefix of ancestrymap files (files have to end in `.geno`, `.ind`, `.snp`).
-#' @param inds vector of samples from which to compute allele frequencies.
-#' @param pops vector of populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file
-#' @param verbose print progress updates
-#' @return a list with two items: allele frequency data and allele counts.
+#' @param pref Prefix of ancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
+#' @inheritParams packedancestrymap_to_aftable
+#' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
 #' afdat = ancestrymap_to_aftable(prefix, pops = pops)
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, randomize_alleles = FALSE, seed = NULL, verbose = TRUE) {
+ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -265,103 +263,14 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
 
 #' Read genotype data from packedancestrymap files
 #'
-#' This is currently slower than `read_plink` because it is implemented only in `R`, not in `C++`.
 #' @export
-#' @param inds optional vector of samples to read in
-#' @param blocksize number of SNPs read in each block.
-#' @inheritParams packedancestrymap_to_aftable
-#' @return a list with the genotype data matrix, the `.ind` file, and the `.snp` file
-#' @examples
-#' \dontrun{
-#' samples = c('Ind1', 'Ind2', 'Ind3')
-#' geno = read_packedancestrymap(prefix, samples)
-#' }
-read_packedancestrymap_old = function(pref, inds = NULL, blocksize = 1000, verbose = TRUE) {
-  # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
-  # inds: optional vector of individual IDs
-  # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
-
-  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
-  indfile$X3 = indfile$X1
-  if(!is.null(inds)) {
-    stopifnot(all(inds %in% indfile$X1))
-    indfile$X3[!indfile$X3 %in% inds] = NA
-    inds = intersect(inds, indfile$X1)
-  } else {
-    inds = indfile$X1
-  }
-  fl = paste0(pref, '.geno')
-  conn = file(fl, 'rb')
-  on.exit(close(conn))
-  hd = strsplit(readBin(conn, 'character', n = 1), ' +')[[1]]
-  close(conn)
-  nindall = as.numeric(hd[2])
-  nsnp = as.numeric(hd[3])
-  nind = length(inds)
-
-  if(verbose) {
-    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnp, ' SNPs.\n'))
-    alert_info(paste0('Reading data for ', nind, ' samples\n'))
-    alert_info(paste0('Expected size of genotype data: ', round((nsnp*nind*8+nsnp*112)/1e6), ' MB\n'))
-    # 8, 112: estimated scaling factors for AF columns and annotation columns
-  }
-
-  rlen = file.info(fl)$size/(nsnp+1)
-  conn = file(fl, 'rb')
-  invisible(readBin(conn, 'raw', n = rlen))
-  afmatrix = matrix(NA, nsnp, nind)
-  colnames(afmatrix) = inds
-  rownames(afmatrix) = snpfile$SNP
-  popind2 = which(!is.na(indfile$X3))
-  popind3 = c(outer(popind2, ((1:blocksize)-1)*rlen*4, `+`))
-  popindmat = matrix(sapply(1:nind, function(i) indfile$X3[popind2] == inds[i]), ncol=nind)
-  indfile %<>% filter(!is.na(X3))
-  stopifnot(nrow(indfile) == nind)
-  cnt = 1
-  sumna = 0
-  count_nonmissing = function(x) sum(!is.na(x))
-  modnum = ifelse(shiny::isRunning(), 1e5, 1e3)
-  while(cnt <= nsnp) {
-    if(cnt+blocksize > nsnp) {
-      blocksize = nsnp-cnt+1
-      popind3 = sort(c(outer(popind2, ((1:blocksize)-1)*rlen*4, `+`)))
-    }
-    bitmat = matrix(as.integer(rawToBits(readBin(conn, 'raw', n = rlen*blocksize))), ncol=8, byrow = TRUE)
-    gmat = matrix(c(t(bitmat[,c(8,6,4,2)]*2+bitmat[,c(7,5,3,1)]))[popind3], ncol=blocksize)
-    gmat[gmat==3]=NA # assuming non-missing genotypes are 0, 1, 2 missing is 3
-    popfreqs = sapply(1:nind, function(i) colMeans(gmat[popindmat[,i],, drop=FALSE], na.rm=TRUE))
-    popfreqs[is.nan(popfreqs)] = NA
-    sumna = sumna + sum(is.na(popfreqs))
-    afmatrix[cnt:(cnt+blocksize-1),] = popfreqs
-    if(verbose && cnt %% modnum == 1) alert_info(paste0((cnt-1)/1e3, 'k SNPs read...\r'))
-    cnt = cnt+blocksize
-  }
-  if(verbose) {
-    alert_info('\n')
-    alert_success(paste0(cnt-1, ' SNPs read in total\n'))
-    alert_warning(paste0(sumna, ' genotypes are missing (on average ', round(sumna/nind), ' per sample)\n'))
-  }
-  #outdat = treat_missing(afmatrix[keepsnps,], NULL, snpfile[keepsnps,], na.action = na.action, verbose = verbose)
-  nr = nrow(afmatrix)
-  nc = ncol(afmatrix)
-  stopifnot(nr == nrow(snpfile))
-  stopifnot(nc == nrow(indfile))
-  outlist = list(geno = afmatrix, ind = indfile, snp = snpfile)
-  outlist
-}
-
-#' Read genotype data from packedancestrymap files
-#'
-#' This is currently slower than `read_plink` because it is implemented only in `R`, not in `C++`.
-#' @export
-#' @param pref prefix of the packedancestrymap files
-#' @param inds optional vector of samples to read in
-#' @param first index of first SNP to read
-#' @param last index of last SNP to read
-#' @param transpose transpose genotype matrix
-#' @return a list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @param pref Prefix of the packedancestrymap files
+#' @param inds Individuals for which data should be read. Defaults to all individuals
+#' @param first Index of first SNP to read
+#' @param last Index of last SNP to read
+#' @param transpose Transpose genotype matrix (default is `snps` x `individuals`)
+#' @param verbose Print progress updates
+#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
@@ -432,9 +341,9 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #' Read genotype data from ancestrymap files
 #'
 #' @export
-#' @param inds optional vector of samples to read in
+#' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @inheritParams packedancestrymap_to_aftable
-#' @return a list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
@@ -483,7 +392,6 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #'
 #' @export
 #' @param pref prefix of `PLINK` files (files have to end in `.bed`, `.bim`, `.fam`).
-#' @param inds vector of samples from which to compute allele frequencies.
 #' @inheritParams packedancestrymap_to_aftable
 #' @return a list with two items: allele frequency data and individual counts.
 #' @examples
@@ -493,7 +401,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' counts = afdat$counts
 #' }
 plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
-                            randomize_alleles = FALSE, seed = NULL, verbose = FALSE) {
+                            randomize_alleles = TRUE, seed = NULL, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -562,10 +470,9 @@ pop_indices = function(famdat, inds = NULL, pops = NULL) {
 #' See \code{\href{https://www.rdocumentation.org/packages/genio}{genio}} for a dedicated `R` package for
 #' reading and writing `PLINK` files.
 #' @export
-#' @param inds optional vector of samples to read in
-#' @param blocksize number of SNPs read in each block.
+#' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @inheritParams packedancestrymap_to_aftable
-#' @return a list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
@@ -607,8 +514,8 @@ read_plink = function(pref, inds = NULL, auto_only = TRUE, verbose = FALSE) {
 #' @export
 #' @param f2_arrs 3d arrays with blocked f2, allele frequency products, and counts for each population pair.
 #' The first two dimensions of each array have to have population names.
-#' @param outdir directory into which to write the files.
-#' @param overwrite should existing `.rds` files be overwritten?
+#' @param outdir Directory data where data will be stored
+#' @param overwrite Overwrite existing files in `outdir`
 #' @seealso \code{\link{read_f2}}
 #' @examples
 #' \dontrun{
@@ -642,12 +549,12 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by \code{\link{write_f2}}
 #' and returns them as a 3d array.
 #' @export
-#' @param f2_dir directory from which to read files
-#' @param pops the populations for which f2 statistics should be read. Defaults to all populations,
+#' @param f2_dir Directory from which to read files
+#' @param pops Populations for which f2 statistics should be read. Defaults to all populations,
 #' which may require a lot of memory.
-#' @param afprod return allele frequency products instead of f2 estimates
-#' @param remove_na remove blocks with missing values
-#' @return a 3d array of block jackknife estimates
+#' @param afprod Return allele frequency products instead of f2 estimates
+#' @param remove_na Remove blocks with missing values
+#' @return A 3d array of block jackknife estimates
 #' @seealso \code{\link{write_f2}}
 #' @examples
 #' \dontrun{
@@ -725,9 +632,9 @@ write_pairdat = function(aa_arr, nn_arr, outdir, overwrite = FALSE) {
 #' This function splits a large matrix into smaller blocks with `cols_per_chunk` columns per block,
 #' and saves them as `.rds` files with prefix `prefix`
 #' @export
-#' @param mat the matrix to be split
-#' @param cols_per_chunk the number of columns per block
-#' @param prefix prefix of output files
+#' @param mat The matrix to be split
+#' @param cols_per_chunk Number of columns per block
+#' @param prefix Prefix of output files
 #' @seealso \code{\link{packedancestrymap_to_aftable}}, \code{\link{write_split_f2_block}}
 #' @examples
 #' \dontrun{
@@ -759,16 +666,16 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #' split into consecutive blocks for a set of populations. This function calls \code{\link{write_f2}},
 #' which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time.
 #' @export
-#' @param afmatprefix prefix of the allele frequency `.rds` files created by \code{\link{split_mat}}
-#' @param countmatprefix prefix of the allele frequency `.rds` files created by \code{\link{split_mat}}
-#' @param outdir directory where the f2 blocks will be stored
-#' @param chunk1 index of the first chunk of populations
-#' @param chunk2 index of the second chunk of populations
-#' @param popcounts named vector with number of samples for each population.
-#' @param block_lengths vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
+#' @param afmatprefix Prefix of the allele frequency `.rds` files created by \code{\link{split_mat}}
+#' @param countmatprefix Prefix of the allele frequency `.rds` files created by \code{\link{split_mat}}
+#' @param outdir Directory data where data will be stored
+#' @param chunk1 Index of the first chunk of populations
+#' @param chunk2 Index of the second chunk of populations
+#' @param popcounts Named vector with number of samples for each population.
+#' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs.
-#' @param f2_denom scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.
-#' @param verbose print progress updates
+#' @param f2_denom Scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.
+#' @param verbose Print progress updates
 #' @seealso \code{\link{split_mat}} for creating split allele frequency data,
 #' \code{\link{write_f2}} for writing split f2 block jackknife estimates
 #' @examples
@@ -911,28 +818,28 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' This function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
 #' and \code{\link{afs_to_f2_blocks}}.
 #' @export
-#' @param pref prefix of packedancestrymap or PLINK files. packedancestrymap has to end in `.geno`, `.snp`, `.ind`,
+#' @param pref Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in `.geno`, `.snp`, `.ind`,
 #' PLINK has to end in `.bed`, `.bim`, `.fam`
-#' @param outdir the directory to which to write data
-#' @param inds the individuals for which data should be extracted.
-#' @param pops the populations for which data should be extracted. `pops` and `inds` cannot be specified
+#' @param outdir Directory data where data will be stored
+#' @param inds Individuals for which data should be extracted
+#' @param pops Populations for which data should be extracted. `pops` and `inds` cannot be specified
 #' at the same time. If none are specified, all populations will be extracted.
-#' @param dist genetic distance in Morgan. Default is 0.05 (50 cM).
-#' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
-#' @param maxmiss discard SNPs which are missing in a fraction of populations higher than `maxmiss`
-#' @param minmaf discard SNPs with minor allele frequency less than `minmaf`
-#' @param maxmaf discard SNPs which minor allele frequency greater than than `maxmaf`
-#' @param transitions set to `FALSE` to exclude transition SNPs
-#' @param transversions set to `FALSE` to exclude transversion SNPs
-#' @param keepsnps SNP IDs of SNPs to keep. overrides other SNP filtering options
-#' @param overwrite should existing files be overwritten?
-#' @param format supply this if the prefix can refer to genotype data in different formats
-#' and you want to choose which one to read
-#' @param poly_only exclude sites with identical allele frequencies in all populations
-#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
-#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.
-#' @param seed random seed for `randomize_alleles`
-#' @param verbose print progress updates
+#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
+#' @param maxmem Maximum amount of memory to be used. If the required amount of memory exceeds `maxmem`, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.
+#' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
+#' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
+#' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
+#' @param transitions Set this to `FALSE` to exclude transition SNPs
+#' @param transversions Set this to `FALSE` to exclude transversion SNPs
+#' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
+#' @param overwrite Overwrite existing files in `outdir`
+#' @param format Supply this if the prefix can refer to genotype data in different formats
+#' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
+#' @param poly_only Exclude sites with identical allele frequencies in all populations
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param randomize_alleles Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).
+#' @param seed Random seed for `randomize_alleles`
+#' @param verbose Print progress updates
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
@@ -941,7 +848,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                       keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
-                      adjust_pseudohaploid = FALSE, randomize_alleles = FALSE, seed = NULL, verbose = TRUE) {
+                      adjust_pseudohaploid = FALSE, randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
@@ -964,7 +871,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 
 
 anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adjust_pseudohaploid = TRUE,
-                              randomize_alleles = FALSE, seed = NULL, verbose = TRUE) {
+                              randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -1014,13 +921,8 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' and \code{\link{afs_to_f2_blocks}}.
 #'
 #' @export
-#' @param inds the individuals for which to extract data
-#' @param maxmiss discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
-#' @param minmaf discard SNPs with minor allele frequency less than `minmaf`
-#' @param maxmaf discard SNPs which minor allele frequency greater than than `maxmaf`
-#' @param transitions set to `FALSE` to exclude transition SNPs
-#' @param transversions set to `FALSE` to exclude transversion SNPs
-#' @param keepsnps SNP IDs of SNPs to keep. overrides other SNP filtering options
+#' @param inds Individuals for which data should be read. Defaults to all individuals
+#' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @inheritParams extract_f2
 #' @examples
 #' \dontrun{
@@ -1106,27 +1008,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
-#' @param pref prefix of packedancestrymap or PLINK files. packedancestrymap has to end in `.geno`, `.snp`, `.ind`,
-#' PLINK has to end in `.bed`, `.bim`, `.fam`
-#' @param outdir the directory to which to write data
-#' @param inds the individuals for which data should be extracted.
-#' @param pops the populations for which data should be extracted. `pops` and `inds` cannot be specified
-#' at the same time. If none are specified, all populations will be extracted.
-#' @param dist genetic distance in Morgan. Default is 0.05 (50 cM).
-#' @param cols_per_chunk number of populations per chunk. higher value will lead to fewer,
-#' but more memory intensive jobs when computing f2
-#' @param maxmiss discard SNPs which are missing in a fraction of populations higher than `maxmiss`
-#' @param minmaf discard SNPs with minor allele frequency less than `minmaf`
-#' @param maxmaf discard SNPs which minor allele frequency greater than than `maxmaf`
-#' @param transitions set to `FALSE` to exclude transition SNPs
-#' @param transversions set to `FALSE` to exclude transversion SNPs
-#' @param keepsnps SNP IDs of SNPs to keep. overrides other SNP filtering options
-#' @param format supply this if the prefix can refer to genotype data in different formats
-#' and you want to choose which one to read
-#' @param adjust_pseudohaploid genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
-#' @param randomize_alleles randomly report allele frequencies for reference or for alternative allele for each SNP. Changes allele frequency products, but not f2 estimates.
-#' @param seed random seed for `randomize_alleles`
-#' @param verbose print progress updates
+#' @inheritParams extract_f2
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
@@ -1136,7 +1018,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 20,
                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = TRUE, adjust_pseudohaploid = TRUE,
-                       randomize_alleles = FALSE, seed = NULL, verbose = TRUE) {
+                       randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   # read data and compute allele frequencies
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
@@ -1168,10 +1050,10 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols
 #' Copy a subset of f2-statistics to a new directory
 #'
 #' @export
-#' @param from directory with f2-statistics
-#' @param to target directory
-#' @param pops the populations to copy
-#' @param verbose print progress updates
+#' @param from Directory with f2-statistics
+#' @param to Target directory
+#' @param pops Populations to copy
+#' @param verbose Print progress updates
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
@@ -1279,7 +1161,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
 #' @param afprod Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for qpdstat and qpadm. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for `qpgraph`); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 #' This option is currently ineffective when reading data extracted with `extract_counts`.
 #' @param return_array Return a 3d array (default). If false, a data frame will be returned.
-#' @param apply_corr Subtract the f2 correction factor. Setting this to `FALSE` can be useful occasionally.
+#' @param apply_corr Subtract the f2 correction factor. Setting this to `FALSE` can occasionally be useful
 #' @param remove_na Remove blocks with missing values
 #' @param verbose Print progress updates
 #' @return A 3d array of f2 statistics
@@ -1571,10 +1453,10 @@ xmat_to_pairdat = function(xmat, block_lengths, f2_denom = 1, maxmem = 8000,
 #' replacing individual IDs of the grouped samples with the new group labels.
 #' All groupings are listed in `{dir}/groups/{groupname}.rds`
 #' @export
-#' @param dir directory with precomputed individual pair data
-#' @param inds vector of individuals to group
-#' @param pops vector of group names, either length 1, or same length as `inds`
-#' @param overwrite should existing groups be overwritten?
+#' @param dir Directory with precomputed individual pair data
+#' @param inds Individuals to group
+#' @param pops Group names, either length 1, or same length as `inds`
+#' @param overwrite Overwrite existing files in `outdir`
 #' @param verbose print progress updates
 #' @seealso \code{\link{delete_groups}}
 #' @examples
@@ -1648,9 +1530,9 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
 #'
 #' This function deletes data for groups created by `group_samples`
 #' @export
-#' @param dir directory with precomputed individual pair data
-#' @param groups the groups to delete. defaults to all groups
-#' @param verbose print progress updates
+#' @param dir Directory with precomputed individual pair data
+#' @param groups Groups to delete. Defaults to all groups
+#' @param verbose Print progress updates
 #' @return invisibly returns sample IDs in deleted groups as character vector
 #' @seealso \code{\link{group_samples}}
 #' @examples

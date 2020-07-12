@@ -24,7 +24,7 @@ This option is currently ineffective when reading data extracted with \code{extr
 
 \item{return_array}{Return a 3d array (default). If false, a data frame will be returned.}
 
-\item{apply_corr}{Subtract the f2 correction factor. Setting this to \code{FALSE} can be useful occasionally.}
+\item{apply_corr}{Subtract the f2 correction factor. Setting this to \code{FALSE} can occasionally be useful}
 
 \item{remove_na}{Remove blocks with missing values}
 

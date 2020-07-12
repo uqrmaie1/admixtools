@@ -8,21 +8,23 @@ read_packedancestrymap(pref, inds = NULL, first = 1, last = Inf,
   transpose = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of the packedancestrymap files}
+\item{pref}{Prefix of the packedancestrymap files}
 
-\item{inds}{optional vector of samples to read in}
+\item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
-\item{first}{index of first SNP to read}
+\item{first}{Index of first SNP to read}
 
-\item{last}{index of last SNP to read}
+\item{last}{Index of last SNP to read}
 
-\item{transpose}{transpose genotype matrix}
+\item{transpose}{Transpose genotype matrix (default is \code{snps} x \code{individuals})}
+
+\item{verbose}{Print progress updates}
 }
 \value{
-a list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
+A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
 }
 \description{
-This is currently slower than \code{read_plink} because it is implemented only in \code{R}, not in \code{C++}.
+Read genotype data from packedancestrymap files
 }
 \examples{
 \dontrun{

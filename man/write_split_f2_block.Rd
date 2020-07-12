@@ -8,24 +8,24 @@ write_split_f2_block(afmatprefix, countmatprefix, outdir, chunk1, chunk2,
   block_lengths, verbose = TRUE)
 }
 \arguments{
-\item{afmatprefix}{prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
+\item{afmatprefix}{Prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
 
-\item{countmatprefix}{prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
+\item{countmatprefix}{Prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
 
-\item{outdir}{directory where the f2 blocks will be stored}
+\item{outdir}{Directory data where data will be stored}
 
-\item{chunk1}{index of the first chunk of populations}
+\item{chunk1}{Index of the first chunk of populations}
 
-\item{chunk2}{index of the second chunk of populations}
+\item{chunk2}{Index of the second chunk of populations}
 
-\item{block_lengths}{vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
+\item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs.}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 
-\item{popcounts}{named vector with number of samples for each population.}
+\item{popcounts}{Named vector with number of samples for each population.}
 
-\item{f2_denom}{scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
+\item{f2_denom}{Scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
 }
 \description{
 This is intended for computing f2-statistics for a large number of populations,

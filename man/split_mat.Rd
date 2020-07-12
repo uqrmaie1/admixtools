@@ -8,11 +8,11 @@ split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE,
   verbose = TRUE)
 }
 \arguments{
-\item{mat}{the matrix to be split}
+\item{mat}{The matrix to be split}
 
-\item{cols_per_chunk}{the number of columns per block}
+\item{cols_per_chunk}{Number of columns per block}
 
-\item{prefix}{prefix of output files}
+\item{prefix}{Prefix of output files}
 }
 \description{
 This function splits a large matrix into smaller blocks with \code{cols_per_chunk} columns per block,

@@ -12,11 +12,11 @@ qpadm(f2_data, target = NULL, left = NULL, right = NULL,
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}
 
-\item{target}{target population}
+\item{target}{Target population}
 
-\item{left}{source populations}
+\item{left}{Source populations}
 
-\item{right}{outgroup populations}
+\item{right}{Outgroup populations}
 
 \item{wave}{If \code{TRUE} (the default), lower rank models and models with fewer source populations will also be tested.}
 
@@ -30,17 +30,16 @@ Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is ei
 or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
 as well as the weight standard errors, will be computed using bootstrapping.}
 
-\item{getcov}{should standard errors be returned? Setting this to \code{FALSE} makes this function much faster.}
+\item{getcov}{Return standard errors for weights? Setting this to \code{FALSE} makes this function much faster.}
 
-\item{constrained}{if \code{FALSE} (default), admixture weights can be negative.
-if \code{TRUE}, they will all be non-negative, as in \code{\link{lazadm}}}
+\item{constrained}{Constrain admixture weights to be non-negative}
 
-\item{cpp}{should optimization be done using C++ or R function? \code{cpp = TRUE} is much faster.}
+\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
-a list with output describing the model fit:
+A list with output describing the model fit:
 \enumerate{
 \item \code{weights} a data frame with estimated admixture proportions where each row is left population.
 estimated edge length, and for admixture edges, it is the estimated admixture weight.

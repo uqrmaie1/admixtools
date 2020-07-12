@@ -23,7 +23,7 @@ will be computed using block-jackknife. Otherwise bootstrap resampling is perfor
 equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix
 of f3 statistics will be computed using bootstrapping.}
 
-\item{fudge_cov}{The regularization term added to the f3-covariance matrix, after multiplying it by the matrix trace.}
+\item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 
 \item{lsqmode}{Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 }

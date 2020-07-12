@@ -7,17 +7,17 @@
 read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE)
 }
 \arguments{
-\item{f2_dir}{directory from which to read files}
+\item{f2_dir}{Directory from which to read files}
 
-\item{pops}{the populations for which f2 statistics should be read. Defaults to all populations,
+\item{pops}{Populations for which f2 statistics should be read. Defaults to all populations,
 which may require a lot of memory.}
 
-\item{afprod}{return allele frequency products instead of f2 estimates}
+\item{afprod}{Return allele frequency products instead of f2 estimates}
 
-\item{remove_na}{remove blocks with missing values}
+\item{remove_na}{Remove blocks with missing values}
 }
 \value{
-a 3d array of block jackknife estimates
+A 3d array of block jackknife estimates
 }
 \description{
 This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by \code{\link{write_f2}}

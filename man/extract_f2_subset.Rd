@@ -7,13 +7,13 @@
 extract_f2_subset(from, to, pops)
 }
 \arguments{
-\item{from}{directory with f2-statistics}
+\item{from}{Directory with f2-statistics}
 
-\item{to}{target directory}
+\item{to}{Target directory}
 
-\item{pops}{the populations to copy}
+\item{pops}{Populations to copy}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \description{
 Copy a subset of f2-statistics to a new directory

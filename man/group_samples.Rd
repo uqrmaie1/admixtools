@@ -7,13 +7,13 @@
 group_samples(dir, inds, pops, overwrite = FALSE, verbose = TRUE)
 }
 \arguments{
-\item{dir}{directory with precomputed individual pair data}
+\item{dir}{Directory with precomputed individual pair data}
 
-\item{inds}{vector of individuals to group}
+\item{inds}{Individuals to group}
 
-\item{pops}{vector of group names, either length 1, or same length as \code{inds}}
+\item{pops}{Group names, either length 1, or same length as \code{inds}}
 
-\item{overwrite}{should existing groups be overwritten?}
+\item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{verbose}{print progress updates}
 }

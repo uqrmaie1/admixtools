@@ -8,20 +8,20 @@ f2_from_geno(pref, inds = NULL, pops = NULL, maxmem = 8000,
   format = NULL, verbose = TRUE)
 }
 \arguments{
-\item{pref}{prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{inds}{the individuals for which data should be extracted.}
+\item{inds}{Individuals for which data should be extracted}
 
-\item{pops}{the populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
+\item{pops}{Populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
 at the same time. If none are specified, all populations will be extracted.}
 
-\item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
+\item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
 
-\item{format}{supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read}
+\item{format}{Supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \description{
 Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
