@@ -79,11 +79,6 @@ get_split_f2_blocks = function(afmat, countmat, block_lengths, starts, ends, out
     b2 = afmat[, s2, drop=F]
     nam1 = colnames(b1)
     nam2 = colnames(b2)
-    # f2_subblock = mats_to_f2arr(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F]) %>%
-    #   block_arr_mean(block_lengths) %>%
-    #   replace_nan_with_na() %>%
-    #   `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
-    # if(c1 == c2) for(j in 1:dim(f2_subblock)[1]) f2_subblock[j,j,] = 0
 
     f2arrs = mats_to_f2arrs(b1, b2, countmat[,s1, drop=F], countmat[,s2, drop=F], block_lengths)
     if(c1 == c2) for(j in 1:length(nam1)) f2arrs$f2[j,j,] = 0
@@ -132,7 +127,7 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2) {
   arr
 }
 
-mats_to_f2arrs = function(afmat1, afmat2, countmat1, countmat2, block_lengths) {
+mats_to_f2arrs = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cpp = TRUE) {
   # Compute blocked f2, aa, and count arrays for all SNPs and all population pairs from two af matrices
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
@@ -145,20 +140,30 @@ mats_to_f2arrs = function(afmat1, afmat2, countmat1, countmat2, block_lengths) {
   nc1 = ncol(afmat1)
   nc2 = ncol(afmat2)
 
-  denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
-  denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
-  pq1 = afmat1*(1-afmat1)/denom1
-  pq2 = afmat2*(1-afmat2)/denom2
-  f2 = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`)) %>%
-    block_arr_mean(block_lengths) %>%
-    replace_nan_with_na()
+  if(cpp) {
+    f2 = cpp_mats_to_f2_arr(afmat1, afmat2, countmat1, countmat2) %>%
+      block_arr_mean(block_lengths) %>%
+      replace_nan_with_na()
+    afprod = cpp_outer_array_mul(afmat1, afmat2) %>%
+      block_arr_mean(block_lengths) %>%
+      replace_nan_with_na()
+    counts = cpp_outer_array_mul(!is.na(afmat1), !is.na(afmat2)) %>%
+      block_arr_sum(block_lengths)
 
-  afprod = outer_array(afmat1, afmat2) %>%
-    block_arr_mean(block_lengths) %>%
-    replace_nan_with_na()
-
-  counts = outer_array(!is.na(afmat1), !is.na(afmat2)) %>%
-    block_arr_sum(block_lengths)
+  } else {
+    denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
+    denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
+    pq1 = afmat1*(1-afmat1)/denom1
+    pq2 = afmat2*(1-afmat2)/denom2
+    f2 = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`)) %>%
+      block_arr_mean(block_lengths) %>%
+      replace_nan_with_na()
+    afprod = outer_array(afmat1, afmat2) %>%
+      block_arr_mean(block_lengths) %>%
+      replace_nan_with_na()
+    counts = outer_array(!is.na(afmat1), !is.na(afmat2)) %>%
+      block_arr_sum(block_lengths)
+  }
 
   dimnames(f2)[[1]] = dimnames(afprod)[[1]] = dimnames(counts)[[1]] = colnames(afmat1)
   dimnames(f2)[[2]] = dimnames(afprod)[[2]] = dimnames(counts)[[2]] = colnames(afmat2)

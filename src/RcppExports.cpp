@@ -136,6 +136,56 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_outer_array_mul
+arma::cube cpp_outer_array_mul(arma::mat& m1, arma::mat& m2);
+RcppExport SEXP _admixtools_cpp_outer_array_mul(SEXP m1SEXP, SEXP m2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type m2(m2SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_outer_array_mul(m1, m2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_outer_array_plus
+arma::cube cpp_outer_array_plus(arma::mat& m1, arma::mat& m2);
+RcppExport SEXP _admixtools_cpp_outer_array_plus(SEXP m1SEXP, SEXP m2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type m2(m2SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_outer_array_plus(m1, m2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_outer_array_minus
+arma::cube cpp_outer_array_minus(arma::mat& m1, arma::mat& m2);
+RcppExport SEXP _admixtools_cpp_outer_array_minus(SEXP m1SEXP, SEXP m2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type m1(m1SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type m2(m2SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_outer_array_minus(m1, m2));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_mats_to_f2_arr
+arma::cube cpp_mats_to_f2_arr(arma::mat& afmat1, arma::mat& afmat2, arma::mat& countmat1, arma::mat& countmat2);
+RcppExport SEXP _admixtools_cpp_mats_to_f2_arr(SEXP afmat1SEXP, SEXP afmat2SEXP, SEXP countmat1SEXP, SEXP countmat2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type afmat1(afmat1SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type afmat2(afmat2SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type countmat1(countmat1SEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type countmat2(countmat2SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_mats_to_f2_arr(afmat1, afmat2, countmat1, countmat2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_opt_edge_lengths
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv, const arma::vec& f3_est, Function qpsolve, const arma::vec& lower, const arma::vec& upper, double fudge);
 RcppExport SEXP _admixtools_cpp_opt_edge_lengths(SEXP ppwts_2dSEXP, SEXP ppinvSEXP, SEXP f3_estSEXP, SEXP qpsolveSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP fudgeSEXP) {
@@ -254,6 +304,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_is_polymorphic", (DL_FUNC) &_admixtools_cpp_is_polymorphic, 1},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 2},
+    {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
+    {"_admixtools_cpp_outer_array_plus", (DL_FUNC) &_admixtools_cpp_outer_array_plus, 2},
+    {"_admixtools_cpp_outer_array_minus", (DL_FUNC) &_admixtools_cpp_outer_array_minus, 2},
+    {"_admixtools_cpp_mats_to_f2_arr", (DL_FUNC) &_admixtools_cpp_mats_to_f2_arr, 4},
     {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 7},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},

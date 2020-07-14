@@ -37,6 +37,22 @@ cpp_jack_vec_stats <- function(loo_vec, block_lengths) {
     .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths)
 }
 
+cpp_outer_array_mul <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_mul', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_outer_array_plus <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_plus', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_outer_array_minus <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_minus', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2) {
+    .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2)
+}
+
 cpp_opt_edge_lengths <- function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge) {
     .Call('_admixtools_cpp_opt_edge_lengths', PACKAGE = 'admixtools', ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge)
 }

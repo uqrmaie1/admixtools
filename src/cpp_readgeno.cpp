@@ -20,9 +20,9 @@ using namespace Rcpp;
 NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec,
                                          int first, int last, bool transpose = false, bool verbose = true) {
 
-  int val, bytespersnp;
-  long len;
-  int readsnps = std::min(nsnp, last?last:nsnp) - first;
+  int val;
+  long len, bytespersnp;
+  int readsnps = last - first;
 
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
 
@@ -59,11 +59,13 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
   // Rcout << "header " << header << std::endl;
 
   in.seekg((first+1)*bytespersnp, std::ifstream::beg);
-  unsigned char* tmp = new unsigned char[bytespersnp];
-  unsigned char tmpi;
+  char* tmp = new char[bytespersnp + 1];
+  tmp[bytespersnp + 1] = '\0';
+  char tmpi;
 
   // Allocate more than the sample size since data must take up whole bytes
-  unsigned char* tmp2 = new unsigned char[bytespersnp * PACK_DENSITY];
+  char* tmp2 = new char[bytespersnp * PACK_DENSITY + 1];
+  tmp2[bytespersnp * PACK_DENSITY + 1] = '\0';
 
   int k;
   for(int j = 0 ; j < readsnps; j++) {
@@ -71,9 +73,9 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
     if(verbose && j % 1000 == 0) Rcout << "\r" << j/1000 << "k SNPs read...";
 
     // read raw genotypes
-    in.read((char*)tmp, bytespersnp);
+    in.read((char*)tmp, sizeof(char) * bytespersnp);
 
-    for(int l = 0 ; l < bytespersnp; ++l) {
+    for(int l = 0; l < bytespersnp; l++) {
       if(!blockused[l]) continue;
 
       tmpi = tmp[l];
@@ -87,6 +89,13 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
       tmp2[k+1] = (tmpi & MASK2) >> 4;
       tmp2[k+2] = (tmpi & MASK1) >> 2;
       tmp2[k+3] = (tmpi & MASK0);
+
+      // if(verbose && j == 0) Rcout << "test " << (long)2145295790*2 << std::endl;
+      // if(verbose && j == 0) Rcout << "tellg " << (long)in.tellg() << std::endl;
+      // if(verbose && j == 0) Rcout << "l " << l << std::endl;
+      // if(verbose && j == 0) Rcout << "tmp " << (int)tmp[l] << std::endl;
+      // if(verbose && j == 0) Rcout << "tmpi " << (int)tmpi << std::endl;
+      // if(verbose && j == 0) Rcout << "tmp2 " << tmp2 << std::endl;
     }
 
     int c = 0;
@@ -123,9 +132,9 @@ List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, Integ
                                       bool transpose, bool verbose) {
   //same arguments as cpp_read_packedancestrymap, except indvec assigns populations. indiv not used: -1
 
-  int val, bytespersnp, k, pop;
+  int val, k, pop;
   int pleusnps = 1000;
-  long len;
+  long len, bytespersnp;
   int readsnps = std::min(nsnp, last?last:nsnp) - first;
 
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -163,7 +172,7 @@ List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, Integ
   unsigned char* tmp2 = new unsigned char[bytespersnp * PACK_DENSITY];
 
   for(int j = 0 ; j < pleusnps; j++) {
-    in.read((char*)tmp, bytespersnp);
+    in.read((char*)tmp, sizeof(char) * bytespersnp);
 
     for(int l = 0 ; l < bytespersnp; ++l) {
       if(!blockused[l]) continue;
@@ -202,7 +211,7 @@ List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, Integ
     if(verbose && j % 1000 == 0) Rcout << "\r" << j/1000 << "k SNPs read...";
 
     // read raw genotypes
-    in.read((char*)tmp, bytespersnp);
+    in.read((char*)tmp, sizeof(char) * bytespersnp);
 
     for(int l = 0 ; l < bytespersnp; ++l) {
       if(!blockused[l]) continue;

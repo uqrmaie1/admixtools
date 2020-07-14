@@ -5,7 +5,7 @@
 #' @param pref Prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
 #' @param inds Individuals from which to compute allele frequencies
 #' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Pseudohaploid samples are identified as those that don't have any genotypes coded as `1` among the first 1000 SNPs.
 #' @param randomize_alleles Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).
 #' @param seed Random seed for `randomize_alleles`
 #' @param verbose Print progress updates
@@ -26,25 +26,28 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
   # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
   # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
 
-  stopifnot(is.null(pops) || is.null(inds) || length(inds) == length(pops))
-
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
-  if(is.null(inds)) {
-    inds = indfile$X1
-  } else {
-    indfile$X1[!indfile$X1 %in% inds] = NA
-  }
-  if(is.null(pops)) {
+
+  if(is.null(inds) && is.null(pops)) {
     pops = indfile$X3
-    indfile$X3[!indfile$X1 %in% inds] = NA
+  } else if(!is.null(inds) && !is.null(pops)) {
+    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
+    indfile$X1[!indfile$X1 %in% inds] = NA
+    indfile$X3[!is.na(indfile$X1)] = pops[match(indfile$X1, inds)]
+  } else if(is.null(inds) && !is.null(pops)) {
+    if(!all(pops %in% indfile$X3)) stop(paste0("Populations missing in indfile:\n", paste(setdiff(pops, indfile$X3), collapse=', ')))
+    indfile$X3[!indfile$X3 %in% pops] = NA
   } else {
-    indfile$X3[!is.na(indfile$X1)] = pops
+    if(!all(inds %in% indfile$X1)) stop(paste0("Individuals missing in indfile:\n", paste(setdiff(inds, indfile$X1), collapse=', ')))
+    indfile$X3[!indfile$X1 %in% inds] = NA
+    pops = indfile$X3
   }
+
   upops = unique(na.omit(pops))
 
   indvec = as.numeric(factor(indfile$X3, levels = upops)) - 1
@@ -109,18 +112,33 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
-  if(is.null(inds)) {
+  # if(is.null(inds)) {
+  #   inds = indfile$X1
+  # } else {
+  #   indfile$X1[!indfile$X1 %in% inds] = NA
+  # }
+  # if(is.null(pops)) {
+  #   pops = indfile$X3
+  #   indfile$X3[!indfile$X1 %in% inds] = NA
+  # } else {
+  #   indfile$X3[!is.na(indfile$X1)] = pops
+  # }
+
+  if(is.null(inds) && is.null(pops)) {
     inds = indfile$X1
-  } else {
-    indfile$X1[!indfile$X1 %in% inds] = NA
-  }
-  if(is.null(pops)) {
     pops = indfile$X3
-    indfile$X3[!indfile$X1 %in% inds] = NA
+  } else if(!is.null(inds) && !is.null(pops)) {
+    indfile$X1[!indfile$X1 %in% inds] = NA
+    indfile$X3[!is.na(indfile$X1)] = pops[match(indfile$X1, inds)]
+  } else if(is.null(inds) && !is.null(pops)) {
+    indfile$X3[!indfile$X3 %in% pops] = NA
+    inds = indfile$X1[!is.na(indfile$X3)]
   } else {
-    indfile$X3[!is.na(indfile$X1)] = pops
+    indfile$X3[!indfile$X1 %in% inds] = NA
+    pops = indfile$X3
   }
-  upops = unique(na.omit(pops))
+
+  upops = intersect(unique(na.omit(pops)), indfile$X3)
 
   popind2 = which(!is.na(indfile$X3))
   indfile %<>% filter(!is.na(X3))
@@ -533,12 +551,12 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
       pop1 = min(nam1[i], nam2[j])
       pop2 = max(nam1[i], nam2[j])
       if(pop1 <= pop2) {
-        mat = with(f2_arrs, cbind(f2[i, j, ], afprod[i, j, ], counts[i, j, ])) %>%
+        mat = cbind(f2_arrs$f2[i, j, ], f2_arrs$afprod[i, j, ], f2_arrs$counts[i, j, ]) %>%
           unname %>% set_colnames(c('f2', 'afprod', 'counts'))
         dir = paste0(outdir, '/', pop1, '/')
         fl = paste0(dir, pop2, '.rds')
         if(!dir.exists(dir)) dir.create(dir)
-        if(!file.exists(fl) | overwrite) saveRDS(mat, file = fl)
+        if(!file.exists(fl) || overwrite) saveRDS(mat, file = fl)
       }
     }
   }
@@ -716,12 +734,6 @@ write_split_f2_block = function(afmatprefix, countmatprefix, outdir, chunk1, chu
     transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.rds')) %$% nam
   if(all(file.exists(filenames))) return()
 
-  # f2_subblock = mats_to_f2arr(afmat1, afmat2, countmat1, countmat2) %>%
-  #  block_arr_mean(block_lengths) %>%
-  #   replace_nan_with_na() %>%
-  #  `dimnames<-`(list(nam1, nam2, paste0('l', block_lengths)))
-  # if(chunk1 == chunk2) for(i in 1:dim(f2_subblock)[1]) f2_subblock[i,i,] = 0
-
   f2arrs = mats_to_f2arrs(afmat1, afmat2, countmat1, countmat2, block_lengths)
   if(chunk1 == chunk2) for(i in 1:length(nam1)) f2arrs$f2[i,i,] = 0
 
@@ -822,8 +834,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' PLINK has to end in `.bed`, `.bim`, `.fam`
 #' @param outdir Directory data where data will be stored
 #' @param inds Individuals for which data should be extracted
-#' @param pops Populations for which data should be extracted. `pops` and `inds` cannot be specified
-#' at the same time. If none are specified, all populations will be extracted.
+#' @param pops Populations for which data should be extracted. If both `pops` and `inds` are provided, they should have the same length and will be matched by position. If only `pops` is provided, all individuals from the `.ind` or `.fam` file in those populations will be extracted. If only `inds` is provided, each indivdual will be assigned to its own population of the same name. If neither `pops` nor `inds` is provided, all individuals and populations in the `.ind` or `.fam` file will be extracted.
 #' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
 #' @param maxmem Maximum amount of memory to be used. If the required amount of memory exceeds `maxmem`, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
@@ -836,7 +847,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
 #' @param poly_only Exclude sites with identical allele frequencies in all populations
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Pseudohaploid samples are identified as those that don't have any genotypes coded as `1` among the first 1000 SNPs.
 #' @param randomize_alleles Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).
 #' @param seed Random seed for `randomize_alleles`
 #' @param verbose Print progress updates

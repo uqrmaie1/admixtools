@@ -330,7 +330,7 @@ f4_from_geno = function(pref, pop1, pop2, pop3, pop4, dist = 0.05, block_lengths
   if(verbose) alert_info('Computing block lengths...\n')
   if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, dist = dist)
   numblocks = length(block_lengths)
-  start = lag(cumsum(block_lengths)-1, default = 0)
+  start = lag(cumsum(block_lengths), default = 0)
   end = cumsum(block_lengths)
 
   fl = paste0(pref, '.geno')

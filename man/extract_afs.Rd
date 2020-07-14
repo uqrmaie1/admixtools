@@ -18,8 +18,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{Individuals for which data should be extracted}
 
-\item{pops}{Populations for which data should be extracted. \code{pops} and \code{inds} cannot be specified
-at the same time. If none are specified, all populations will be extracted.}
+\item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
 \item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
 
@@ -40,7 +39,7 @@ and you want to choose which one to read. Should be either \code{plink}, \code{a
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
 
 \item{randomize_alleles}{Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).}
 

@@ -393,7 +393,7 @@ plot_graph(winner$edges[[1]])
 
 ### Parallelization
 
-Depending on the input parameters, `optimize_admixturegraph` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [`future_map`](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [`furrr`](https://github.com/DavisVaughan/furrr) package, this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
+Depending on the input parameters, `find_graphs` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [`future_map`](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [`furrr`](https://github.com/DavisVaughan/furrr) package, this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
 
 Setting it up like this will make it run multithreaded:
 ```{r, eval = FALSE}

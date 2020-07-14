@@ -435,7 +435,6 @@ qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, b
 
 #' Test if two sets of populations form two clades
 #'
-#'
 #' @export
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
 

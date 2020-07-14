@@ -15,7 +15,7 @@ plink_to_aftable(pref, inds = NULL, pops = NULL,
 
 \item{pops}{Populations from which to compute allele frequencies. If \code{NULL} (default), populations will be extracted from the third column in the \code{.ind} file. If population labels are provided, they should have the same length as \code{inds}, and will be matched to them by position}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
 
 \item{randomize_alleles}{Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).}
 
