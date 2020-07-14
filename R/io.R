@@ -33,25 +33,9 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
-  if(is.null(inds) && is.null(pops)) {
-    pops = indfile$X3
-  } else if(!is.null(inds) && !is.null(pops)) {
-    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
-    indfile$X1[!indfile$X1 %in% inds] = NA
-    indfile$X3[!is.na(indfile$X1)] = pops[match(indfile$X1, inds)]
-  } else if(is.null(inds) && !is.null(pops)) {
-    if(!all(pops %in% indfile$X3)) stop(paste0("Populations missing in indfile:\n", paste(setdiff(pops, indfile$X3), collapse=', ')))
-    indfile$X3[!indfile$X3 %in% pops] = NA
-  } else {
-    if(!all(inds %in% indfile$X1)) stop(paste0("Individuals missing in indfile:\n", paste(setdiff(inds, indfile$X1), collapse=', ')))
-    indfile$X3[!indfile$X1 %in% inds] = NA
-    pops = indfile$X3
-  }
-
-  upops = unique(na.omit(pops))
-
-  indvec = as.numeric(factor(indfile$X3, levels = upops)) - 1
-  indvec[is.na(indvec)] = -1
+  ip = match_samples(indfile$X1, indfile$X3, inds, pops)
+  indvec = ip$indvec - 1
+  upops = ip$upops
 
   if(verbose) {
     alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
@@ -112,36 +96,12 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
-  # if(is.null(inds)) {
-  #   inds = indfile$X1
-  # } else {
-  #   indfile$X1[!indfile$X1 %in% inds] = NA
-  # }
-  # if(is.null(pops)) {
-  #   pops = indfile$X3
-  #   indfile$X3[!indfile$X1 %in% inds] = NA
-  # } else {
-  #   indfile$X3[!is.na(indfile$X1)] = pops
-  # }
 
-  if(is.null(inds) && is.null(pops)) {
-    inds = indfile$X1
-    pops = indfile$X3
-  } else if(!is.null(inds) && !is.null(pops)) {
-    indfile$X1[!indfile$X1 %in% inds] = NA
-    indfile$X3[!is.na(indfile$X1)] = pops[match(indfile$X1, inds)]
-  } else if(is.null(inds) && !is.null(pops)) {
-    indfile$X3[!indfile$X3 %in% pops] = NA
-    inds = indfile$X1[!is.na(indfile$X3)]
-  } else {
-    indfile$X3[!indfile$X1 %in% inds] = NA
-    pops = indfile$X3
-  }
+  ip = match_samples(indfile$X1, indfile$X3, inds, pops)
+  indvec = ip$indvec
+  upops = ip$upops
 
-  upops = intersect(unique(na.omit(pops)), indfile$X3)
-
-  popind2 = which(!is.na(indfile$X3))
-  indfile %<>% filter(!is.na(X3))
+  popind2 = which(indvec > 0)
   fl = paste0(pref, '.geno')
   geno = apply(do.call(rbind, str_split(readLines(fl), '')), 2, as.numeric)
   nindall = ncol(geno)
@@ -423,7 +383,6 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
-  stopifnot(is.null(pops) || is.null(inds) || length(inds) == length(pops))
   if(verbose) alert_info('Reading allele frequencies from PLINK file...\n')
 
   bedfile = paste0(pref, '.bed')
@@ -432,23 +391,28 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
   bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = cols())
   fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = cols())
-  if(!is.null(inds) && !is.null(pops)) {
-    stopifnot(nrow(fam) == length(inds)) # note: fix this, so that this condition is not necessary
-    fam$X1 = pops
-    fam$X2 = inds
-  }
-  if(is.null(inds)) inds = fam$X2
-  if(is.null(pops)) pops = fam$X1
 
-  indvec = pop_indices(fam, pops = pops, inds = inds)
+  ip = match_samples(fam$X2, fam$X1, inds, pops)
+  indvec = ip$indvec
+  upops = ip$upops
+
+  # if(!is.null(inds) && !is.null(pops)) {
+  #   stopifnot(nrow(fam) == length(inds)) # note: fix this, so that this condition is not necessary
+  #   fam$X1 = pops
+  #   fam$X2 = inds
+  # }
+  # if(is.null(inds)) inds = fam$X2
+  # if(is.null(pops)) pops = fam$X1
+  # indvec = pop_indices(fam, pops = pops, inds = inds)
+
   indvec2 = which(indvec > 0)
-  keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
-  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid,
-                           verbose = verbose)
+  #keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
+
+  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   afmatrix = afs[[1]]
   countmatrix = afs[[2]]
   rownames(afmatrix) = rownames(countmatrix) = bim$SNP
-  colnames(afmatrix) = colnames(countmatrix) = keepinds
+  colnames(afmatrix) = colnames(countmatrix) = upops
 
   if(randomize_alleles) {
     if(verbose) alert_info(paste0('Randomizing alleles...\n'))
@@ -479,6 +443,42 @@ pop_indices = function(famdat, inds = NULL, pops = NULL) {
   famdat %>% mutate(index = ifelse(FID %in% pops & IID %in% inds, FID, NA)) %$%
     replace_na(as.numeric(factor(index, levels = unique(index))), 0)
 }
+
+
+match_samples = function(haveinds, havepops, inds, pops) {
+  # takes individuals in file, populations in file, requested individuals, requested populations
+  # returns list with two items:
+  # integer indvec with population number (0 means do not use, same length as haveinds/havepops)
+  # unique population labels, with position corresponding to indvec and first occurence in pops
+
+  if(!is.null(inds)) {
+    if(any(duplicated(inds))) stop("Individual IDs are duplicated!")
+    if(!all(inds %in% haveinds)) stop(paste0("Individuals missing in indfile:\n", paste(setdiff(inds, haveinds), collapse=', ')))
+  } else if(!is.null(pops)) {
+    if(!all(pops %in% havepops)) stop(paste0("Populations missing in indfile:\n", paste(setdiff(pops, havepops), collapse=', ')))
+  }
+
+  if(is.null(inds) && is.null(pops)) {
+    pops = havepops
+  } else if(!is.null(inds) && !is.null(pops)) {
+    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
+    haveinds[!haveinds %in% inds] = NA
+    havepops[!is.na(haveinds)] = pops[match(na.omit(haveinds), inds)]
+  } else if(is.null(inds) && !is.null(pops)) {
+    havepops[!havepops %in% pops] = NA
+  } else {
+    havepops[!haveinds %in% inds] = NA
+    pops = havepops
+  }
+
+  upops = unique(na.omit(pops))
+
+  indvec = as.numeric(factor(havepops, levels = upops))
+  indvec[is.na(indvec)] = 0
+
+  namedList(indvec, upops)
+}
+
 
 
 #' Read genotype data from `PLINK` files
