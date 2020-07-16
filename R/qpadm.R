@@ -3,6 +3,7 @@
 qpwave_dof = function(a, b, r) r*(a+b-r)
 qpwave_dof = function(a, b, r) (a+b)*r - r^2
 qpwave_dof = function(a, b, r) a*b - (a-r)*(b-r)
+qpwave_dof = function(a, b, r) a*b - qpadm_dof(a, b, r)
 
 qpadm_dof = function(a, b, r) a*b - (a+b)*r + r^2
 qpadm_dof = function(a, b, r) (a-r)*(b-r)
@@ -299,10 +300,10 @@ drop_ranks = function(f4_est, qinv, fudge, constrained, cpp) {
   # drops rank and fits qpadm model
 
   rnk = nrow(f4_est) - 1
-  #if(rnk == 0) return()
   fitrank = function(x) qpadm_fit(f4_est, qinv, x, fudge = fudge,
                                   constrained = constrained, cpp = cpp, addweights = FALSE)
-  rankdrop = map_dfr(rev(seq_len(max(1, rnk))-(rnk==0)), fitrank) %>%
+  #rankdrop = map_dfr(rev(seq_len(max(1, rnk))-(rnk==0)), fitrank) %>%
+  rankdrop = map_dfr(rnk:0, fitrank) %>%
     mutate(dofdiff = lead(dof)-dof, chisqdiff = lead(chisq)-chisq,
            p_nested = pchisq(chisqdiff, dofdiff, lower.tail = FALSE))
   rankdrop

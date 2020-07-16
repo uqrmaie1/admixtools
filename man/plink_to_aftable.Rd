@@ -6,7 +6,7 @@
 \usage{
 plink_to_aftable(pref, inds = NULL, pops = NULL,
   adjust_pseudohaploid = TRUE, randomize_alleles = TRUE, seed = NULL,
-  verbose = FALSE)
+  verbose = TRUE)
 }
 \arguments{
 \item{pref}{prefix of \code{PLINK} files (files have to end in \code{.bed}, \code{.bim}, \code{.fam}).}

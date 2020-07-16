@@ -8,7 +8,7 @@
 qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
   pop4 = NULL, f2_denom = 1, boot = FALSE, sure = FALSE,
   unique_only = TRUE, comb = TRUE, dist = NULL,
-  block_lengths = NULL, f4mode = TRUE, afprod = TRUE,
+  block_lengths = NULL, f4mode = TRUE, afprod = TRUE, cpp = TRUE,
   verbose = FALSE)
 }
 \arguments{
@@ -20,7 +20,7 @@ output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
 \item Prefix of a packedancestrymap file. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
 }}
 
-\item{pop1}{one of the following four:
+\item{pop1}{One of the following four:
 \enumerate{
 \item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
 \item a vector of population labels
@@ -30,13 +30,13 @@ combination per row. Other \code{pop} arguments will be ignored.
 population combinations to be tested. Other \code{pop} arguments will be ignored.
 }}
 
-\item{pop2}{a vector of population labels}
+\item{pop2}{A vector of population labels}
 
 \item{pop3}{a vector of population labels}
 
 \item{pop4}{a vector of population labels}
 
-\item{f2_denom}{scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.}
+\item{f2_denom}{Scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
 of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
@@ -46,19 +46,21 @@ The the covariance matrix of the f statistics will be computed using bootstrappi
 \item{sure}{The number of population combinations can get very large. This is a safety option that stops you
 from accidently computing all combinations if that number is large.}
 
-\item{unique_only}{If \code{TRUE} (the default), redundant combinations will be returned as well.}
+\item{unique_only}{If \code{TRUE} (the default), redundant combinations will be excluded}
 
 \item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM). only used when \code{f2_data} is the prefix of packedancestrymap files}
 
-\item{block_lengths}{vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
+\item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs. only used when \code{f2_data} is the prefix of packedancestrymap files}
 
-\item{f4mode}{if \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of packedancestrymap files}
+\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of packedancestrymap files}
 
-\item{verbose}{print progress updates}
+\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
+
+\item{verbose}{Print progress updates}
 }
 \value{
-a data frame with f4 statistics
+A data frame with f4 statistics
 }
 \description{
 Computes f4 statistics from f2 blocks of the form \eqn{f4(A, B; C, D)}. Equivalent to

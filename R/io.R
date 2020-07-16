@@ -26,6 +26,9 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
   # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
   # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
 
+  if(verbose) alert_info('Reading allele frequencies from packedancestrymap files...\n')
+
+
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
@@ -50,8 +53,6 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 
   if(verbose) {
     alert_success(paste0(nrow(afdat$afs), ' SNPs read in total\n'))
-    #alert_warning(paste0(sumna, ' allele frequencies are missing (on average ',
-    #                     round(sumna/numpop), ' per population)\n'))
   }
 
   if(randomize_alleles) {
@@ -91,7 +92,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
   # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
 
-  stopifnot(is.null(pops) || is.null(inds) || length(inds) == length(pops))
+  if(verbose) alert_info('Reading allele frequencies from ancestrymap files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
@@ -379,11 +380,11 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' counts = afdat$counts
 #' }
 plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
-                            randomize_alleles = TRUE, seed = NULL, verbose = FALSE) {
+                            randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
-  if(verbose) alert_info('Reading allele frequencies from PLINK file...\n')
+  if(verbose) alert_info('Reading allele frequencies from PLINK files...\n')
 
   bedfile = paste0(pref, '.bed')
   famfile = paste0(pref, '.fam')
@@ -391,6 +392,8 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
   bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = cols())
   fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = cols())
+  nsnpall = nrow(bim)
+  nindall = nrow(fam)
 
   ip = match_samples(fam$X2, fam$X1, inds, pops)
   indvec = ip$indvec
@@ -408,11 +411,24 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
   indvec2 = which(indvec > 0)
   #keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
 
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
+    alert_info(paste0('Calculating allele frequencies from ', sum(indvec != 0), ' samples in ', length(upops), ' populations\n'))
+    alert_info(paste0('Expected size of allele frequency data: ', round((nsnpall*length(upops)*8+nsnpall*112)/1e6), ' MB\n'))
+    # 8, 112: estimated scaling factors for AF columns and annotation columns
+  }
+
   afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+
   afmatrix = afs[[1]]
   countmatrix = afs[[2]]
   rownames(afmatrix) = rownames(countmatrix) = bim$SNP
   colnames(afmatrix) = colnames(countmatrix) = upops
+
+  if(verbose) {
+    alert_success(paste0(nrow(afmatrix), ' SNPs read in total\n'))
+  }
+
 
   if(randomize_alleles) {
     if(verbose) alert_info(paste0('Randomizing alleles...\n'))
@@ -423,7 +439,6 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
     bim %<>% mutate(flipped = 1:n() %in% sel)
   }
 
-  #outdat = treat_missing(afmatrix, countmatrix, bim[keepsnps,], na.action = na.action, verbose = verbose)
   outlist = list(afs = afmatrix, counts = countmatrix, snpfile = bim)
   outlist
 }
@@ -885,17 +900,30 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
                               randomize_alleles = TRUE, seed = NULL, verbose = TRUE) {
 
   if(is.null(format)) {
-    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
+    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
+      format = 'plink'
+      geno_to_aftable = plink_to_aftable
+    }
     else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
-      if(is_binfile(paste0(pref, '.geno'))) format = 'packedancestrymap'
-      else format = 'ancestrymap'
+      if(is_binfile(paste0(pref, '.geno'))) {
+        format = 'packedancestrymap'
+        geno_to_aftable = packedancestrymap_to_aftable
+      }
+      else {
+        format = 'ancestrymap'
+        geno_to_aftable = ancestrymap_to_aftable
+      }
     }
     else stop('Genotype files not found!')
   }
-  geno_to_aftable = paste0(format, '_to_aftable')
-  stopifnot(exists(geno_to_aftable))
-  afdat = get(geno_to_aftable)(pref, inds = inds, pops = pops, adjust_pseudohaploid = adjust_pseudohaploid,
-                               randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
+  geno_to_aftable = switch(format,
+                           'plink' = plink_to_aftable,
+                           'packedancestrymap' = packedancestrymap_to_aftable,
+                           'ancestrymap' = ancestrymap_to_aftable)
+  if(is.null(geno_to_aftable)) stop('Invalid format!')
+
+  afdat = geno_to_aftable(pref, inds = inds, pops = pops, adjust_pseudohaploid = adjust_pseudohaploid,
+                          randomize_alleles = randomize_alleles, seed = seed, verbose = verbose)
   afdat
 }
 

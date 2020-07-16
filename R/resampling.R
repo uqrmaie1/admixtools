@@ -43,7 +43,7 @@ jack_vec_stats = function(loo_vec, block_lengths) {
   # output is list with jackknife mean and covariance
   # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
 
-  numblocks = length(block_lengths)
+  block_lengths = block_lengths[is.finite(loo_vec)]
   tot = weighted.mean(loo_vec, 1-block_lengths/sum(block_lengths), na.rm = TRUE)
   est = mean(loo_vec, na.rm = TRUE)
   y = sum(block_lengths)/block_lengths
@@ -102,7 +102,12 @@ jack_dat_stats = function(dat) {
            tot = weighted.mean(loo, 1-1/y, na.rm = TRUE),
            xtau = (tot*y - loo*(y-1) - est)/sqrt(y-1)) %>%
     summarize(est = est[1], var = mean(xtau^2, na.rm = TRUE), n = sum(!is.na(xtau)))
-  }
+}
+
+boot_dat_stats = function(dat) {
+  jack_dat_stats(dat) %>%
+    mutate(var = var/n)
+}
 
 
 jack_pairarr_stats = function(loo_arr, block_lengths) {
@@ -292,6 +297,20 @@ loo_to_est_dat = function(dat) {
     select(-.rel_bl, -.tot)
 }
 
+est_to_boo_dat = function(dat, nboot = 1000) {
+  # like est_to_loo, but for a grouped data frame with columns 'est', 'block', and 'length'
+  # adds column 'boo'
+
+  numblocks = length(unique(dat$block))
+  boodat = map(1:nboot, ~tibble(.rep = ., block = sample(1:numblocks, numblocks, replace = T))) %>%
+    bind_rows
+  dat %>%
+    right_join(boodat, by = 'block') %>%
+    group_by(.rep, .add = T) %>%
+    summarize(loo = mean(est, na.rm = TRUE)) %>%
+    select(-.rep) %>%
+    mutate(length = 1)
+}
 
 #' Takes a function `qpfun` which takes f2_blocks as input
 #' Returns a function which will repeadetly evaluate `qpfun` on
