@@ -43,7 +43,9 @@ jack_vec_stats = function(loo_vec, block_lengths) {
   # output is list with jackknife mean and covariance
   # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
 
-  block_lengths = block_lengths[is.finite(loo_vec)]
+  fin = is.finite(loo_vec)
+  block_lengths = block_lengths[fin]
+  loo_vec = loo_vec[fin]
   tot = weighted.mean(loo_vec, 1-block_lengths/sum(block_lengths), na.rm = TRUE)
   est = mean(loo_vec, na.rm = TRUE)
   y = sum(block_lengths)/block_lengths
