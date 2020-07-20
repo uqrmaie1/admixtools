@@ -751,5 +751,18 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 }
 
 
+write_dot = function(edges, outfile = NULL) {
+  # writes qpgraph output to a dot format file
 
+  edges = mutate(edges, lab = ifelse(type == 'edge',
+                                 paste0(' [ label = "', round(weight * 1000), '" ];'),
+                                 paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
+                 from = str_replace_all(from, '[\\.-]', ''), to = str_replace_all(to, '[\\.-]', ''))
+  out = 'digraph G {\n'
+  out = paste0(out, 'size = "7.5,10";\n')
+  out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
+  out = paste0(out, '\n}')
+
+  writeLines(out, if(is.null(outfile)) stdout() else outfile)
+}
 

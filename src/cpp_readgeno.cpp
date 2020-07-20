@@ -60,12 +60,12 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
 
   in.seekg((first+1)*bytespersnp, std::ifstream::beg);
   char* tmp = new char[bytespersnp + 1];
-  tmp[bytespersnp + 1] = '\0';
+  tmp[bytespersnp] = '\0';
   char tmpi;
 
   // Allocate more than the sample size since data must take up whole bytes
   char* tmp2 = new char[bytespersnp * PACK_DENSITY + 1];
-  tmp2[bytespersnp * PACK_DENSITY + 1] = '\0';
+  tmp2[bytespersnp * PACK_DENSITY] = '\0';
 
   int k;
   for(int j = 0 ; j < readsnps; j++) {

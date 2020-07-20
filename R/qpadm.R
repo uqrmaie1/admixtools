@@ -1,13 +1,14 @@
 
 # a, b: num left - 1, num right - 1 (dimensions of f4_est)
+qpwave_dof = function(a, b, r) a*b - qpadm_dof(a, b, r)
 qpwave_dof = function(a, b, r) r*(a+b-r)
 qpwave_dof = function(a, b, r) (a+b)*r - r^2
 qpwave_dof = function(a, b, r) a*b - (a-r)*(b-r)
-qpwave_dof = function(a, b, r) a*b - qpadm_dof(a, b, r)
 
+qpadm_dof = function(a, b, r) a*b - qpwave_dof(a, b, r)
 qpadm_dof = function(a, b, r) a*b - (a+b)*r + r^2
 qpadm_dof = function(a, b, r) (a-r)*(b-r)
-qpadm_dof = function(a, b, r) a*b - qpwave_dof(a, b, r)
+
 
 
 opt_A = function(B, xmat, qinv, fudge = 0.0001) {

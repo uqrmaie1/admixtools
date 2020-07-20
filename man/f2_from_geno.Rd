@@ -5,7 +5,7 @@
 \title{Read f2 jackknife blocks from genotype data}
 \usage{
 f2_from_geno(pref, inds = NULL, pops = NULL, maxmem = 8000,
-  format = NULL, verbose = TRUE)
+  dist = 0.05, format = NULL, verbose = TRUE)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -16,6 +16,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
 \item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
+
+\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
@@ -32,6 +34,6 @@ and \code{\link{afs_to_f2_blocks}}.
 \examples{
 \dontrun{
 pref = 'my/genofiles/prefix'
-f2_blocks = f2_from_geno(pref, pops = c('Protoss', 'Zerg', 'Terran'))
+f2_blocks = f2_from_geno(pref, pops = c('pop1', 'pop2', 'pop3'))
 }
 }

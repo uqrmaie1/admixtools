@@ -62,8 +62,6 @@ Errors will interrupt execution. This is the default if \code{numrep = 1}}
 \item{verbose}{Print progress updates}
 
 \item{...}{Additional arguments passed to \code{qpgraph}}
-
-\item{verbose}{Print progress updates}
 }
 \value{
 a nested data frame with one model per line

@@ -35,8 +35,8 @@ qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
                               low = ell[[4]][ilow]
                               ell[[4]][ilow] = -1e3
                               cc = solve((ell[[1]]+t(ell[[1]]))/2)
-                              #diag(cc) = diag(cc)+0.0001
-                              diag(cc) = diag(cc)+0.0001*mean(diag(cc))
+                              diag(cc) = diag(cc) + 0.0001
+                              #diag(cc) = diag(cc) + 0.0001*mean(diag(cc))
                               cc = (cc+t(cc))/2
                               ell[[1]] = solve(cc)
                               return(do.call(quadprog::solve.QP, ell)$solution)
@@ -95,6 +95,7 @@ prodarray = function(m1, m2) {
     array(m2, c(nrow(m1), 1, ncol(m2)))[,rep(1, ncol(m1)),]) %>%
     aperm(c(2,3,1))
 }
+
 outer_array = function(m1, m2, FUN = `*`) {
   nr = nrow(m1)
   nc1 = ncol(m1)
@@ -104,7 +105,6 @@ outer_array = function(m1, m2, FUN = `*`) {
     aperm(c(2,3,1))
 }
 
-# this actually does what the description says. is used in jack_pairarr_stats
 arr3d_to_mat = function(arr) {
   # input is arr of dimension m x n x p
   # output is p x (m x n) (1..m, 1..m, ... times n)
@@ -172,11 +172,6 @@ treat_missing = function(afmatrix, countmatrix = NULL, snpfile = NULL,
 power_set = function(l, nmax=length(l)) flatten(map(seq_along(l[seq_len(nmax)]), ~combn(l, ., simplify=F)))
 
 ztop = function(z) 2*pnorm(-abs(z))
-
-gg_color_hue = function(n, l=65, c=100) {
-  hues = seq(15, 375, length=n+1)
-  hcl(h=hues, l=l, c=c)[1:n]
-}
 
 
 interleave = function(v1,v2) {

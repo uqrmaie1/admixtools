@@ -552,6 +552,7 @@ compare_fits3 = function(scores1, scores2) {
   p = ztop(z)
   frac = mean(scorediff < 0)
   p_emp = min(frac, 1-frac)*2
+  p_emp = max(p_emp, 1/length(scorediff))
   c(diff=diff, se=se, z=z, p=p, p_emp=p_emp, ci_low=ci_low, ci_high=ci_high)
 }
 

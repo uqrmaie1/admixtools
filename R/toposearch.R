@@ -668,7 +668,6 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' @param keep By default (`all`), all evaluated graphs will be returned. `best` will only return the best fitting
 #' graph from each repeat and each generation. `last` will return all graphs from the last generation.
 #' @param f2_denom Scales f2-statistics. A value of around 0.278 converts f2 to Fst.
-#' @param verbose Print progress updates
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
 #' @param mutfuns The names of funcations used to modify graphs.

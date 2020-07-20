@@ -4,13 +4,11 @@
 \alias{write_split_f2_block}
 \title{Compute f2 blocks and write them to disk}
 \usage{
-write_split_f2_block(afmatprefix, countmatprefix, outdir, chunk1, chunk2,
-  block_lengths, verbose = TRUE)
+write_split_f2_block(afdir, outdir, chunk1, chunk2, dist = 0.05,
+  verbose = TRUE)
 }
 \arguments{
-\item{afmatprefix}{Prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
-
-\item{countmatprefix}{Prefix of the allele frequency \code{.rds} files created by \code{\link{split_mat}}}
+\item{afdir}{Directory with allele frequency and counts \code{.rds} files created by \code{\link{split_mat}}}
 
 \item{outdir}{Directory data where data will be stored}
 
@@ -18,14 +16,9 @@ write_split_f2_block(afmatprefix, countmatprefix, outdir, chunk1, chunk2,
 
 \item{chunk2}{Index of the second chunk of populations}
 
-\item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
-match the number of SNPs.}
+\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
 
 \item{verbose}{Print progress updates}
-
-\item{popcounts}{Named vector with number of samples for each population.}
-
-\item{f2_denom}{Scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.}
 }
 \description{
 This is intended for computing f2-statistics for a large number of populations,

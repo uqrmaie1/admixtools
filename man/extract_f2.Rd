@@ -7,9 +7,8 @@
 extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   maxmem = 8000, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-  overwrite = FALSE, format = NULL, poly_only = TRUE,
-  adjust_pseudohaploid = FALSE, randomize_alleles = TRUE,
-  seed = NULL, verbose = TRUE)
+  overwrite = FALSE, format = NULL, poly_only = FALSE,
+  adjust_pseudohaploid = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -46,11 +45,10 @@ and you want to choose which one to read. Should be either \code{plink}, \code{a
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
 
-\item{randomize_alleles}{Randomly report allele frequencies for either reference or for alternative allele for each SNP. This can furhter reduce bias when f-statistics are computed from allele frequency products. It does not affect f2 estimates (and other f-statistics computed from them).}
-
-\item{seed}{Random seed for \code{randomize_alleles}}
-
 \item{verbose}{Print progress updates}
+}
+\value{
+SNP metadata (invisibly)
 }
 \description{
 Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,

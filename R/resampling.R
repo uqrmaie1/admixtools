@@ -34,23 +34,25 @@ block_mat_mean = function(mat, block_lengths, na.rm = TRUE) {
   blockids = rep(seq_along(block_lengths), block_lengths)
   sums = rowsum(mat, blockids, na.rm = na.rm)
   nonmiss = rowsum((!is.na(mat))+0, blockids)
-  sums/nonmiss
+  replace_nan_with_na(sums/nonmiss)
 }
 
 
-jack_vec_stats = function(loo_vec, block_lengths) {
+jack_vec_stats = function(loo_vec, block_lengths, na.rm = TRUE) {
   # input is a vector of leave-one-out estimates
   # output is list with jackknife mean and covariance
   # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
 
-  fin = is.finite(loo_vec)
-  block_lengths = block_lengths[fin]
-  loo_vec = loo_vec[fin]
-  tot = weighted.mean(loo_vec, 1-block_lengths/sum(block_lengths), na.rm = TRUE)
-  est = mean(loo_vec, na.rm = TRUE)
+  if(na.rm) {
+    fin = is.finite(loo_vec)
+    block_lengths = block_lengths[fin]
+    loo_vec = loo_vec[fin]
+  }
+  tot = weighted.mean(loo_vec, 1-block_lengths/sum(block_lengths))
+  est = mean(loo_vec)
   y = sum(block_lengths)/block_lengths
   xtau = (tot * y - loo_vec * (y-1) - est) / sqrt(y-1)
-  var = mean(xtau^2, na.rm = TRUE)
+  var = mean(xtau^2)
 
   namedList(est, var)
 }
@@ -96,14 +98,14 @@ jack_arr_stats = function(loo_arr, block_lengths) {
 }
 
 
-jack_dat_stats = function(dat) {
+jack_dat_stats = function(dat, na.rm = TRUE) {
   # input is a grouped data frame with columns 'loo', 'length', and 'block'
   dat %>%
-    mutate(est = mean(loo, na.rm = TRUE),
+    mutate(est = mean(loo, na.rm = na.rm),
            y = sum(length)/length,
-           tot = weighted.mean(loo, 1-1/y, na.rm = TRUE),
+           tot = weighted.mean(loo, 1-1/y, na.rm = na.rm),
            xtau = (tot*y - loo*(y-1) - est)/sqrt(y-1)) %>%
-    summarize(est = est[1], var = mean(xtau^2, na.rm = TRUE), n = sum(!is.na(xtau)))
+    summarize(est = est[1], var = mean(xtau^2, na.rm = na.rm), n = sum(!is.na(xtau)))
 }
 
 boot_dat_stats = function(dat) {
@@ -255,11 +257,15 @@ est_to_boo = function(arr, nboot = dim(arr)[3]) {
   block_lengths = parse_number(dimnames(arr)[[3]])
   numblocks = length(block_lengths)
   sel = sample(seq_len(numblocks), numblocks*nboot, replace = TRUE)
+  lengths = block_lengths[sel]
+  grp = rep(seq_len(nboot), each = numblocks)
   arr %>%
+    `*`(rep(block_lengths, each = prod(dim(arr)[1:2]))) %>%
     matrix(numblocks, byrow=T) %>%
     `[`(sel,) %>%
-    rowsum(rep(seq_len(nboot), each = numblocks), na.rm=T) %>%
-    `/`(length(block_lengths)) %>%
+    rowsum(grp, na.rm=T) %>%
+    #`/`(numblocks) %>%
+    `/`(c(tapply(lengths, grp, sum))) %>%
     t %>%
     array(c(dim(arr)[1:2], nboot),
           dimnames = c(dimnames(arr)[1:2], list(rep('l1', nboot))))
@@ -309,7 +315,8 @@ est_to_boo_dat = function(dat, nboot = 1000) {
   dat %>%
     right_join(boodat, by = 'block') %>%
     group_by(.rep, .add = T) %>%
-    summarize(loo = mean(est, na.rm = TRUE)) %>%
+    #summarize(loo = mean(est, na.rm = TRUE)) %>%
+    summarize(loo = weighted.mean(est, length, na.rm = TRUE)) %>%
     select(-.rep) %>%
     mutate(length = 1)
 }

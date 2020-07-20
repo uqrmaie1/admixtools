@@ -6,9 +6,12 @@ using namespace arma;
 
 
 // [[Rcpp::export]]
-arma::mat cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4) {
+List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4) {
 
+  // aftable is npop x nsnp
+  // num is npopcomb x nsnp
   mat num(p1.n_elem, aftable.n_cols);
+  vec cnt = zeros(p1.n_elem);
   double w, x, y, z;
   int i1, i2, i3, i4;
   for(int j = 0; j < p1.n_elem; j++) {
@@ -22,9 +25,11 @@ arma::mat cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& 
       y = aftable(i3, i);
       z = aftable(i4, i);
       num(j, i) = (w - x) * (y - z);
+      if(is_finite(num(j, i))) cnt(j) += 1;
     }
   }
-  return num;
+  //return num;
+  return Rcpp::List::create(_["num"] = num, _["cnt"] = cnt);
 }
 
 

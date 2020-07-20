@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 // cpp_aftable_to_dstatnum
-arma::mat cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
+List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
 RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
