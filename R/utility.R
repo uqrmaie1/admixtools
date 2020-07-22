@@ -35,8 +35,8 @@ qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
                               low = ell[[4]][ilow]
                               ell[[4]][ilow] = -1e3
                               cc = solve((ell[[1]]+t(ell[[1]]))/2)
-                              diag(cc) = diag(cc) + 0.0001
-                              #diag(cc) = diag(cc) + 0.0001*mean(diag(cc))
+                              #diag(cc) = diag(cc) + 0.0001 # this will result in extremely high scores for some graphs
+                              diag(cc) = diag(cc) + 0.0001*mean(diag(cc)) # this will sometimes lead to 'constraints inconsistent'
                               cc = (cc+t(cc))/2
                               ell[[1]] = solve(cc)
                               return(do.call(quadprog::solve.QP, ell)$solution)

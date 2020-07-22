@@ -178,7 +178,9 @@ desimplify_graph = function(graph) {
   newedges = c(rbind(parents, newnam, newnam, admixnamesrep))
   deledges = paste(parents, admixnamesrep, sep='|')
   graph = igraph::add_edges(graph, newedges)
+  graph = igraph::simplify(graph)
   graph = igraph::delete_edges(graph, deledges)
+  if(max(degree(graph, mode='in')) > 2 || max(degree(graph, mode='out')) > 2) stop('Desimplify failed')
   if(convmat) graph = igraph::as_edgelist(graph)
   graph
 }
@@ -545,7 +547,7 @@ flipadmix_random = function(graph, desimplify = TRUE) {
 add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE, verbose = TRUE) {
 
   space = paste0(paste(rep(' ', 50), collapse=''), '\r')
-  if(verbose) alert_info(paste0('Select winners...', space))
+  if(verbose) alert_info(paste0('Selecting winners...', space))
   lastgen = max(models$generation)
   oldmodels = models %>% filter(generation == lastgen, !is.na(score))
   numsel = min(nrow(oldmodels), numsel)
@@ -561,11 +563,12 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
     map = furrr::future_map
     imap = furrr::future_imap
   }
-  if(verbose) alert_info(paste0('Generate new graphs...', space))
-  newmodels %<>% mutate(mutation = names(mutations), igraph = imap(igraph, ~exec(mutations[[.y]], .x)))
-  if(verbose) alert_info(paste0('Evaluate graphs...', space))
+  if(verbose) alert_info(paste0('Generating new graphs...', space))
+  newmodels %<>% mutate(mutation = names(mutations),
+                        igraph = imap(igraph, ~tryCatch(exec(mutations[[.y]], .x), error = function(e) .x)))
+  if(verbose) alert_info(paste0('Evaluating graphs...', space))
   newmodels %<>% mutate(out = map(igraph, qpgfun))
-  if(verbose) alert_info(paste0('Attach to previous generations...', space))
+  if(verbose) alert_info(paste0('Attaching to previous generations...', space))
   winners %>%
     mutate(generation = lastgen+1, index = 1:n()) %>%
     bind_rows(newmodels %>% unnest_wider(out))
@@ -627,7 +630,11 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
   space = paste0(paste(rep(' ', 50), collapse=''), '\r')
   if(verbose) alert_info(paste0('Generate new graphs...', space))
   if(is.null(initgraph)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop=outpop), simplify = FALSE)
-  else initgraphs = replicate(numgraphs, initgraph, simplify = FALSE)
+  else {
+    missing = numadmix - numadmix(initgraph)
+    initgraphs = replicate(numgraphs, initgraph, simplify = FALSE)
+    if(missing > 0) initgraphs %<>% map(~insert_admix_igraph_random(., missing))
+  }
   if(verbose) alert_info(paste0('Evaluate graphs...', space))
   if(parallel) map = furrr::future_map
   init = tibble(generation=0, index = seq_len(numgraphs),
@@ -702,6 +709,16 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
 
   keep = rlang::arg_match(keep)
   if(numsel >= numgraphs || numsel < 1) stop("'numsel' has to be smaller than 'numgraphs' and greater than 0!")
+  if(!is.null(pops) && !is.null(initgraph)) stop("You can't provide 'pops' and 'initgraph' at the same time!")
+
+  if(!is.null(initgraph)) {
+    if('data.frame' %in% class(initgraph) || 'matrix' %in% class(initgraph)) {
+      initgraph = graph_from_edgelist(as.matrix(initgraph[,1:2]))
+    } else if('character' %in% class(initgraph)) {
+      initgraph = graph_from_edgelist(as.matrix(parse_qpgraph_graphfile(initgraph)[,1:2]))
+    } else if(!'igraph' %in% class(initgraph)) stop("'initgraph' format not recognized!")
+  }
+
   if(is.character(f2_data) && file.exists(f2_data) && !isTRUE(file.info(f2_data)$isdir)) {
     # parse Nick's fstats
     precomp = parse_fstats(f2_data)
@@ -733,7 +750,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 10, numgrap
                                                  mutfuns = mutfuns, parallel = parallel && numrep == 1,
                                                  stop_at = stop_at, store_intermediate = store_intermediate,
                                                  debug = debug, keep = keep, verbose = verbose && numrep == 1)
-  if(!debug) oa = possibly(oa, otherwise = NULL)
+  if(!debug && numrep > 1) oa = possibly(oa, otherwise = NULL)
   if(parallel && numrep > 1) {
     res = furrr::future_map(as.list(seq_len(numrep)), oa)
   } else {
@@ -1063,7 +1080,7 @@ flipadmix = function(edges, from, to) {
   row = which(edges[,1] == from & edges[,2] == to)
   edges[row,] = c(to, from)
   g = igraph::graph_from_edgelist(edges)
-  if(!is.dag(g)) g = NULL
+  if(!is.dag(g) || max(degree(g, mode = 'in')) > 2 || max(degree(g, mode = 'out')) > 2) g = NULL
   g
 }
 
