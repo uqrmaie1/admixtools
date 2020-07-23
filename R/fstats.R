@@ -17,6 +17,7 @@
 #' has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
+#' @param poly_only Exclude sites with identical allele frequencies in all populations
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
 #' @param verbose Print progress updates
@@ -31,7 +32,7 @@
 #' afdat = plink_to_aftable('/my/geno/prefix')
 #' afs_to_f2_blocks(afdat, outdir = '/my/f2/data/')
 #' }
-afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05,
+afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05, poly_only = TRUE,
                             outdir = NULL, overwrite = FALSE, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
@@ -61,7 +62,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05,
     else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
   }
 
-  poly = afdat$snpfile$poly
+  poly = if(poly_only) afdat$snpfile$poly else 1:nrow(afdat$snpfile)
   block_lengths_a = get_block_lengths(afdat$snpfile, dist = dist)
   block_lengths = get_block_lengths(afdat$snpfile[poly,], dist = dist)
 
@@ -83,7 +84,8 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05,
     f2 = mats_to_f2arr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
     counts = mats_to_ctarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
     afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
-    countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
+    if(!poly_only) countsap = counts
+    else countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
     if(c1 == c2) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
 
     if(!is.null(outdir)) {

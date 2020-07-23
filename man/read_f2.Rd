@@ -4,7 +4,8 @@
 \alias{read_f2}
 \title{Read blocked f2 estimates from disk}
 \usage{
-read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE)
+read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE,
+  verbose = FALSE)
 }
 \arguments{
 \item{f2_dir}{Directory from which to read files}
@@ -15,6 +16,8 @@ which may require a lot of memory.}
 \item{afprod}{Return allele frequency products instead of f2 estimates}
 
 \item{remove_na}{Remove blocks with missing values}
+
+\item{verbose}{Print progress updates}
 }
 \value{
 A 3d array of block jackknife estimates

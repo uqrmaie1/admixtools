@@ -4,8 +4,6 @@ f3_from_f2 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
 f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 
 
-
-
 #' Estimate f2 statistics
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}

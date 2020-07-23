@@ -750,9 +750,19 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
   fst %>% left_join(f2, by = c('pop1', 'pop2'))
 }
 
-
-write_dot = function(edges, outfile = NULL) {
+#' Convert graph to dot format
+#' @export
+#' @param edges Graph as edge list (columns labelled 'from', 'to', 'weight')
+#' @param outfile Output file name
+#' @examples
+#' \dontrun{
+#' results = qpgraph(example_f2_blocks, example_graph)
+#' write_dot(results$edges)
+#' }
+write_dot = function(edges, outfile = stdout()) {
   # writes qpgraph output to a dot format file
+
+  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
 
   edges = mutate(edges, lab = ifelse(type == 'edge',
                                  paste0(' [ label = "', round(weight * 1000), '" ];'),
@@ -763,6 +773,76 @@ write_dot = function(edges, outfile = NULL) {
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
 
-  writeLines(out, if(is.null(outfile)) stdout() else outfile)
+  writeLines(out, outfile)
 }
+
+
+graph_to_lineages = function(graph, node = V(graph)[1], num = 1) {
+  # adds vertex attribute 'lineage' to graph, for 'msprime_sim'
+
+  lin = vertex_attr(graph, 'lineage', node)
+  if(!is.null(lin) && !is.na(lin)) return(graph)
+  graph = set_vertex_attr(graph, 'lineage', node, num)
+  children = neighbors(graph, node, mode = 'out')
+  if(length(children) == 0) {
+    return(graph)
+  } else if(length(children) == 1) {
+    if(length(neighbors(graph, children, mode = 'in')) == 1) {
+      graph = graph_to_lineages(graph, children[1], num)
+    } else {
+      maxlin = max(vertex_attr(graph, 'lineage'), na.rm = TRUE)
+      graph = graph_to_lineages(graph, children[1], maxlin + 1)
+    }
+  } else if(length(children) == 2) {
+    graph = graph_to_lineages(graph, children[1], num)
+    maxlin = max(vertex_attr(graph, 'lineage'), na.rm = TRUE)
+    graph = graph_to_lineages(graph, children[2], maxlin + 1)
+  }
+  graph
+}
+
+#' Generate msprime simulation code from admixture graph
+#' @export
+#' @param edges Graph as edge list with columns 'from' and 'to' (optionally 'weight')
+#' @return msprime python code backbone
+#' @examples
+#' \dontrun{
+#' results = qpgraph(example_f2_blocks, example_graph)
+#' msprime_sim(results$edges)
+#' }
+msprime_sim = function(edges) {
+
+  edges %<>% mutate(from = str_replace_all(from, '\\.', ''), to = str_replace_all(to, '\\.', ''))
+  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 1)
+  graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
+  leaves = get_leafnames(graph)
+  lineages = vertex_attr(graph_to_lineages(graph), 'lineage')
+  edges2 = edges %>%
+    mutate(nfrom = match(from, names(V(graph))),
+           nto = match(to, names(V(graph))),
+           lfrom = lineages[nfrom],
+           lto = lineages[nto],
+           time = nfrom) %>%
+    filter(lfrom != lto) %>%
+    group_by(to) %>%
+    mutate(weight2 = ifelse(n() == 2 & time == max(time), weight, 1)) %>%
+    ungroup
+
+  out = paste0('\n#eff. pop. sizes\n', paste0(leaves, ' = \n', collapse = ''))
+  out = paste0(out, '\ngen = 29\n')
+  out = paste0(out, 'pops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', leaves,
+                                        '), #',(1:length(leaves))-1,'\n', collapse = '') ,']\n')
+  out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(leaves))-1,
+                                                           ', 0/gen)',
+                                                           c(rep(',', length(leaves)-1), ' '),
+                                                           ' #', leaves, '\n', collapse = ''), ']\n')
+  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$to, ' = \n', collapse = ''))
+  out = paste0(out, '\nevents = [\n',
+               paste0('\tmsprime.MassMigration(time = T_',
+                      edges2$from, '/gen, source = ', edges2$lto-1,', destination = ', edges2$lfrom-1,
+                      ', proportion = ', ifelse(edges2$type == 'admix', edges2$weight2, 1),')',
+                      collapse = ',\n'), '\n]\n')
+  out
+}
+
 

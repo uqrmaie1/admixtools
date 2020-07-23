@@ -447,6 +447,7 @@ match_samples = function(haveinds, havepops, inds, pops) {
   } else if(!is.null(inds) && !is.null(pops)) {
     if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
     haveinds[!haveinds %in% inds] = NA
+    havepops = NA
     havepops[!is.na(haveinds)] = pops[match(na.omit(haveinds), inds)]
   } else if(is.null(inds) && !is.null(pops)) {
     havepops[!havepops %in% pops] = NA
@@ -558,13 +559,14 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' which may require a lot of memory.
 #' @param afprod Return allele frequency products instead of f2 estimates
 #' @param remove_na Remove blocks with missing values
+#' @param verbose Print progress updates
 #' @return A 3d array of block jackknife estimates
 #' @seealso \code{\link{write_f2}}
 #' @examples
 #' \dontrun{
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE) {
+read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE) {
   # assumes f2 is in first column, afprod in second column
 
   if(is.null(pops)) {
@@ -577,7 +579,10 @@ read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE) {
   f2_blocks = array(NA, c(numpops, numpops, numblocks))
   dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = pops
   dimnames(f2_blocks)[[3]] = paste0('l', block_lengths)
-  for(pop1 in pops) {
+  for(i in seq_along(pops)) {
+    pop1 = pops[i]
+    if(verbose) alert_info(paste0('reading ', ifelse(afprod, 'afprod', 'f2'),
+                                  ' data for pop ', i, ' out of ', length(pops),'...\r'))
     for(pop2 in pops) {
       if(pop1 <= pop2) {
         pref = paste0(f2_dir, '/', pop1, '/', pop2)
@@ -588,6 +593,7 @@ read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE) {
       }
     }
   }
+  if(verbose) alert_info(paste0('\n'))
   if(remove_na) {
     keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
     if(!all(keep)) warning(paste0('Discarding ', sum(!keep), ' blocks due to missing values!'))
@@ -833,6 +839,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param transitions Set this to `FALSE` to exclude transition SNPs
 #' @param transversions Set this to `FALSE` to exclude transversion SNPs
 #' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
+#' @param snpblocks Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.
 #' @param overwrite Overwrite existing files in `outdir`
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
@@ -847,8 +854,8 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                      keepsnps = NULL, overwrite = FALSE, format = NULL, poly_only = FALSE,
-                      adjust_pseudohaploid = FALSE, verbose = TRUE) {
+                      keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
+                      adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
@@ -856,16 +863,14 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                                   transitions = transitions, transversions = transversions,
-                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
+                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = FALSE)
   afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
-  #fl = paste0(outdir, '/snpdat.tsv.gz')
-  #if(!file.exists(fl) || overwrite) afdat$snpfile %>% write_tsv(fl)
 
   if(verbose) alert_warning(paste0(nrow(afdat$afs), ' SNPs remain after filtering. ',
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
   afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite,
-                   maxmem = maxmem, dist = dist, verbose = verbose)
+                   maxmem = maxmem, poly_only = poly_only, dist = dist, verbose = verbose)
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
@@ -1192,9 +1197,9 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     if(!is.null(inds)) stop('Individual IDs supplied, but no "indivs" directory found!')
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(pops), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops, afprod = FALSE, remove_na = remove_na)
+    f2_blocks = read_f2(dir, pops, afprod = FALSE, remove_na = remove_na, verbose = verbose)
     if(afprod) {
-      f2_blocks_ap = -2*read_f2(dir, pops, afprod = TRUE, remove_na = remove_na)
+      f2_blocks_ap = -2*read_f2(dir, pops, afprod = TRUE, remove_na = remove_na, verbose = verbose)
       f2_blocks = (f2_blocks_ap - min(f2_blocks_ap, na.rm=T)) * diff(range(f2_blocks, na.rm = TRUE))/diff(range(f2_blocks_ap, na.rm = TRUE)) + min(f2_blocks, na.rm=T)
     }
   }
@@ -1582,13 +1587,20 @@ is_packedancestrymap_prefix = function(input) {
   filesexist && is_binfile(paste0(input, c('.geno')))
 }
 
-
+#' Extract samples from packedancestrymap files
+#'
+#' This function extracts samples from packedancestrymap files and saves them as PLINK files, using the package 'genio'
+#' @export
+#' @param inpref Prefix of the packedancestrymap input files
+#' @param outpref Prefix of the PLINK output files
+#' @param inds Individuals which should be extracted
+#' @param pops Populations which should be extracted. Can not be provided together with 'inds'
 extract_samples = function(inpref, outpref, inds = NULL, pops = NULL) {
   # extracts samples from geno file and writes new, smaller PLINK file using genio
 
-  stopifnot(!is.null(inds) && !is.null(pops))
+  stopifnot(is.null(inds) || is.null(pops))
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = col_types()) %>%
+    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = cols()) %>%
       filter(X3 %in% pops) %$% X1
   }
   dat = read_packedancestrymap(inpref, inds)

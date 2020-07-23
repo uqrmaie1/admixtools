@@ -7,8 +7,8 @@
 extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   maxmem = 8000, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
   transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-  overwrite = FALSE, format = NULL, poly_only = FALSE,
-  adjust_pseudohaploid = FALSE, verbose = TRUE)
+  snpblocks = NULL, overwrite = FALSE, format = NULL,
+  poly_only = TRUE, adjust_pseudohaploid = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -35,6 +35,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
+
+\item{snpblocks}{Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.}
 
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
