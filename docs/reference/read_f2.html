@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read f2 block jackknife estimates from disk — read_f2 • admixtools</title>
+<title>Read blocked f2 estimates from disk — read_f2 • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -45,10 +45,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-<meta property="og:title" content="Read f2 block jackknife estimates from disk — read_f2" />
+<meta property="og:title" content="Read blocked f2 estimates from disk — read_f2" />
 
-<meta property="og:description" content="This function reads f2 block jackknife estimates which were writtend to disk by write_f2
-and returns a 3d array of f2 block jackknife estimates." />
+<meta property="og:description" content="This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by write_f2
+and returns them as a 3d array." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -145,37 +145,50 @@ and returns a 3d array of f2 block jackknife estimates." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read f2 block jackknife estimates from disk</h1>
+    <h1>Read blocked f2 estimates from disk</h1>
     
     <div class="hidden name"><code>read_f2.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function reads f2 block jackknife estimates which were writtend to disk by <code><a href='write_f2.html'>write_f2</a></code>
-and returns a 3d array of f2 block jackknife estimates.</p>
+    <p>This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by <code><a href='write_f2.html'>write_f2</a></code>
+and returns them as a 3d array.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>read_f2</span>(<span class='no'>f2_dir</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>read_f2</span>(<span class='no'>f2_dir</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_dir</th>
-      <td><p>directory from which to read files</p></td>
+      <td><p>Directory from which to read files</p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>the populations for which f2 statistics should be read. Defaults to all populations,
+      <td><p>Populations for which f2 statistics should be read. Defaults to all populations,
 which may require a lot of memory.</p></td>
+    </tr>
+    <tr>
+      <th>afprod</th>
+      <td><p>Return allele frequency products instead of f2 estimates</p></td>
+    </tr>
+    <tr>
+      <th>remove_na</th>
+      <td><p>Remove blocks with missing values</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a 3d array of block jackknife estimates</p>
+    <p>A 3d array of block jackknife estimates</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 

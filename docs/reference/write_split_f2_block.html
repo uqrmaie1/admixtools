@@ -163,48 +163,35 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
     
     </div>
 
-    <pre class="usage"><span class='fu'>write_split_f2_block</span>(<span class='no'>afmatprefix</span>, <span class='no'>countmatprefix</span>, <span class='no'>outdir</span>, <span class='no'>chunk1</span>, <span class='no'>chunk2</span>,
-  <span class='no'>block_lengths</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>write_split_f2_block</span>(<span class='no'>afdir</span>, <span class='no'>outdir</span>, <span class='no'>chunk1</span>, <span class='no'>chunk2</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>afmatprefix</th>
-      <td><p>prefix of the allele frequency <code>.rds</code> files created by <code><a href='split_mat.html'>split_mat</a></code></p></td>
-    </tr>
-    <tr>
-      <th>countmatprefix</th>
-      <td><p>prefix of the allele frequency <code>.rds</code> files created by <code><a href='split_mat.html'>split_mat</a></code></p></td>
+      <th>afdir</th>
+      <td><p>Directory with allele frequency and counts <code>.rds</code> files created by <code><a href='split_mat.html'>split_mat</a></code></p></td>
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>directory where the f2 blocks will be stored</p></td>
+      <td><p>Directory data where data will be stored</p></td>
     </tr>
     <tr>
       <th>chunk1</th>
-      <td><p>index of the first chunk of populations</p></td>
+      <td><p>Index of the first chunk of populations</p></td>
     </tr>
     <tr>
       <th>chunk2</th>
-      <td><p>index of the second chunk of populations</p></td>
+      <td><p>Index of the second chunk of populations</p></td>
     </tr>
     <tr>
-      <th>block_lengths</th>
-      <td><p>vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to
-match the number of SNPs.</p></td>
+      <th>dist</th>
+      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
-    </tr>
-    <tr>
-      <th>popcounts</th>
-      <td><p>named vector with number of samples for each population.</p></td>
-    </tr>
-    <tr>
-      <th>f2_denom</th>
-      <td><p>scaling factor applied to f2-statistics. If set to 0.278, this will be approximately equal to Fst.</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     

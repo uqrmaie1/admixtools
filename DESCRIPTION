@@ -6,10 +6,10 @@ Authors@R: as.person(c(
     "Robert Maier <rmaier@broadinstitute.org> [aut, cre]", 
     "Nick Patterson <nickp@broadinstitute.org> [aut]"
   ))
-Description: AdmixTools is a set of methods used to infer demographic history from genetic data using f-statistics.
-  It was originally implemented in C. This is a new implementation of some of the original methods.
-  It is efficient because it precomputes precursors to f-statistics, which can be re-used for many analyses,
-  making it necessary to read the genotype data only once.
+Description: admixtools is a set of methods used to infer demographic history from genetic data using f-statistics.
+  It was originally implemented as a command line program in C. This is a new implementation of the programs
+  qpDstat, qpAdm, qpGraph, and contains several new features.
+  It is efficient because it precomputes f2-statistics which can be re-used for many analyses.
 Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8
@@ -30,7 +30,6 @@ Imports:
     lobstr,
     magrittr,
     quadprog,
-    plotly,
     purrr,
     Rcpp,
     RcppArmadillo,
@@ -40,7 +39,9 @@ Imports:
     stringr,
     tibble,
     tidyr,
-    utils,
+    utils
+Suggests:
+    plotly,
     htmlwidgets,
     shiny,
     shinyjs,

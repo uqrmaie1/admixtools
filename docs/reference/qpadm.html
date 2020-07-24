@@ -172,15 +172,15 @@ admixture events (see <code>wave</code>).</p>
     </tr>
     <tr>
       <th>target</th>
-      <td><p>target population</p></td>
+      <td><p>Target population</p></td>
     </tr>
     <tr>
       <th>left</th>
-      <td><p>source populations</p></td>
+      <td><p>Source populations</p></td>
     </tr>
     <tr>
       <th>right</th>
-      <td><p>outgroup populations</p></td>
+      <td><p>Outgroup populations</p></td>
     </tr>
     <tr>
       <th>wave</th>
@@ -204,26 +204,25 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>getcov</th>
-      <td><p>should standard errors be returned? Setting this to <code>FALSE</code> makes this function much faster.</p></td>
+      <td><p>Return standard errors for weights? Setting this to <code>FALSE</code> makes this function much faster.</p></td>
     </tr>
     <tr>
       <th>constrained</th>
-      <td><p>if <code>FALSE</code> (default), admixture weights can be negative.
-if <code>TRUE</code>, they will all be non-negative, as in <code><a href='lazadm.html'>lazadm</a></code></p></td>
+      <td><p>Constrain admixture weights to be non-negative</p></td>
     </tr>
     <tr>
       <th>cpp</th>
-      <td><p>should optimization be done using C++ or R function? <code>cpp = TRUE</code> is much faster.</p></td>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with output describing the model fit:</p><ol>
+    <p>A list with output describing the model fit:</p><ol>
 <li><p><code>weights</code> a data frame with estimated admixture proportions where each row is left population.
 estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
 <li><p><code>rankdrop</code> a data frame describing model fits with different ranks, including p-values for the overall fit
@@ -261,37 +260,38 @@ languages in Europe.</em> Nature (SI 10)</p>
 #&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
 #&gt;   target      left                 weight    se     z
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   49.7  23.3  2.13
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>48.7</span><span>  23.3 -</span><span style='color: #BB0000;'>2.08</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>48.6</span><span>  23.3 -</span><span style='color: #BB0000;'>2.08</span><span>
 #&gt; 
 #&gt; $f4
 #&gt; </span><span style='color: #555555;'># A tibble: 36 x 9</span><span>
 #&gt;    pop1    pop2       pop3   pop4           est      se       z         p weight
 #&gt;    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>      </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>        </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'> 1</span><span> Deniso… Altai_Nea… Chimp… Mbuti.DG   0.010</span><span style='text-decoration: underline;'>1</span><span>  2.96</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  34.0   9.79</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-253</span><span>   49.7
-#&gt; </span><span style='color: #555555;'> 2</span><span> Deniso… fit        Chimp… Mbuti.DG   0.005</span><span style='text-decoration: underline;'>39</span><span> 7.35</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span>   0.733 4.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
-#&gt; </span><span style='color: #555555;'> 3</span><span> Deniso… Vindija.DG Chimp… Mbuti.DG   0.010</span><span style='text-decoration: underline;'>2</span><span>  2.44</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  41.7   0.  </span><span style='color: #555555;'> </span><span>      -</span><span style='color: #BB0000;'>48.7</span><span>
-#&gt; </span><span style='color: #555555;'> 4</span><span> Deniso… Altai_Nea… Chimp… Russia_U…  0.011</span><span style='text-decoration: underline;'>8</span><span>  4.53</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  26.1   5.11</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-150</span><span>   49.7
-#&gt; </span><span style='color: #555555;'> 5</span><span> Deniso… fit        Chimp… Russia_U… -</span><span style='color: #BB0000;'>0.005</span><span style='color: #BB0000;text-decoration: underline;'>00</span><span> 1.16</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span>  -</span><span style='color: #BB0000;'>0.430</span><span> 6.67</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
-#&gt; </span><span style='color: #555555;'> 6</span><span> Deniso… Vindija.DG Chimp… Russia_U…  0.012</span><span style='text-decoration: underline;'>2</span><span>  3.18</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  38.2   0.  </span><span style='color: #555555;'> </span><span>      -</span><span style='color: #BB0000;'>48.7</span><span>
-#&gt; </span><span style='color: #555555;'> 7</span><span> Deniso… Altai_Nea… Chimp… Switzerl…  0.011</span><span style='text-decoration: underline;'>6</span><span>  4.05</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  28.7   1.17</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-181</span><span>   49.7
-#&gt; </span><span style='color: #555555;'> 8</span><span> Deniso… fit        Chimp… Switzerl… -</span><span style='color: #BB0000;'>0.004</span><span style='color: #BB0000;text-decoration: underline;'>30</span><span> 1.24</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span>  -</span><span style='color: #BB0000;'>0.346</span><span> 7.30</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
-#&gt; </span><span style='color: #555555;'> 9</span><span> Deniso… Vindija.DG Chimp… Switzerl…  0.012</span><span style='text-decoration: underline;'>0</span><span>  3.00</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  39.9   0.  </span><span style='color: #555555;'> </span><span>      -</span><span style='color: #BB0000;'>48.7</span><span>
-#&gt; </span><span style='color: #555555;'>10</span><span> Deniso… Altai_Nea… Mbuti… Chimp.REF -</span><span style='color: #BB0000;'>0.010</span><span style='color: #BB0000;text-decoration: underline;'>1</span><span>  2.96</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>34.0</span><span>   9.79</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-253</span><span>   49.7
+#&gt; </span><span style='color: #555555;'> 1</span><span> Deniso… Altai_Nea… Chimp… Mbuti.DG   0.012</span><span style='text-decoration: underline;'>9</span><span>  3.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  35.6   2.22</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-277</span><span>   49.6
+#&gt; </span><span style='color: #555555;'> 2</span><span> Deniso… fit        Chimp… Mbuti.DG   0.006</span><span style='text-decoration: underline;'>93</span><span> 6.60</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span>   1.05  2.94</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
+#&gt; </span><span style='color: #555555;'> 3</span><span> Deniso… Vindija.DG Chimp… Mbuti.DG   0.013</span><span style='text-decoration: underline;'>1</span><span>  3.73</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  35.0   7.55</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-269</span><span>  -</span><span style='color: #BB0000;'>48.6</span><span>
+#&gt; </span><span style='color: #555555;'> 4</span><span> Deniso… Altai_Nea… Chimp… Russia_U…  0.015</span><span style='text-decoration: underline;'>2</span><span>  4.46</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  34.0   4.67</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-254</span><span>   49.6
+#&gt; </span><span style='color: #555555;'> 5</span><span> Deniso… fit        Chimp… Russia_U… -</span><span style='color: #BB0000;'>0.006</span><span style='color: #BB0000;text-decoration: underline;'>42</span><span> 8.03</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span>  -</span><span style='color: #BB0000;'>0.800</span><span> 4.23</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
+#&gt; </span><span style='color: #555555;'> 6</span><span> Deniso… Vindija.DG Chimp… Russia_U…  0.015</span><span style='text-decoration: underline;'>6</span><span>  4.53</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  34.5   2.14</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-261</span><span>  -</span><span style='color: #BB0000;'>48.6</span><span>
+#&gt; </span><span style='color: #555555;'> 7</span><span> Deniso… Altai_Nea… Chimp… Switzerl…  0.015</span><span style='text-decoration: underline;'>0</span><span>  4.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  32.3   6.06</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-229</span><span>   49.6
+#&gt; </span><span style='color: #555555;'> 8</span><span> Deniso… fit        Chimp… Switzerl… -</span><span style='color: #BB0000;'>0.005</span><span style='color: #BB0000;text-decoration: underline;'>52</span><span> 8.43</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span>  -</span><span style='color: #BB0000;'>0.654</span><span> 5.13</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>   </span><span style='color: #BB0000;'>NA</span><span>  
+#&gt; </span><span style='color: #555555;'> 9</span><span> Deniso… Vindija.DG Chimp… Switzerl…  0.015</span><span style='text-decoration: underline;'>4</span><span>  4.78</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  32.2   5.81</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-228</span><span>  -</span><span style='color: #BB0000;'>48.6</span><span>
+#&gt; </span><span style='color: #555555;'>10</span><span> Deniso… Altai_Nea… Mbuti… Chimp.REF -</span><span style='color: #BB0000;'>0.012</span><span style='color: #BB0000;text-decoration: underline;'>9</span><span>  3.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>35.6</span><span>   2.22</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-277</span><span>   49.6
 #&gt; </span><span style='color: #555555;'># … with 26 more rows</span><span>
 #&gt; 
 #&gt; $rankdrop
-#&gt; </span><span style='color: #555555;'># A tibble: 1 x 7</span><span>
-#&gt;   f4rank   dof chisq      p dofdiff chisqdiff p_nested
-#&gt; </span><span style='color: #555555;'>*</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span>      1     2  7.21 0.027</span><span style='text-decoration: underline;'>2</span><span>      </span><span style='color: #BB0000;'>NA</span><span>        </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>
+#&gt; </span><span style='color: #555555;'># A tibble: 2 x 7</span><span>
+#&gt;   f4rank   dof   chisq      p dofdiff chisqdiff p_nested
+#&gt; </span><span style='color: #555555;'>*</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span>      1     2    7.15 0.028</span><span style='text-decoration: underline;'>0</span><span>       4     </span><span style='text-decoration: underline;'>1</span><span>572.        0
+#&gt; </span><span style='color: #555555;'>2</span><span>      0     6 </span><span style='text-decoration: underline;'>1</span><span>580.   0           </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>        </span><span style='color: #BB0000;'>NA</span><span>
 #&gt; 
 #&gt; $popdrop
 #&gt; </span><span style='color: #555555;'># A tibble: 1 x 13</span><span>
 #&gt;   pat      wt   dof chisq      p f4rank Altai_Neanderth… Vindija.DG feasible
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>            </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>      </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span>   
-#&gt; </span><span style='color: #555555;'>1</span><span> 00        0     2  7.21 0.027</span><span style='text-decoration: underline;'>2</span><span>      1             49.7      -</span><span style='color: #BB0000;'>48.7</span><span> FALSE   
-#&gt; </span><span style='color: #555555;'># … with 4 more variables: best </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span style='color: #555555;'>, dofdiff </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span style='color: #555555;'>, chisqdiff </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span style='color: #555555;'>,
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>            </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>      </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span>   
+#&gt; </span><span style='color: #555555;'>1</span><span> 00        0     2  7.15 0.028</span><span style='text-decoration: underline;'>0</span><span>      1             49.6      -</span><span style='color: #BB0000;'>48.6</span><span> FALSE   
+#&gt; </span><span style='color: #555555;'># … with 4 more variables: best </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span style='color: #555555;'>, dofdiff </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span style='color: #555555;'>, chisqdiff </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span style='color: #555555;'>,
 #&gt; #   p_nested </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </div></span></pre>
   </div>

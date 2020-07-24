@@ -169,66 +169,84 @@ for admixture graphs with many admixture nodes.</p>
   <span class='kw'>numgraphs</span> <span class='kw'>=</span> <span class='fl'>50</span>, <span class='kw'>numgen</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numsel</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>), <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>initgraph</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>mutfuns</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"spr_leaves"</span>, <span class='st'>"spr_all"</span>, <span class='st'>"swap_leaves"</span>,
-  <span class='st'>"move_admixedge_once"</span>, <span class='st'>"flipadmix_random"</span>), <span class='kw'>parallel</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>stop_at</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>debug</span> <span class='kw'>=</span> <span class='no'>numrep</span> <span class='kw'>==</span> <span class='fl'>1</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
+  <span class='st'>"move_admixedge_once"</span>, <span class='st'>"flipadmix_random"</span>), <span class='kw'>store_intermediate</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>parallel</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>stop_at</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>debug</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
 alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>populations for which to fit admixture graphs</p></td>
+      <td><p>Populations for which to fit admixture graphs</p></td>
     </tr>
     <tr>
       <th>outpop</th>
-      <td><p>outgroup population</p></td>
+      <td><p>Outgroup population</p></td>
     </tr>
     <tr>
       <th>numrep</th>
-      <td><p>number of independent repetitions (each repetition can be run in parallel)</p></td>
+      <td><p>Number of independent repetitions (each repetition can be run in parallel)</p></td>
     </tr>
     <tr>
       <th>numgraphs</th>
-      <td><p>number of graphs in each generation</p></td>
+      <td><p>Number of graphs in each generation</p></td>
     </tr>
     <tr>
       <th>numgen</th>
-      <td><p>number of generations</p></td>
+      <td><p>Number of generations</p></td>
     </tr>
     <tr>
       <th>numsel</th>
-      <td><p>number of graphs which are selected in each generation</p></td>
+      <td><p>Number of graphs which are selected in each generation. Should be less than <code>numgraphs</code>.</p></td>
     </tr>
     <tr>
       <th>numadmix</th>
-      <td><p>number of admixture events within each graph</p></td>
+      <td><p>Number of admixture events within each graph</p></td>
     </tr>
     <tr>
       <th>keep</th>
-      <td><p>by default, all evaluated graphs will be returned. <code>best</code> will only return the best fitting
+      <td><p>By default (<code>all</code>), all evaluated graphs will be returned. <code>best</code> will only return the best fitting
 graph from each repeat and each generation. <code>last</code> will return all graphs from the last generation.</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
-      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+      <td><p>Scales f2-statistics. A value of around 0.278 converts f2 to Fst.</p></td>
     </tr>
     <tr>
       <th>cpp</th>
-      <td><p>should optimization be run in C++ or in R? C++ is faster.</p></td>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
       <th>initgraph</th>
-      <td><p>optional graph to start out with</p></td>
+      <td><p>Optional graph to start with. If <code>NULL</code>, optimization will start with random graphs.</p></td>
+    </tr>
+    <tr>
+      <th>mutfuns</th>
+      <td><p>The names of funcations used to modify graphs.</p><ul>
+<li><p><code>spr_leaves</code> Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.</p></li>
+<li><p><code>spr_all</code> Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.</p></li>
+<li><p><code>swap_leaves</code> Swaps two leaf nodes.</p></li>
+<li><p><code>move_admixedge_once</code> Moves an admixture edge to a nearby location.</p></li>
+<li><p><code>flipadmix_random</code> Flips the direction of an admixture edge (if possible).</p></li>
+</ul></td>
+    </tr>
+    <tr>
+      <th>store_intermediate</th>
+      <td><p>Path and prefix of files for intermediate results to <code>.rds</code>. Can be useful if <code>find_graphs</code> doesn't finish sucessfully.</p></td>
     </tr>
     <tr>
       <th>parallel</th>
       <td><p>Parallelize over repeats (if <code>numrep &gt; 1</code>) or graphs (if <code>numrep == 1</code>) by replacing <code><a href='https://purrr.tidyverse.org/reference/map.html'>purrr::map</a></code> with <code><a href='https://rdrr.io/pkg/furrr/man/future_map.html'>furrr::future_map</a></code>. Will only be effective if <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan()</a></code> has been set.</p></td>
+    </tr>
+    <tr>
+      <th>stop_at</th>
+      <td><p>Stop execution after finishing the generation running at <code>stop_at</code> seconds. Currently not working.</p></td>
     </tr>
     <tr>
       <th>debug</th>
@@ -236,8 +254,16 @@ graph from each repeat and each generation. <code>last</code> will return all gr
 Errors will interrupt execution. This is the default if <code>numrep = 1</code></p></td>
     </tr>
     <tr>
+      <th>fudge_cov</th>
+      <td><p>Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
+    </tr>
+    <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Additional arguments passed to <code>qpgraph</code></p></td>
     </tr>
     </table>
     

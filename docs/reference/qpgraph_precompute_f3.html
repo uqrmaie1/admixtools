@@ -158,28 +158,28 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)<
     </div>
 
     <pre class="usage"><span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>f2_data</span>, <span class='no'>pops</span>, <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
 alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>populations for which to compute f3-statistics</p></td>
+      <td><p>Populations for which to compute f3-statistics</p></td>
     </tr>
     <tr>
       <th>outpop</th>
-      <td><p>outgroup population. used as the basis of the f3-statistics. If <code>NULL</code> (the default),
+      <td><p>Outgroup population. used as the basis of the f3-statistics. If <code>NULL</code> (the default),
 the first population in <code>pops</code> will be used as the basis.</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
-      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+      <td><p>Scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>boot</th>
@@ -189,21 +189,21 @@ equal to <code>boot</code> if it is an integer, or equal to the number of blocks
 of f3 statistics will be computed using bootstrapping.</p></td>
     </tr>
     <tr>
-      <th>fudge</th>
-      <td><p>try increasing this, if you get the error message <code>constraints are inconsistent, no solution!</code>.</p></td>
+      <th>fudge_cov</th>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
     </tr>
     <tr>
       <th>lsqmode</th>
-      <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
+      <td><p>Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with four items</p><ol>
+    <p>A list with four items</p><ol>
 <li><p><code>f3_est</code> a matrix with f3-statistics for all population pairs with the output</p></li>
 <li><p><code>ppinv</code> a matrix with the inverse of the f3-statistic covariance matrix</p></li>
-<li><p><code>2out</code> a data frame with f2 estimates</p></li>
+<li><p><code>f2out</code> a data frame with f2 estimates</p></li>
 <li><p><code>f3out</code> a data frame with f3 estimates</p></li>
 </ol>
 
@@ -211,10 +211,9 @@ of f3 statistics will be computed using bootstrapping.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
-<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pops</span>)$<span class='no'>f3_est</span></div><div class='output co'>#&gt;  [1] 0.17485740 0.17116568 0.09600763 0.11127389 0.09724461 0.09717423
-#&gt;  [7] 0.17760236 0.09610375 0.11103056 0.09759003 0.09750175 0.15957870
-#&gt; [13] 0.08594358 0.15026803 0.15129410 0.15717293 0.08543270 0.08553053
-#&gt; [19] 0.19965626 0.19637938 0.34035708
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pops</span>)$<span class='no'>f3_est</span></div><div class='output co'>#&gt;  [1] 0.2249564 0.2202068 0.1235151 0.1431551 0.1251066 0.1250159 0.2284884
+#&gt;  [8] 0.1236390 0.1428426 0.1255514 0.1254377 0.2051343 0.1105677 0.1933206
+#&gt; [15] 0.1946408 0.2022054 0.1099106 0.1100366 0.2568586 0.2526432 0.4378706
 #&gt; attr(,"pops")
 #&gt; [1] "Chimp.REF"             "Altai_Neanderthal.DG"  "Vindija.DG"           
 #&gt; [4] "Mbuti.DG"              "Denisova.DG"           "Russia_Ust_Ishim.DG"  

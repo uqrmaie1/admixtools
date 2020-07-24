@@ -155,7 +155,8 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>plink_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -166,15 +167,19 @@
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>vector of samples from which to compute allele frequencies.</p></td>
+      <td><p>Individuals from which to compute allele frequencies</p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>vector of populations from which to compute allele frequencies. If <code>NULL</code> (default), populations will be extracted from the third column in the <code>.ind</code> file</p></td>
+      <td><p>Populations from which to compute allele frequencies. If <code>NULL</code> (default), populations will be extracted from the third column in the <code>.ind</code> file. If population labels are provided, they should have the same length as <code>inds</code>, and will be matched to them by position</p></td>
+    </tr>
+    <tr>
+      <th>adjust_pseudohaploid</th>
+      <td><p>Genotypes of pseudohaploid samples are coded as <code>0</code> or <code>2</code>, although only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option. Pseudohaploid samples are identified as those that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     

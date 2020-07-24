@@ -157,15 +157,11 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     
     </div>
 
-    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>afdat</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>distcol</span> <span class='kw'>=</span> <span class='st'>"cm"</span>)</pre>
+    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>dat</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>distcol</span> <span class='kw'>=</span> <span class='st'>"cm"</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>afdat</th>
-      <td><p>data frame with columns 'CHR' and either 'POS' or 'cm'</p></td>
-    </tr>
     <tr>
       <th>dist</th>
       <td><p>minimum distance between blocks</p></td>
@@ -173,6 +169,10 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     <tr>
       <th>distcol</th>
       <td><p>which column should be used as distance column</p></td>
+    </tr>
+    <tr>
+      <th>afdat</th>
+      <td><p>data frame with columns 'CHR' and either 'POS' or 'cm'</p></td>
     </tr>
     </table>
     

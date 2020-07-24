@@ -1,0 +1,7 @@
+---
+title: "fstats"
+contents:
+output:
+  rmarkdown::html_vignette:
+    toc: false
+---

@@ -831,7 +831,8 @@ msprime_sim = function(edges) {
   out = paste0('\n#eff. pop. sizes\n', paste0(leaves, ' = \n', collapse = ''))
   out = paste0(out, '\ngen = 29\n')
   out = paste0(out, 'pops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', leaves,
-                                        '), #',(1:length(leaves))-1,'\n', collapse = '') ,']\n')
+                                        ')', c(rep(',', length(leaves)-1), ''),
+                                        ' #',(1:length(leaves))-1,'\n', collapse = '') ,']\n')
   out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(leaves))-1,
                                                            ', 0/gen)',
                                                            c(rep(',', length(leaves)-1), ' '),

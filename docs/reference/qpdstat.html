@@ -160,7 +160,8 @@
     <pre class="usage"><span class='fu'>qpdstat</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -176,7 +177,7 @@ output of <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a hre
     </tr>
     <tr>
       <th>pop1</th>
-      <td><p>one of the following four:</p><ol>
+      <td><p>One of the following four:</p><ol>
 <li><p><code>NULL</code>: all possible pairs of the populations in <code>f2_blocks</code> will be returned</p></li>
 <li><p>a vector of population labels</p></li>
 <li><p>a data frame with population combinations to be tested, with one population per column and one
@@ -187,7 +188,7 @@ population combinations to be tested. Other <code>pop</code> arguments will be i
     </tr>
     <tr>
       <th>pop2</th>
-      <td><p>a vector of population labels</p></td>
+      <td><p>A vector of population labels</p></td>
     </tr>
     <tr>
       <th>pop3</th>
@@ -199,7 +200,7 @@ population combinations to be tested. Other <code>pop</code> arguments will be i
     </tr>
     <tr>
       <th>f2_denom</th>
-      <td><p>scales f2-statistics. 1 correspondes to <code>f4mode: YES</code>. 1/4.75 is similar to <code>f4mode: NO</code>.</p></td>
+      <td><p>Scales f2-statistics. 1 correspondes to <code>f4mode: YES</code>. 1/4.75 is similar to <code>f4mode: NO</code>.</p></td>
     </tr>
     <tr>
       <th>boot</th>
@@ -215,7 +216,7 @@ from accidently computing all combinations if that number is large.</p></td>
     </tr>
     <tr>
       <th>unique_only</th>
-      <td><p>If <code>TRUE</code> (the default), redundant combinations will be returned as well.</p></td>
+      <td><p>If <code>TRUE</code> (the default), redundant combinations will be excluded</p></td>
     </tr>
     <tr>
       <th>dist</th>
@@ -223,22 +224,26 @@ from accidently computing all combinations if that number is large.</p></td>
     </tr>
     <tr>
       <th>block_lengths</th>
-      <td><p>vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to
+      <td><p>Vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to
 match the number of SNPs. only used when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
     </tr>
     <tr>
       <th>f4mode</th>
-      <td><p>if <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
+      <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of packedancestrymap files</p></td>
+    </tr>
+    <tr>
+      <th>cpp</th>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a data frame with f4 statistics</p>
+    <p>A data frame with f4 statistics</p>
     
     <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
 
@@ -248,7 +253,8 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of p
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
-    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
+    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history</em> Genetics</p>
+<p>Peter, B. (2016) <em>Admixture, Population Structure, and F-Statistics</em> Genetics</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -259,12 +265,12 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of p
 <span class='fu'>qpdstat</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 6 x 8</span><span>
 #&gt;   pop1     pop2        pop3        pop4             est      se      z         p
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>          </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.16</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 4.05</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 28.7   1.17</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-181</span><span>
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  1.58</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span> 2.32</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  6.80  1.08</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>- 11</span><span>
-#&gt; </span><span style='color: #555555;'>3</span><span> Denisov… Altai_Nean… Russia_Ust… Switzerlan… -</span><span style='color: #BB0000;'>1.68</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 2.37</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>0.708</span><span> 4.79</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>
-#&gt; </span><span style='color: #555555;'>4</span><span> Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.20</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 3.00</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 39.9   0.  </span><span style='color: #555555;'> </span><span>    
-#&gt; </span><span style='color: #555555;'>5</span><span> Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  1.81</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span> 2.14</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  8.48  2.21</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>- 17</span><span>
-#&gt; </span><span style='color: #555555;'>6</span><span> Denisov… Vindija.DG  Russia_Ust… Switzerlan… -</span><span style='color: #BB0000;'>1.86</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 2.49</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>0.747</span><span> 4.55</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span></div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.50</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 4.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 32.3   6.06</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-229</span><span>
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  2.03</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span> 3.53</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  5.75  8.85</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  9</span><span>
+#&gt; </span><span style='color: #555555;'>3</span><span> Denisov… Altai_Nean… Russia_Ust… Switzerlan… -</span><span style='color: #BB0000;'>2.17</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 3.73</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>0.580</span><span> 5.62</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span>
+#&gt; </span><span style='color: #555555;'>4</span><span> Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.54</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 4.78</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 32.2   5.81</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-228</span><span>
+#&gt; </span><span style='color: #555555;'>5</span><span> Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  2.33</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-3</span><span> 3.63</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  6.42  1.40</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>- 10</span><span>
+#&gt; </span><span style='color: #555555;'>6</span><span> Denisov… Vindija.DG  Russia_Ust… Switzerlan… -</span><span style='color: #BB0000;'>2.40</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 3.87</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> -</span><span style='color: #BB0000;'>0.620</span><span> 5.35</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-  1</span><span></div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='fu'>qpdstat</span>(<span class='no'>f2_dir</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)
 }</div></span></pre>
   </div>

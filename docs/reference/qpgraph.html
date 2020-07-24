@@ -156,24 +156,25 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpgraph</span>(<span class='no'>f2_blocks</span>, <span class='no'>graph</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
-  <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_blocks</th>
-      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
     </tr>
     <tr>
       <th>graph</th>
-      <td><p>an admixture graph represented as a matrix of edges, an <code>igraph</code> object, or the path to a qpGraph graph file.</p></td>
+      <td><p>An admixture graph represented as a matrix of edges, an <code>igraph</code> object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled <code>lower</code> and <code>upper</code> with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.</p></td>
     </tr>
     <tr>
       <th>f2_denom</th>
-      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+      <td><p>Scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
     </tr>
     <tr>
       <th>boot</th>
@@ -184,41 +185,61 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>fudge</th>
-      <td><p>try increasing this, if you get the error message <code>constraints are inconsistent, no solution!</code>.</p></td>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).</p></td>
+    </tr>
+    <tr>
+      <th>fudge_cov</th>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
     </tr>
     <tr>
       <th>fnscale</th>
-      <td><p>optimization parameter passed to <code>control</code> in <code><a href='https://rdrr.io/r/stats/optim.html'>optim</a></code></p></td>
+      <td><p>Optimization parameter passed to <code>control</code> in <code><a href='https://rdrr.io/r/stats/optim.html'>optim</a></code></p></td>
     </tr>
     <tr>
       <th>lsqmode</th>
-      <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
+      <td><p>Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
     </tr>
     <tr>
       <th>numstart</th>
-      <td><p>number of random initializations. defaults to 10.</p></td>
+      <td><p>Number of random initializations. Defaults to 10.</p></td>
     </tr>
     <tr>
       <th>seed</th>
-      <td><p>seed for generating starting weights.</p></td>
+      <td><p>Seed for generating starting weights.</p></td>
     </tr>
     <tr>
       <th>cpp</th>
-      <td><p>should optimization be done using C++ or R function? <code>cpp = TRUE</code> is much faster.</p></td>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
       <th>return_f4</th>
-      <td><p>return all f4 statistics? Can take a while.</p></td>
+      <td><p>Return all f4-statistics. Defaults to <code>FALSE</code> because this can be slow.</p></td>
+    </tr>
+    <tr>
+      <th>f3precomp</th>
+      <td><p>Precomputed f3-statistics. This should be the output of <code>qpgraph_precompute_f3</code> and can be provided instead of <code>f2_blocks</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
+    </tr>
+    <tr>
+      <th>f2_blocks_test</th>
+      <td><p>An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of <code>f2_blocks</code>. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step</p></td>
+    </tr>
+    <tr>
+      <th>low_q</th>
+      <td><p>Reported lower quantile of fitted admixture edge weights across random initializations</p></td>
+    </tr>
+    <tr>
+      <th>high_q</th>
+      <td><p>Reported upper quantile of fitted admixture edge weights across random initializations</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with output describing the model fit:</p><ol>
+    <p>A list with data describing the model fit:</p><ol>
 <li><p><code>edges</code> a data frame where each row is an edge in the graph. For regular edges,
 the column <code>weight</code> is the estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
 <li><p><code>score</code> the likelihood score of the fitted graph. lower values correspond to better fits.
@@ -237,9 +258,7 @@ fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.</p><
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> for a wrapper functions which call the original qpGraph program;
-<code><a href='qpgraph_slim.html'>qpgraph_slim</a></code> for a faster function function which requires f3 estimates
-and an inverted covariance matrix as input instead.</p></div>
+    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> for a wrapper functions which call the original qpGraph program.</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

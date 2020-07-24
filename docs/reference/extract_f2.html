@@ -164,77 +164,93 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
     </div>
 
     <pre class="usage"><span class='fu'>extract_f2</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
-  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>0.25</span>, <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>, <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
   <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>snpblocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>poly_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
+      <td><p>Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
 PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>the directory to which to write data</p></td>
+      <td><p>Directory data where data will be stored</p></td>
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>the individuals for which data should be extracted.</p></td>
+      <td><p>Individuals for which data should be extracted</p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>the populations for which data should be extracted. <code>pops</code> and <code>inds</code> cannot be specified
-at the same time. If none are specified, all populations will be extracted.</p></td>
+      <td><p>Populations for which data should be extracted. If both <code>pops</code> and <code>inds</code> are provided, they should have the same length and will be matched by position. If only <code>pops</code> is provided, all individuals from the <code>.ind</code> or <code>.fam</code> file in those populations will be extracted. If only <code>inds</code> is provided, each indivdual will be assigned to its own population of the same name. If neither <code>pops</code> nor <code>inds</code> is provided, all individuals and populations in the <code>.ind</code> or <code>.fam</code> file will be extracted.</p></td>
     </tr>
     <tr>
       <th>dist</th>
-      <td><p>genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>maxmem</th>
-      <td><p>split up allele frequency data into blocks, if memory requirements exceed <code>maxmem</code> MB.</p></td>
+      <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.</p></td>
     </tr>
     <tr>
       <th>maxmiss</th>
-      <td><p>discard SNPs which are missing in a fraction of populations higher than <code>maxmiss</code></p></td>
+      <td><p>Discard SNPs which are missing in a fraction of populations higher than <code>maxmiss</code></p></td>
     </tr>
     <tr>
       <th>minmaf</th>
-      <td><p>discard SNPs with minor allele frequency less than <code>minmaf</code></p></td>
+      <td><p>Discard SNPs with minor allele frequency less than <code>minmaf</code></p></td>
     </tr>
     <tr>
       <th>maxmaf</th>
-      <td><p>discard SNPs which minor allele frequency greater than than <code>maxmaf</code></p></td>
+      <td><p>Discard SNPs with minor allele frequency greater than than <code>maxmaf</code></p></td>
     </tr>
     <tr>
       <th>transitions</th>
-      <td><p>set to <code>FALSE</code> to exclude transition SNPs</p></td>
+      <td><p>Set this to <code>FALSE</code> to exclude transition SNPs</p></td>
     </tr>
     <tr>
       <th>transversions</th>
-      <td><p>set to <code>FALSE</code> to exclude transversion SNPs</p></td>
+      <td><p>Set this to <code>FALSE</code> to exclude transversion SNPs</p></td>
     </tr>
     <tr>
       <th>keepsnps</th>
-      <td><p>SNP IDs of SNPs to keep. overrides other SNP filtering options</p></td>
+      <td><p>SNP IDs of SNPs to keep. Overrides other SNP filtering options</p></td>
+    </tr>
+    <tr>
+      <th>snpblocks</th>
+      <td><p>Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.</p></td>
     </tr>
     <tr>
       <th>overwrite</th>
-      <td><p>should existing files be overwritten?</p></td>
+      <td><p>Overwrite existing files in <code>outdir</code></p></td>
     </tr>
     <tr>
       <th>format</th>
-      <td><p>supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read</p></td>
+      <td><p>Supply this if the prefix can refer to genotype data in different formats
+and you want to choose which one to read. Should be either <code>plink</code>, <code>ancestrymap</code>, or <code>packedancestrymap</code></p></td>
+    </tr>
+    <tr>
+      <th>poly_only</th>
+      <td><p>Exclude sites with identical allele frequencies in all populations</p></td>
+    </tr>
+    <tr>
+      <th>adjust_pseudohaploid</th>
+      <td><p>Genotypes of pseudohaploid samples are coded as <code>0</code> or <code>2</code>, although only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option. Pseudohaploid samples are identified as those that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>SNP metadata (invisibly)</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -247,7 +263,9 @@ and you want to choose which one to read</p></td>
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-            
+      
+      <li><a href="#value">Value</a></li>
+      
       <li><a href="#examples">Examples</a></li>
     </ul>
 

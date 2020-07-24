@@ -132,12 +132,12 @@
 <pre><code>## # A tibble: 6 x 7
 ##   pop1        pop2                 pop3                  est      se     z     p
 ##   &lt;chr&gt;       &lt;chr&gt;                &lt;chr&gt;               &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1 Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.0459 3.61e-4 127.      0
-## 2 Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.0560 4.65e-4 120.      0
-## 3 Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.0577 6.03e-4  95.7     0
-## 4 Denisova.DG Vindija.DG           Chimp.REF          0.0461 4.43e-4 104.      0
-## 5 Denisova.DG Vindija.DG           Mbuti.DG           0.0563 5.07e-4 111.      0
-## 6 Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.0583 5.94e-4  98.2     0</code></pre>
+## 1 Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.0591 5.98e-4  98.7     0
+## 2 Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.0720 6.47e-4 111.      0
+## 3 Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.0742 7.02e-4 106.      0
+## 4 Denisova.DG Vindija.DG           Chimp.REF          0.0594 5.92e-4 100.      0
+## 5 Denisova.DG Vindija.DG           Mbuti.DG           0.0724 6.34e-4 114.      0
+## 6 Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.0750 6.96e-4 108.      0</code></pre>
 <p><br></p>
 </div>
 <div id="qpdstat" class="section level2">
@@ -148,12 +148,12 @@
 <pre><code>## # A tibble: 6 x 8
 ##   pop1     pop2        pop3        pop4             est      se      z         p
 ##   &lt;chr&gt;    &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;
-## 1 Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.16e-2 4.05e-4 28.7   1.17e-181
-## 2 Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  1.58e-3 2.32e-4  6.80  1.08e- 11
-## 3 Denisov… Altai_Nean… Russia_Ust… Switzerlan… -1.68e-4 2.37e-4 -0.708 4.79e-  1
-## 4 Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.20e-2 3.00e-4 39.9   0.       
-## 5 Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  1.81e-3 2.14e-4  8.48  2.21e- 17
-## 6 Denisov… Vindija.DG  Russia_Ust… Switzerlan… -1.86e-4 2.49e-4 -0.747 4.55e-  1</code></pre>
+## 1 Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.50e-2 4.64e-4 32.3   6.06e-229
+## 2 Denisov… Altai_Nean… Mbuti.DG    Switzerlan…  2.03e-3 3.53e-4  5.75  8.85e-  9
+## 3 Denisov… Altai_Nean… Russia_Ust… Switzerlan… -2.17e-4 3.73e-4 -0.580 5.62e-  1
+## 4 Denisov… Vindija.DG  Chimp.REF   Switzerlan…  1.54e-2 4.78e-4 32.2   5.81e-228
+## 5 Denisov… Vindija.DG  Mbuti.DG    Switzerlan…  2.33e-3 3.63e-4  6.42  1.40e- 10
+## 6 Denisov… Vindija.DG  Russia_Ust… Switzerlan… -2.40e-4 3.87e-4 -0.620 5.35e-  1</code></pre>
 <p><br></p>
 </div>
 <div id="qpadm" class="section level2">
@@ -171,37 +171,38 @@
 ## # A tibble: 2 x 5
 ##   target      left                 weight    se     z
 ##   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1 Denisova.DG Altai_Neanderthal.DG   49.7  23.3  2.13
-## 2 Denisova.DG Vindija.DG            -48.7  23.3 -2.08
+## 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13
+## 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08
 ## 
 ## $f4
 ## # A tibble: 36 x 9
 ##    pop1    pop2       pop3   pop4           est      se       z         p weight
 ##    &lt;chr&gt;   &lt;chr&gt;      &lt;chr&gt;  &lt;chr&gt;        &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;
-##  1 Deniso… Altai_Nea… Chimp… Mbuti.DG   0.0101  2.96e-4  34.0   9.79e-253   49.7
-##  2 Deniso… fit        Chimp… Mbuti.DG   0.00539 7.35e-3   0.733 4.64e-  1   NA  
-##  3 Deniso… Vindija.DG Chimp… Mbuti.DG   0.0102  2.44e-4  41.7   0.         -48.7
-##  4 Deniso… Altai_Nea… Chimp… Russia_U…  0.0118  4.53e-4  26.1   5.11e-150   49.7
-##  5 Deniso… fit        Chimp… Russia_U… -0.00500 1.16e-2  -0.430 6.67e-  1   NA  
-##  6 Deniso… Vindija.DG Chimp… Russia_U…  0.0122  3.18e-4  38.2   0.         -48.7
-##  7 Deniso… Altai_Nea… Chimp… Switzerl…  0.0116  4.05e-4  28.7   1.17e-181   49.7
-##  8 Deniso… fit        Chimp… Switzerl… -0.00430 1.24e-2  -0.346 7.30e-  1   NA  
-##  9 Deniso… Vindija.DG Chimp… Switzerl…  0.0120  3.00e-4  39.9   0.         -48.7
-## 10 Deniso… Altai_Nea… Mbuti… Chimp.REF -0.0101  2.96e-4 -34.0   9.79e-253   49.7
+##  1 Deniso… Altai_Nea… Chimp… Mbuti.DG   0.0129  3.64e-4  35.6   2.22e-277   49.6
+##  2 Deniso… fit        Chimp… Mbuti.DG   0.00693 6.60e-3   1.05  2.94e-  1   NA  
+##  3 Deniso… Vindija.DG Chimp… Mbuti.DG   0.0131  3.73e-4  35.0   7.55e-269  -48.6
+##  4 Deniso… Altai_Nea… Chimp… Russia_U…  0.0152  4.46e-4  34.0   4.67e-254   49.6
+##  5 Deniso… fit        Chimp… Russia_U… -0.00642 8.03e-3  -0.800 4.23e-  1   NA  
+##  6 Deniso… Vindija.DG Chimp… Russia_U…  0.0156  4.53e-4  34.5   2.14e-261  -48.6
+##  7 Deniso… Altai_Nea… Chimp… Switzerl…  0.0150  4.64e-4  32.3   6.06e-229   49.6
+##  8 Deniso… fit        Chimp… Switzerl… -0.00552 8.43e-3  -0.654 5.13e-  1   NA  
+##  9 Deniso… Vindija.DG Chimp… Switzerl…  0.0154  4.78e-4  32.2   5.81e-228  -48.6
+## 10 Deniso… Altai_Nea… Mbuti… Chimp.REF -0.0129  3.64e-4 -35.6   2.22e-277   49.6
 ## # … with 26 more rows
 ## 
 ## $rankdrop
-## # A tibble: 1 x 7
-##   f4rank   dof chisq      p dofdiff chisqdiff p_nested
-## *  &lt;int&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;
-## 1      1     2  7.21 0.0272      NA        NA       NA
+## # A tibble: 2 x 7
+##   f4rank   dof   chisq      p dofdiff chisqdiff p_nested
+## *  &lt;int&gt; &lt;int&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1      1     2    7.15 0.0280       4     1572.        0
+## 2      0     6 1580.   0           NA       NA        NA
 ## 
 ## $popdrop
 ## # A tibble: 1 x 13
 ##   pat      wt   dof chisq      p f4rank Altai_Neanderth… Vindija.DG feasible
-##   &lt;chr&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;int&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;lgl&gt;   
-## 1 00        0     2  7.21 0.0272      1             49.7      -48.7 FALSE   
-## # … with 4 more variables: best &lt;lgl&gt;, dofdiff &lt;int&gt;, chisqdiff &lt;dbl&gt;,
+##   &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;            &lt;dbl&gt;      &lt;dbl&gt; &lt;lgl&gt;   
+## 1 00        0     2  7.15 0.0280      1             49.6      -48.6 FALSE   
+## # … with 4 more variables: best &lt;lgl&gt;, dofdiff &lt;dbl&gt;, chisqdiff &lt;dbl&gt;,
 ## #   p_nested &lt;dbl&gt;</code></pre>
 <div id="caveats" class="section level3">
 <h3 class="hasAnchor">
@@ -237,14 +238,14 @@
 <pre><code>## # A tibble: 27 x 6
 ##    from  to                   type  weight   low  high
 ##    &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-##  1 R     Chimp.REF            edge  0.198     NA    NA
-##  2 R     N4N                  edge  0.198     NA    NA
-##  3 N0N   Altai_Neanderthal.DG edge  0.0121    NA    NA
-##  4 N0N   N3N0                 edge  0.0319    NA    NA
-##  5 N1N   N0N                  edge  0.217     NA    NA
-##  6 N1N   N3N1                 edge  0.0985    NA    NA
-##  7 N2N0  N1N                  edge  0.106     NA    NA
-##  8 N2N0  N3N6                 edge  0.0463    NA    NA
+##  1 R     Chimp.REF            edge  0.260     NA    NA
+##  2 R     N4N                  edge  0.260     NA    NA
+##  3 N0N   Altai_Neanderthal.DG edge  0.0116    NA    NA
+##  4 N0N   N3N0                 edge  0.0400    NA    NA
+##  5 N1N   N0N                  edge  0.303     NA    NA
+##  6 N1N   N3N1                 edge  0.130     NA    NA
+##  7 N2N0  N1N                  edge  0.138     NA    NA
+##  8 N2N0  N3N6                 edge  0.0523    NA    NA
 ##  9 N2N1  Vindija.DG           edge  0         NA    NA
 ## 10 N2N1  N2N3                 edge  0         NA    NA
 ## # … with 17 more rows</code></pre>
@@ -420,7 +421,7 @@
 <div id="parallelization" class="section level3">
 <h3 class="hasAnchor">
 <a href="#parallelization" class="anchor"></a>Parallelization</h3>
-<p>Depending on the input parameters, <code>optimize_admixturegraph</code> can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function <a href="https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map"><code>future_map</code></a> from the <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a> package, this can be sped up by parallelizing across the independent repeats. The function <a href="https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan"><code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code></a> can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.</p>
+<p>Depending on the input parameters, <code>find_graphs</code> can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function <a href="https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map"><code>future_map</code></a> from the <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a> package, this can be sped up by parallelizing across the independent repeats. The function <a href="https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan"><code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code></a> can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.</p>
 <p>Setting it up like this will make it run multithreaded:</p>
 <div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb38-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</a></code></pre></div>
 <p><br></p>
