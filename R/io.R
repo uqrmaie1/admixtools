@@ -1585,6 +1585,16 @@ is_packedancestrymap_prefix = function(input) {
   filesexist && is_binfile(paste0(input, c('.geno')))
 }
 
+is_plink_prefix = function(input) {
+  if(!is.character(input) || length(input) > 1) return(FALSE)
+  filesexist = all(file.exists(paste0(input, c('.bed', '.bim', '.fam'))))
+  filesexist
+}
+
+is_geno_prefix = function(input) {
+  is_packedancestrymap_prefix(input) || is_plink_prefix(input)
+}
+
 #' Extract samples from packedancestrymap files
 #'
 #' This function extracts samples from packedancestrymap files and saves them as PLINK files, using the package 'genio'

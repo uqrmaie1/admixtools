@@ -175,7 +175,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   pops1 = unique(c(out$pop1, out$pop2))
   pops2 = unique(c(out$pop3, out$pop4))
 
-  if(is_packedancestrymap_prefix(f2_data)) {
+  if(is_geno_prefix(f2_data)) {
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
     return(f4_from_geno(f2_data, out, pops, dist = ifelse(is.null(dist), 0.05, dist),
                         f4mode = f4mode, block_lengths = block_lengths, boot = boot, verbose = verbose))
@@ -314,25 +314,37 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
                         f4mode = TRUE, summarize = TRUE, boot = FALSE, verbose = TRUE) {
 
   pref = normalizePath(pref, mustWork = FALSE)
-  #popcombs = fstat_get_popcombs(NULL, pop1, pop2, pop3, pop4, fnum = 4, sure = TRUE)
-  #pops = unique(c(pop1, pop2, pop3, pop4))
 
-  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   if(verbose) alert_info('Reading metadata...\n')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  if(is_packedancestrymap_prefix(pref)) {
+    indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE) %>%
+      mutate(ind = X1, pop = X3)
+    nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+    snpend = '.snp'
+    cpp_read_geno = cpp_read_packedancestrymap
+    fl = paste0(pref, '.geno')
+  } else if(is_plink_prefix(pref)) {
+    indfile = read_table2(paste0(pref, '.fam'), col_names = FALSE, col_types = cols(), progress = FALSE) %>%
+      mutate(ind = X2, pop = X1)
+    nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
+    snpend = '.bim'
+    cpp_read_geno = cpp_read_plink
+    fl = paste0(pref, '.bed')
+  } else stop('Files not found!')
+
+  snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
   snpfile %<>% filter(CHR <= 22)
   nsnpaut = nrow(snpfile)
 
-  if(!all(pops %in% indfile$X3)) stop(paste0('Individuals missing from indfile: ', setdiff(pops, indfile$X3)))
+  if(!all(pops %in% indfile$pop)) stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut) stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  allinds = indfile$X1
-  allpops = indfile$X3
-  indfile %<>% filter(X3 %in% pops)
-  indvec = (allinds %in% indfile$X1)+0
-  popvec = match(indfile$X3, pops)
+  allinds = indfile$ind
+  allpops = indfile$pop
+  indfile %<>% filter(pop %in% pops)
+  indvec = (allinds %in% indfile$ind)+0
+  popvec = match(indfile$pop, pops)
   p1 = match(popcombs$pop1, pops)
   p2 = match(popcombs$pop2, pops)
   p3 = match(popcombs$pop3, pops)
@@ -344,14 +356,13 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
   start = lag(cumsum(block_lengths), default = 0)
   end = cumsum(block_lengths)
 
-  fl = paste0(pref, '.geno')
   out = tibble()
   numer = matrix(NA, numblocks, nrow(popcombs))
   cnt = rep(0, nrow(popcombs))
   if(!f4mode) denom = numer
   for(i in 1:numblocks) {
     if(verbose) alert_info(paste0('Computing ', nrow(popcombs),' f4-statistics for block ', i, ' out of ', numblocks, '...\r'))
-    gmat = cpp_read_packedancestrymap(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
+    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
     at = gmat_to_aftable(gmat, popvec)
     num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4)
     cnt = cnt + c(num$cnt)

@@ -57,6 +57,10 @@ cpp_read_plink_afs <- function(bedfile, indvec, indvec2, adjust_pseudohaploid, v
     .Call('_admixtools_cpp_read_plink_afs', PACKAGE = 'admixtools', bedfile, indvec, indvec2, adjust_pseudohaploid, verbose)
 }
 
+cpp_read_plink <- function(bedfile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
+    .Call('_admixtools_cpp_read_plink', PACKAGE = 'admixtools', bedfile, nsnp, nind, indvec, first, last, transpose, verbose)
+}
+
 cpp_get_block_lengths <- function(chr, pos, dist = 0.05) {
     .Call('_admixtools_cpp_get_block_lengths', PACKAGE = 'admixtools', chr, pos, dist)
 }

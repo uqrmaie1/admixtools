@@ -218,6 +218,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_read_plink
+NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
+RcppExport SEXP _admixtools_cpp_read_plink(SEXP bedfileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type bedfile(bedfileSEXP);
+    Rcpp::traits::input_parameter< int >::type nsnp(nsnpSEXP);
+    Rcpp::traits::input_parameter< int >::type nind(nindSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
+    Rcpp::traits::input_parameter< int >::type first(firstSEXP);
+    Rcpp::traits::input_parameter< int >::type last(lastSEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_read_plink(bedfile, nsnp, nind, indvec, first, last, transpose, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_get_block_lengths
 IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double dist);
 RcppExport SEXP _admixtools_cpp_get_block_lengths(SEXP chrSEXP, SEXP posSEXP, SEXP distSEXP) {
@@ -309,6 +327,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_read_packedancestrymap", (DL_FUNC) &_admixtools_cpp_read_packedancestrymap, 8},
     {"_admixtools_cpp_packedancestrymap_to_aftable", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_aftable, 9},
     {"_admixtools_cpp_read_plink_afs", (DL_FUNC) &_admixtools_cpp_read_plink_afs, 5},
+    {"_admixtools_cpp_read_plink", (DL_FUNC) &_admixtools_cpp_read_plink, 8},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 2},
     {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
