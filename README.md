@@ -47,7 +47,8 @@ fit of a new *qpGraph* model:
 
 ## Installation
 
-To install and load ADMIXTOOLS 2.0, start R and follow these steps:
+To install and load ADMIXTOOLS 2.0, start R (version 3.5 or higher) and
+follow these steps:
 
 ``` r
 install.packages("devtools") # if "devtools" is not installed already

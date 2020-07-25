@@ -220,9 +220,16 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   #----------------- make combinations -----------------
   out = NULL
   nam = c('pop1', 'pop2', 'pop3', 'pop4')[1:fnum]
-  maxcomb = 1e5
-  if(is_packedancestrymap_prefix(f2_data) && is.null(pop1)) {
-    pop1 = read_table2(paste0(f2_data, '.ind'), col_types = cols(), col_names = FALSE, progress = FALSE)[[3]]
+  maxcomb = 1e6
+  if(is_geno_prefix(f2_data) && is.null(pop1)) {
+    if(is_packedancestrymap_prefix(f2_data)) {
+      indend = '.ind'
+      popcol = 3
+    } else {
+      indend = '.fam'
+      popcol = 1
+    }
+    pop1 = read_table2(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
   }
   if(!is.null(pop2)) {
     ncomb = length(pop1) * length(pop2) * max(1, length(pop3)) * max(1, length(pop4))
@@ -251,7 +258,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
       ncomb = choose(length(pop1), fnum)*(fnum-1)
       if(ncomb > maxcomb & !sure) {
         stop(paste0('If you really want to compute ', ncomb,
-                    ' f-statistics, run this again with "sure = TRUE". Or specify more than just pop1.'))
+                    ' f-statistics, run this again with "sure = TRUE", or select your populations or combinations of interest.'))
       }
       if(length(pop1) < fnum) stop('Not enough populations!')
       outmat = t(combn(pop1, fnum))

@@ -964,7 +964,20 @@ qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 
 }
 
+#' Find all trees which are part of the admixture graph
+#'
 #' @export
+#' @param graph Admixture graph in `igraph` format
+#' @return A data frame with columns `name` and `graph`
+#' @examples
+#' \dontrun{
+#' trees = decompose_graph(example_igraph)
+#' # now evaluate the trees
+#' trees %>%
+#'   rowwise %>%
+#'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+#'   unnest_wider(res)
+#' }
 decompose_graph = function(graph) {
   # splits an admixture graph into trees
   if(!'igraph' %in% class(graph)) {
@@ -981,7 +994,7 @@ decompose_graph = function(graph) {
   indices = expand.grid(replicate(ncol(admixmat), 1:2, simplify = FALSE)) %>% as.matrix
   trees = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)]))
   trees %>% map(as.matrix) %>% map(graph_from_edgelist) %>%
-    map(~delete_vertices(., setdiff(get_leafnames(.), get_leafnames(graph)))) %>%
+    map(~igraph::delete_vertices(., setdiff(get_leafnames(.), get_leafnames(graph)))) %>%
     map(simplify_graph) %>% enframe(value = 'graph')
 }
 
@@ -1031,7 +1044,21 @@ replace_edge = function(tree, from, to) {
     add_edges(c(parent, to, newgrandparent, parent, parent, from))
 }
 
+#' Find all graphs which result from adding one admixture edge
+#'
 #' @export
+#' @param graph Admixture graph in `igraph` format
+#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
+#' @return A data frame with columns `from`, `to`, and `graph`
+#' @examples
+#' \dontrun{
+#' newgraphs = graph_plusone(example_igraph)
+#' # now evaluate the new graphs
+#' newgraphs %>%
+#'   rowwise %>%
+#'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+#'   unnest_wider(res)
+#' }
 graph_plusone = function(graph, desimplify = TRUE) {
   # returns all graphs with one more edge
   graph %<>% simplify_graph
@@ -1041,19 +1068,47 @@ graph_plusone = function(graph, desimplify = TRUE) {
   newedges %>% mutate(graph = map2(from, to, fn))
 }
 
+#' Find all graphs which result from removing one admixture edge
+#'
 #' @export
+#' @param graph Admixture graph in `igraph` format
+#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
+#' @return A data frame with columns `from`, `to`, and `graph`
+#' @examples
+#' \dontrun{
+#' newgraphs = graph_minusone(example_igraph)
+#' # now evaluate the new graphs
+#' newgraphs %>%
+#'   rowwise %>%
+#'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+#'   unnest_wider(res)
+#' }
 graph_minusone = function(graph, desimplify = TRUE) {
   # returns all graphs with one admixture edge removed
   graph %<>% simplify_graph
   admixedges = find_admixedges(graph)
   fn = ~delete_edges(graph, paste(.x, .y, sep = '|')) %>%
-    delete_vertices(setdiff(get_leafnames(.), get_leafnames(graph))) %>%
+    igraph::delete_vertices(setdiff(get_leafnames(.), get_leafnames(graph))) %>%
     simplify_graph
   if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
   admixedges %>% mutate(graph = map2(from, to, fn))
 }
 
+#' Find all graphs which result from adding and removing one admixture edge
+#'
 #' @export
+#' @param graph Admixture graph in `igraph` format
+#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
+#' @return A data frame with columns `from1`, `to1`, `from2`, `to2`, and `graph`
+#' @examples
+#' \dontrun{
+#' newgraphs = graph_minusplus(example_igraph)
+#' # now evaluate the new graphs
+#' newgraphs %>%
+#'   rowwise %>%
+#'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+#'   unnest_wider(res)
+#' }
 graph_minusplus = function(graph, desimplify = TRUE) {
   graph %>% graph_minusone %>% mutate(graph2 = map(graph, ~graph_plusone(., desimplify=desimplify))) %>%
     rename(from1 = from, to1 = to) %>% select(-graph) %>% unnest(graph2) %>%
@@ -1061,7 +1116,22 @@ graph_minusplus = function(graph, desimplify = TRUE) {
     filter(!duplicated(isoclass)) %>% select(-isoclass)
 }
 
+
+#' Find all valid graphs which result from flipping one admixture edge
+#'
 #' @export
+#' @param graph Admixture graph in `igraph` format
+#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
+#' @return A data frame with columns `from`, `to`, and `graph`
+#' @examples
+#' \dontrun{
+#' newgraphs = graph_flipadmix(example_igraph)
+#' # now evaluate the new graphs
+#' newgraphs %>%
+#'   rowwise %>%
+#'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+#'   unnest_wider(res)
+#' }
 graph_flipadmix = function(graph, desimplify = TRUE) {
   graph %<>% simplify_graph
   admixedges = graph %>% find_admixedges

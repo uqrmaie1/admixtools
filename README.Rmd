@@ -47,7 +47,7 @@ ADMIXTOOLS 2.0 provides the same functionality in a new look, and it's orders of
 
 ## Installation
 
-To install and load ADMIXTOOLS 2.0, start R and follow these steps:
+To install and load ADMIXTOOLS 2.0, start R (version 3.5 or higher) and follow these steps:
 
 ```{r, eval=FALSE}
 install.packages("devtools") # if "devtools" is not installed already

@@ -29,26 +29,21 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
 }
 \examples{
 \dontrun{
-afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
-split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
-split_mat(afdat$counts, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/counts')
-numchunks = 185 # this should be the number of split allele frequency files
-block_lengths = get_block_lengths(afdat$snpfile)
+afdir = 'tmp_af_dir/'
+f2dir = 'f2_dir'
+extract_afs('path/to/packedancestrymap_prefix', afdir)
+numchunks = length(list.files(afdir, 'afs.+rds')) # this should be the number of split allele frequency files
 for(j in 1:numchunks) {
   for(j in i:numchunks) {
-    write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-                         chunk1 = i, chunk2 = j, block_lengths)
-    }
+    write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = j)
   }
 }
-expand_grid(i = 1:numchunks, j = 1:numchunks) \%>\%
-  filter(j >= i) \%$\%
-  furrr::future_map2(i, j, ~write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-                                                  chunk1 = .x, chunk2 = .y, block_lengths))
+}
+\dontrun{
 furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
-  write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-    chunk1 = i, chunk2 = ., block_lengths)
+  write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
   })})
+  }
 }
 \seealso{
 \code{\link{split_mat}} for creating split allele frequency data,
