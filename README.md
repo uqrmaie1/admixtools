@@ -10,11 +10,11 @@ A new, lightning fast implementation of
 
 ADMIXTOOLS is a set of programs which use f-statistics to infer
 demographic models. It has been used in countless publications to test
-whether populations form clades (*qpDstat*), to estimate ancestry
-proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
+whether populations form clades (*qpDstat*, *qpWave*), to estimate
+ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
 ADMIXTOOLS 2.0 provides the same functionality in a new look, and it’s
-orders of magnitudes faster. This is achieved mostly through separating
+orders of magnitude faster. This is achieved mostly through separating
 the computation of f2-statistics from all other computations. In the
 example below, rendering the plot takes much longer than computing the
 fit of a new *qpGraph* model:
@@ -32,8 +32,8 @@ fit of a new *qpGraph* model:
       - Simultaneous exploration of hundreds of *qpAdm* models
       - Unbiased comparison of any two *qpGraph* models using
         out-of-sample scores
-      - Jackknife and bootstrap confidence intervals for any *qpAdm* or
-        *qpGraph* parameters
+      - Jackknife and bootstrap confidence intervals for any *qpAdm*,
+        *qpWave*, and *qpGraph* parameters
       - Detailed output for each fitted model
   - Full support for genotype data in (PACKED)ANCESTRYMAP/EIGENSTRAT
     format and PLINK format
@@ -75,14 +75,22 @@ install.packages("igraph")
 install.packages("plotly")
 ```
 
-If that doesn’t solve the issue, please [contact
+If you get the following error on Linux `Error: package or namespace
+load failed for 'admixtools' in dyn.load(file, DLLpath = DLLpath, ...):`
+try adding the following two lines to the file `~/.R/Makevars` (and
+create the file first if it doesn’t exist)
+
+    #LAPACK_LIBS=-llapack
+    PKG_LIBS = $(LAPACK_LIBS)
+
+If the installation still fails, please [contact
 me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-First we extract f2-statistics from genotype files. These f2-statistics
-will be written to disk so that the slow part of the computation does
-not have to be repeated.
+First we need to extract f2-statistics from genotype files. These
+f2-statistics will be written to disk so that the slow part of the
+computation does not have to be repeated.
 
 ``` r
 genotype_data = "/my/geno/prefix"
@@ -190,4 +198,8 @@ Maier <rmaier@broadinstitute.org>.
   - [MixMapper](http://cb.csail.mit.edu/cb/mixmapper/) Another method to
     infer admixture graphs
   - [TreeMix](https://bitbucket.org/nygcresearch/treemix/wiki/Home)
-    Another method to infer admixture graphs
+    Another method to infer admixture
+    graphs
+  - [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
+    A program to estimate the history of population size, subdivision,
+    and gene flow

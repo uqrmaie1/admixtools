@@ -41,6 +41,7 @@ Imports:
     tidyr,
     utils
 Suggests:
+    genio,
     plotly,
     htmlwidgets,
     shiny,

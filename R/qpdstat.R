@@ -167,8 +167,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
     out = tibble(pop1, pop2, pop3, pop4)
   } else {
     if(verbose) alert_info('Getting population combinations...\n')
-    if(is_packedancestrymap_prefix(f2_data)) f2dat = NULL else f2dat = f2_data
-    out = fstat_get_popcombs(f2_data = f2dat, pop1 = pop1, pop2 = pop2, pop3 = pop3, pop4 = pop4,
+    out = fstat_get_popcombs(f2_data, pop1, pop2, pop3, pop4,
                              sure = sure, unique_only = unique_only, fnum = 4)
     if(verbose) alert_info(paste0(nrow(out), ' population combinations found\n'))
   }
@@ -222,6 +221,9 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   out = NULL
   nam = c('pop1', 'pop2', 'pop3', 'pop4')[1:fnum]
   maxcomb = 1e5
+  if(is_packedancestrymap_prefix(f2_data) && is.null(pop1)) {
+    pop1 = read_table2(paste0(f2_data, '.ind'), col_types = cols(), col_names = FALSE, progress = FALSE)[[3]]
+  }
   if(!is.null(pop2)) {
     ncomb = length(pop1) * length(pop2) * max(1, length(pop3)) * max(1, length(pop4))
     if(ncomb > maxcomb & !sure) {

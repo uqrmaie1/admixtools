@@ -687,26 +687,21 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #' \code{\link{write_f2}} for writing split f2 block jackknife estimates
 #' @examples
 #' \dontrun{
-#' afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
-#' split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
-#' split_mat(afdat$counts, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/counts')
-#' numchunks = 185 # this should be the number of split allele frequency files
-#' block_lengths = get_block_lengths(afdat$snpfile)
+#' afdir = 'tmp_af_dir/'
+#' f2dir = 'f2_dir'
+#' extract_afs('path/to/packedancestrymap_prefix', afdir)
+#' numchunks = length(list.files(afdir, 'afs.+rds')) # this should be the number of split allele frequency files
 #' for(j in 1:numchunks) {
 #'   for(j in i:numchunks) {
-#'     write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-#'                          chunk1 = i, chunk2 = j, block_lengths)
-#'     }
+#'     write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = j)
 #'   }
 #' }
-#' expand_grid(i = 1:numchunks, j = 1:numchunks) %>%
-#'   filter(j >= i) %$%
-#'   furrr::future_map2(i, j, ~write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-#'                                                   chunk1 = .x, chunk2 = .y, block_lengths))
+#' }
+#' \dontrun{
 #' furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
-#'   write_split_f2_block('afmatall_split_v42.1/afs', 'afmatall_split_v42.1/counts', 'f2blocks_v42.1/',
-#'     chunk1 = i, chunk2 = ., block_lengths)
+#'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
 #'   })})
+#'   }
 write_split_f2_block = function(afdir, outdir, chunk1, chunk2, dist = 0.05, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
@@ -859,6 +854,9 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
+  if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "write_split_f2_block".')
+
+
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
@@ -1124,8 +1122,8 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL,
 
 
 # this should not be needed in practice; used for testing
-f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL,
-                               format = NULL, maxmem = 8000, apply_corr = TRUE, verbose = TRUE) {
+f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, maxmem = 8000,
+                               apply_corr = TRUE, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
