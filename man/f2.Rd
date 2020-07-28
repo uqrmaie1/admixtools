@@ -4,8 +4,8 @@
 \alias{f2}
 \title{Estimate f2 statistics}
 \usage{
-f2(f2_data, pop1 = NULL, pop2 = NULL, f2_denom = 1, boot = FALSE,
-  sure = FALSE, unique_only = TRUE, verbose = FALSE)
+f2(f2_data, pop1 = NULL, pop2 = NULL, boot = FALSE, sure = FALSE,
+  unique_only = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
@@ -14,16 +14,14 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 \item{pop1}{One of the following four:
 \enumerate{
 \item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
-\item a vector of population labels
-\item a data frame with population combinations to be tested, with one population per column and one
+\item A vector of population labels
+\item A data frame with population combinations to be tested, with one population per column and one
 combination per row. Other \code{pop} arguments will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
 population combinations to be tested. Other \code{pop} arguments will be ignored.
 }}
 
 \item{pop2}{A vector of population labels}
-
-\item{f2_denom}{Scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
 of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,

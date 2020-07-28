@@ -6,8 +6,8 @@
 \title{Estimate admixture weights}
 \usage{
 qpadm(f2_data, target = NULL, left = NULL, right = NULL,
-  wave = TRUE, f2_denom = 1, fudge = 1e-04, boot = FALSE,
-  getcov = TRUE, constrained = FALSE, cpp = TRUE, verbose = TRUE)
+  wave = TRUE, fudge = 1e-04, boot = FALSE, getcov = TRUE,
+  constrained = FALSE, cpp = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}
@@ -19,8 +19,6 @@ qpadm(f2_data, target = NULL, left = NULL, right = NULL,
 \item{right}{Outgroup populations}
 
 \item{wave}{If \code{TRUE} (the default), lower rank models and models with fewer source populations will also be tested.}
-
-\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{fudge}{value added to diagonal matrix elements before inverting}
 

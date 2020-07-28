@@ -95,7 +95,6 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param left Source populations
 #' @param right Outgroup populations
 #' @param wave If `TRUE` (the default), lower rank models and models with fewer source populations will also be tested.
-#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param fudge value added to diagonal matrix elements before inverting
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
 #' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
@@ -127,7 +126,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' qpadm(example_f2_blocks, target, left, right)
 qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
-                 wave = TRUE, f2_denom = 1, fudge = 0.0001, boot = FALSE,
+                 wave = TRUE, fudge = 0.0001, boot = FALSE,
                  getcov = TRUE, constrained = FALSE, cpp = TRUE, verbose = TRUE) {
 
   stopifnot(is.null(left) && is.null(right) || length(right) > length(left))
@@ -144,7 +143,7 @@ qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   #----------------- prepare f4 stats -----------------
   if(verbose) alert_info('Computing f4 stats...\n')
   #f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right)
-  f2_blocks = get_f2(f2_data, pops = pops, f2_denom = f2_denom, afprod = TRUE)
+  f2_blocks = get_f2(f2_data, pops = pops, afprod = TRUE)
   f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
 
   f4_est = f4dat$est
@@ -227,7 +226,6 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' @param target target population
 #' @param left source populations (or `leftlist` file)
 #' @param right outgroup populations (or `rightlist` file)
-#' @param f2_denom scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param getcov should standard errors be returned? Currently not implemented.
 #' @param constrained if `TRUE` (default), admixture weights will all be non-negative.
 #' if `FALSE`, they can be negative, as in \code{\link{qpadm}}
@@ -243,7 +241,7 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' lazadm(example_f2_blocks, target, left, right)
 #' lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
 lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
-                  f2_denom = 1, boot = FALSE, getcov = FALSE, constrained = TRUE) {
+                  boot = FALSE, getcov = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
   if(is.null(target)) {
@@ -256,7 +254,7 @@ lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   stopifnot(!any(duplicated(pops)))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  f2_blocks = get_f2(f2_data, pops, f2_denom, afprod = TRUE) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
@@ -406,16 +404,16 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
   weights = weights/sum(weights)
   pops = names(weights)
   f2_blocks_plus = add_weighted_f2(f2_blocks, weights)
-  fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right, f2_denom = 1) %>% filter(pop3 != pop4)
+  fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right) %>% filter(pop3 != pop4)
   fitf4 %>% left_join(enframe(weights, name = 'pop2', value = 'weight'), by = 'pop2') %>%
     arrange(pop1, pop3, pop4, pop2)
 }
 
 #' @export
-qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, boot = FALSE,
+qpadm_p = function(f2_data, target, left, right, fudge = 0.0001, boot = FALSE,
                    constrained = FALSE, cpp = TRUE, weights = TRUE) {
 
-  f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right, afprod = TRUE)
+  f2_blocks = get_f2(f2_data, pops = c(target, left), pops2 = right, afprod = TRUE)
   f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
@@ -440,7 +438,7 @@ qpadm_p = function(f2_data, target, left, right, f2_denom = 1, fudge = 0.0001, b
 #' @export
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
 
-  f2_blocks = get_f2(f2_data, pops = left, f2_denom = f2_denom, pops2 = right, afprod = TRUE)
+  f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
   f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
@@ -461,7 +459,7 @@ qpadm_all_comb = function(f2_blocks, pops, target = NULL, left = NULL, right = N
   # evaluates all qpadm models and returns data frame with populations and p-value
   combs = all_comb(pops, target = target, left = left, right = right) %>% mutate(i = 1:n())
 
-  f2_blocks = get_f2(f2_blocks, pops, f2_denom = 1)
+  f2_blocks = get_f2(f2_blocks, pops)
 
   if(filter_f4) {
     c2 = combs %>%

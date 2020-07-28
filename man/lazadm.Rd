@@ -5,7 +5,7 @@
 \title{Estimate admixture weights}
 \usage{
 lazadm(f2_data, target = NULL, left = NULL, right = NULL,
-  f2_denom = 1, boot = FALSE, getcov = FALSE, constrained = TRUE)
+  boot = FALSE, getcov = FALSE, constrained = TRUE)
 }
 \arguments{
 \item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
@@ -15,8 +15,6 @@ lazadm(f2_data, target = NULL, left = NULL, right = NULL,
 \item{left}{source populations (or \code{leftlist} file)}
 
 \item{right}{outgroup populations (or \code{rightlist} file)}
-
-\item{f2_denom}{scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
 
 \item{getcov}{should standard errors be returned? Currently not implemented.}
 

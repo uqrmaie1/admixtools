@@ -13,14 +13,13 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' @param pop1 One of the following four:
 #' \enumerate{
 #' \item `NULL`: all possible pairs of the populations in `f2_blocks` will be returned
-#' \item a vector of population labels
-#' \item a data frame with population combinations to be tested, with one population per column and one
+#' \item A vector of population labels
+#' \item A data frame with population combinations to be tested, with one population per column and one
 #' combination per row. Other `pop` arguments will be ignored.
 #' \item the location of a file (`poplistname` or `popfilename`) which specifies the populations or
 #' population combinations to be tested. Other `pop` arguments will be ignored.
 #' }
 #' @param pop2 A vector of population labels
-#' @param f2_denom Scales f2-statistics. 1 correspondes to `f4mode: YES`. 1/4.75 is similar to `f4mode: NO`.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
 #' of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
 #' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
@@ -40,7 +39,7 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' f2(f2_dir, pop1, pop2)
 #' }
 f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
-              f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+              boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
   out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2,
                            sure = sure, unique_only = unique_only, fnum = 2)
@@ -48,7 +47,7 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f2 -----------------
@@ -87,7 +86,7 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 #' qp3pop(f2_dir, pop1, pop2, pop3)
 #' }
 qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-                  f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+                  boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) |
               !is.null(pop2) & !is.null(pop3))
@@ -98,7 +97,7 @@ qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f3 -----------------
@@ -128,14 +127,14 @@ f3 = qp3pop
 #' \item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
 #' output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
 #' \item A directory with f2 statistics
-#' \item Prefix of a packedancestrymap file. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
+#' \item Prefix of genotype files. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
 #' }
-#' @param pop3 a vector of population labels
-#' @param pop4 a vector of population labels
-#' @param dist genetic distance in Morgan. Default is 0.05 (50 cM). only used when `f2_data` is the prefix of packedancestrymap files
+#' @param pop3 A vector of population labels
+#' @param pop4 A vector of population labels
+#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
-#' match the number of SNPs. only used when `f2_data` is the prefix of packedancestrymap files
-#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of packedancestrymap files
+#' match the number of SNPs. only used when `f2_data` is the prefix of genotype files
+#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @inheritParams f2
 #' @return A data frame with f4 statistics
@@ -154,7 +153,7 @@ f3 = qp3pop
 #' qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 #' }
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-                   f2_denom = 1, boot = FALSE, sure = FALSE, unique_only = TRUE,
+                   boot = FALSE, sure = FALSE, unique_only = TRUE,
                    comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
                    afprod = TRUE, cpp = TRUE, verbose = FALSE) {
 
@@ -188,9 +187,9 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   }
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, boot_vec_stats, jack_vec_stats)
-  #f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+
   if(verbose) alert_info(paste0('Loading f2 data for ', length(pops1)*length(pops2), ' population pairs...\n'))
-  f2_blocks = get_f2(f2_data, pops1, f2_denom, pops2 = pops2, afprod = afprod) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops1, pops2 = pops2, afprod = afprod) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f4 -----------------
@@ -396,6 +395,15 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
     transmute(pop1, pop2, pop3, pop4, est, se, z, p) %>%
     left_join(popcombs, by = c('pop1', 'pop2', 'pop3', 'pop4'))
+}
+
+#' @export
+f4_from_f2_pops = function(f2_blocks, pop1, pop2, pop3, pop4) {
+  stopifnot(length(pop1) == 1 && length(pop2) == 1 && length(pop3) == 1 && length(pop4) == 1)
+  f4_from_f2(f2_blocks[pop1, pop4,],
+             f2_blocks[pop2, pop3,],
+             f2_blocks[pop1, pop3,],
+             f2_blocks[pop2, pop4,]) %>% unname
 }
 
 

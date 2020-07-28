@@ -6,10 +6,9 @@
 \title{Estimate f4 statistics}
 \usage{
 qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-  pop4 = NULL, f2_denom = 1, boot = FALSE, sure = FALSE,
-  unique_only = TRUE, comb = TRUE, dist = NULL,
-  block_lengths = NULL, f4mode = TRUE, afprod = TRUE, cpp = TRUE,
-  verbose = FALSE)
+  pop4 = NULL, boot = FALSE, sure = FALSE, unique_only = TRUE,
+  comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
+  afprod = TRUE, cpp = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{f2_data}{f2 data in one of the following formats
@@ -17,14 +16,14 @@ qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 \item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
 output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
 \item A directory with f2 statistics
-\item Prefix of a packedancestrymap file. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
+\item Prefix of genotype files. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
 }}
 
 \item{pop1}{One of the following four:
 \enumerate{
 \item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
-\item a vector of population labels
-\item a data frame with population combinations to be tested, with one population per column and one
+\item A vector of population labels
+\item A data frame with population combinations to be tested, with one population per column and one
 combination per row. Other \code{pop} arguments will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
 population combinations to be tested. Other \code{pop} arguments will be ignored.
@@ -32,11 +31,9 @@ population combinations to be tested. Other \code{pop} arguments will be ignored
 
 \item{pop2}{A vector of population labels}
 
-\item{pop3}{a vector of population labels}
+\item{pop3}{A vector of population labels}
 
-\item{pop4}{a vector of population labels}
-
-\item{f2_denom}{Scales f2-statistics. 1 correspondes to \code{f4mode: YES}. 1/4.75 is similar to \code{f4mode: NO}.}
+\item{pop4}{A vector of population labels}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
 of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
@@ -48,12 +45,12 @@ from accidently computing all combinations if that number is large.}
 
 \item{unique_only}{If \code{TRUE} (the default), redundant combinations will be excluded}
 
-\item{dist}{genetic distance in Morgan. Default is 0.05 (50 cM). only used when \code{f2_data} is the prefix of packedancestrymap files}
+\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM). Only used when \code{f2_data} is the prefix of genotype files}
 
 \item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
-match the number of SNPs. only used when \code{f2_data} is the prefix of packedancestrymap files}
+match the number of SNPs. only used when \code{f2_data} is the prefix of genotype files}
 
-\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of packedancestrymap files}
+\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of genotype files}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 

@@ -66,8 +66,8 @@ devtools::install_github("uqrmaie1/admixtools", dependencies = TRUE)
 
 If you encounter any problems during the installation, this is most
 likely because some of the required R packages cannot be installed. If
-that happens, try re-installing some of the larger packages, and pay
-attention to any error message:
+that happens, try manually re-installing some of the larger packages,
+and pay attention to any error message:
 
 ``` r
 install.packages("Rcpp")

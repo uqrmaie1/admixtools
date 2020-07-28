@@ -30,7 +30,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
   nindall = nrow(indfile)
-  nsnpall = nrow(snpfile)
+  nsnpall = as.numeric(nrow(snpfile))
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec - 1
@@ -881,18 +881,15 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
       format = 'plink'
       geno_to_aftable = plink_to_aftable
-    }
-    else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
+    } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
       if(is_binfile(paste0(pref, '.geno'))) {
         format = 'packedancestrymap'
         geno_to_aftable = packedancestrymap_to_aftable
-      }
-      else {
+      } else {
         format = 'ancestrymap'
         geno_to_aftable = ancestrymap_to_aftable
       }
-    }
-    else stop('Genotype files not found!')
+    } else stop('Genotype files not found!')
   }
   geno_to_aftable = switch(format,
                            'plink' = plink_to_aftable,
