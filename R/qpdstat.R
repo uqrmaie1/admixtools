@@ -155,7 +155,7 @@ f3 = qp3pop
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    boot = FALSE, sure = FALSE, unique_only = TRUE,
                    comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
-                   afprod = TRUE, cpp = TRUE, verbose = FALSE) {
+                   afprod = TRUE, cpp = TRUE, verbose = TRUE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
@@ -296,7 +296,7 @@ qpfstats = function(f2_blocks) {
   pairs = t(combn(sort(pops), 2))
   pp = paste(pairs[,1], pairs[,2])
 
-  a = f4(f2_blocks) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
+  a = f4(f2_blocks, verobse = FALSE) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
     #mutate(est = -est*2) %>%
     select(-pop1:-pop4) %>% lm(as.formula(paste0('est ~ 0 + ', paste('`', colnames(.)[-1:-3], '`', sep = '', collapse = ' + '))), data = .)
 
@@ -346,6 +346,8 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
 
   if(!all(pops %in% indfile$pop)) stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut) stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
+  if(any(duplicated(indfile$ind))) stop('Duplicate individual IDs are not allowed!')
+
   allinds = indfile$ind
   allpops = indfile$pop
   indfile %<>% filter(pop %in% pops)

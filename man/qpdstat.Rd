@@ -8,7 +8,7 @@
 qpdstat(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
   pop4 = NULL, boot = FALSE, sure = FALSE, unique_only = TRUE,
   comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
-  afprod = TRUE, cpp = TRUE, verbose = FALSE)
+  afprod = TRUE, cpp = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{f2_data}{f2 data in one of the following formats

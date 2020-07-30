@@ -4,42 +4,41 @@
 \alias{qpadm_wrapper}
 \title{Wrapper function around the original qpAdm program}
 \usage{
-qpadm_wrapper(target = NULL, left = NULL, right = NULL,
-  bin = "~np29/o2bin/qpAdm", pref = NULL, outdir = "./",
-  parfile = NULL, useallsnps = "NO", fancyf4 = "YES",
-  f4mode = "YES", inbreed = "NO", printonly = FALSE, env = "",
-  verbose = TRUE)
+qpadm_wrapper(left, right, target = NULL, bin = "~np29/o2bin/qpAdm",
+  pref = NULL, outdir = "./", parfile = NULL, useallsnps = "NO",
+  fancyf4 = "YES", f4mode = "YES", inbreed = "NO",
+  printonly = FALSE, env = "", verbose = TRUE)
 }
 \arguments{
-\item{target}{target population}
+\item{left}{Left populations (or leftlist file)}
 
-\item{left}{source populations (or leftlist file)}
+\item{right}{Right populations (or rightlist file)}
 
-\item{right}{outgroup populations (or rightlist file)}
+\item{target}{Target population}
 
-\item{bin}{path to the qpAdm binary file}
+\item{bin}{Path to the qpAdm binary file}
 
-\item{pref}{path to and prefix of the packedancestrymap genotype files}
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
-\item{outdir}{the output directory. files \code{out}, \code{parfile}, \code{leftlist},
+\item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{leftlist},
 \code{rightlist} will be overwritten}
 
-\item{printonly}{should the command be printed or executed?}
+\item{printonly}{Should the command be printed or executed?}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
-if not printonly, a data frame with parsed qpAdm output
+If not printonly, a data frame with parsed qpAdm output
 }
 \description{
 This requires a working installation of qpAdm, which will be called using \code{\link{system}}
 }
 \examples{
 \dontrun{
-target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-qpadm_wrapper(target, left, right,
+target = 'Denisova.DG'
+qpadm_wrapper(left, right, target,
   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 }

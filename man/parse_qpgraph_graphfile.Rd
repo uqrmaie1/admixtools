@@ -7,10 +7,10 @@
 parse_qpgraph_graphfile(graphfile, split_multi = TRUE)
 }
 \arguments{
-\item{graphfile}{file with admixture graph in qpGraph format.}
+\item{graphfile}{File with admixture graph in qpGraph format.}
 }
 \value{
-graph represented as two column edge matrix. Can have four columns if edges are locked
+Graph represented as two column edge matrix. Can have four columns if edges are locked
 }
 \description{
 Read qpGraph graph file

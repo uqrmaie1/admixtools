@@ -155,8 +155,8 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>f2</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -170,8 +170,8 @@ alternatively, a directory with precomputed data. see <code><a href='extract_f2.
       <th>pop1</th>
       <td><p>One of the following four:</p><ol>
 <li><p><code>NULL</code>: all possible pairs of the populations in <code>f2_blocks</code> will be returned</p></li>
-<li><p>a vector of population labels</p></li>
-<li><p>a data frame with population combinations to be tested, with one population per column and one
+<li><p>A vector of population labels</p></li>
+<li><p>A data frame with population combinations to be tested, with one population per column and one
 combination per row. Other <code>pop</code> arguments will be ignored.</p></li>
 <li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or
 population combinations to be tested. Other <code>pop</code> arguments will be ignored.</p></li>
@@ -180,10 +180,6 @@ population combinations to be tested. Other <code>pop</code> arguments will be i
     <tr>
       <th>pop2</th>
       <td><p>A vector of population labels</p></td>
-    </tr>
-    <tr>
-      <th>f2_denom</th>
-      <td><p>Scales f2-statistics. 1 correspondes to <code>f4mode: YES</code>. 1/4.75 is similar to <code>f4mode: NO</code>.</p></td>
     </tr>
     <tr>
       <th>boot</th>

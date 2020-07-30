@@ -5,25 +5,25 @@
 #' and to \eqn{f4(A, B; A, C)}. Requires a working installation of qp3Pop, which will be called
 #' using \code{\link{system}}
 #' @export
-#' @param source1 one of the following four:
+#' @param source1 One of the following four:
 #' \enumerate{
-#' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
-#' \item a vector of population labels
-#' \item a data frame in which the first four columns specify the population triples to be tested.
+#' \item \code{NULL}: Populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
+#' \item A vector of population labels
+#' \item A data frame in which the first four columns specify the population triples to be tested.
 #' \code{source2}, \code{target} will be ignored.
-#' \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
+#' \item The location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
 #' population combinations to be tested. \code{source2} and \code{target} will be ignored.
 #' }
-#' @param source2 a vector of population labels
-#' @param target a vector of population labels
-#' @param bin path to the qp3Pop binary file
-#' @param pref path to and prefix of the packedancestrymap genotype files
-#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+#' @param source2 A vector of population labels
+#' @param target A vector of population labels
+#' @param bin Path to the qp3Pop binary file
+#' @param pref Path to and prefix of the packedancestrymap genotype files
+#' @param outdir Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 #' \code{popfilename} may be overwritten
 #' @param parfile qp3Pop parameter file. If this is specified, \code{source1}, \code{source2},
 #' \code{target} will be ignored.
-#' @param printonly should the command be printed or executed?
-#' @param verbose print progress updates
+#' @param printonly Should the command be printed or executed?
+#' @param verbose Print progress updates
 #' @return If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
 #' @examples
 #' \dontrun{
@@ -86,26 +86,26 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o
 #'
 #' This requires a working installation of qpDstat, which will be called using \code{\link{system}}
 #' @export
-#' @param pop1 one of the following four:
+#' @param pop1 One of the following four:
 #' \enumerate{
 #' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
-#' \item a vector of population labels
-#' \item a data frame in which the first four columns specify the population combinations to be tested.
+#' \item A vector of population labels
+#' \item A data frame in which the first four columns specify the population combinations to be tested.
 #' \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
 #' \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies
 #' the populations or population combinations to be tested. \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
 #' }
-#' @param pop2 a vector of population labels
-#' @param pop3 a vector of population labels
-#' @param pop4 a vector of population labels
-#' @param bin path to the qpDstat binary file
-#' @param pref path to and prefix of the packedancestrymap genotype files
-#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+#' @param pop2 A vector of population labels
+#' @param pop3 A vector of population labels
+#' @param pop4 A vector of population labels
+#' @param bin Path to the qpDstat binary file
+#' @param pref Path to and prefix of the packedancestrymap genotype files
+#' @param outdir Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 #' \code{popfilename} may be overwritten
 #' @param parfile qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3},
 #' and \code{pop4} will be ignored.
-#' @param printonly should the command be printed or executed?
-#' @param verbose print progress updates
+#' @param printonly Should the command be printed or executed?
+#' @param verbose Print progress updates
 #' @return If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output
 #' @examples
 #' \dontrun{
@@ -176,46 +176,47 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 #'
 #' This requires a working installation of qpAdm, which will be called using \code{\link{system}}
 #'
-#' @param target target population
-#' @param left source populations (or leftlist file)
-#' @param right outgroup populations (or rightlist file)
-#' @param bin path to the qpAdm binary file
-#' @param pref path to and prefix of the packedancestrymap genotype files
-#' @param outdir the output directory. files \code{out}, \code{parfile}, \code{leftlist},
+#' @param target Target population
+#' @param left Left populations (or leftlist file)
+#' @param right Right populations (or rightlist file)
+#' @param bin Path to the qpAdm binary file
+#' @param pref Path to and prefix of the packedancestrymap genotype files
+#' @param outdir Output directory. files \code{out}, \code{parfile}, \code{leftlist},
 #' \code{rightlist} will be overwritten
-#' @param printonly should the command be printed or executed?
-#' @param verbose print progress updates
-#' @return if not printonly, a data frame with parsed qpAdm output
+#' @param printonly Should the command be printed or executed?
+#' @param verbose Print progress updates
+#' @return If not printonly, a data frame with parsed qpAdm output
 #' @export
 #' @examples
 #' \dontrun{
-#' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm_wrapper(target, left, right,
+#' target = 'Denisova.DG'
+#' qpadm_wrapper(left, right, target,
 #'   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
 #'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 #' }
-qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/o2bin/qpAdm', pref = NULL,
+qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', pref = NULL,
                          outdir = './', parfile = NULL, useallsnps = 'NO', fancyf4 = 'YES',
                          f4mode = 'YES', inbreed = 'NO', printonly = FALSE, env = '', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
-              !is.null(pref) & !is.null(left) & !is.null(right))
+            !is.null(pref) & !is.null(left) & !is.null(right))
   stopifnot(file.exists(str_replace(bin, '.+ ', '')))
-  stopifnot(!is.null(target) | all(file.exists(c(left, right))))
+  #stopifnot(!is.null(target) | all(file.exists(c(left, right))))
 
+  if(!is.null(target)) left = c(target, setdiff(left, target))
   outdir = normalizePath(outdir, mustWork = FALSE)
   if(is.null(parfile)) {
 
-    if(!is.null(target)) {
+    if(all(file.exists(left, right))) {
+      leftfile = left
+      rightfile = right
+    } else {
       leftfile = paste0(outdir, '/leftlist')
       rightfile = paste0(outdir, '/rightlist')
       write(c(target, left), leftfile)
       write(right, rightfile)
-    } else {
-      leftfile = left
-      rightfile = right
     }
 
     pref = normalizePath(pref, mustWork = FALSE)
@@ -246,12 +247,12 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/
 
 #' Wrapper function around the original qpGraph program
 #' @export
-#' @param graph an admixture graph or qpGraph graph file
-#' @param bin location of the qpGraph binary
-#' @param pref prefix of the packedancestrymap format genotype files.
+#' @param graph An admixture graph or qpGraph graph file
+#' @param bin Location of the qpGraph binary
+#' @param pref Prefix of the packedancestrymap format genotype files.
 #' @param parfile qpGraph parameter file
-#' @param outdir output directory
-#' @param printonly should output be executed or the command just be printed?
+#' @param outdir Output directory
+#' @param printonly Should output be executed or the command just be printed?
 #' @param lambdascale lambdascale
 #' @param diag diag
 #' @param outpop outgroup population
@@ -260,8 +261,8 @@ qpadm_wrapper = function(target = NULL, left = NULL, right = NULL, bin = '~np29/
 #' @param forcezmode forcezmode
 #' @param allsnps allsnps
 #' @param bigiter bigiter
-#' @param verbose print progress updates
-#' @return a list with parsed qpGraph output
+#' @param verbose Print progress updates
+#' @return A list with parsed qpGraph output
 #' \enumerate{
 #' \item \code{edges}: data frame
 #' \item \code{score}: scalar
@@ -569,8 +570,8 @@ parse_qpgraph_output_edges = function(outfile) {
 
 #' Read qpGraph graph file
 #' @export
-#' @param graphfile file with admixture graph in qpGraph format.
-#' @return graph represented as two column edge matrix. Can have four columns if edges are locked
+#' @param graphfile File with admixture graph in qpGraph format.
+#' @return Graph represented as two column edge matrix. Can have four columns if edges are locked
 parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE) {
   # reads graph in qpGraph format
   # returns edge matrix (adjacency list)
@@ -661,8 +662,8 @@ parse_qpdstat_parfile = function(parfile) {
 
 #' Read qpAdm output file
 #' @export
-#' @param outfile output file generated by qpAdm.
-#' @return tibble with output data.
+#' @param outfile Output file generated by qpAdm.
+#' @return Data frame with output data.
 parse_qpadm_output = function(outfile) {
   # reads qpAdm output file
 

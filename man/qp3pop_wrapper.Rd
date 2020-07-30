@@ -11,33 +11,33 @@ qp3pop_wrapper(source1, source2 = NULL, target = NULL,
   verbose = TRUE)
 }
 \arguments{
-\item{source1}{one of the following four:
+\item{source1}{One of the following four:
 \enumerate{
-\item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
-\item a vector of population labels
-\item a data frame in which the first four columns specify the population triples to be tested.
+\item \code{NULL}: Populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
+\item A vector of population labels
+\item A data frame in which the first four columns specify the population triples to be tested.
 \code{source2}, \code{target} will be ignored.
-\item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
+\item The location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
 population combinations to be tested. \code{source2} and \code{target} will be ignored.
 }}
 
-\item{source2}{a vector of population labels}
+\item{source2}{A vector of population labels}
 
-\item{target}{a vector of population labels}
+\item{target}{A vector of population labels}
 
-\item{bin}{path to the qp3Pop binary file}
+\item{bin}{Path to the qp3Pop binary file}
 
-\item{pref}{path to and prefix of the packedancestrymap genotype files}
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
-\item{outdir}{the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+\item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 \code{popfilename} may be overwritten}
 
 \item{parfile}{qp3Pop parameter file. If this is specified, \code{source1}, \code{source2},
 \code{target} will be ignored.}
 
-\item{printonly}{should the command be printed or executed?}
+\item{printonly}{Should the command be printed or executed?}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
 If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output

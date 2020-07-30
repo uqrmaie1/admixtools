@@ -11,35 +11,35 @@ qpdstat_wrapper(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   verbose = TRUE)
 }
 \arguments{
-\item{pop1}{one of the following four:
+\item{pop1}{One of the following four:
 \enumerate{
 \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
-\item a vector of population labels
-\item a data frame in which the first four columns specify the population combinations to be tested.
+\item A vector of population labels
+\item A data frame in which the first four columns specify the population combinations to be tested.
 \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies
 the populations or population combinations to be tested. \code{pop2}, \code{pop3}, \code{pop4} will be ignored.
 }}
 
-\item{pop2}{a vector of population labels}
+\item{pop2}{A vector of population labels}
 
-\item{pop3}{a vector of population labels}
+\item{pop3}{A vector of population labels}
 
-\item{pop4}{a vector of population labels}
+\item{pop4}{A vector of population labels}
 
-\item{bin}{path to the qpDstat binary file}
+\item{bin}{Path to the qpDstat binary file}
 
-\item{pref}{path to and prefix of the packedancestrymap genotype files}
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
-\item{outdir}{the output directory. files \code{out}, \code{parfile}, \code{poplistname},
+\item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 \code{popfilename} may be overwritten}
 
 \item{parfile}{qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3},
 and \code{pop4} will be ignored.}
 
-\item{printonly}{should the command be printed or executed?}
+\item{printonly}{Should the command be printed or executed?}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
 If \code{printonly}, the \code{qpDstat} command, otherwise a data frame with parsed \code{qpDstat} output

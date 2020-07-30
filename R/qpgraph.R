@@ -303,8 +303,6 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
     precomp_test = qpgraph_precompute_f3(f2_blocks_test, pops, f2_denom = f2_denom, boot = boot,
                                          seed = seed, fudge_cov = fudge_cov, lsqmode = lsqmode)
     score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
-  } else {
-    score_test = NULL
   }
 
   #weight[normedges] = branch_lengths
@@ -314,8 +312,9 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   f2 = precomp$f2out
   f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p = ztop(z))
 
-  out = namedList(edges, score, score_test, f2, f3, opt, ppinv)
+  out = namedList(edges, score, f2, f3, opt, ppinv)
   #if(return_f4) out$f4 = f4(f2_blocks)
+  if(!is.null(f2_blocks_test)) out[['score_test']] = score_test
   if(return_f4) {
     if(verbose) alert_info(paste0('Computing f4\n'))
     out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3, cmb)
@@ -476,7 +475,7 @@ fitf4 = function(f2_blocks, f2, f3, cmb) {
     bind_rows(f2_fit %>% filter(pop2 == pop3) %>% transmute(pop1, pop2, f2fit = fit)) %>%
     bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
     bind_rows(tibble(pop1 = unique(.$pop1), pop2 = pop1, f2fit = 0))
-  x = f4(f2_blocks, unique_only = F) %>% select(-z, -p)
+  x = f4(f2_blocks, unique_only = FALSE, verbose = FALSE) %>% select(-z, -p)
   x %>%
     left_join(f2_fit2 %>% rename(c1 = f2fit), by = c('pop1' = 'pop1', 'pop4' = 'pop2')) %>%
     left_join(f2_fit2 %>% rename(c2 = f2fit), by = c('pop2' = 'pop1', 'pop3' = 'pop2')) %>%

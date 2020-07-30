@@ -106,7 +106,7 @@
 <h2 class="hasAnchor">
 <a href="#overview" class="anchor"></a>Overview</h2>
 <p>ADMIXTOOLS is a set of programs which use f-statistics to infer demographic models. It has been used in countless publications to test whether populations form clades (<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions (<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
-<p>ADMIXTOOLS 2.0 provides the same functionality in a new look, and it’s orders of magnitude faster. This is achieved mostly through separating the computation of f2-statistics from all other computations. In the example below, rendering the plot takes much longer than computing the fit of a new <em>qpGraph</em> model:</p>
+<p>ADMIXTOOLS 2.0 provides the same functionality in a new look, and it’s orders of magnitude faster. This is achieved through separating the computation of f2-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new <em>qpGraph</em> model:</p>
 <p><img src="reference/figures/shinyapp1.gif" alt="app demo"></p>
 </div>
 <div id="features" class="section level2">
@@ -135,13 +135,13 @@
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
-<p>To install and load ADMIXTOOLS 2.0, start R and follow these steps:</p>
+<p>To install and load ADMIXTOOLS 2.0, start R (version 3.5 or higher) and follow these steps:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"devtools"</span>) <span class="co"># if "devtools" is not installed already</span></a>
 <a class="sourceLine" id="cb1-2" data-line-number="2">devtools<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/devtools/man/reexports.html">install_github</a></span>(<span class="st">"uqrmaie1/admixtools"</span>)</a>
 <a class="sourceLine" id="cb1-3" data-line-number="3"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="st">"admixtools"</span>)</a></code></pre></div>
 <p>The above commands will install all R package dependencies which are required to run ADMIXTOOLS 2.0 on the command line. For the interactive app, additional packages are required, which can be installed like this:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">devtools<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/devtools/man/reexports.html">install_github</a></span>(<span class="st">"uqrmaie1/admixtools"</span>, <span class="dt">dependencies =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
-<p>If you encounter any problems during the installation, this is most likely because some of the required R packages cannot be installed. If that happens, try re-installing some of the larger packages, and pay attention to any error message:</p>
+<p>If you encounter any problems during the installation, this is most likely because some of the required R packages cannot be installed. If that happens, try manually re-installing some of the larger packages, and pay attention to any error message:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"Rcpp"</span>)</a>
 <a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"tidyverse"</span>)</a>
 <a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"igraph"</span>)</a>
@@ -159,39 +159,43 @@
 <a class="sourceLine" id="cb5-2" data-line-number="2">f2_dir =<span class="st"> "/my/f2/directory/"</span></a>
 <a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw"><a href="reference/extract_f2.html">extract_f2</a></span>(genotype_data, f2_dir)</a></code></pre></div>
 <p>After that, we can fit an admixture graph like this:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">f2_data =<span class="st"> </span><span class="kw"><a href="reference/f2_from_precomp.html">f2_from_precomp</a></span>(f2_dir)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2">fit =<span class="st"> </span><span class="kw"><a href="reference/qpgraph.html">qpgraph</a></span>(f2_data, example_graph)</a>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">f2_blocks =<span class="st"> </span><span class="kw"><a href="reference/f2_from_precomp.html">f2_from_precomp</a></span>(f2_dir)</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">fit =<span class="st"> </span><span class="kw"><a href="reference/qpgraph.html">qpgraph</a></span>(f2_blocks, example_graph)</a>
 <a class="sourceLine" id="cb6-3" data-line-number="3"><span class="kw"><a href="reference/plot_graph.html">plot_graph</a></span>(fit<span class="op">$</span>edges)</a></code></pre></div>
 <p><img src="reference/figures/graph1.png" alt="example graph"></p>
 <p>Clearly not a historically accurate model, but it gets the idea across.</p>
 <p><br></p>
 <p>We can also use the f2-statistics to estimate admixture weights:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">target =<span class="st"> "Denisova.DG"</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Altai_Neanderthal.DG"</span>, <span class="st">"Vindija.DG"</span>)</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Chimp.REF"</span>, <span class="st">"Mbuti.DG"</span>, <span class="st">"Russia_Ust_Ishim.DG"</span>, <span class="st">"Switzerland_Bichon.SG"</span>)</a></code></pre></div>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw"><a href="reference/qpadm.html">qpadm</a></span>(f2_data, target, left, right)<span class="op">$</span>weights</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">left =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Altai_Neanderthal.DG"</span>, <span class="st">"Vindija.DG"</span>)</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">right =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Chimp.REF"</span>, <span class="st">"Mbuti.DG"</span>, <span class="st">"Russia_Ust_Ishim.DG"</span>, <span class="st">"Switzerland_Bichon.SG"</span>)</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">target =<span class="st"> "Denisova.DG"</span></a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw"><a href="reference/qpadm.html">qpadm</a></span>(f2_blocks, left, right, target)<span class="op">$</span>weights</a></code></pre></div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="co">#&gt; # A tibble: 2 x 5</span></a>
 <a class="sourceLine" id="cb9-2" data-line-number="2"><span class="co">#&gt;   target      left                 weight    se     z</span></a>
 <a class="sourceLine" id="cb9-3" data-line-number="3"><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></a>
 <a class="sourceLine" id="cb9-4" data-line-number="4"><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13</span></a>
 <a class="sourceLine" id="cb9-5" data-line-number="5"><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08</span></a></code></pre></div>
 <p><br></p>
-<p>Or we can get f4-statistics from the f2-statistics:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="reference/qpdstat.html">f4</a></span>(f2_data)</a></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co">#&gt; # A tibble: 105 x 8</span></a>
-<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="co">#&gt;    pop1        pop2         pop3    pop4            est      se      z         p</span></a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="co">#&gt;  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229</span></a>
-<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="co">#&gt;  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277</span></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt;  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0.       </span></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="co">#&gt;  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152</span></a>
-<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#&gt;  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="co">#&gt;  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0.       </span></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co">#&gt;  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164</span></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="co">#&gt;  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229</span></a>
-<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="co">#&gt;  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0.       </span></a>
-<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co">#&gt; 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0.       </span></a>
-<a class="sourceLine" id="cb11-14" data-line-number="14"><span class="co">#&gt; # … with 95 more rows</span></a></code></pre></div>
+<p>Or we can use them to get f4-statistics:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="reference/qpdstat.html">f4</a></span>(f2_blocks)</a></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="co">#&gt; ℹ Getting population combinations...</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="co">#&gt; ℹ 105 population combinations found</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="co">#&gt; ℹ Loading f2 data for 42 population pairs...</span></a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="co">#&gt; ℹ Computing f4-statistics</span></a>
+<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="co">#&gt; # A tibble: 105 x 8</span></a>
+<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt;    pop1        pop2         pop3    pop4            est      se      z         p</span></a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#&gt;  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229</span></a>
+<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="co">#&gt;  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277</span></a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co">#&gt;  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0.       </span></a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="co">#&gt;  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152</span></a>
+<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="co">#&gt;  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254</span></a>
+<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co">#&gt;  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0.       </span></a>
+<a class="sourceLine" id="cb11-14" data-line-number="14"><span class="co">#&gt;  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164</span></a>
+<a class="sourceLine" id="cb11-15" data-line-number="15"><span class="co">#&gt;  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229</span></a>
+<a class="sourceLine" id="cb11-16" data-line-number="16"><span class="co">#&gt;  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0.       </span></a>
+<a class="sourceLine" id="cb11-17" data-line-number="17"><span class="co">#&gt; 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0.       </span></a>
+<a class="sourceLine" id="cb11-18" data-line-number="18"><span class="co">#&gt; # … with 95 more rows</span></a></code></pre></div>
 </div>
 <div id="interactive-browser-app" class="section level2">
 <h2 class="hasAnchor">
@@ -203,14 +207,14 @@
 <div id="documentation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#documentation" class="anchor"></a>Documentation</h2>
-<p>One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms more transparent, so that the path from genotype data to conclusions about demographic history is easier to follow.</p>
+<p>One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.</p>
 <p>To this end, all programs and parameters are (or should be) explained <a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html">here</a></p>
-<p>In addition to that, many of the core functions are implemented twice: Once in C++ for performance (used by default), and another time in R where it is easier to trace the computations step by step.</p>
+<p>In addition to that, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step.</p>
 </div>
 <div id="contact" class="section level2">
 <h2 class="hasAnchor">
 <a href="#contact" class="anchor"></a>Contact</h2>
-<p>For questions, feature requests, and bug reports, please contact Robert Maier <a href="mailto:rmaier@broadinstitute.org" class="email">rmaier@broadinstitute.org</a>.</p>
+<p>For questions, feature requests, and bug reports, please contact Robert Maier under <a href="mailto:rmaier@broadinstitute.org" class="email">rmaier@broadinstitute.org</a>.</p>
 </div>
 <div id="see-also" class="section level2">
 <h2 class="hasAnchor">

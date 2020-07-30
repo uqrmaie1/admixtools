@@ -13,17 +13,17 @@ qpgraph_wrapper(graph, bin = "~np29/o2bin/qpGraph", pref = NULL,
   initmix = 0, env = "", verbose = TRUE)
 }
 \arguments{
-\item{graph}{an admixture graph or qpGraph graph file}
+\item{graph}{An admixture graph or qpGraph graph file}
 
-\item{bin}{location of the qpGraph binary}
+\item{bin}{Location of the qpGraph binary}
 
-\item{pref}{prefix of the packedancestrymap format genotype files.}
+\item{pref}{Prefix of the packedancestrymap format genotype files.}
 
 \item{parfile}{qpGraph parameter file}
 
-\item{outdir}{output directory}
+\item{outdir}{Output directory}
 
-\item{printonly}{should output be executed or the command just be printed?}
+\item{printonly}{Should output be executed or the command just be printed?}
 
 \item{lambdascale}{lambdascale}
 
@@ -41,10 +41,10 @@ qpgraph_wrapper(graph, bin = "~np29/o2bin/qpGraph", pref = NULL,
 
 \item{bigiter}{bigiter}
 
-\item{verbose}{print progress updates}
+\item{verbose}{Print progress updates}
 }
 \value{
-a list with parsed qpGraph output
+A list with parsed qpGraph output
 \enumerate{
 \item \code{edges}: data frame
 \item \code{score}: scalar

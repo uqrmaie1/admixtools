@@ -157,46 +157,38 @@ based non-negative least squares of f4 matrix.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>a 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>target</th>
-      <td><p>target population</p></td>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
     </tr>
     <tr>
       <th>left</th>
-      <td><p>source populations (or <code>leftlist</code> file)</p></td>
+      <td><p>Left populations (sources)</p></td>
     </tr>
     <tr>
       <th>right</th>
-      <td><p>outgroup populations (or <code>rightlist</code> file)</p></td>
+      <td><p>Right populations (outgroups)</p></td>
     </tr>
     <tr>
-      <th>f2_denom</th>
-      <td><p>scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
-    </tr>
-    <tr>
-      <th>getcov</th>
-      <td><p>should standard errors be returned? Currently not implemented.</p></td>
+      <th>target</th>
+      <td><p>Target population</p></td>
     </tr>
     <tr>
       <th>constrained</th>
-      <td><p>if <code>TRUE</code> (default), admixture weights will all be non-negative.
-if <code>FALSE</code>, they can be negative, as in <code><a href='qpadm.html'>qpadm</a></code></p></td>
+      <td><p>If <code>TRUE</code> (default), admixture weights will all be non-negative.
+If <code>FALSE</code>, they can be negative, as in <code><a href='qpadm.html'>qpadm</a></code></p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a data frame with weights and standard errors for each left population</p>
+    <p>A data frame with weights and standard errors for each left population</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
@@ -213,15 +205,7 @@ languages in Europe.</em> Nature (SI 9)</p>
     <pre class="examples"><div class='input'><span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                 weight se        z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG      1 </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG                0 </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                 weight se        z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   5.70 </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>4.70</span><span> </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span></div></span></pre>
+<span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span class='error'>Error in quadprog::solve.QP(...): matrix D in quadratic function is not positive definite!</span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in solve.default(rhs, lhs): Lapack routine dgesv: system is exactly singular: U[1,1] = 0</span></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

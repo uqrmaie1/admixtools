@@ -23,7 +23,7 @@ A new, lightning fast implementation of [ADMIXTOOLS](https://github.com/DReichLa
 
 ADMIXTOOLS is a set of programs which use f-statistics to infer demographic models. It has been used in countless publications to test whether populations form clades (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
-ADMIXTOOLS 2.0 provides the same functionality in a new look, and it's orders of magnitude faster. This is achieved mostly through separating the computation of f2-statistics from all other computations. In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model:
+ADMIXTOOLS 2.0 provides the same functionality in a new look, and it's orders of magnitude faster. This is achieved through separating the computation of f2-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model:
 
 ![app demo](man/figures/shinyapp1.gif)
 
@@ -99,8 +99,8 @@ extract_f2(genotype_data, f2_dir)
 After that, we can fit an admixture graph like this:
 
 ```{r, eval = FALSE}
-f2_data = f2_from_precomp(f2_dir)
-fit = qpgraph(f2_data, example_graph)
+f2_blocks = f2_from_precomp(f2_dir)
+fit = qpgraph(f2_blocks, example_graph)
 plot_graph(fit$edges)
 ```
 
@@ -113,23 +113,23 @@ Clearly not a historically accurate model, but it gets the idea across.
 
 We can also use the f2-statistics to estimate admixture weights: 
 ```{r}
-target = "Denisova.DG"
 left = c("Altai_Neanderthal.DG", "Vindija.DG")
 right = c("Chimp.REF", "Mbuti.DG", "Russia_Ust_Ishim.DG", "Switzerland_Bichon.SG")
+target = "Denisova.DG"
 ```
 ```{r, eval = FALSE}
-qpadm(f2_data, target, left, right)$weights
+qpadm(f2_blocks, left, right, target)$weights
 ```
 ```{r, echo = FALSE}
-qpadm(example_f2_blocks, target, left, right, verbose = FALSE)$weights
+qpadm(example_f2_blocks, left, right, target, verbose = FALSE)$weights
 ```
 
 <br>
 
-Or we can get f4-statistics from the f2-statistics:
+Or we can use them to get f4-statistics:
 
 ```{r, eval = FALSE}
-f4(f2_data)
+f4(f2_blocks)
 ```
 ```{r, echo = FALSE}
 f4(example_f2_blocks)
@@ -150,16 +150,16 @@ run_shiny_admixtools()
 
 ## Documentation
 
-One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms more transparent, so that the path from genotype data to conclusions about demographic history is easier to follow.
+One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.
 
 To this end, all programs and parameters are (or should be) explained [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
 
-In addition to that, many of the core functions are implemented twice: Once in C++ for performance (used by default), and another time in R where it is easier to trace the computations step by step.
+In addition to that, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step.
 
 
 ## Contact
 
-For questions, feature requests, and bug reports, please contact Robert Maier <rmaier@broadinstitute.org>.
+For questions, feature requests, and bug reports, please contact Robert Maier under <rmaier@broadinstitute.org>.
 
 
 ## See also

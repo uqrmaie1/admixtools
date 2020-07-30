@@ -475,9 +475,9 @@ server = function(input, output, session) {
         print('switch to qpAdm')
         choices = names(global$poplist)
         if(is.null(input$qpadmpops1) || is.null(input$qpadmpops2) || is.null(input$qpadmpops3)) {
-          global$qpadmpops1 = choices[1]
-          global$qpadmpops2 = choices[2:3]
-          global$qpadmpops3 = choices[4:6]
+          global$qpadmpops1 = choices[2:3]
+          global$qpadmpops2 = choices[4:6]
+          global$qpadmpops3 = choices[1]
         } else {
           global$qpadmpops1 = input$qpadmpops1
           global$qpadmpops2 = input$qpadmpops2
@@ -1441,7 +1441,7 @@ server = function(input, output, session) {
 
     withProgress(message = 'running original qpAdm...', {
       dir = tempdir()
-      out = tryCatch(qpadm_wrapper(target, left, right, bin = bin, pref = pref, outdir = dir),
+      out = tryCatch(qpadm_wrapper(left, right, target, bin = bin, pref = pref, outdir = dir),
                      error = function(e) shinyalert('Error!', as.character(e)))
     })
     out
@@ -1530,9 +1530,9 @@ server = function(input, output, session) {
     choices2 = setdiff(all, c(global$qpadmpops1, global$qpadmpops3))
     choices3 = setdiff(all, c(global$qpadmpops1, global$qpadmpops2))
     div(
-      selectizeInput('qpadmpops1', 'Target', choices = choices1, multiple = FALSE, selected = global$qpadmpops1),
-      selectizeInput('qpadmpops2', 'Left', choices = choices2, multiple = TRUE, selected = global$qpadmpops2),
-      selectizeInput('qpadmpops3', 'Right', choices = choices3, multiple = TRUE, selected = global$qpadmpops3),
+      selectizeInput('qpadmpops1', 'Left', choices = choices1, multiple = TRUE, selected = global$qpadmpops1),
+      selectizeInput('qpadmpops2', 'Right', choices = choices2, multiple = TRUE, selected = global$qpadmpops2),
+      selectizeInput('qpadmpops3', 'Target', choices = choices3, multiple = FALSE, selected = global$qpadmpops3),
       splitLayout(actionButton('qpadm_randomize', 'Randomize')),
       checkboxInput('qpadm_results', 'Show results', value = global$show_qpadm_results),
       checkboxInput('qpadm_rotate', 'Rotate left', value = global$show_qpadm_rotate)

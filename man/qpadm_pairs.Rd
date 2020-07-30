@@ -16,3 +16,9 @@ qpadm_pairs(f2_blocks, left, right)
 \description{
 For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
 }
+\examples{
+\dontrun{
+pops = dimnames(example_f2_blocks)[[3]]
+qpadm_pairs(example_f2_blocks, left = pops[5:7], right = pops[1:4])
+}
+}

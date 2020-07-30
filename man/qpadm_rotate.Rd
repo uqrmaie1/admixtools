@@ -4,14 +4,16 @@
 \alias{qpadm_rotate}
 \title{Compute all pairwise qpadm p-values}
 \usage{
-qpadm_rotate(f2_blocks, target, left, right, verbose = TRUE)
+qpadm_rotate(f2_blocks, left, right, target, verbose = TRUE)
 }
 \arguments{
-\item{f2_blocks}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
+\item{f2_blocks}{3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
-\item{left}{left populations}
+\item{left}{Left populations}
 
-\item{right}{right populations}
+\item{right}{Right populations}
+
+\item{target}{Target population}
 }
 \description{
 For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed

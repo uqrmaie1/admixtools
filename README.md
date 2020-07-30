@@ -14,10 +14,10 @@ whether populations form clades (*qpDstat*, *qpWave*), to estimate
 ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
 ADMIXTOOLS 2.0 provides the same functionality in a new look, and it’s
-orders of magnitude faster. This is achieved mostly through separating
-the computation of f2-statistics from all other computations. In the
-example below, rendering the plot takes much longer than computing the
-fit of a new *qpGraph* model:
+orders of magnitude faster. This is achieved through separating the
+computation of f2-statistics from all other computations, and through a
+number of other optimizations. In the example below, rendering the plot
+takes much longer than computing the fit of a new *qpGraph* model:
 
 ![app demo](man/figures/shinyapp1.gif)
 
@@ -102,8 +102,8 @@ extract_f2(genotype_data, f2_dir)
 After that, we can fit an admixture graph like this:
 
 ``` r
-f2_data = f2_from_precomp(f2_dir)
-fit = qpgraph(f2_data, example_graph)
+f2_blocks = f2_from_precomp(f2_dir)
+fit = qpgraph(f2_blocks, example_graph)
 plot_graph(fit$edges)
 ```
 
@@ -116,13 +116,13 @@ Clearly not a historically accurate model, but it gets the idea across.
 We can also use the f2-statistics to estimate admixture weights:
 
 ``` r
-target = "Denisova.DG"
 left = c("Altai_Neanderthal.DG", "Vindija.DG")
 right = c("Chimp.REF", "Mbuti.DG", "Russia_Ust_Ishim.DG", "Switzerland_Bichon.SG")
+target = "Denisova.DG"
 ```
 
 ``` r
-qpadm(f2_data, target, left, right)$weights
+qpadm(f2_blocks, left, right, target)$weights
 ```
 
     #> # A tibble: 2 x 5
@@ -133,12 +133,16 @@ qpadm(f2_data, target, left, right)$weights
 
 <br>
 
-Or we can get f4-statistics from the f2-statistics:
+Or we can use them to get f4-statistics:
 
 ``` r
-f4(f2_data)
+f4(f2_blocks)
 ```
 
+    #> ℹ Getting population combinations...
+    #> ℹ 105 population combinations found
+    #> ℹ Loading f2 data for 42 population pairs...
+    #> ℹ Computing f4-statistics
     #> # A tibble: 105 x 8
     #>    pop1        pop2         pop3    pop4            est      se      z         p
     #>    <chr>       <chr>        <chr>   <chr>         <dbl>   <dbl>  <dbl>     <dbl>
@@ -171,20 +175,20 @@ run_shiny_admixtools()
 ## Documentation
 
 One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms
-more transparent, so that the path from genotype data to conclusions
-about demographic history is easier to follow.
+more transparent, so that the steps leading from from genotype data to
+conclusions about demographic history are easier to follow.
 
 To this end, all programs and parameters are (or should be) explained
 [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
 
 In addition to that, many of the core functions are implemented twice:
-Once in C++ for performance (used by default), and another time in R
-where it is easier to trace the computations step by step.
+In C++ for performance (used by default), and in R, which makes it
+easier to trace the computations step by step.
 
 ## Contact
 
 For questions, feature requests, and bug reports, please contact Robert
-Maier <rmaier@broadinstitute.org>.
+Maier under <rmaier@broadinstitute.org>.
 
 ## See also
 

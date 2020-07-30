@@ -4,25 +4,23 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(f2_data, target = NULL, left = NULL, right = NULL,
-  boot = FALSE, getcov = FALSE, constrained = TRUE)
+lazadm(f2_data, left, right, target = NULL, boot = FALSE,
+  constrained = TRUE)
 }
 \arguments{
-\item{f2_data}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
+\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
-\item{target}{target population}
+\item{left}{Left populations (sources)}
 
-\item{left}{source populations (or \code{leftlist} file)}
+\item{right}{Right populations (outgroups)}
 
-\item{right}{outgroup populations (or \code{rightlist} file)}
+\item{target}{Target population}
 
-\item{getcov}{should standard errors be returned? Currently not implemented.}
-
-\item{constrained}{if \code{TRUE} (default), admixture weights will all be non-negative.
-if \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
+\item{constrained}{If \code{TRUE} (default), admixture weights will all be non-negative.
+If \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
 }
 \value{
-a data frame with weights and standard errors for each left population
+A data frame with weights and standard errors for each left population
 }
 \description{
 Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method

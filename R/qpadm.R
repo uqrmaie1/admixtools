@@ -88,30 +88,29 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #'
 #' Models target as a mixture of left populations, given a set of outgroup right populations.
 #' Can be used to estimate admixture proportions, and to estimate the number of independent
-#' admixture events (see `wave`).
+#' admixture events.
 #' @export
 #' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
+#' @param left Left populations (sources)
+#' @param right Right populations (outgroups)
 #' @param target Target population
-#' @param left Source populations
-#' @param right Outgroup populations
-#' @param wave If `TRUE` (the default), lower rank models and models with fewer source populations will also be tested.
 #' @param fudge value added to diagonal matrix elements before inverting
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
 #' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
 #' as well as the weight standard errors, will be computed using bootstrapping.
-#' @param getcov Return standard errors for weights? Setting this to `FALSE` makes this function much faster.
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
 #' @return A list with output describing the model fit:
 #' \enumerate{
-#' \item `weights` a data frame with estimated admixture proportions where each row is left population.
-#' estimated edge length, and for admixture edges, it is the estimated admixture weight.
-#' \item `rankdrop` a data frame describing model fits with different ranks, including p-values for the overall fit
-#' and for nested models (comparing two models with rank difference of one). returned only if `wave = TRUE`
-#' \item `popdrop` a data frame describing model fits with different populations. returned only if `wave = TRUE`
+#' \item `weights` A data frame with estimated admixture proportions where each row is a left population.
+#' Returned only if `target` is specified
+#' \item `f4` A data frame with estimated (and fitted) f4-statistics
+#' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
+#' and for nested models (comparing two models with rank difference of one).
+#' \item `popdrop` A data frame describing model fits with different populations. Returned only if `target` is specified
 #' }
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
@@ -121,67 +120,63 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' `qpwave`
 #' @seealso \code{\link{lazadm}}
 #' @examples
-#' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' qpadm(example_f2_blocks, target, left, right)
-qpadm = function(f2_data, target = NULL, left = NULL, right = NULL,
-                 wave = TRUE, fudge = 0.0001, boot = FALSE,
-                 getcov = TRUE, constrained = FALSE, cpp = TRUE, verbose = TRUE) {
+#' target = 'Denisova.DG'
+#' qpadm(example_f2_blocks, left, right, target)
+qpadm = function(f2_data, left, right, target = NULL,
+                 fudge = 0.0001, boot = FALSE,
+                 constrained = FALSE, cpp = TRUE, verbose = TRUE) {
 
-  stopifnot(is.null(left) && is.null(right) || length(right) > length(left))
-
-  if(is.null(target)) {
+  if(all(file.exists(left, right))) {
     left %<>% readLines
-    target = left[1]
-    left = left[-1]
     right %<>% readLines
   }
-  pops = c(target, left, right)
+  if(!is.null(target)) left = c(target, setdiff(left, target))
+  pops = c(left, right)
   if(any(duplicated(pops))) stop(paste0('Duplicated pops: ', paste0(unique(pops[duplicated(pops)]),collapse=', ')))
 
   #----------------- prepare f4 stats -----------------
   if(verbose) alert_info('Computing f4 stats...\n')
-  #f2_blocks = get_f2(f2_data, pops = c(target, left), f2_denom = f2_denom, pops2 = right)
   f2_blocks = get_f2(f2_data, pops = pops, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
+  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
 
   f4_est = f4dat$est
   f4_var = f4dat$var
   f4_lo = f4dat$f4_lo
   block_lengths = f4dat$block_lengths
-
-  #----------------- compute admixture weights -----------------
-  if(verbose) alert_info('Computing admixture weights...\n')
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
-  rnk = length(left)-1
+  out = list()
 
-  if(cpp) {
-    qpadm_weights = cpp_qpadm_weights
-    get_weights_covariance = cpp_get_weights_covariance
-  }
-  weight = qpadm_weights(f4_est, qinv, rnk, fudge = fudge, constrained = constrained,
-                         qpsolve = qpsolve)$weights %>% c
-  if(getcov) {
+  #----------------- compute admixture weights -----------------
+  if(!is.null(target)) {
+    if(verbose) alert_info('Computing admixture weights...\n')
+    if(cpp) {
+      qpadm_weights = cpp_qpadm_weights
+      get_weights_covariance = cpp_get_weights_covariance
+    }
+    weight = qpadm_weights(f4_est, qinv, rnk = length(left)-2, fudge = fudge, constrained = constrained,
+                           qpsolve = qpsolve)$weights %>% c
     if(verbose) alert_info('Computing standard errors...\n')
     se = sqrt(diag(get_weights_covariance(f4_lo, qinv, block_lengths, fudge = fudge, boot = boot,
                                           constrained = constrained, qpsolve = qpsolve)))
-  } else se = rep(NA, length(weight))
 
-  out = list(weights = tibble(target, left, weight, se) %>% mutate(z = weight/se))
+    out$weights = tibble(target, left = left[-1], weight, se) %>% mutate(z = weight/se)
 
-  wvec = out$weights %>% select(left, weight) %>% deframe
-  if(isTRUE(all.equal(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]]))) out$f4 = fitted_f4(f2_blocks, wvec, target, left, right)
+    wvec = out$weights %>% select(left, weight) %>% deframe
+    #if(isTRUE(all.equal(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]]))) {
+    out$f4 = fitted_f4(f2_blocks, wvec, target, left[-1], right)
+    #}
+  } else {
+    out$f4 = f4(f2_blocks, left[1], left[-1], right[1], right[-1], verbose = FALSE)
+  }
 
   #----------------- compute number of admixture waves -----------------
-  if(wave) {
-    if(verbose) alert_info('Computing number of admixture waves...\n')
+  if(verbose) alert_info('Computing number of admixture waves...\n')
+  out$rankdrop = drop_ranks(f4_est, qinv, fudge, constrained, cpp)
+  if(!is.null(target)) out$popdrop = drop_pops(f4_est, qinv, fudge, constrained, cpp, left[-1])
 
-    rankdrop = drop_ranks(f4_est, qinv, fudge, constrained, cpp)
-    popdrop = drop_pops(f4_est, qinv, fudge, constrained, cpp, left)
-    out = c(out, namedList(rankdrop, popdrop))
-  }
   out
 }
 
@@ -222,14 +217,13 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
 #' based non-negative least squares of f4 matrix.
 #' @export
-#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' @param target target population
-#' @param left source populations (or `leftlist` file)
-#' @param right outgroup populations (or `rightlist` file)
-#' @param getcov should standard errors be returned? Currently not implemented.
-#' @param constrained if `TRUE` (default), admixture weights will all be non-negative.
-#' if `FALSE`, they can be negative, as in \code{\link{qpadm}}
-#' @return a data frame with weights and standard errors for each left population
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param left Left populations (sources)
+#' @param right Right populations (outgroups)
+#' @param target Target population
+#' @param constrained If `TRUE` (default), admixture weights will all be non-negative.
+#' If `FALSE`, they can be negative, as in \code{\link{qpadm}}
+#' @return A data frame with weights and standard errors for each left population
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
 #' languages in Europe.} Nature (SI 9)
@@ -240,8 +234,8 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' lazadm(example_f2_blocks, target, left, right)
 #' lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
-lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
-                  boot = FALSE, getcov = FALSE, constrained = TRUE) {
+lazadm = function(f2_data, left, right, target = NULL,
+                  boot = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
   if(is.null(target)) {
@@ -287,10 +281,6 @@ lazadm = function(f2_data, target = NULL, left = NULL, right = NULL,
   else weight = solve(rhs, lhs)[,1]
   weight = weight/sum(weight)
 
-  # todo: implement this
-  if(getcov) se = rep(NA, length(weight))
-  else se = rep(NA, length(weight))
-
   tibble(target, left, weight, se) %>% mutate(z = weight/se)
 }
 
@@ -311,12 +301,12 @@ drop_ranks = function(f4_est, qinv, fudge, constrained, cpp) {
 
 drop_pops = function(f4_est, qinv, fudge, constrained, cpp, left) {
   # drops each subset of left populations and fits qpadm model
-  if(nrow(f4_est) == 1) return()
+  #if(nrow(f4_est) == 1) return()
   fitpop = function(x, y) qpadm_fit(x, y, nrow(x)-1, fudge = fudge, constrained = constrained,
                                     cpp = cpp, addweights = TRUE)
   nc = ncol(f4_est)
   popdrop = left %>% power_set %>% enframe(name = 'i', value = 'pop') %>%
-    filter(map_int(pop, length) > 1) %>%
+    #filter(map_int(pop, length) > 1) %>%
     mutate(f4mat = map(pop, ~f4_est[., , drop=F]),
            ind = map(pop, ~((rep(match(., left), each=nc)-1)*nc+(1:nc))),
            qinvs = map(ind, ~qinv[., ., drop=F]),
@@ -335,7 +325,7 @@ drop_pops = function(f4_est, qinv, fudge, constrained, cpp, left) {
 
   rnk = nrow(f4_est) - 1
   nested = popdrop %>% filter(f4rank == rnk-1) %>% select(pat, dof, chisq, feasible)
-  for(i in rev(seq_len(rnk-1))) {
+  for(i in rev(seq_len(max(0,rnk-1)))) {
     children = child_patterns(nested$pat)
     thisrnk = popdrop %>% filter(f4rank == i, pat %in% children, feasible) %>%
       top_n(1, -jitter(chisq)) %>% select(pat, dof, chisq, feasible)
@@ -360,7 +350,7 @@ qpadm_evaluate_fit = function(xmat, qinv, A, B, f4rank) {
   res = t(xmat - A %*% B)
   chisq = (t(c(res)) %*% qinv %*% c(res))[,1]
   dof = qpadm_dof(nrow(A), ncol(B), f4rank)
-  p = pchisq(chisq, df = dof, lower.tail = FALSE)
+  p = if(dof == 0) NA else pchisq(chisq, df = dof, lower.tail = FALSE)
   tibble(f4rank, dof, chisq, p)
 }
 
@@ -376,7 +366,7 @@ qpadm_fit = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
     fit = qpadm_weights(xmat, qinv, rnk, fudge = fudge, constrained = constrained, qpsolve = qpsolve)
   }
   out = qpadm_evaluate_fit(xmat, qinv, fit$A, fit$B, rnk)
-  if(addweights) {
+  if(addweights && length(fit$weights) == nrow(xmat)) {
     #out %<>% bind_cols(fit$weights %>% t %>% as_data_frame %>% set_names(rownames(xmat)))
     out %<>% bind_cols(fit$weights %>% t %>% as_tibble(.name_repair = ~rownames(xmat)))
   }
@@ -404,32 +394,27 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
   weights = weights/sum(weights)
   pops = names(weights)
   f2_blocks_plus = add_weighted_f2(f2_blocks, weights)
-  fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right) %>% filter(pop3 != pop4)
+  fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right, verbose = FALSE) %>% filter(pop3 != pop4)
   fitf4 %>% left_join(enframe(weights, name = 'pop2', value = 'weight'), by = 'pop2') %>%
     arrange(pop1, pop3, pop4, pop2)
 }
 
 #' @export
-qpadm_p = function(f2_data, target, left, right, fudge = 0.0001, boot = FALSE,
-                   constrained = FALSE, cpp = TRUE, weights = TRUE) {
+qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = FALSE,
+                   constrained = FALSE, rnk = length(left) - 1, cpp = TRUE) {
 
-  f2_blocks = get_f2(f2_data, pops = c(target, left), pops2 = right, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, c(target, left), right, boot = boot)
+  if(!is.null(target)) left = c(target, setdiff(left, target))
+  f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
+  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
-  rnk = length(left) - 1
+  #rnk = length(left) - 1
   out = qpadm_fit(f4_est, qinv, rnk, fudge = fudge,
                   constrained = constrained, cpp = cpp, addweights = TRUE)
   w = out %>% select(-1:-4) %>% as.matrix
   out %>% select(1:4) %>% mutate(feasible = all(between(w, 0, 1)))
-  # if(!weights) return(out)
-  #
-  # if(cpp) qpadm_weights = cpp_qpadm_weights
-  # weight = qpadm_weights(f4_est, qinv, rnk, fudge = fudge, constrained = constrained,
-  #                        qpsolve = qpsolve)$weights %>% c
-  # out %>% mutate(weights = list(weight), feasible = all(between(weight, 0, 1)))
 }
 
 
@@ -451,39 +436,10 @@ test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cp
 
 
 find_right = function(f2_blocks, target, pops) {
-  f4p = f4(f2_blocks) %>%
+  f4p = f4(f2_blocks, verbose = FALSE) %>%
     select(pop1:pop4, p)
 }
 
-qpadm_all_comb = function(f2_blocks, pops, target = NULL, left = NULL, right = NULL, filter_f4 = FALSE) {
-  # evaluates all qpadm models and returns data frame with populations and p-value
-  combs = all_comb(pops, target = target, left = left, right = right) %>% mutate(i = 1:n())
-
-  f2_blocks = get_f2(f2_blocks, pops)
-
-  if(filter_f4) {
-    c2 = combs %>%
-      unnest_longer(right) %>%
-      rowwise %>%
-      mutate(lc = list(unname(as.list(as.data.frame(combn(left, 2), stringsAsFactors = F))))) %>%
-      ungroup %>%
-      mutate(j = 1:n()) %>%
-      unnest_longer(lc) %>%
-      mutate(l1 = map_chr(lc, 1), l2 = map_chr(lc, 2))
-    c3 = c2 %>% select(target, right, l1, l2) %>% distinct
-    #f4p = f4(f2_blocks, c3$target, c3$right, c3$l1, c3$l2, comb = FALSE) %>%
-      select(pop1:pop4, p)
-    f4p = f4(f2_blocks, c3$target, c3$l1, c3$right, c3$l2, comb = FALSE) %>%
-      select(pop1:pop4, p)
-    maxp = c2 %>% left_join(f4p, by = c('target'='pop1', 'l1'='pop2', 'right'='pop3', 'l2'='pop4')) %>% group_by(j) %>% summarize(i = i[1], maxp = max(p)) %>% group_by(i) %>% summarize(maxp = max(maxp))
-  }
-  combs %>%
-    rowwise %>%
-    mutate(fit = qpadm_p(f2_blocks, target, left, right)) %>%
-    bind_cols(.$fit) %>%
-    select(-fit, -i) %>%
-    ungroup
-}
 
 all_comb = function(pops, target = NULL, left = NULL, right = NULL) {
   stopifnot(length(union(pops, target)) > 5)
@@ -538,25 +494,32 @@ all_lr2 = function(pops, rightfix = 0) {
 #' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' @param left left populations
 #' @param right right populations
+#' @examples
+#' \dontrun{
+#' pops = dimnames(example_f2_blocks)[[3]]
+#' qpadm_pairs(example_f2_blocks, left = pops[5:7], right = pops[1:4])
+#' }
 qpadm_pairs = function(f2_blocks, left, right) {
   expand_grid(pop1 = left, pop2 = left) %>%
     filter(pop1 < pop2) %>%
-    rowwise() %>%
-    mutate(out = list(qpadm(f2_blocks, pop1, pop2, right, verbose = F)$rankdrop)) %>%
+    mutate(out = furrr::future_map2(pop1, pop2, ~qpadm_p(f2_blocks, .y, right, .x, rnk = 0))) %>%
     unnest_wider(out) %>%
     select(pop1, pop2, chisq, p) %>%
     bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
     arrange(pop1, pop2)
 }
 
+
+
 #' Compute all pairwise qpadm p-values
 #'
 #' For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
 #' @export
-#' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' @param left left populations
-#' @param right right populations
-qpadm_rotate = function(f2_blocks, target, left, right, verbose = TRUE) {
+#' @param f2_blocks 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param left Left populations
+#' @param right Right populations
+#' @param target Target population
+qpadm_rotate = function(f2_blocks, left, right, target, verbose = TRUE) {
 
   lr = all_lr2(left, length(right))
   if(verbose) alert_info(paste0('Evaluating ', length(lr[[1]]), ' models...\n'))
