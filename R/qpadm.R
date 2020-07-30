@@ -90,7 +90,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Can be used to estimate admixture proportions, and to estimate the number of independent
 #' admixture events.
 #' @export
-#' @param f2_data a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
@@ -487,22 +487,27 @@ all_lr2 = function(pops, rightfix = 0) {
 }
 
 
-#' Compute all pairwise qpadm p-values
+#' Compute all pairwise qpwave p-values
 #'
-#' For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
+#' For all pairs of left populations qpwave rank 0 Chi-squared statistics and p-values will be computed. This tests for each pair of left populations whether it forms a clade with respect to the right populations.
 #' @export
-#' @param f2_blocks a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' @param left left populations
-#' @param right right populations
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
+#' @param left Left populations
+#' @param right Right populations
 #' @examples
 #' \dontrun{
-#' pops = dimnames(example_f2_blocks)[[3]]
-#' qpadm_pairs(example_f2_blocks, left = pops[5:7], right = pops[1:4])
+#' left = pops[5:7]
+#' right = pops[1:4]
+#' f2_blocks = f2_from_precomp('/my/f2/dir/', pops = left, pops2 = right, afprod = TRUE)
+#' qpadm_pairs(f2_blocks, left, right)
+#' # If f2-stats are too big to load them into memory,
+#' # the following will read the data for each pair from disk:
+#' qpadm_pairs('/my/f2/dir/', left, right)
 #' }
-qpadm_pairs = function(f2_blocks, left, right) {
+qpadm_pairs = function(f2_data, left, right) {
   expand_grid(pop1 = left, pop2 = left) %>%
     filter(pop1 < pop2) %>%
-    mutate(out = furrr::future_map2(pop1, pop2, ~qpadm_p(f2_blocks, .y, right, .x, rnk = 0))) %>%
+    mutate(out = furrr::future_map2(pop1, pop2, ~qpadm_p(f2_data, .y, right, .x, rnk = 0))) %>%
     unnest_wider(out) %>%
     select(pop1, pop2, chisq, p) %>%
     bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%

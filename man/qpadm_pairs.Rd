@@ -2,23 +2,28 @@
 % Please edit documentation in R/qpadm.R
 \name{qpadm_pairs}
 \alias{qpadm_pairs}
-\title{Compute all pairwise qpadm p-values}
+\title{Compute all pairwise qpwave p-values}
 \usage{
-qpadm_pairs(f2_blocks, left, right)
+qpadm_pairs(f2_data, left, right)
 }
 \arguments{
-\item{f2_blocks}{a 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
+\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}
 
-\item{left}{left populations}
+\item{left}{Left populations}
 
-\item{right}{right populations}
+\item{right}{Right populations}
 }
 \description{
-For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
+For all pairs of left populations qpwave rank 0 Chi-squared statistics and p-values will be computed. This tests for each pair of left populations whether it forms a clade with respect to the right populations.
 }
 \examples{
 \dontrun{
-pops = dimnames(example_f2_blocks)[[3]]
-qpadm_pairs(example_f2_blocks, left = pops[5:7], right = pops[1:4])
+left = pops[5:7]
+right = pops[1:4]
+f2_blocks = f2_from_precomp('/my/f2/dir/', pops = left, pops2 = right, afprod = TRUE)
+qpadm_pairs(f2_blocks, left, right)
+# If f2-stats are too big to load them into memory,
+# the following will read the data for each pair from disk:
+qpadm_pairs('/my/f2/dir/', left, right)
 }
 }
