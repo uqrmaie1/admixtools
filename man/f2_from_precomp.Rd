@@ -6,7 +6,7 @@
 \usage{
 f2_from_precomp(dir, inds = NULL, pops = NULL, pops2 = NULL,
   afprod = FALSE, return_array = TRUE, apply_corr = TRUE,
-  remove_na = FALSE, verbose = TRUE)
+  remove_na = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{dir}{Directory with precomputed f2 statistics, or precomputed individual pair data}

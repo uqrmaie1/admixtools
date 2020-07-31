@@ -675,7 +675,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #' too many to do everything in working memory.
 #' It assumes that the allele frequencies have already been computed and are stored in `.rds` files,
 #' split into consecutive blocks for a set of populations. This function calls \code{\link{write_f2}},
-#' which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time.
+#' which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a time to disk.
 #' @export
 #' @param afdir Directory with allele frequency and counts `.rds` files created by \code{\link{split_mat}}
 #' @param outdir Directory data where data will be stored
@@ -683,8 +683,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #' @param chunk2 Index of the second chunk of populations
 #' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
 #' @param verbose Print progress updates
-#' @seealso \code{\link{split_mat}} for creating split allele frequency data,
-#' \code{\link{write_f2}} for writing split f2 block jackknife estimates
+#' @seealso \code{\link{extract_f2}} Does the same thing in one step for smaller data.
 #' @examples
 #' \dontrun{
 #' afdir = 'tmp_af_dir/'
@@ -697,6 +696,8 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #'   }
 #' }
 #' }
+#' # Alternatively, the following code will do the same, while submitting each chunk as a separate job.
+#' # (if `future::plan()` has been set up appropriately)
 #' \dontrun{
 #' furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
 #'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
@@ -1169,7 +1170,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod = FALSE, return_array = TRUE,
-                           apply_corr = TRUE, remove_na = FALSE, verbose = TRUE) {
+                           apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
   indpairs = dir.exists(paste0(dir, '/indivs'))

@@ -45,13 +45,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
+  
+  <script src="../extra.js"></script>
 <meta property="og:title" content="Compute f2 blocks and write them to disk — write_split_f2_block" />
 
 <meta property="og:description" content="This is intended for computing f2-statistics for a large number of populations,
 too many to do everything in working memory.
 It assumes that the allele frequencies have already been computed and are stored in .rds files,
 split into consecutive blocks for a set of populations. This function calls write_f2,
-which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time." />
+which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a time to disk." />
 
 <meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
@@ -121,6 +123,9 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
+      <a href="../articles/fstats.html">Computing *f*-statistics</a>
+    </li>
+    <li>
       <a href="../articles/plotting.html">Plotting</a>
     </li>
   </ul>
@@ -159,7 +164,7 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
 too many to do everything in working memory.
 It assumes that the allele frequencies have already been computed and are stored in <code>.rds</code> files,
 split into consecutive blocks for a set of populations. This function calls <code><a href='write_f2.html'>write_f2</a></code>,
-which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time.</p>
+which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a time to disk.</p>
     
     </div>
 
@@ -197,8 +202,7 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='split_mat.html'>split_mat</a></code> for creating split allele frequency data,
-<code><a href='write_f2.html'>write_f2</a></code> for writing split f2 block jackknife estimates</p></div>
+    <div class='dont-index'><p><code><a href='extract_f2.html'>extract_f2</a></code> Does the same thing in one step for smaller data.</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -213,6 +217,8 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair
   }
 }
 }
+<span class='co'># Alternatively, the following code will do the same, while submitting each chunk as a separate job.</span>
+<span class='co'># (if `future::plan()` has been set up appropriately)</span>
 <span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='kw pkg'>furrr</span><span class='kw ns'>::</span><span class='fu'><a href='https://rdrr.io/pkg/furrr/man/future_map.html'>future_map</a></span>(<span class='fl'>1</span>:<span class='no'>numchunks</span>, ~{<span class='no'>i</span><span class='kw'>=</span><span class='no'>.</span>; <span class='fu'>map</span>(<span class='no'>i</span>:<span class='no'>numchunks</span>, ~{
   <span class='fu'>write_split_f2_block</span>(<span class='no'>afdir</span>, <span class='no'>f2dir</span>, <span class='kw'>chunk1</span> <span class='kw'>=</span> <span class='no'>i</span>, <span class='kw'>chunk2</span> <span class='kw'>=</span> <span class='no'>.</span>)

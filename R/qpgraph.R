@@ -519,8 +519,8 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #'
 #' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
 #' @export
-#' @param fits1 Fitted models for the first graph
-#' @param fits2 Fitted models for the second graph
+#' @param scores1 Scores for the first graph
+#' @param scores2 Scores for the second graph
 #' @examples
 #' \dontrun{
 #' boo = boo_list(f2_blocks, nboot = 100)

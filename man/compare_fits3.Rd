@@ -7,9 +7,9 @@
 compare_fits3(scores1, scores2)
 }
 \arguments{
-\item{fits1}{Fitted models for the first graph}
+\item{scores1}{Scores for the first graph}
 
-\item{fits2}{Fitted models for the second graph}
+\item{scores2}{Scores for the second graph}
 }
 \description{
 Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.

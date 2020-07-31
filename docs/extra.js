@@ -1,0 +1,1 @@
+window.PlotlyConfig = {MathJaxConfig: 'local'}

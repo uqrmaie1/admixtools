@@ -19,10 +19,8 @@ gg_color_hue = function(n, l=65, c=100) {
   hcl(h=hues, l=l, c=c)[1:n]
 }
 
-qpsolve = function(...) quadprog::solve.QP(...)$solution
-
+#qpsolve = function(...) quadprog::solve.QP(...)$solution
 #qpsolve = function(cc, q1, a3, a4) -quadprogpp::QP.Solve(cc, q1, -a3, -a4)
-
 #qpsolve = function(cc, q1, a3, a4) -rcppeigen_quadratic_solve(cc, q1, matrix(0, nrow(cc), 0), vector(), -a3, -a4)[,1]
 
 qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
@@ -36,7 +34,8 @@ qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
                               ell[[4]][ilow] = -1e3
                               cc = solve((ell[[1]]+t(ell[[1]]))/2)
                               #diag(cc) = diag(cc) + 0.0001 # this will result in extremely high scores for some graphs
-                              diag(cc) = diag(cc) + 0.0001*mean(diag(cc)) # this will sometimes lead to 'constraints inconsistent'
+                              #diag(cc) = diag(cc) + 0.0001*mean(diag(cc)) # this will sometimes lead to 'constraints inconsistent'
+                              diag(cc) = diag(cc) + 0.01*mean(diag(cc))
                               cc = (cc+t(cc))/2
                               ell[[1]] = solve(cc)
                               return(do.call(quadprog::solve.QP, ell)$solution)

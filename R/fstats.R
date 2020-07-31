@@ -302,7 +302,7 @@ get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL, afprod = FALSE) {
   if(!all(allpops %in% blockpops)) {
     stop(paste0('requested: ', paste(allpops, collapse=', '),
                 '\navailable pops: ', paste(blockpops, collapse = ', '),
-                '\ndiff: ', paste(setdiff(allpops, blockpops))))
+                '\ndiff: ', paste(setdiff(allpops, blockpops), collapse = ', ')))
   }
   f2_blocks = f2_blocks[pops, pops2, , drop = FALSE] / f2_denom
   f2_blocks

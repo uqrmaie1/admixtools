@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file --->
 
-# ADMIXTOOLS 2.0
+# ADMIXTOOLS 2
 
 A new, lightning fast implementation of
 [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools).
@@ -13,7 +13,7 @@ demographic models. It has been used in countless publications to test
 whether populations form clades (*qpDstat*, *qpWave*), to estimate
 ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
-ADMIXTOOLS 2.0 provides the same functionality in a new look, and it’s
+ADMIXTOOLS 2 provides the same functionality in a new look, and it’s
 orders of magnitude faster. This is achieved through separating the
 computation of f2-statistics from all other computations, and through a
 number of other optimizations. In the example below, rendering the plot
@@ -47,7 +47,7 @@ takes much longer than computing the fit of a new *qpGraph* model:
 
 ## Installation
 
-To install and load ADMIXTOOLS 2.0, start R (version 3.5 or higher) and
+To install and load ADMIXTOOLS 2, start R (version 3.5 or higher) and
 follow these steps:
 
 ``` r
@@ -57,7 +57,7 @@ library("admixtools")
 ```
 
 The above commands will install all R package dependencies which are
-required to run ADMIXTOOLS 2.0 on the command line. For the interactive
+required to run ADMIXTOOLS 2 on the command line. For the interactive
 app, additional packages are required, which can be installed like this:
 
 ``` r
@@ -160,9 +160,9 @@ f4(f2_blocks)
 
 ## Interactive browser app
 
-ADMIXTOOLS 2.0 also has a simple point-and-click interface. This makes
-it easy to explore many *qpAdm* or *qpGraph* models at the same time,
-for example by allowing you to build and change admixture graphs
+ADMIXTOOLS 2 also has a simple point-and-click interface. This makes it
+easy to explore many *qpAdm* or *qpGraph* models at the same time, for
+example by allowing you to build and change admixture graphs
 interactively. Typing the following command in the R console launches
 the app:
 
@@ -174,7 +174,7 @@ run_shiny_admixtools()
 
 ## Documentation
 
-One of the design goals behind ADMIXTOOLS 2.0 is to make the algorithms
+One of the design goals behind ADMIXTOOLS 2 is to make the algorithms
 more transparent, so that the steps leading from from genotype data to
 conclusions about demographic history are easier to follow.
 

@@ -25,7 +25,7 @@ This is intended for computing f2-statistics for a large number of populations,
 too many to do everything in working memory.
 It assumes that the allele frequencies have already been computed and are stored in \code{.rds} files,
 split into consecutive blocks for a set of populations. This function calls \code{\link{write_f2}},
-which takes a (sub-)chunk of pairwise f2-statistics, and writes to disk one pair at a time.
+which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a time to disk.
 }
 \examples{
 \dontrun{
@@ -39,6 +39,8 @@ for(j in 1:numchunks) {
   }
 }
 }
+# Alternatively, the following code will do the same, while submitting each chunk as a separate job.
+# (if `future::plan()` has been set up appropriately)
 \dontrun{
 furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
@@ -46,6 +48,5 @@ furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
   }
 }
 \seealso{
-\code{\link{split_mat}} for creating split allele frequency data,
-\code{\link{write_f2}} for writing split f2 block jackknife estimates
+\code{\link{extract_f2}} Does the same thing in one step for smaller data.
 }
