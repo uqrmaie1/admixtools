@@ -401,8 +401,9 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 
 #' @export
 qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = FALSE,
-                   constrained = FALSE, rnk = length(left) - 1, cpp = TRUE) {
+                   constrained = FALSE, rnk = length(setdiff(left, target)) - 1, cpp = TRUE) {
 
+  #force(rnk)
   if(!is.null(target)) left = c(target, setdiff(left, target))
   f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
   f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
@@ -410,7 +411,6 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
   f4_var = f4dat$var
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
-  #rnk = length(left) - 1
   out = qpadm_fit(f4_est, qinv, rnk, fudge = fudge,
                   constrained = constrained, cpp = cpp, addweights = TRUE)
   w = out %>% select(-1:-4) %>% as.matrix
@@ -528,14 +528,14 @@ qpadm_rotate = function(f2_blocks, left, right, target, verbose = TRUE) {
 
   lr = all_lr2(left, length(right))
   if(verbose) alert_info(paste0('Evaluating ', length(lr[[1]]), ' models...\n'))
-  qpadm_eval_rotate(f2_blocks, target, leftright_dat, right, verbose = verbose)
+  qpadm_eval_rotate(f2_blocks, target, lr, right, verbose = verbose)
 
 }
 
 qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, verbose = TRUE) {
   leftright_dat %>%
     as_tibble %>%
-    mutate(res = furrr::future_map2(left, right, ~qpadm_p(f2_blocks, target, .x, c(.y, rightfix), weights = FALSE),
+    mutate(res = map2(left, right, ~qpadm_p(f2_blocks, .x, c(.y, rightfix), target),
                                     .progress = verbose)) %>%
     unnest_wider(res) #%>%
   #mutate(chisq = map(rankdrop, 'chisq') %>% map_dbl(1)) %>%

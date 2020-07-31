@@ -1,9 +1,9 @@
 ---
-title: "Computing *f*-statistics"
+title: "f-statistics"
 output:
   rmarkdown::html_vignette:
     toc: true
-    toc_depth: 3
+    toc_depth: 1
 ---
 
 
@@ -12,10 +12,10 @@ output:
 
 ## Estimating *f~2~*
 
-$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. It is the between-population variance, or the numerator in the more widely used $F_{ST}$, which is the ratio of between-population variance to total variance: $F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{n} \sum_{j=1}^n a_j(1-a_j) + b_j (1-b_j)}$.
+$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. It is the between-population variance, or the numerator in the more widely used $F_{ST}$, which is the ratio of between-population variance to total variance: $F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}$.
 
-In the simplest case, we can estimate $f_2$ across $n$ SNPs like this:
-$$f_2(A,B) = \frac{1}{n} \sum_{j=1}^n(a_{j} - b_{j})^2 = \frac{1}{n} \sum_{j=1}^n a^2_{j} - 2 a_j b_j + b^2_{j}$$
+In the simplest case, we can estimate $f_2$ across $M$ SNPs like this:
+$$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}$$
 
 The simplest case is one where:
 
@@ -33,15 +33,16 @@ Inaccurate allele frequency estimates lead to over-esimation of $f_2$: If two po
 The most common reason for inaccurate allele frequency estimates is low sample count (or a low number of independently sampled alleles). The upward bias due to low sample count at a single SNP in one population is $\frac{p(1-p)}{n-1}$, where $p$ is the allele frequency and $n$ is the number of independently sampled alleles. Therefore, an unbiased estimate of $f_2$ at a single SNP is given by
 
 $$f_2(A, B) = (a-b)^2 - \frac{a(1-a)}{n_A-1} - \frac{b(1-b)}{n_B-1}$$
+Population-wide estimates of $f_2$ are again averages over all SNPs.
 In most cases, $n$, the number of independently sampled alleles, will be twice the number of samples, with two exceptions:
 
-### Pseudohaploid data
+*1. Pseudohaploid data*
 
 Many ancient DNA data sets don't call heterozygous genotypes in order to avoid a number of biases. If two different alleles are observed in one sample at a particular site, one of the two alleles is chosen at random and the genotype is declared homozygous for that allele.
 In pseudohaploid samples, the number of independently sampled alleles is therefore equal to the number of samples.
 
 
-### Inbreeding
+*2. Inbreeding*
 
 If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, $n$ can therefore be less than two.
 
@@ -51,10 +52,11 @@ ADMIXTOOLS 2 automatically detects pseudohaploid samples by checking if any hete
 
 ## Bias due to missing data
 
-Missing data alone will not create any bias in f2 estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, f2 can be over- or underestimated. In contrast to $F_{ST}$, which is the same in expectation for rare and for common SNPs, $f_2$ tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd $f_2$ estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What's important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high f2 because most rare alleles are missing in one of the populations, and another pair of populations has a lower f2 beause those rare alleles are not missing, bias can be expected.
+Missing data alone will not create any bias in $f_2$ estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, $f_2$ can be over- or underestimated. In contrast to $F_{ST}$, which is the same in expectation for rare and for common SNPs, $f_2$ tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd $f_2$ estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What's important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high $f_2$ because most rare alleles are missing in one of the populations, and another pair of populations has a lower $f_2$ beause those rare alleles are not missing, bias can be expected.
 
-One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. A middle ground can be reached by excluding only SNPs with very high missingness, and thus high potential for bias.
+One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the `allsnps` options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the `maxmiss` parameter in `extract_f2` which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.
 
+As we will see in the next section, estimating $f_4$ without bias is actually easier than estimating $f_2$ or $f_{ST}$ without any bias.
 
 
 ## Estimating *f~4~*
@@ -64,7 +66,7 @@ $f_4$ is the covariance of allele frequency differences between two pairs of pop
 $$
 \begin{equation}
 \begin{aligned}
-f_4(A, B; C, D) &= \frac{1}{n}\sum_{j=1}^n(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{n} \sum_{j=1}^n(a_j c_j + b_j d_j - a_j d_j - b_j c_j) \\ &= \frac{1}{2n} (\sum_{j=1}^n(a_j - d_j)^2 + \sum_{j=1}^n(b_j - c_j)^2 - \sum_{j=1}^n(a_j - c_j)^2 - \sum_{j=1}^n(b_j - d_j)^2) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
+f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{M} \sum_{j=1}^M(a_j c_j + b_j d_j - a_j d_j - b_j c_j) \\ &= \frac{1}{2n} (\sum_{j=1}^M(a_j - d_j)^2 + \sum_{j=1}^M(b_j - c_j)^2 - \sum_{j=1}^M(a_j - c_j)^2 - \sum_{j=1}^M(b_j - d_j)^2) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
 \label{eq:f42}
 \end{aligned}
 \end{equation}
@@ -73,10 +75,10 @@ $$
 This makes it clear that $f_4$ is a generalization of $f_2$: $f_4(A, B; A, B) = f_2(A, B)$
 
 
-D-statistics differ from $f_4$ only by a scaling factor: $D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{n} \sum_{j=1}^n (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}$
+D-statistics differ from $f_4$ only by a scaling factor: $D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}$
 
 
-Naively one might think that estimating $f_4$ without bias is at least as difficult as estimating $f_2$ without bias, but that is not the case. Since each population is represented through two $f_2$ terms of opposite sign in $f_4$, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor $\frac{p(1-p)}{n-1}$, which is not necessary when estimating $f_4$.
+Naively one might think that estimating $f_4$ without bias is at least as difficult as estimating $f_2$ without bias, but that is not the case. Since each population is represented in $f_4$ through two $f_2$ terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor $\frac{p(1-p)}{n-1}$, which is not necessary when estimating $f_4$.
 
 For a visual interpretation of this effect, consider the following phylogeny:
 
@@ -89,54 +91,100 @@ C         D
 
 $f_2$ is the total branch length between any two populations, while $f_4(A, B; C, D)$ is the length of the horizontal line. Any increase or decrease in the lengths of the terminal branches leading to $A$, $B$, $C$, or $D$ will affect two $f_2$ statistics equally, but will leave $f_4(A, B; C, D)$ unaffected. This robustness is a major strength of methods based on f4-statistics (and to a large extent also of f3-based methods): Terminal branch lengths are affected by many factors such as divergence time, changes in population size, as well as by data quality, but none of this affects $f_4$, the covariance of allele freuquency differences.
 
+### f~4~ as a sum of allele frequency products
+
+In the presence of large amounts of missing data it is possible that not all biases cancel out when combining $f_2$-statistics to $f_4$-statistics. For this reason $f_4$-statistics in ADMIXTOOLS 2 can not only be computed by adding up $f_2$-statistics, but also by adding up pairwise allele frequency products. While $f_2$ can be difficult to estimate without bias as described above, allele frequencies and allele frequency products can easily be estimated without bias even with only one observed allele.
 
 
-## more
 
+## Computing *f*-statistics with ADMIXTOOLS 2
 
-If you're not on O2, or want use different samples or populations, you first have to compute f2 statistics from genotype data.
-
+In ADMIXTOOLS 2 *f*-statistics are computed from genotype data using the function `extract_f2`
 
 ```{r, echo = FALSE}
 library(admixtools)
 ```
 
-
 ```{r, eval = FALSE}
-my_f2_dir = 'store/f2data/here/'
-pops = c('Denisova.DG',
-         'Altai_Neanderthal.DG',
-         'Vindija.DG',
-         'Chimp.REF',
-         'Mbuti.DG',
-         'Russia_Ust_Ishim.DG',
-         'Switzerland_Bichon.SG')
-
-extract_f2(prefix, outdir = my_f2_dir, pops = pops)
-```
-This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and blocked f2 statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `outdir`.
-
-<br>
-
-
-With `f2_from_geno`, you can skip writing data to disk, and read f2 blocks from genotype files directly. This can be useful if the number of populations is not too large:
-
-```{r, eval = FALSE}
-f2_blocks = f2_from_geno(prefix, pops = pops)
-
-qpg_results = qpgraph(f2_blocks, example_graph)
+genotype_data = "/my/geno/prefix"
+f2_dir = "/my/f2/directory/"
+extract_f2(genotype_data, f2_dir)
 ```
 
+Arguments to `extract_f2` can be used to decide
 
-<br>
+* For which samples or populations to compute $f_2$-statistics
+* Which SNPs to use
+  - thresholds for missingness and allele frequency, transitions only, ...
+* How SNPs should be grouped into blocks
+  - defaults to blocks of 5 centimorgan
+* Whether pseudohaploid samples should be detected automatically
+  - recommended; can be set to `FALSE` to match the original ADMIXTOOLS
+  
+For example, the folllowing command would extract data for the populations `mypops`, keeping only SNPs which are missing in no more than 10% of the populations, and grouping SNPs into blocks of 10 centimorgan.
 
-### Arbitrary populations
+```{r, eval = FALSE}
+extract_f2(genotype_data, f2_dir, pops = mypops, maxmiss = 0.1, dist = 0.1)
+```
+
+### Allele frequency products
+
+`extract_f2` computes and stores both regular $f_2$-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this: 
+
+```{r, eval = FALSE}
+my_f2_dir = '/store/f2data/here/'
+afprod_blocks = f2_from_precomp(my_f2_dir, afprod = TRUE)
+```
+
+This creates a 3d array just like `f2_blocks`, but it will contain allele frequency products rather than $f_2$-statistics. For any ADMIXTOOLS application based on $f_4$-statistics, this allele frequency product array can be used just like the regular $f_2$ array. It will give close to identical results, but without any bias introduced by poor $f_2$-estimates.
+
+Computing allele frequency products is simpler than computing $f_2$ (allele frequency products are a part of $f_2$), but two things need to be done differently to get unbiased estimates:
+
+1. In contrast to $f_2$, for allele frequency products the designation of reference and alternative alleles can make a difference. To get estimates which are independent of that, we average over both options for each SNP. (If the alelle frequencies at a SNP are `0.1` and `0.2` in two populations, we compute
+`((0.1 * 0.2) + (0.9 * 0.8))/2` instead of just `0.1 * 0.2`)
+
+2. ADMIXTOOLS excludes any SNPs with identical allele frequencies in all populations. This makes very little differences when computing $f_2$, but shouldn't be done for allele frequency products. Because those SNPs are not excluded, the number of SNPs and the number of blocks can be larger for allele frequency products than for $f_2$.
+
+
+
+### Extracting *f~2~* for a large number of populations
+
+`extract_f2` will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions `extract_afs` and `write_split_f2_block` is necessary.
+
+`extract_afs` will compute allele frequencies for a set number of populations (`cols_per_chunk`, default 20) and store them on disk. 
+
+```{r, eval = FALSE}
+genotype_data = "/my/geno/prefix"
+my_af_dir = "/store/afdata/here/"
+my_f2_dir = "/store/f2data/here/"
+extract_afs(genotype_data, my_af_dir)
+```
+
+Once that is done, f2-statistics can be computed for each pair of chunks. This can take a while, so it might be a good idea to parallelize this, rather than running one pair after the other, as in this example.
+
+```{r, eval = FALSE}
+numchunks = length(list.files(my_af_dir, 'afs.+rds'))
+for(j in 1:numchunks) {
+  for(j in i:numchunks) {
+    write_split_f2_block(my_af_dir, my_f2_dir, chunk1 = i, chunk2 = j)
+  }
+}
+```
+
+
+### Extracting *f~2~* for arbitrary populations
+
+**This section hasn't been updated in a while and may not accurately reflect all recent changes** 
 
 What if you decide that a particular sample should be added or removed from a population? With the approach described so far, you would have to go back to the genotype data to get new estimates of f2 for all pairs of the modified population and any other populations. Even if you had computed f2 for all pairs of individuals (rather than for pairs of populations), it would not be possible to combine the f2 statistics from individual pairs into f2 statistics on population pairs formed from these individuals. It *is* possible, however, to store *other* statistics for all individuals and individual pairs, which can be combined into estimates of f2 for any populations formed from these individuals. These statistics are simply the mean alternative allele counts (`a`) and total allele counts (`n`) for each individual and block, and the mean products of allele counts for all individual pairs (`aa` and `nn`).
 
 The upside of this approach is that it allows you to change population definitions however you like and still get very fast results without accessing the genotype data more than once. The downside is that it makes it necessary to store data for all individual pairs, rather than just all population pairs.
 
 The following function extracts data for a set of individuals which can then be combined to get estimates of f2 for any populations:
+
+```{r, echo = FALSE}
+library(admixtools)
+```
 
 ```{r, eval = FALSE}
 inds = c('Chimp.REF', 'Altai_snpAD.DG', 'Vindija_snpAD.DG',
@@ -193,14 +241,5 @@ delete_groups(my_counts_dir, 'Mbuti')
 
 
 
-It makes it possible to use the exact same set of SNPs for each population quadruple. This is not guaranteed when f4-statistics are computed from f2-statistics. In the presence of large amounts of missing data, this can lead to biased f4-statistics. Computing f4-statistics from genotype data directly avoids this issue. There are other ways to avoid any potential bias without sacrificing speed.
-
-One is to to not use SNPs which are missing in any populations:
-
-```{r, eval = FALSE}
-extract_f2(prefix, my_f2_dir, maxmiss = 0)
-```
-
-If too many SNPs are lost this way, it is also possible to load 
 
 

@@ -4,5 +4,8 @@ pkgdown_sha: ~
 articles:
   admixtools: admixtools.html
   fstats: fstats.html
+  graph_optim: graph_optim.html
+  io: io.html
   plotting: plotting.html
+  resampling: resampling.html
 

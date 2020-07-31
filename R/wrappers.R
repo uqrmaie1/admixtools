@@ -215,7 +215,7 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
     } else {
       leftfile = paste0(outdir, '/leftlist')
       rightfile = paste0(outdir, '/rightlist')
-      write(c(target, left), leftfile)
+      write(left, leftfile)
       write(right, rightfile)
     }
 

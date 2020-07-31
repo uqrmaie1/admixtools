@@ -7,7 +7,7 @@ output:
 ---
 
 
-This tutorial gives an overview of the basic workflow for computing f-statistics, and using *qpWave*, *qpAdm*, and *qpGraph*.
+This tutorial gives an overview of the basic workflow for computing *f*-statistics, and using *qpWave*, *qpAdm*, and *qpGraph*.
 Documentation for each ADMIXTOOLS function can be found under *Reference*, and more detailed information about specific topics under *Articles*.
 
 
@@ -15,10 +15,9 @@ Documentation for each ADMIXTOOLS function can be found under *Reference*, and m
 ## Introduction
 
 Admixtools is a set of programs used to infer population histories from f-statistics computed from genetic data. ADMIXTOOLS 2 divides the computation into two steps:
-1. Computing f2-statistics and storing them on disk
-  This can be slow since it accesses the genotype data
-2. Using f2-statistics to fit models
-  This is fast because f2-statistics are very compact compared to genotype data
+
+1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
+2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
 
 
 ADMIXTOOLS 2 can either be run through the `R` command line, or through a browser application that can be launched like this:
@@ -46,15 +45,15 @@ library(tidyverse)
 
 $f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of ADMIXTOOLS. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
-$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. (Allele frequencies are denoted in lower case letters here.) We can estimate it by averaging over $n$ SNPs:
-$$f_2(A,B) = \frac{1}{n} \sum_{j=1}^n(a_{j} - b_{j})^2$$
+$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. (Allele frequencies are denoted in lower case letters here.) We can estimate it by averaging over $M$ SNPs:
+$$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
 
 
 $f_4$ is the covariance of allele frequency differences between two pairs of populations, and at the same time the sum of four f2-statistics:
 $$
 \begin{equation}
 \begin{aligned}
-f_4(A, B; C, D) &= \frac{1}{n}\sum_{j=1}^n(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
+f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
 \label{eq:f42}
 \end{aligned}
 \end{equation}
@@ -70,7 +69,7 @@ f_3(A; B, C) &= f_4(A, B; A, C) \\ &= \frac{1}{2} (f_2(A, B) + f_2(A, C) - f_2(B
 $$
 
 
-In practice, the estimation of f-statistics can be more complicated, as it needs to account for low sample counts, missing data, and differences in ploidy, as described [here](fstats.Rmd).
+In practice, the estimation of f-statistics can be more complicated, as it needs to account for low sample counts, missing data, and differences in ploidy, as described [here](fstats.html).
 
 In ADMIXTOOLS 2, extracting f2-statistics from genotype data is the foundation for all further analyses: 
 
@@ -129,7 +128,7 @@ If you want to try any of this without extracting and loading your own f2-statis
 
 ## qp3Pop
 
-The original ADMIXTOOLS program for computing f3-statistics is called *qp3Pop*. In ADMIXTOOLS 2, you can compute f3-statistics like this:
+The original ADMIXTOOLS program for computing $f_3$-statistics is called *qp3Pop*. In ADMIXTOOLS 2, you can compute $f_3$-statistics like this:
 
 ```{r}
 pop1 = 'Denisova.DG'
@@ -156,7 +155,7 @@ Typing just `f3(f2_blocks)` will compute all possible combinations (which can be
 
 ## qpDstat
 
-The original ADMIXTOOLS program for computing f4-statistics is called *qpDstat*. As the name suggests, it computes *D*-statistics by default. To get f4-statistics instead, the `f4mode` argument needs to set to `YES`. In ADMIXTOOLS 2, almost everything starts with f2-statistics, so the `qpdstat`/`f4` function computes f4-statistics by default.
+The original ADMIXTOOLS program for computing $f_4$-statistics is called *qpDstat*. As the name suggests, it computes *D*-statistics by default. To get $f_4$-statistics instead, the `f4mode` argument needs to set to `YES`. In ADMIXTOOLS 2, almost everything starts with f2-statistics, so the `qpdstat`/`f4` function computes $f_4$-statistics by default.
 
 ```{r}
 pop4 = 'Switzerland_Bichon.SG'
@@ -168,17 +167,17 @@ qpdstat(f2_blocks, pop1, pop2, pop3, pop4)
 ```
 
 ```{r, echo = FALSE}
-f4(example_f2_blocks, pop1, pop2, pop3, pop4)
+f4(example_f2_blocks, pop1, pop2, pop3, pop4, verbose = FALSE)
 ```
 
-The differences between f4-statistics and D-statistics are usually negligible. However, it is still possible to compute D-statistics in ADMIXTOOLS 2, by providing genotype data as the first argument, and setting `f4mode = FALSE`:
+The differences between $f_4$-statistics and D-statistics are usually negligible. However, it is still possible to compute D-statistics in ADMIXTOOLS 2, by providing genotype data as the first argument, and setting `f4mode = FALSE`:
 
 ```{r, eval = FALSE}
 prefix = '/path/to/geno'
 f4(prefix, pop1, pop2, pop3, pop4, f4mode = FALSE)
 ```
 
-Computing f4- or D-statistics from genotype data directly is slower, but it has the advantage that it avoids any problems that may arise from large amounts of missing data. More on this [here](fstats.Rmd).
+Computing $f_4$- or D-statistics from genotype data directly is slower, but it has the advantage that it avoids any problems that may arise from large amounts of missing data. More on this [here](fstats.html).
 
 
 <br>
@@ -186,9 +185,11 @@ Computing f4- or D-statistics from genotype data directly is slower, but it has 
 ## qpWave and qpAdm
 
 qpWave and qpAdm are two programs with diffent goals - one estimates the number of admixture events, the other admixture weights - but they perform the same computations. In ADMIXTOOLS 2, `qpadm` and `qpwave` are two names for one function. This function requires three arguments:
-1. f2-statistics
+
+1. $f_2$-statistics
 2. A set of left populations
 3. A set of right populations
+
 A target population, which will be modelled as a mixture of left populations, can be provided as the 4th argument.
 
 
@@ -196,30 +197,63 @@ A target population, which will be modelled as a mixture of left populations, ca
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 target = 'Denisova.DG'
+pops = c(left, right, target)
 ```
+
+When no target population is provided (*qpWave* mode), the function will return $f_4$-statistics, and a data frame that shows how well the $f_4$-matrix can be approximated by lower rank matrices. The last line tests for rank 0, which is equivalent to testing whether the left populations form a clade with respect to the right populations.
+
 ```{r, eval = FALSE}
-qpadm(f2_blocks, left, right, target)
+results = qpadm(f2_blocks, left, right)
 ```
 ```{r, echo = FALSE}
-qpadm(example_f2_blocks, left, right, target, verbose = FALSE)
+results = qpadm(example_f2_blocks, left, right, verbose = FALSE)
+```
+```{r}
+results$f4
+results$rankdrop
 ```
 
-The output of `qpadm` is a list of four items:
+When a target population is provided (*qpAdm* mode), the following items will be returned in addition:
 
 * **weights**: These are estimates of the relative contributions of the left population to the target population.
-* **f4**: The estimated f4-statistics. If a target population is specified, this will include lines with fitted f4-statistics, where the target population is in the first column, and a weighted sum of the left populations, `fit`, in the second column.
-* **rankdrop**: This shows how well the matrix of f4-statistics can be approximated when restricting the degrees of freedom (which is indicative of the number of admixture waves).
 * **popdrop**: popdrop shows the fits of all models generated by dropping a specific subset of left populations, and will only be returned if a target population is specified.
+* **f4**: The estimated f4-statistics will now also include lines with fitted f4-statistics, where the target population is in the first column, and a weighted sum of the left populations, `fit`, in the second column.
 
 
-### Ranks and degrees of freedom
+```{r, eval = FALSE}
+results = qpadm(f2_blocks, left, right, target)
+```
+```{r, echo = FALSE}
+results = qpadm(example_f2_blocks, left, right, target, verbose = FALSE)
+```
+```{r}
+results$weights
+results$popdrop
+```
 
+
+The following two functions can be used to explore many *qpWave* or *qpAdm* models at the same time.
 
 ### Pairwise cladality tests
+
+`qpadm_pairs` forms all pairs of *left* populations and tests whether they form a clade with respect to the *right* populations.
+
+```{r, eval = FALSE}
+qpadm_pairs(f2_blocks, left = c(target, left), right = right)
+```
+```{r, echo = FALSE}
+qpadm_pairs(example_f2_blocks, left = c(target, left), right = right)
+```
 
 
 ### Rotating outgroups
 
+```{r, eval = FALSE}
+qpadm_rotate(f2_blocks, left = pops[3:7], right = pops[1:2], target = pops[1])
+```
+```{r, echo = FALSE}
+qpadm_rotate(example_f2_blocks, left = pops[3:7], right = pops[1:2], target = pops[1])
+```
 
 
 
@@ -227,7 +261,7 @@ The output of `qpadm` is a list of four items:
 
 ## qpGraph
 
-Single f3- and f4-statistics can tell us how three or four populations are related to each other. qpGraph generalizes this concept to any number of populations. It takes estimated f3-statistics and the topology of an admixtgure graph, finds the edges weights that minimize the difference between fitted and estimated f3-statistics, and summarizes that difference in a likelihood score.
+Single $f_3$- and $f_4$-statistics can tell us how three or four populations are related to each other. qpGraph generalizes this concept to any number of populations. It takes estimated $f_3$-statistics and the topology of an admixtgure graph, finds the edges weights that minimize the difference between fitted and estimated $f_3$-statistics, and summarizes that difference in a likelihood score.
 
 
 ```{r, eval = FALSE}
@@ -241,9 +275,9 @@ Here, `example_graph` is a specific graph included in this R package, but you ca
 
 1. An [igraph](https://igraph.org/r/) object.
 2. A two column matrix or data frame, where each row is an edge, the first column is the source of the edge, and the second column is the target. Additional columns labelled `lower` and `upper` can be used to constrain certain edges (`NA` = no constraint).
-3. The location of a `qpGraph` graph file, which will be read and parsed.
+3. The location of a *qpGraph* graph file, which will be read and parsed.
 
-The leaf nodes of this graph have to match the f2-statistic population labels, and the graph has to be a valid admixture graph: a directed acyclic graph where each node has no more than two parents. If nodes with more than two children are present (polytomies or multifurcations) they will be split in a random order, and the new drift edges will be constrained to 0.
+The leaf nodes of this graph have to match the $f_2$-statistic population labels, and the graph has to be a valid admixture graph: a directed acyclic graph where each node has no more than two parents. If nodes with more than two children are present (polytomies or multifurcations) they will be split in a random order, and the new drift edges will be constrained to 0.
 
 <br>
 
@@ -275,26 +309,21 @@ plotly_graph(qpg_results$edges)
 
 ### Regularization terms
 
-There are two regularization terms (fudge factors) used in qpGraph.
-One is added to the diagonal elements of the f3 covariance matrix (after multiplying it by the mean of the diagonal elements), to ensure that the matrix inversion is stable. It is called `fudge_cov` and defaults to 10^-5^. Increasing this factor has a small effect on admixture weights and branch lengths, but a larger effect on the likelihood scores.
-The other regularization terms is added to the covariance matrix of fitted branch lengths (after scaling as before). It is called `fudge` and defaults to 10^-4^. In the original *qpGraph* program, this parameter can be set through the `diag` parameter.
+There are two regularization terms (fudge factors) used in qpGraph, which make matrix inversions more stable.
+One is added to the diagonal elements of the $f_3$ covariance matrix (after multiplying it by the mean of the diagonal elements). It is called `fudge_cov` and defaults to 10^-5^. Increasing this factor has a small effect on admixture weights and branch lengths, but will shift the likelihood scores to be *closer to zero*.
 
+The other regularization terms is added to the covariance matrix of fitted branch lengths (after scaling as before). It is called `fudge` and defaults to 10^-4^. In the original *qpGraph* program, this parameter can be set through the `diag` parameter. Increasing `fudge` will shift the likelihood scores to be *further away from zero*. This regularization term ensures that edge weights will be evenly distributed across a set of edges whose weights could otherwise not be determined unambiguously. (As is often the case with the two edges originating in the root node.)
 
-### Graph optimization
+As these regularization terms affect the likelihood score, they should be kept constant whenever fits of different graphs are compared to each other.
 
-### Similar graphs
-
-### Constraints
-
-
-
+ADMIXTOOLS 2 can automatically find well-fitting graphs, and it has several functions for exploring the topological neighborhood of a graph. These functions are described [here](graph_optim.html).
 
 <br>
 
 
-## Comparing results to AdmixTools
+## Comparing results to ADMIXTOOLS
 
-There are wrapper function which call the origial `AdmixTools` programs and read the results. This can be used to check if the results of `qpgraph` are correct.
+There are wrapper function which call the origial ADMIXTOOLS programs and read the results. This can be used to check if the results of `qpgraph` are correct.
 
 ```{r, eval = FALSE}
 binpath = '/home/np29/o2bin/'
@@ -351,191 +380,6 @@ qpgraph_ref_results = example_qpgraph_ref_results
 plot_comparison(qpg_results, qpgraph_ref_results)
 ```
 <br>
-
-
-
-
-
-## Model robustness
-
-One of the advantages of being able to evaluate models quickly is that it becomes easier to test their robustness. For each `qp` function, there is a function which tests robustness by resampling SNPs (`resample_snps`), and another function which tests robustness by resampling individuals (`resample_inds`).
-
-### Resampling SNPs
-
-The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.
-
-Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of **n times** the sampling variance.
-
-In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted.
-
-```{r, eval = FALSE}
-snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 1000)
-hist(snpres$score, 100)
-```
-
-
-### Resampling individuals
-
-We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.
-
-```{r, eval = FALSE}
-pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)]
-indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph)
-ggplot(indres, aes(score, score)) + geom_text(aes(label = ind))
-```
-
-For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.
-
-<br>
-
-
-## Finding graphs with good fits
-
-Another advantage of being able to quickly evaluate a single model using precomputed f-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits.
-
-<br>
-
-
-The function `find_graphs` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
-
-```{r, eval = FALSE}
-opt_results = find_graphs(my_f2_dir, pops, outpop = pops[1], numrep = 200,
-                          numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
-```
-<br>
-
-Once that is done, the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.
-
-```{r, eval = FALSE}
-winner = opt_results %>% top_n(1, -jitter(score))
-winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
-```
-```{r, echo = FALSE}
-winner = example_winner
-winners = example_winners
-```
-
-```{r, fig.width = 9, fig.align="center"}
-winner$score[[1]]
-plot_graph(winner$edges[[1]])
-```
-<br>
-
-
-
-### Parallelization
-
-Depending on the input parameters, `find_graphs` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [future_map](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [furrr](https://github.com/DavisVaughan/furrr) package, this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
-
-Setting it up like this will make it run multithreaded:
-```{r, eval = FALSE}
-future::plan('multiprocess')
-```
-<br>
-
-On the O2 cluster, the following command will set up parallelization across compute nodes.
-
-```{r, eval = FALSE}
-future::plan(tweak(batchtools_slurm, workers = 50,
-                   resources=list(ncpus = 1, memory = 1024,
-                                  walltime = 10*60*60, partition = 'short')))
-```
-This specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the `short` partition.
-
-This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as this one: `/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl`.
-
-With this setup the `find_graphs` function will submit each of the 200 repeats as a separate job.
-
-As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.
-
-The R script could look like this.
-```{r, eval = FALSE}
-library(admixtools)
-library(future.batchtools)
-
-future::plan(tweak(batchtools_slurm, workers=50,
-                   resources=list(ncpus = 1, memory=1024,
-                                  walltime=10*60*60, partition='short')))
-
-pops = c('popA', 'popB', 'popC', 'popD')
-opt_results = find_graphs('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
-                          numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
-
-save(opt_results, file='opt_results.RData')
-```
-
-It could be in a file called `opt_graphs.Rscript` and be run like this, or submitted as a job.
-```{r, eval = FALSE}
-Rscript opt_graphs.Rscript
-```
-
-It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.
-
-<br>
-
-
-
-## Summarizing graphs
-
-<br>
-
-> *All models are wrong, but some are useful.*   --- George Box
-
-<br>
-
-> *All good models are alike; each bad model is bad in its own way.*   --- Leo Tolstoy
-
-<br>
-
-For any set of populations there may be many graphs which can explain the data about equally well. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs.
-
-```{r, eval = FALSE}
-triples = summarize_triples(winners)
-```
-```{r, echo = FALSE}
-triples = example_triples
-```
-
-```{r}
-triples %>% arrange(-clade) %>% slice(1)
-```
-
-The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read like this:
-
-* `numgraphs`: 200 graphs were compared
-* `clade`: In 34.5% of all graphs `Rus` and `Swi` form a clade with respect to `Den`
-* `x13`: In 0.5% of all graphs `Rus` is closer to `Den` than `Swi` is to `Den`, with ancestors of `Rus` admixing into `Den`
-* `x31`: In 50.5% of all graphs `Rus` is closer to `Den` than `Swi` is to `Den`, with ancestors of `Den` admixing into `Rus`
-* `x23`: In 24.5% of all graphs `Swi` is closer to `Den` than `Rus` is to `Den`, with ancestors of `Swi` admixing into `Den`
-* `x32`: In 38.0% of all graphs `Swi` is closer to `Den` than `Rus` is to `Den`, with ancestors of `Den` admixing into `Swi`
-* `toptopo`: The most common topology for this triple across all graphs. `011111` specifies a topology where condition `x13` is not satisfied, but conditions `x23`, `x31`, `x32`, `x12`, and `x21` are satisfied. A topology starting with `0000` is one where the first two populations form a clade.
-* `toptopocnt`: The number of times `toptopo` was observed
-* `topos`: The number of times each topology was observed
-
-
-<br>
-
-
-
-## Finding valid qpAdm models
-
-Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
-
-```{r, fig.width = 9, fig.align="center"}
-mygraph = winners %>% slice(6) %$% igraph %>% pluck(1)
-plot_graph(mygraph)
-qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3)
-```
-
-The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations.
-
-
-Valid qpAdm models need to satisfy the following criteria:
-
-* There have to be more right populations than left populations
-* The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative right population, but it can be included anyway, with `add_outgroup`.
-* Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that's correct and if it can be stated in a better way.)
-
 
 
 
