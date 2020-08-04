@@ -76,7 +76,6 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
   y = c(rep(0, rnk), 1)
   rhs = crossprod(x)
   lhs = crossprod(x, y)
-  #w = solve(t(cbind(A, 1)), c(rep(0, rnk), 1))
   if(constrained) w = qpsolve(rhs, lhs, diag(nc), rep(0, nc))
   else w = as.matrix(solve(rhs, lhs))[,1]
   weights = w/sum(w)
@@ -221,6 +220,11 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
+#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
+#' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
+#' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
+#' as well as the weight standard errors, will be computed using bootstrapping.
 #' @param constrained If `TRUE` (default), admixture weights will all be non-negative.
 #' If `FALSE`, they can be negative, as in \code{\link{qpadm}}
 #' @return A data frame with weights and standard errors for each left population
@@ -232,8 +236,8 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 #' target = 'Denisova.DG'
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-#' lazadm(example_f2_blocks, target, left, right)
-#' lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
+#' lazadm(example_f2_blocks, left, right, target)
+#' lazadm(example_f2_blocks, left, right, target, constrained = FALSE)
 lazadm = function(f2_data, left, right, target = NULL,
                   boot = FALSE, constrained = TRUE) {
 
@@ -281,7 +285,7 @@ lazadm = function(f2_data, left, right, target = NULL,
   else weight = solve(rhs, lhs)[,1]
   weight = weight/sum(weight)
 
-  tibble(target, left, weight, se) %>% mutate(z = weight/se)
+  tibble(target, left, weight)
 }
 
 
@@ -399,7 +403,32 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
     arrange(pop1, pop3, pop4, pop2)
 }
 
+#' Faster version of \code{\link{qpadm}} with reduced output
+#'
+#' Models target as a mixture of left populations, given a set of outgroup right populations.
+#' Can be used to estimate admixture proportions, and to estimate the number of independent
+#' admixture events.
 #' @export
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
+#' @param left Left populations (sources)
+#' @param right Right populations (outgroups)
+#' @param target Target population
+#' @param fudge Value added to diagonal matrix elements before inverting
+#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
+#' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
+#' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
+#' as well as the weight standard errors, will be computed using bootstrapping.
+#' @param constrained Constrain admixture weights to be non-negative
+#' @param rnk Rank of f4-matrix. Defaults to one less than full rank.
+#' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @return Data frame with `f4rank`, `dof`, `chisq`, `p`, `feasible`
+#' @seealso \code{\link{qpadm}}
+#' @examples
+#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+#' target = 'Denisova.DG'
+#' qpadm_p(example_f2_blocks, left, right, target)
 qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = FALSE,
                    constrained = FALSE, rnk = length(setdiff(left, target)) - 1, cpp = TRUE) {
 
@@ -420,18 +449,11 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
 
 #' Test if two sets of populations form two clades
 #'
+#' A thin wrapper around \code{\link{qpadm_p}} with `rnk` set to zero
 #' @export
+#' @inheritParams qpadm_p
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
-
-  f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
-  f4_est = f4dat$est
-  f4_var = f4dat$var
-  diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
-  qinv = solve(f4_var)
-  out = qpadm_fit(f4_est, qinv, rnk = 0, fudge = fudge,
-                  cpp = cpp, addweights = FALSE)
-  out
+  qpadm_p(f2_data, left, right, fudge = fudge, boot = boot, rnk = 0, cpp = cpp)
 }
 
 
@@ -524,6 +546,8 @@ qpadm_pairs = function(f2_data, left, right) {
 #' @param left Left populations
 #' @param right Right populations
 #' @param target Target population
+#' @param verbose Print progress updates
+#' @return A data frame with Chi-squared statistics and p-values for each population combination
 qpadm_rotate = function(f2_blocks, left, right, target, verbose = TRUE) {
 
   lr = all_lr2(left, length(right))

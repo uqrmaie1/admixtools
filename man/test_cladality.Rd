@@ -4,9 +4,25 @@
 \alias{test_cladality}
 \title{Test if two sets of populations form two clades}
 \usage{
-test_cladality(f2_data, left, right, fudge = 1e-04, boot = FALSE,
-  cpp = TRUE)
+test_cladality(f2_data, left, right, fudge = 1e-04, boot = FALSE, cpp = TRUE)
+}
+\arguments{
+\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}
+
+\item{left}{Left populations (sources)}
+
+\item{right}{Right populations (outgroups)}
+
+\item{fudge}{Value added to diagonal matrix elements before inverting}
+
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
+or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.}
+
+\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 }
 \description{
-Test if two sets of populations form two clades
+A thin wrapper around \code{\link{qpadm_p}} with \code{rnk} set to zero
 }

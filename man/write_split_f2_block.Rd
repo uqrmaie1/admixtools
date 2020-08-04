@@ -4,8 +4,14 @@
 \alias{write_split_f2_block}
 \title{Compute f2 blocks and write them to disk}
 \usage{
-write_split_f2_block(afdir, outdir, chunk1, chunk2, dist = 0.05,
-  verbose = TRUE)
+write_split_f2_block(
+  afdir,
+  outdir,
+  chunk1,
+  chunk2,
+  dist = 0.05,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{afdir}{Directory with allele frequency and counts \code{.rds} files created by \code{\link{split_mat}}}
@@ -32,15 +38,16 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
 afdir = 'tmp_af_dir/'
 f2dir = 'f2_dir'
 extract_afs('path/to/packedancestrymap_prefix', afdir)
-numchunks = length(list.files(afdir, 'afs.+rds')) # this should be the number of split allele frequency files
-for(j in 1:numchunks) {
+numchunks = length(list.files(afdir, 'afs.+rds'))
+# numchunks should be the number of split allele frequency files
+for(i in 1:numchunks) {
   for(j in i:numchunks) {
     write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = j)
   }
 }
 }
 # Alternatively, the following code will do the same, while submitting each chunk as a separate job.
-# (if `future::plan()` has been set up appropriately)
+# (if \code{\link[future]{plan}} has been set up appropriately)
 \dontrun{
 furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)

@@ -6,12 +6,11 @@
 \usage{
 node_counts(graph, graphlist)
 }
+\arguments{
+\item{graph}{An admixture graph}
+
+\item{graphlist}{List of graphs}
+}
 \description{
 Count how often each node in graph occurs in other graphs
-}
-\examples{
-\dontrun{
-sigs = example_winners \%>\% mutate(sig = map(igraph, node_signature)) \%$\% sig \%>\% unlist \%>\% table \%>\% c
-node_signature(example_winners$igraph[[1]])
-}
 }

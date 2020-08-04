@@ -55,8 +55,6 @@ and extracts data required to compute blocked f-statistics for any sets of sampl
 and alternative allele counts for each pair.
 The function calls packedancestrymap_to_aftable or plink_to_aftable
 and afs_to_f2_blocks." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -98,7 +96,7 @@ and afs_to_f2_blocks." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -127,10 +125,13 @@ and afs_to_f2_blocks." />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -179,10 +180,22 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>extract_counts</span>(<span class='no'>pref</span>, <span class='no'>outdir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>, <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
-  <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>extract_counts</span>(
+  <span class='no'>pref</span>,
+  <span class='no'>outdir</span>,
+  <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
+  <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -248,18 +261,12 @@ and you want to choose which one to read. Should be either <code>plink</code>, <
     </table>
     
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-
-}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-            
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+                </ul>
 
   </div>
 </div>

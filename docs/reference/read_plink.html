@@ -53,8 +53,6 @@
 but genotypes are m x n, not n x m.
 See genio for a dedicated R package for
 reading and writing PLINK files." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -96,7 +94,7 @@ reading and writing PLINK files." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -125,10 +123,13 @@ reading and writing PLINK files." />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -168,14 +169,14 @@ reading and writing PLINK files." />
 
     <div class="ref-description">
     
-    <p>This is based on Gad Abraham's <code><a href='https://github.com/gabraham/plink2R'>plink2R</a></code> package,
+    <p>This is based on Gad Abraham's <a href='https://github.com/gabraham/plink2R'>plink2R</a> package,
 but genotypes are <code>m</code> x <code>n</code>, not <code>n</code> x <code>m</code>.
-See <code><a href='https://www.rdocumentation.org/packages/genio'>genio</a></code> for a dedicated <code>R</code> package for
+See <a href='https://www.rdocumentation.org/packages/genio'>genio</a> for a dedicated <code>R</code> package for
 reading and writing <code>PLINK</code> files.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>read_plink</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>read_plink</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

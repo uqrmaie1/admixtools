@@ -52,8 +52,6 @@
 <meta property="og:description" content="These are wrapper functions around various qp functions, which will evaluate many models at once.
 The models are formed by leaving out every individual which belongs to a population with more than one sample,
 one at a time." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -95,7 +93,7 @@ one at a time." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -124,10 +122,13 @@ one at a time." />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -203,10 +204,6 @@ one at a time.</p>
     <tr>
       <th>...</th>
       <td><p>named arguments passed to the <code>qp</code> function.</p></td>
-    </tr>
-    <tr>
-      <th>multiprocess</th>
-      <td><p>If <code>TRUE</code> (the default), models will run on multiple cores in parallel.</p></td>
     </tr>
     </table>
     

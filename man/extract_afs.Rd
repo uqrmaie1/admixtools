@@ -4,11 +4,24 @@
 \alias{extract_afs}
 \title{Compute and store blocked allele frequency data}
 \usage{
-extract_afs(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
-  cols_per_chunk = 20, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
-  transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-  format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
-  verbose = TRUE)
+extract_afs(
+  pref,
+  outdir,
+  inds = NULL,
+  pops = NULL,
+  dist = 0.05,
+  cols_per_chunk = 10,
+  maxmiss = 1,
+  minmaf = 0,
+  maxmaf = 0.5,
+  transitions = TRUE,
+  transversions = TRUE,
+  keepsnps = NULL,
+  format = NULL,
+  poly_only = FALSE,
+  adjust_pseudohaploid = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -21,6 +34,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
 \item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+
+\item{cols_per_chunk}{Number of columns per block. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.}
 
 \item{maxmiss}{Discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
 
@@ -39,7 +54,7 @@ and you want to choose which one to read. Should be either \code{plink}, \code{a
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }

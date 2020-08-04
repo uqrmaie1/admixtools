@@ -40,7 +40,7 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
     common = intersect(names(out1$f3), names(out2$f3))
     f3comp = out1$f3 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'x') %>%
       bind_rows(out2$f3 %>% select(all_of(intersect(show, common))) %>% mutate(i = 'y')) %>%
-      gather('type', 'v', -c(pop2, pop3, i)) %>% spread(.data$i, .data$v) %>%
+      gather('type', 'v', -c(pop2, pop3, i)) %>% spread(i, v) %>%
       rename(from = pop2, to = pop3) %>% filter(!is.na(x), !is.na(y)) %>%
       mutate(type = paste0('f3_', type))
   }
@@ -50,9 +50,9 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
   if(!'high' %in% names(out1$edges)) out1$edges %<>% mutate(high = NA)
   if(!'high' %in% names(out2$edges)) out2$edges %<>% mutate(high = NA)
 
-  out1$edges %>% rename(x = .data$weight, xmin = .data$low, xmax = .data$high) %>%
+  out1$edges %>% rename(x = weight, xmin = low, xmax = high) %>%
     left_join(out2$edges %>% select(-'type') %>%
-                rename(y = .data$weight, ymin = .data$low, ymax = .data$high), by=c('from', 'to')) %>%
+                rename(y = weight, ymin = low, ymax = high), by=c('from', 'to')) %>%
     bind_rows(f2comp, f3comp) %>%
     mutate_at(vars(c(xmin, xmax)), ~ifelse(is.na(.), x, .)) %>%
     mutate_at(vars(c(ymin, ymax)), ~ifelse(is.na(.), y, .)) %>%
@@ -70,55 +70,18 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 }
 
 
-# Plot an admixture graph
-# @param edges a two column matrix specifying the admixture graph. first column is source node,
-# second column is target node. the first edge has to be root -> outgroup.
-# admixture nodes are inferred as those nodes which are the targets of two different sources.
-# @param layout argument passed to \code{\link[ggdag]{tidy_dagitty}} to modify plot layout.
-# @return a ggplot object.
-plot_graph_old = function(edges, layout='tree', fix=TRUE, title = '') {
-
-  if (!requireNamespace('ggdag', quietly = TRUE)) {
-    stop('Package "ggdag" needed for this function to work. Please install it.', call. = FALSE)
-  }
-  if(class(edges)[1] == 'igraph') edges = as_edgelist(edges)
-  edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
-  x = ggdag::dag(paste(edges[[1]], edges[[2]], sep='->', collapse=' '))
-  admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
-
-  dat = ggdag::tidy_dagitty(x, layout=layout)
-  #if(layout == 'tree' && fix) dat$data = fix_layout(dat$data, igraph::graph_from_edgelist(as.matrix(edges)[,1:2]))
-  # fix doesn't work anymore after adapting it for new plotting function. need to fix fix.
-  dat %<>% group_by(.data$to) %>% mutate(cnt = n()) %>% ungroup %>%
-    mutate(admix = (.data$cnt > 1)*2+1) %>% ungroup %>%
-    #select(-.data$type) %>%
-    mutate(type = ifelse(.data$name == 'R', 'root',
-                         ifelse(!.data$name %in% edges[[1]], 'leaf',
-                                ifelse(.data$name %in% admixnodes, 'admix', 'normal'))))
-  if(!'label' %in% names(edges)) edges %<>% mutate(label='')
-  dat$data %<>% left_join(y=edges, by=c('name'='V1','to'='V2'))
-  plt = dat %>% ggplot(aes(x = .data$x, y = .data$y, xend = .data$xend, yend = .data$yend)) +
-    ggdag::geom_dag_edges(aes(edge_linetype=.data$admix, label=.data$label), edge_colour='grey') +
-    ggdag::geom_dag_label_repel(aes(fill=.data$type, label=.data$name), force=0, box.padding=0) +
-    ggdag::theme_dag(legend.position='none') + ggtitle(label = title) +
-    scale_fill_manual(values=c('admix'=gg_color_hue(3)[1],
-                               'leaf'=gg_color_hue(3)[2],
-                               'normal'=gg_color_hue(3)[3],
-                               'root'='#FFFFFF'))
-  plt
-}
-
 #' Plot an admixture graph
 #' @export
-#' @param graph an admixture graph. If it's an edge list with a \code{label} column,
+#' @param graph An admixture graph. If it's an edge list with a \code{label} column,
 #' those values will displayed on the edges
-#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+#' @param fix If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
-#' @param title plot title
-#' @param color plot it in color or greyscale
-#' @param textsize size of edge and node labels
-#' @return a ggplot object
+#' @param fix_down Shift nodes down
+#' @param title Plot title
+#' @param color Plot it in color or greyscale
+#' @param textsize Size of edge and node labels
+#' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
 plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5) {
@@ -183,7 +146,6 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
   plt
 }
 
-#' @export
 fix_layout = function(coord, graph) {
   # rearranges nodes in tree layout, so that there are fewer long branches
   dst = igraph::distances(graph, V(graph)[1], mode='out')[1,]
@@ -353,7 +315,6 @@ num_samepos = function(dat) {
 }
 
 
-#' @export
 collapse_edges = function(edges, below=0) {
   # input: graph edgelist
   # requires column 'weight'
@@ -375,7 +336,6 @@ collapse_edges = function(edges, below=0) {
 }
 
 
-#' @export
 plot_graph_pcs = function(graph, pcs) {
 
   leafcoords = pcs %>% rename(lon=PC1, lat=PC2)
@@ -394,10 +354,10 @@ plot_graph_pcs = function(graph, pcs) {
 
   ax = list(visible=FALSE)
 
-  plot_ly(type = 'scatter3d', mode = 'lines', hoverinfo = 'text') %>%
-    add_trace(data = edge_coord %>% mutate(const='grey'), x = ~x, y = ~y, z = ~z,
+  plotly::plot_ly(type = 'scatter3d', mode = 'lines', hoverinfo = 'text') %>%
+    plotly::add_trace(data = edge_coord %>% mutate(const='grey'), x = ~x, y = ~y, z = ~z,
               split = ~eid, line=list(color=~const, dash=~admix), showlegend=F) %>%
-    add_markers(data = node_coord2, x = ~x, y = ~y, z = ~z,
+    plotly::add_markers(data = node_coord2, x = ~x, y = ~y, z = ~z,
                 hovertext = ~group, marker=list(size=~((s=='center')*5+5)), color = ~group, colors='Set1') %>%
     graphics::layout(scene = list(xaxis=list(title='PC1'), yaxis=list(title='PC2'), zaxis=ax,
                                   camera = list(projection = list(type = 'orthographic'),
@@ -601,8 +561,8 @@ make_favicon = function() {
 
   ggsave('logo.svg', width=4, height=4, bg = "transparent")
 
-  pkgdown::build_favicons(overwrite = T)
-  system('mv pkgdown/favicon/* docs/')
+  #pkgdown::build_favicons(overwrite = T)
+  #system('mv pkgdown/favicon/* docs/')
 }
 
 
@@ -625,7 +585,7 @@ plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(V(graph)) < 10) eg = admixtools::fix_layout(eg, graph)
+  if(isTRUE(fix) || is.null(fix) && length(V(graph)) < 10) eg = admixtools:::fix_layout(eg, graph)
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
@@ -693,12 +653,13 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 
 #' Plot an admixture graph using plotly
 #' @export
-#' @param graph an admixture graph
-#' @param fix if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+#' @param graph An admixture graph
+#' @param collapse_threshold Collapse nodes if they are separated by less than this distance (for fitted graphs)
+#' @param fix If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
-#' @param shift_down shift descendent nodes down
-#' @return a plotly object
+#' @param shift_down Shift descendent nodes down
+#' @return A plotly object
 #' @examples
 #' plotly_graph(example_graph)
 plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE) {
@@ -730,7 +691,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
   if(shift_down) {
-      eg = admixtools:::fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
+      eg = fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
 
   if('weight' %in% names(edges) && TRUE) {
@@ -748,7 +709,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   e2 = edges %>% transmute(from, to, label) %>% left_join(count(., to), by = c('from'='to'))
   eg %<>% left_join(e2, by=c('from', 'to')) %>% mutate(indegree = replace_na(n, 0))
-  nodes = eg %>% filter(to %in% admixtools:::get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
+  nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
     transmute(name = to, x, y, xend, yend, to=NA, rownum = 1:n())
 
   nadmix = length(admixnodes)

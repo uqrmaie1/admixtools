@@ -4,8 +4,7 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(f2_data, left, right, target = NULL, boot = FALSE,
-  constrained = TRUE)
+lazadm(f2_data, left, right, target = NULL, boot = FALSE, constrained = TRUE)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
@@ -15,6 +14,12 @@ lazadm(f2_data, left, right, target = NULL, boot = FALSE,
 \item{right}{Right populations (outgroups)}
 
 \item{target}{Target population}
+
+\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
+or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.}
 
 \item{constrained}{If \code{TRUE} (default), admixture weights will all be non-negative.
 If \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
@@ -30,8 +35,8 @@ based non-negative least squares of f4 matrix.
 target = 'Denisova.DG'
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
-lazadm(example_f2_blocks, target, left, right)
-lazadm(example_f2_blocks, target, left, right, constrained = FALSE)
+lazadm(example_f2_blocks, left, right, target)
+lazadm(example_f2_blocks, left, right, target, constrained = FALSE)
 }
 \references{
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics

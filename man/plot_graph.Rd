@@ -4,25 +4,33 @@
 \alias{plot_graph}
 \title{Plot an admixture graph}
 \usage{
-plot_graph(graph, fix = NULL, fix_down = TRUE, title = "",
-  color = TRUE, textsize = 2.5)
+plot_graph(
+  graph,
+  fix = NULL,
+  fix_down = TRUE,
+  title = "",
+  color = TRUE,
+  textsize = 2.5
+)
 }
 \arguments{
-\item{graph}{an admixture graph. If it's an edge list with a \code{label} column,
+\item{graph}{An admixture graph. If it's an edge list with a \code{label} column,
 those values will displayed on the edges}
 
-\item{fix}{if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+\item{fix}{If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
 
-\item{title}{plot title}
+\item{fix_down}{Shift nodes down}
 
-\item{color}{plot it in color or greyscale}
+\item{title}{Plot title}
 
-\item{textsize}{size of edge and node labels}
+\item{color}{Plot it in color or greyscale}
+
+\item{textsize}{Size of edge and node labels}
 }
 \value{
-a ggplot object
+A ggplot object
 }
 \description{
 Plot an admixture graph

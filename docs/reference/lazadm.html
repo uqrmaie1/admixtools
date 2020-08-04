@@ -51,8 +51,6 @@
 
 <meta property="og:description" content="Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
 based non-negative least squares of f4 matrix." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -94,7 +92,7 @@ based non-negative least squares of f4 matrix." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -123,10 +121,13 @@ based non-negative least squares of f4 matrix." />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -171,8 +172,7 @@ based non-negative least squares of f4 matrix.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -192,6 +192,14 @@ based non-negative least squares of f4 matrix.</p>
     <tr>
       <th>target</th>
       <td><p>Target population</p></td>
+    </tr>
+    <tr>
+      <th>boot</th>
+      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
+or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.</p></td>
     </tr>
     <tr>
       <th>constrained</th>
@@ -219,7 +227,15 @@ languages in Europe.</em> Nature (SI 9)</p>
     <pre class="examples"><div class='input'><span class='no'>target</span> <span class='kw'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
-<span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span class='error'>Error in quadprog::solve.QP(...): matrix D in quadratic function is not positive definite!</span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>target</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; <span class='error'>Error in solve.default(rhs, lhs): Lapack routine dgesv: system is exactly singular: U[1,1] = 0</span></div></pre>
+<span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 3</span><span>
+#&gt;   target      left                 weight
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG      1
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG                0</div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 3</span><span>
+#&gt;   target      left                 weight
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   5.70
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>4.70</span><span></div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

@@ -4,11 +4,23 @@
 \alias{qpdstat_wrapper}
 \title{Wrapper function around the original qpDstat program}
 \usage{
-qpdstat_wrapper(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-  bin = "~np29/o2bin/qpDstat", pref = NULL, outdir = ".",
-  parfile = NULL, f4mode = "YES", useallsnps = "NO",
-  inbreed = "NO", lambdascale = -1, printonly = FALSE, env = "",
-  verbose = TRUE)
+qpdstat_wrapper(
+  pop1 = NULL,
+  pop2 = NULL,
+  pop3 = NULL,
+  pop4 = NULL,
+  bin = "~np29/o2bin/qpDstat",
+  pref = NULL,
+  outdir = ".",
+  parfile = NULL,
+  f4mode = "YES",
+  useallsnps = "NO",
+  inbreed = "NO",
+  lambdascale = -1,
+  printonly = FALSE,
+  env = "",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pop1}{One of the following four:
@@ -37,7 +49,17 @@ the populations or population combinations to be tested. \code{pop2}, \code{pop3
 \item{parfile}{qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3},
 and \code{pop4} will be ignored.}
 
+\item{f4mode}{f4mode}
+
+\item{useallsnps}{useallsnps}
+
+\item{inbreed}{inbreed}
+
+\item{lambdascale}{lambdascale}
+
 \item{printonly}{Should the command be printed or executed?}
+
+\item{env}{Export environmental variables. See examples.}
 
 \item{verbose}{Print progress updates}
 }

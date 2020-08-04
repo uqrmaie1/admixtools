@@ -50,8 +50,6 @@
 <meta property="og:title" content="Returns a signature of a graph consisting of the left and right descendent leaf nodes of each internal node (sorted and concatenated) — node_signature" />
 
 <meta property="og:description" content="Can be used to determine how often internal nodes occur in a list of other well fitting models" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -170,18 +171,35 @@
     </div>
 
     <pre class="usage"><span class='fu'>node_signature</span>(<span class='no'>graph</span>)</pre>
-        
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>graph</th>
+      <td><p>An admixture graph</p></td>
+    </tr>
+    </table>
+    
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A graph signature as character vector</p>
+    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>sigs</span> <span class='kw'>=</span> <span class='no'>example_winners</span> <span class='kw'>%&gt;%</span> <span class='fu'>mutate</span>(<span class='kw'>sig</span> <span class='kw'>=</span> <span class='fu'>map</span>(<span class='no'>igraph</span>, <span class='no'>node_signature</span>)) <span class='kw'>%$%</span> <span class='no'>sig</span> <span class='kw'>%&gt;%</span> <span class='no'>unlist</span> <span class='kw'>%&gt;%</span> <span class='no'>table</span> <span class='kw'>%&gt;%</span> <span class='no'>c</span>
+<span class='no'>sigs</span> <span class='kw'>=</span> <span class='no'>example_winners</span> <span class='kw'>%&gt;%</span> <span class='fu'>mutate</span>(<span class='kw'>sig</span> <span class='kw'>=</span> <span class='fu'>map</span>(<span class='no'>igraph</span>, <span class='no'>node_signature</span>)) <span class='kw'>%$%</span>
+         <span class='no'>sig</span> <span class='kw'>%&gt;%</span> <span class='no'>unlist</span> <span class='kw'>%&gt;%</span> <span class='no'>table</span> <span class='kw'>%&gt;%</span> <span class='no'>c</span>
 <span class='fu'>node_signature</span>(<span class='no'>example_winners</span>$<span class='no'>igraph</span><span class='kw'>[[</span><span class='fl'>1</span>]])
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-            
+      <li><a href="#arguments">Arguments</a></li>
+      
+      <li><a href="#value">Value</a></li>
+      
       <li><a href="#examples">Examples</a></li>
     </ul>
 

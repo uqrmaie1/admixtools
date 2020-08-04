@@ -4,8 +4,7 @@
 \alias{read_f2}
 \title{Read blocked f2 estimates from disk}
 \usage{
-read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE,
-  verbose = FALSE)
+read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{f2_dir}{Directory from which to read files}

@@ -4,7 +4,7 @@
 \alias{extract_f2_subset}
 \title{Copy a subset of f2-statistics to a new directory}
 \usage{
-extract_f2_subset(from, to, pops)
+extract_f2_subset(from, to, pops, verbose = TRUE)
 }
 \arguments{
 \item{from}{Directory with f2-statistics}

@@ -20,8 +20,10 @@ Takes two data frames with model fits computed on two graphs for on the same pop
 \dontrun{
 nblocks = dim(example_f2_blocks)[3]
 train = sample(1:nblocks, round(nblocks/2))
-fits1 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph1, f2_blocks_test = example_f2_blocks[,,-train])
-fits2 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph2, f2_blocks_test = example_f2_blocks[,,-train])
+fits1 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph1,
+                              f2_blocks_test = example_f2_blocks[,,-train])
+fits2 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph2,
+                              f2_blocks_test = example_f2_blocks[,,-train])
 compare_fits2(fit1, fit2)
 }
 }

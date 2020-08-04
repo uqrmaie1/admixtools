@@ -14,6 +14,11 @@ qpadm_rotate(f2_blocks, left, right, target, verbose = TRUE)
 \item{right}{Right populations}
 
 \item{target}{Target population}
+
+\item{verbose}{Print progress updates}
+}
+\value{
+A data frame with Chi-squared statistics and p-values for each population combination
 }
 \description{
 For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed

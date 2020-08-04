@@ -50,8 +50,6 @@
 <meta property="og:title" content="Plot an admixture graph using plotly — plotly_graph" />
 
 <meta property="og:description" content="Plot an admixture graph using plotly" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,31 +170,34 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>plotly_graph</span>(<span class='no'>graph</span>, <span class='kw'>collapse_threshold</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>fix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>shift_down</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>plotly_graph</span>(<span class='no'>graph</span>, <span class='kw'>collapse_threshold</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>fix</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>shift_down</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>an admixture graph</p></td>
+      <td><p>An admixture graph</p></td>
+    </tr>
+    <tr>
+      <th>collapse_threshold</th>
+      <td><p>Collapse nodes if they are separated by less than this distance (for fitted graphs)</p></td>
     </tr>
     <tr>
       <th>fix</th>
-      <td><p>if <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize
+      <td><p>If <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.</p></td>
     </tr>
     <tr>
       <th>shift_down</th>
-      <td><p>shift descendent nodes down</p></td>
+      <td><p>Shift descendent nodes down</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a plotly object</p>
+    <p>A plotly object</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

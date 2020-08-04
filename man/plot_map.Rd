@@ -4,8 +4,13 @@
 \alias{plot_map}
 \title{Plot samples on a map}
 \usage{
-plot_map(leafcoords, map_layout = 1, color = "yearsbp",
-  colorscale = "Portland", collog10 = TRUE)
+plot_map(
+  leafcoords,
+  map_layout = 1,
+  color = "yearsbp",
+  colorscale = "Portland",
+  collog10 = TRUE
+)
 }
 \arguments{
 \item{leafcoords}{data frame with columns \code{iid}, \code{lon}, \code{lat}}

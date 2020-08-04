@@ -26,8 +26,6 @@ qpgraph_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 \item{verbose}{print progress updates}
 
 \item{...}{named arguments passed to the \code{qp} function.}
-
-\item{multiprocess}{If \code{TRUE} (the default), models will run on multiple cores in parallel.}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs

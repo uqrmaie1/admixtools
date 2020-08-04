@@ -1,9 +1,14 @@
 ---
 title: "Plotting"
-contents:
+author: "Robert Maier"
+date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: false
+vignette: >
+  %\VignetteIndexEntry{Plotting}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 <style>
@@ -12,6 +17,7 @@ output:
   }
 </style>
   
+**Under construction**
 
 ```{r, include=FALSE}
 library(admixtools)

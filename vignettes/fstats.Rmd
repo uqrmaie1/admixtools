@@ -1,13 +1,21 @@
 ---
 title: "f-statistics"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 1
+vignette: >
+  %\VignetteIndexEntry{f-statistics}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 
-*f*-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, f2-statistics are of particular importance as f3- and f4-statistics are computed from f2-statistics. f2-statistics are conceptually very simple, but estimating them without bias can be complicated. Here, we describe what these complications are, and how we deal with them.
+*f*-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, f2-statistics are of particular importance as f3- and f4-statistics are computed from f2-statistics.
+
+f2-statistics are conceptually very simple, but estimating them without bias can be complicated.
 
 
 ## Estimating *f~2~*
@@ -54,7 +62,7 @@ ADMIXTOOLS 2 automatically detects pseudohaploid samples by checking if any hete
 
 Missing data alone will not create any bias in $f_2$ estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, $f_2$ can be over- or underestimated. In contrast to $F_{ST}$, which is the same in expectation for rare and for common SNPs, $f_2$ tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd $f_2$ estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What's important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high $f_2$ because most rare alleles are missing in one of the populations, and another pair of populations has a lower $f_2$ beause those rare alleles are not missing, bias can be expected.
 
-One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the `allsnps` options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the `maxmiss` parameter in `extract_f2` which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.
+One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the `allsnps` options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the `maxmiss` parameter in `extract_f2()` which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.
 
 As we will see in the next section, estimating $f_4$ without bias is actually easier than estimating $f_2$ or $f_{ST}$ without any bias.
 
@@ -99,7 +107,7 @@ In the presence of large amounts of missing data it is possible that not all bia
 
 ## Computing *f*-statistics with ADMIXTOOLS 2
 
-In ADMIXTOOLS 2 *f*-statistics are computed from genotype data using the function `extract_f2`
+In ADMIXTOOLS 2 *f*-statistics are computed from genotype data using the function `extract_f2()`
 
 ```{r, echo = FALSE}
 library(admixtools)
@@ -111,7 +119,7 @@ f2_dir = "/my/f2/directory/"
 extract_f2(genotype_data, f2_dir)
 ```
 
-Arguments to `extract_f2` can be used to decide
+Arguments to `extract_f2()` can be used to decide
 
 * For which samples or populations to compute $f_2$-statistics
 * Which SNPs to use
@@ -129,7 +137,7 @@ extract_f2(genotype_data, f2_dir, pops = mypops, maxmiss = 0.1, dist = 0.1)
 
 ### Allele frequency products
 
-`extract_f2` computes and stores both regular $f_2$-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this: 
+`extract_f2()` computes and stores both regular $f_2$-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this: 
 
 ```{r, eval = FALSE}
 my_f2_dir = '/store/f2data/here/'
@@ -149,9 +157,9 @@ Computing allele frequency products is simpler than computing $f_2$ (allele freq
 
 ### Extracting *f~2~* for a large number of populations
 
-`extract_f2` will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions `extract_afs` and `write_split_f2_block` is necessary.
+`extract_f2()` will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions `extract_afs()` and `write_split_f2_block()` is necessary.
 
-`extract_afs` will compute allele frequencies for a set number of populations (`cols_per_chunk`, default 20) and store them on disk. 
+`extract_afs()` will compute allele frequencies for a set number of populations (`cols_per_chunk`, default 20) and store them on disk. 
 
 ```{r, eval = FALSE}
 genotype_data = "/my/geno/prefix"

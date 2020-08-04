@@ -50,8 +50,6 @@
 <meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits3" />
 
 <meta property="og:description" content="Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -184,28 +185,40 @@
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></code> <code><a href='boo_list.html'>boo_list</a></code></p></div>
+    
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'>boo_list</span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
-<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
-<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
+<span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'><a href='boo_list.html'>boo_list</a></span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
+<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
+<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>)
 <span class='fu'>compare_fits3</span>(<span class='no'>fits1</span>$<span class='no'>score_test</span>, <span class='no'>fits2</span>$<span class='no'>score_test</span>)
 }
+<span class='co'># Use all SNP blocks for f3 covariance matrix</span>
 <span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'>boo_list</span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
-<span class='no'>f3precomp1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'>get_leafnames</span>(<span class='no'>graph1</span>))
-<span class='no'>f3precomp2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'>get_leafnames</span>(<span class='no'>graph2</span>))
-<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='no'>f3precomp1</span>)
-<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'>qpgraph_resample_snps2</span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='no'>f3precomp2</span>)
+<span class='no'>boo</span> <span class='kw'>=</span> <span class='fu'><a href='boo_list.html'>boo_list</a></span>(<span class='no'>f2_blocks</span>, <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
+<span class='no'>ppinv1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span>(<span class='no'>graph1</span>))$<span class='no'>ppinv</span>
+<span class='no'>ppinv2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span>(<span class='no'>graph2</span>))$<span class='no'>ppinv</span>
+<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph1</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>ppinv</span> <span class='kw'>=</span> <span class='no'>ppinv1</span>)
+<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span>(<span class='no'>boo</span>$<span class='no'>boo</span>, <span class='no'>graph2</span>, <span class='no'>boo</span>$<span class='no'>test</span>, <span class='kw'>ppinv</span> <span class='kw'>=</span> <span class='no'>ppinv2</span>)
 <span class='fu'>compare_fits3</span>(<span class='no'>fits1</span>$<span class='no'>score_test</span>, <span class='no'>fits2</span>$<span class='no'>score_test</span>)
+}
+<span class='co'># Same as above</span>
+<span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='no'>fits</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph_resample_multi.html'>qpgraph_resample_multi</a></span>(<span class='no'>f2_blocks</span>, <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='no'>graph1</span>, <span class='no'>graph2</span>), <span class='kw'>nboot</span> <span class='kw'>=</span> <span class='fl'>100</span>)
+<span class='fu'>compare_fits3</span>(<span class='no'>fits</span><span class='kw'>[[</span><span class='fl'>1</span>]]$<span class='no'>score_test</span>, <span class='no'>fits</span><span class='kw'>[[</span><span class='fl'>2</span>]]$<span class='no'>score_test</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-            
+      
+      <li><a href="#see-also">See also</a></li>
+      
       <li><a href="#examples">Examples</a></li>
     </ul>
 

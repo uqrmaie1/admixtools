@@ -50,13 +50,11 @@
 <meta property="og:title" content="Return all graphs created from permuting a subclade — graphmod_pavel" />
 
 <meta property="og:description" content="generates new graphs from basegraph as follows:
-generates all possible trees using `addpops`` (which are not in basegraph)
+generates all possible trees using addpops (which are not in basegraph)
 attaches trees to connection_edge, which is defined by two nodes in basegraph
-adds edges originating above each edge in source_node, to each node above `addpops``
+adds edges originating above each edge in source_node, to each node above addpops
 
 " />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -98,7 +96,7 @@ adds edges originating above each edge in source_node, to each node above `addpo
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -127,10 +125,13 @@ adds edges originating above each edge in source_node, to each node above `addpo
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -171,9 +172,9 @@ adds edges originating above each edge in source_node, to each node above `addpo
     <div class="ref-description">
     
     <p>generates new graphs from basegraph as follows:</p><ol>
-<li><p>generates all possible trees using `addpops`` (which are not in basegraph)</p></li>
+<li><p>generates all possible trees using <code>addpops</code> (which are not in basegraph)</p></li>
 <li><p>attaches trees to connection_edge, which is defined by two nodes in basegraph</p></li>
-<li><p>adds edges originating above each edge in <code>source_node</code>, to each node above `addpops``</p></li>
+<li><p>adds edges originating above each edge in <code>source_node</code>, to each node above <code>addpops</code></p></li>
 </ol>
 
     
@@ -206,7 +207,8 @@ adds edges originating above each edge in source_node, to each node above `addpo
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>graphlist</span> <span class='kw'>=</span> <span class='fu'>graphmod_pavel</span>(<span class='no'>example_igraph</span>, <span class='kw'>addpops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>),
-                           <span class='kw'>connection_edge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'N2N0'</span>, <span class='st'>'N1N'</span>), <span class='kw'>source_nodes</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'N2N2'</span>))
+                           <span class='kw'>connection_edge</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'N2N0'</span>, <span class='st'>'N1N'</span>),
+                           <span class='kw'>source_nodes</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'N2N2'</span>))
 <span class='no'>results</span> <span class='kw'>=</span> <span class='fu'>tibble</span>(<span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graphlist</span>) <span class='kw'>%&gt;%</span>
   <span class='fu'>mutate</span>(<span class='kw'>res</span> <span class='kw'>=</span> <span class='fu'>map</span>(<span class='no'>graph</span>, ~<span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>example_f2_blocks</span>, <span class='no'>.</span>))) <span class='kw'>%&gt;%</span>
   <span class='fu'>unnest_wider</span>(<span class='no'>res</span>) <span class='kw'>%&gt;%</span>

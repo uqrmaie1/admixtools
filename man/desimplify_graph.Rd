@@ -7,13 +7,13 @@
 desimplify_graph(graph)
 }
 \arguments{
-\item{graph}{an admixture graph}
+\item{graph}{An admixture graph}
 }
 \description{
 This is used to revert simplify_graph.
 }
 \examples{
-simple = simplify_graph(igraph1)
+simple = simplify_graph(example_igraph)
 desimple = desimplify_graph(simple)
 plot_graph(simple)
 plot_graph(desimple)

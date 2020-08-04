@@ -51,8 +51,6 @@
 
 <meta property="og:description" content="Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the
 first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -94,7 +92,7 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)"
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -123,10 +121,13 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)"
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -171,8 +172,16 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)<
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>f2_data</span>, <span class='no'>pops</span>, <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_precompute_f3</span>(
+  <span class='no'>f2_data</span>,
+  <span class='no'>pops</span>,
+  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -180,7 +189,7 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)<
     <tr>
       <th>f2_data</th>
       <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
-alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code>extract_indpairs</code>.</p></td>
+alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
     </tr>
     <tr>
       <th>pops</th>
@@ -201,6 +210,10 @@ the first population in <code>pops</code> will be used as the basis.</p></td>
 will be computed using block-jackknife. Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either
 equal to <code>boot</code> if it is an integer, or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The the covariance matrix
 of f3 statistics will be computed using bootstrapping.</p></td>
+    </tr>
+    <tr>
+      <th>seed</th>
+      <td><p>Random seed used if <code>boot</code> is <code>TRUE</code>.</p></td>
     </tr>
     <tr>
       <th>fudge_cov</th>
@@ -224,7 +237,7 @@ of f3 statistics will be computed using bootstrapping.</p></td>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'>get_leafnames</span>(<span class='no'>example_igraph</span>)
+    <pre class="examples"><div class='input'><span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span>(<span class='no'>example_igraph</span>)
 <span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pops</span>)$<span class='no'>f3_est</span></div><div class='output co'>#&gt;  [1] 0.2249564 0.2202068 0.1235151 0.1431551 0.1251066 0.1250159 0.2284884
 #&gt;  [8] 0.1236390 0.1428426 0.1255514 0.1254377 0.2051343 0.1105677 0.1933206
 #&gt; [15] 0.1946408 0.2022054 0.1099106 0.1100366 0.2568586 0.2526432 0.4378706

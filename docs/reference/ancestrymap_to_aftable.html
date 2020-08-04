@@ -50,8 +50,6 @@
 <meta property="og:title" content="Read allele frequencies from ancestrymap files — ancestrymap_to_aftable" />
 
 <meta property="og:description" content="Read allele frequencies from ancestrymap files" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,8 +170,13 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>ancestrymap_to_aftable</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>ancestrymap_to_aftable</span>(
+  <span class='no'>pref</span>,
+  <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -189,7 +195,7 @@
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are coded as <code>0</code> or <code>2</code>, although only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option. Pseudohaploid samples are identified as those that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

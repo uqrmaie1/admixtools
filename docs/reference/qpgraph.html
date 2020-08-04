@@ -50,8 +50,6 @@
 <meta property="og:title" content="Compute the fit of an admixture graph — qpgraph" />
 
 <meta property="og:description" content="Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,11 +170,26 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph</span>(<span class='no'>f2_blocks</span>, <span class='no'>graph</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
-  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>, <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph</span>(
+  <span class='no'>f2_blocks</span>,
+  <span class='no'>graph</span>,
+  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>,
+  <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>ppinv</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -232,6 +248,10 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     <tr>
       <th>f3precomp</th>
       <td><p>Precomputed f3-statistics. This should be the output of <code>qpgraph_precompute_f3</code> and can be provided instead of <code>f2_blocks</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
+    </tr>
+    <tr>
+      <th>ppinv</th>
+      <td><p>Inverse of f3-statistics covariance matrix. Can be used for <code><a href='compare_fits3.html'>compare_fits3</a></code>.</p></td>
     </tr>
     <tr>
       <th>f2_blocks_test</th>

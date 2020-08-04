@@ -4,7 +4,7 @@
 \alias{read_plink}
 \title{Read genotype data from \code{PLINK} files}
 \usage{
-read_plink(pref, inds = NULL, auto_only = TRUE, verbose = FALSE)
+read_plink(pref, inds = NULL, verbose = FALSE)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp})}
@@ -17,9 +17,9 @@ read_plink(pref, inds = NULL, auto_only = TRUE, verbose = FALSE)
 A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
 }
 \description{
-This is based on Gad Abraham's \code{\href{https://github.com/gabraham/plink2R}{plink2R}} package,
+This is based on Gad Abraham's \href{https://github.com/gabraham/plink2R}{plink2R} package,
 but genotypes are \code{m} x \code{n}, not \code{n} x \code{m}.
-See \code{\href{https://www.rdocumentation.org/packages/genio}{genio}} for a dedicated \code{R} package for
+See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated \code{R} package for
 reading and writing \code{PLINK} files.
 }
 \examples{

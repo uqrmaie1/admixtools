@@ -50,8 +50,6 @@
 <meta property="og:title" content="Wrapper function around the original qpGraph program — qpgraph_wrapper" />
 
 <meta property="og:description" content="Wrapper function around the original qpGraph program" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,13 +170,32 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpgraph_wrapper</span>(<span class='no'>graph</span>, <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpGraph"</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>badsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>lambdascale</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>diag</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
-  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='st'>"NULL"</span>, <span class='kw'>loadf3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>fstdmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
-  <span class='kw'>hires</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>forcezmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>zthresh</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>allsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
-  <span class='kw'>oldallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>doanalysis</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>bigiter</span> <span class='kw'>=</span> <span class='fl'>100</span>,
-  <span class='kw'>initmix</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpgraph_wrapper</span>(
+  <span class='no'>graph</span>,
+  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpGraph"</span>,
+  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
+  <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>badsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>lambdascale</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>diag</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='st'>"NULL"</span>,
+  <span class='kw'>loadf3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>fstdmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>hires</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>forcezmode</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>zthresh</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>allsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>oldallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>doanalysis</span> <span class='kw'>=</span> <span class='st'>"YES"</span>,
+  <span class='kw'>bigiter</span> <span class='kw'>=</span> <span class='fl'>100</span>,
+  <span class='kw'>initmix</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -205,8 +225,16 @@
       <td><p>Should output be executed or the command just be printed?</p></td>
     </tr>
     <tr>
+      <th>badsnps</th>
+      <td><p>badsnps</p></td>
+    </tr>
+    <tr>
       <th>lambdascale</th>
       <td><p>lambdascale</p></td>
+    </tr>
+    <tr>
+      <th>inbreed</th>
+      <td><p>inbreed</p></td>
     </tr>
     <tr>
       <th>diag</th>
@@ -217,8 +245,16 @@
       <td><p>outgroup population</p></td>
     </tr>
     <tr>
+      <th>loadf3</th>
+      <td><p>loadf3</p></td>
+    </tr>
+    <tr>
       <th>lsqmode</th>
       <td><p>least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
+    </tr>
+    <tr>
+      <th>fstdmode</th>
+      <td><p>fstdmode</p></td>
     </tr>
     <tr>
       <th>hires</th>
@@ -229,12 +265,32 @@
       <td><p>forcezmode</p></td>
     </tr>
     <tr>
+      <th>zthresh</th>
+      <td><p>zthresh</p></td>
+    </tr>
+    <tr>
       <th>allsnps</th>
       <td><p>allsnps</p></td>
     </tr>
     <tr>
+      <th>oldallsnps</th>
+      <td><p>oldallsnps</p></td>
+    </tr>
+    <tr>
+      <th>doanalysis</th>
+      <td><p>doanalysis</p></td>
+    </tr>
+    <tr>
       <th>bigiter</th>
       <td><p>bigiter</p></td>
+    </tr>
+    <tr>
+      <th>initmix</th>
+      <td><p>initmix</p></td>
+    </tr>
+    <tr>
+      <th>env</th>
+      <td><p>Export environmental variables. See examples.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

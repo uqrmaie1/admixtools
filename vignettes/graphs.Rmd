@@ -1,0 +1,287 @@
+---
+title: "Admixture graphs"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Admixture graphs}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+
+**Under construction**
+
+ADMIXTOOLS 2 makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in several ways. You can either modify them manually, one edge or one node at a time, or automatically, by generating all possible variations of a certain type (for example all graphs that result from adding one admixture edge to the current graph).
+
+The purpose of all this is to find well fitting models, and to find out which models are not compatible with the data. This is further simplified by `find_graphs()`, a function which automatically finds well fitting graphs by repeatedly selecting the best among a set of randomly modified graphs. ADMIXTOOLS 2 also introduces a method for testing whether one admixture graph fits the data significantly better than another.
+
+```{r, warning = FALSE, message = FALSE}
+library(magrittr)
+library(tidyverse)
+library(admixtools)
+```
+
+
+## Graph formats
+
+ADMIXTOOLS 2 can read and write graphs in a number of different formats, including the format used by the original ADMIXTOOLS software and DOT format, but internally it uses only the following two representations of admixture graphs:
+
+1. An edge list
+  - This is either a matrix or a data frame where each edge is in a different row. The first column (`from`) contains the names of the source nodes, and the second column (`to`) contains the names of the target nodes. No distinction is made between admixture edges and drift edges, or between different types of nodes. Optionally, there are two more columns (`lower` and `upper`), which put constraints on the length of an edge. For admixture edges, these constraints should be between 0 and 1, and for drift edges they can range from 0 to infinity. No constraints are indicated by `NA`.
+2. An `igraph` graph object
+  - This format is used for most operations that modify graphs, since the [igraph package](https://igraph.org/r/) provides many useful functions for working with graphs. If not otherwise specified, functions that take graphs as input expect a graph in this format.
+  
+To convert an admixture graph from one of these representations to the other, you can use the `igraph` function `igraph::graph_from_edgelist()` and `igraph::as_edgelist()`.
+
+### Simplified graphs
+
+If you look at an admixture graph, you will probably notice that admixture edges originate at nodes which have no other outgoing edges. Many functions in ADMIXTOOLS 2 use simplified admixture graphs without those redundant nodes. While these nodes are redundant for the topology of a graph, they are still useful because they allow us to specify both admixture weights and drift weights for two merging branches.
+
+`simplify_graph()` and `desimplify_graph()` can turn one representation into the other.
+
+```{r, warning = FALSE}
+plotly_graph(example_graph)
+```
+```{r, warning = FALSE}
+plotly_graph(simplify_graph(example_graph))
+```
+
+
+
+## Creating admixture graphs
+
+To get started, you can either read an existing graph (using `parse_qpgraph_graphfile()` if it's in the orginial ADMIXTOOLS format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`), or you can make a new one.
+
+```{r, warning = FALSE}
+newgraph = tibble(from = c('R', 'R', 'p1', 'p1'), to = c('p1', 'p2', 'p3', 'p4'))
+plotly_graph(newgraph)
+```
+
+You can also generate random graphs with your choice of population labels and a set number of admixture events:
+
+```{r, warning = FALSE}
+pops = unique(dplyr::starwars$species)
+newgraph = random_admixturegraph(pops, numadmix = 15)
+plotly_graph(newgraph)
+```
+
+
+## Modifying admixture graphs
+
+Admixture graphs can be modified using the following functions:
+
+```{r, eval = FALSE}
+insert_edge(example_igraph, from = "N2N1|Vindija.DG", to = "N3N1|Denisova.DG")
+delete_admix(example_igraph, from = "N2N2", to = "N2N4")
+insert_leaf(example_igraph, "newpop", from = "N4N", to = "Switzerland_Bichon.SG")
+delete_leaf(example_igraph, "Switzerland_Bichon.SG")
+```
+
+But it's probably easier to modify a graph interactively using the ADMIXTOOLS 2 GUI.
+```{r, eval = FALSE}
+run_shiny_admixtools()
+```
+Below you can see how a new admixture edge is added to a graph:
+
+![app demo](../man/figures/shinyapp1.gif)
+
+
+Rather than modifying admixture graphs manually and only testing a small number of models, you can start with a graph and let ADMIXTOOLS 2 generate and evaluate graphs for you.
+
+The following functions take a graph and return lists of new, similar graphs:
+
+```{r, eval = FALSE}
+newgraphs = graph_plusone(example_graph)
+newgraphs = graph_minusone(example_graph)
+newgraphs = graph_minusplus(example_graph)
+newgraphs = graph_flipadmix(example_graph)
+newgraphs = graph_splittrees(example_graph)
+```
+```{r, echo = FALSE}
+newgraphs = graph_splittrees(example_graph)
+```
+
+To evaluate the new graphs, type:
+
+```{r, eval = FALSE}
+newgraphs %>%
+  rowwise %>%
+  mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+  unnest_wider(res) %>%
+  arrange(score)
+```
+
+or, if you want to [parallelize](parallel.html) this,
+
+```{r}
+newgraphs %>%
+  mutate(res = furrr::future_map(graph, ~qpgraph(example_f2_blocks, .))) %>%
+  unnest_wider(res) %>%
+  arrange(score)
+```
+
+
+## Fitting admixture graphs
+
+
+
+## Automatic graph optimization
+
+Another advantage of being able to quickly evaluate a single model using precomputed f-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits.
+
+<br>
+
+
+The function `find_graphs` generates and evaluates `numgraphs` admixture graphs in `numgen` iterations across `numrep` independent repeats to find well fitting admixture graphs.
+
+
+```{r, eval = FALSE}
+opt_results = find_graphs(my_f2_dir, pops, outpop = pops[1], numrep = 200,
+                          numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
+```
+<br>
+
+Once that is done, the following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.
+
+```{r, eval = FALSE}
+winner = opt_results %>% top_n(1, -jitter(score))
+winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
+```
+```{r, echo = FALSE}
+winner = example_winner
+winners = example_winners
+```
+
+```{r, fig.width = 9, fig.align="center"}
+winner$score[[1]]
+plot_graph(winner$edges[[1]])
+```
+<br>
+
+
+## Comparing the fits of different graphs
+
+If we have two different graphs for the same set of populations and the second graph has a better likelihood score than the first one, it suggests that the second graph is a better representation of the actual demographic history. That's generally true, but there are two complications:
+
+1. If the second graph is more complex (i.e. if it has more admixture events), it has more degrees of freedom and thus an unfair advantage over the first one. It might get a better score even if the simpler graph is closer to the true demographic history.
+
+2. It is possible that the difference in scores is due to chance, and not because one of the two models really fits the data better. What if we had picked different samples from each population? Or what if we had picked different SNPs? Would the second model still be preferred over the first one?
+
+ADMIXTOOLS 2 solves the first problem by computing out-of-sample scores, and the second problem by computing the fit of a graph using bootstrap-resampled SNP blocks.
+
+
+### Out-of-sample scores
+
+*qpGraph* likelihood scores $S$ are computed by comparing estimated f3-statistics $g$ to fitted f3-statistics $f$ - those that we would expect to observe under a given admixture graph. The difference between estimated and fitted f3-statistics, the residuals, are adjusted by the inverse covariance matrix of f3-statistics $Q$, to get the likelihood score. If this covariance matrix was the identity matrix, the scores would just be the squared sum of residuals.
+
+$$S = -\frac{1}{2} (g - f)' Q^{-1} (g - f)$$
+
+Under this definition likelihood scores are actually negative, but usually the minus sign is dropped and positive scores are reported instead.
+
+In fitting edge weights, *qpGraph* maximizes this likelihood score (bringing it closer to 0). To avoid overfitting, we can compute a new score after fitting the model, using SNPs (or SNP blocks) which haven't been used for fitting the model:
+
+$$S' = -\frac{1}{2} (g_{train} - f_{test})' Q^{-1} (g_{train} - f_{test})$$
+
+These scores tend to be further away from zero, but they allow us to fairly compare models of different complexity to each other.
+
+In ADMIXTOOLS 2, you can compute out-of-sample scores by providing the `qpgraph()` function with an `f2_blocks_test` argument.
+
+```{r}
+nblocks = dim(example_f2_blocks)[3]
+train = sample(1:nblocks, round(nblocks/2))
+res = qpgraph(f2_blocks = example_f2_blocks[,,train], example_graph,
+              f2_blocks_test = example_f2_blocks[,,-train])
+res$score
+res$score_test
+```
+
+
+### Bootstrap-resampled graph fits
+
+Out-of-sample scores allow us to get fair comparisons for any two admixture graphs, but they still don't tell us whether a difference is significant. For that, we can use bootstrap resampling of SNP blocks: Each graph is evaluated many times on a random subset of SNP blocks. The variation among those scores tells us whether the scores of both graphs are significantly different from one another.
+
+To combine this idea with out-of-sample scores to prevent overfitting, we can use the SNP blocks which were not selected in each bootstrap iteration as the out-of-sample SNP blocks.
+
+The following example shows how to test whether `graph1` gives a significantly better fit than `graph2`:
+
+```{r, eval = FALSE}
+pops = dimnames(example_f2_blocks)[[1]]
+graph1 = example_winners %>% arrange(score) %$% igraph[[1]]
+graph2 = example_winners %>% arrange(score) %$% igraph[[100]]
+fits = qpgraph_resample_multi(example_f2_blocks, list(graph1, graph2), nboot = 100)
+compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
+```
+
+
+
+## Summarizing graphs
+
+<br>
+
+> *All models are wrong, but some are useful.*   --- George Box
+
+<br>
+
+> *All good models are alike; each bad model is bad in its own way.*   --- Leo Tolstoy
+
+<br>
+
+For any set of populations there may be many graphs which can explain the data about equally well. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs.
+
+```{r, eval = FALSE}
+triples = summarize_triples(winners)
+```
+```{r, echo = FALSE}
+triples = example_triples
+```
+
+```{r}
+triples %>% arrange(-clade) %>% slice(1)
+```
+
+The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read like this:
+
+* `numgraphs`: 200 graphs were compared
+* `clade`: In 34.5% of all graphs `Rus` and `Swi` form a clade with respect to `Den`
+* `x13`: In 0.5% of all graphs `Rus` is closer to `Den` than `Swi` is to `Den`, with ancestors of `Rus` admixing into `Den`
+* `x31`: In 50.5% of all graphs `Rus` is closer to `Den` than `Swi` is to `Den`, with ancestors of `Den` admixing into `Rus`
+* `x23`: In 24.5% of all graphs `Swi` is closer to `Den` than `Rus` is to `Den`, with ancestors of `Swi` admixing into `Den`
+* `x32`: In 38.0% of all graphs `Swi` is closer to `Den` than `Rus` is to `Den`, with ancestors of `Den` admixing into `Swi`
+* `toptopo`: The most common topology for this triple across all graphs. `011111` specifies a topology where condition `x13` is not satisfied, but conditions `x23`, `x31`, `x32`, `x12`, and `x21` are satisfied. A topology starting with `0000` is one where the first two populations form a clade.
+* `toptopocnt`: The number of times `toptopo` was observed
+* `topos`: The number of times each topology was observed
+
+
+<br>
+
+
+
+## Finding valid qpAdm models
+
+Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
+
+```{r, fig.width = 9, fig.align="center"}
+mygraph = winners %>% slice(6) %$% igraph %>% pluck(1)
+plot_graph(mygraph)
+qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3)
+```
+
+The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations.
+
+
+Valid qpAdm models need to satisfy the following criteria:
+
+* There have to be more right populations than left populations
+* The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative right population, but it can be included anyway, with `add_outgroup`.
+* Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that's correct and if it can be stated in a better way.)
+
+
+
+
+
+
+

@@ -4,8 +4,15 @@
 \alias{f2}
 \title{Estimate f2 statistics}
 \usage{
-f2(f2_data, pop1 = NULL, pop2 = NULL, boot = FALSE, sure = FALSE,
-  unique_only = TRUE, verbose = FALSE)
+f2(
+  f2_data,
+  pop1 = NULL,
+  pop2 = NULL,
+  boot = FALSE,
+  sure = FALSE,
+  unique_only = TRUE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.

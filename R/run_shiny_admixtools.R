@@ -1,3 +1,6 @@
+
+#' Launch ADMIXTOOLS 2 GUI
+#'
 #' @export
 run_shiny_admixtools = function() {
   appDir = system.file('shiny_admixtools', package = 'admixtools')

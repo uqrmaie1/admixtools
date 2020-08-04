@@ -50,8 +50,6 @@
 <meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits2" />
 
 <meta property="og:description" content="Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -193,8 +194,10 @@
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>nblocks</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/dim.html'>dim</a></span>(<span class='no'>example_f2_blocks</span>)[<span class='fl'>3</span>]
 <span class='no'>train</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span>(<span class='fl'>1</span>:<span class='no'>nblocks</span>, <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>round</a></span>(<span class='no'>nblocks</span>/<span class='fl'>2</span>))
-<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'><a href='resample_snps.html'>qpgraph_resample_snps</a></span>(<span class='no'>example_f2_blocks</span>[,,<span class='no'>train</span>], <span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graph1</span>, <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='no'>example_f2_blocks</span>[,,-<span class='no'>train</span>])
-<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'><a href='resample_snps.html'>qpgraph_resample_snps</a></span>(<span class='no'>example_f2_blocks</span>[,,<span class='no'>train</span>], <span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graph2</span>, <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='no'>example_f2_blocks</span>[,,-<span class='no'>train</span>])
+<span class='no'>fits1</span> <span class='kw'>=</span> <span class='fu'><a href='resample_snps.html'>qpgraph_resample_snps</a></span>(<span class='no'>example_f2_blocks</span>[,,<span class='no'>train</span>], <span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graph1</span>,
+                              <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='no'>example_f2_blocks</span>[,,-<span class='no'>train</span>])
+<span class='no'>fits2</span> <span class='kw'>=</span> <span class='fu'><a href='resample_snps.html'>qpgraph_resample_snps</a></span>(<span class='no'>example_f2_blocks</span>[,,<span class='no'>train</span>], <span class='kw'>graph</span> <span class='kw'>=</span> <span class='no'>graph2</span>,
+                              <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='no'>example_f2_blocks</span>[,,-<span class='no'>train</span>])
 <span class='fu'>compare_fits2</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>)
 }</div></pre>
   </div>

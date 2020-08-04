@@ -1,7 +1,7 @@
 Package: admixtools
 Type: Package
 Title: Inferring demographic history from genetic data
-Version: 0.1.0
+Version: 2.0.0
 Authors@R: as.person(c(
     "Robert Maier <rmaier@broadinstitute.org> [aut, cre]", 
     "Nick Patterson <nickp@broadinstitute.org> [aut]"
@@ -42,8 +42,11 @@ Imports:
     utils
 Suggests:
     genio,
-    plotly,
+    gridExtra,
     htmlwidgets,
+    knitr,
+    plotly,
+    rmarkdown,
     shiny,
     shinyjs,
     shinyBS,
@@ -51,8 +54,8 @@ Suggests:
     shinyalert,
     shinythemes,
     shinyWidgets,
-    shinydashboard
-RoxygenNote: 6.1.1
+    shinydashboard,
+    tidyverse
+RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE)
-
-
+VignetteBuilder: knitr

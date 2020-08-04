@@ -4,8 +4,7 @@
 \alias{split_mat}
 \title{Split a matrix into blocks}
 \usage{
-split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE,
-  verbose = TRUE)
+split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = TRUE)
 }
 \arguments{
 \item{mat}{The matrix to be split}
@@ -13,6 +12,10 @@ split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE,
 \item{cols_per_chunk}{Number of columns per block}
 
 \item{prefix}{Prefix of output files}
+
+\item{overwrite}{Overwrite existing files}
+
+\item{verbose}{Print progress updates}
 }
 \description{
 This function splits a large matrix into smaller blocks with \code{cols_per_chunk} columns per block,

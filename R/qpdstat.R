@@ -122,6 +122,7 @@ f3 = qp3pop
 #' Computes f4 statistics from f2 blocks of the form \eqn{f4(A, B; C, D)}. Equivalent to
 #' \eqn{(f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2}
 #' @export
+#' @inheritParams f2
 #' @param f2_data f2 data in one of the following formats
 #' \enumerate{
 #' \item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
@@ -131,12 +132,13 @@ f3 = qp3pop
 #' }
 #' @param pop3 A vector of population labels
 #' @param pop4 A vector of population labels
+#' @param comb Generate all combinations of `pop1`, `pop2`, `pop3`, `pop4`. If `FALSE`, `pop1`, `pop2`, `pop3`, `pop4` should all be vectors of the same length.
 #' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs. only used when `f2_data` is the prefix of genotype files
 #' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
+#' @param afprod Compute f4 from allele frequency products instead of f2. Only used if `f2_data` is a directory with precomputed data.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
-#' @inheritParams f2
 #' @return A data frame with f4 statistics
 #' @aliases f4
 #' @section Alias:
@@ -296,7 +298,7 @@ qpfstats = function(f2_blocks) {
   pairs = t(combn(sort(pops), 2))
   pp = paste(pairs[,1], pairs[,2])
 
-  a = f4(f2_blocks, verobse = FALSE) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
+  a = f4(f2_blocks, verbose = FALSE) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
     #mutate(est = -est*2) %>%
     select(-pop1:-pop4) %>% lm(as.formula(paste0('est ~ 0 + ', paste('`', colnames(.)[-1:-3], '`', sep = '', collapse = ' + '))), data = .)
 
@@ -399,7 +401,16 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
     left_join(popcombs, by = c('pop1', 'pop2', 'pop3', 'pop4'))
 }
 
+
+#' Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)
+#'
 #' @export
+#' @param f2_blocks 3d array of f2-statistics
+#' @param pop1 Population 1
+#' @param pop2 Population 2
+#' @param pop3 Population 3
+#' @param pop4 Population 4
+#' @return A vector of per-block f4-statistics
 f4_from_f2_pops = function(f2_blocks, pop1, pop2, pop3, pop4) {
   stopifnot(length(pop1) == 1 && length(pop2) == 1 && length(pop3) == 1 && length(pop4) == 1)
   f4_from_f2(f2_blocks[pop1, pop4,],

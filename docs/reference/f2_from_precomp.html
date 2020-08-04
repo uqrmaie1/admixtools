@@ -50,8 +50,6 @@
 <meta property="og:title" content="Read blocked f2 statistics from disk — f2_from_precomp" />
 
 <meta property="og:description" content="Read blocked f2 statistics from disk" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,9 +170,17 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>f2_from_precomp</span>(<span class='no'>dir</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>return_array</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>apply_corr</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>f2_from_precomp</span>(
+  <span class='no'>dir</span>,
+  <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>return_array</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>apply_corr</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

@@ -4,11 +4,26 @@
 \alias{extract_f2}
 \title{Compute and store blocked f2 statistics}
 \usage{
-extract_f2(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
-  maxmem = 8000, maxmiss = 1, minmaf = 0, maxmaf = 0.5,
-  transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-  snpblocks = NULL, overwrite = FALSE, format = NULL,
-  poly_only = TRUE, adjust_pseudohaploid = TRUE, verbose = TRUE)
+extract_f2(
+  pref,
+  outdir,
+  inds = NULL,
+  pops = NULL,
+  dist = 0.05,
+  maxmem = 8000,
+  maxmiss = 1,
+  minmaf = 0,
+  maxmaf = 0.5,
+  transitions = TRUE,
+  transversions = TRUE,
+  keepsnps = NULL,
+  snpblocks = NULL,
+  overwrite = FALSE,
+  format = NULL,
+  poly_only = TRUE,
+  adjust_pseudohaploid = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -45,7 +60,7 @@ and you want to choose which one to read. Should be either \code{plink}, \code{a
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }

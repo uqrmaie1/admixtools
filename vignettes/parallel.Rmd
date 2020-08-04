@@ -1,0 +1,70 @@
+---
+title: "Parallelization"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+  toc: true
+toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Parallelization}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+**Under construction**
+
+
+
+### Parallelization
+
+Depending on the input parameters, `find_graphs` can take a long time to run. With the parameters above, 420,000 admixture graphs (200 * 100 * (20+1)) will be generated and evaluated. Thanks to the function [future_map](https://www.rdocumentation.org/packages/furrr/versions/0.1.0/topics/future_map) from the [furrr](https://github.com/DavisVaughan/furrr) package, this can be sped up by parallelizing across the independent repeats. The function [`future::plan`](https://www.rdocumentation.org/packages/future/versions/1.15.1/topics/plan) can be called to specify the details of the parallelization. This can be used to parallelize across CPU cores or across nodes on a compute cluster.
+
+Setting it up like this will make it run multithreaded:
+```{r, eval = FALSE}
+future::plan('multiprocess')
+```
+<br>
+
+On the O2 cluster, the following command will set up parallelization across compute nodes.
+
+```{r, eval = FALSE}
+future::plan(tweak(batchtools_slurm, workers = 50,
+                   resources=list(ncpus = 1, memory = 1024,
+                                  walltime = 10*60*60, partition = 'short')))
+```
+This specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the `short` partition.
+
+This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as this one: `/n/groups/reich/robert/projects/admixprograms/batchtools.slurm.tmpl`.
+
+With this setup the `find_graphs` function will submit each of the 200 repeats as a separate job.
+
+As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.
+
+The R script could look like this.
+```{r, eval = FALSE}
+library(admixtools)
+library(future.batchtools)
+
+future::plan(tweak(batchtools_slurm, workers=50,
+                   resources=list(ncpus = 1, memory=1024,
+                                  walltime=10*60*60, partition='short')))
+
+pops = c('popA', 'popB', 'popC', 'popD')
+opt_results = find_graphs('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
+                          numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
+
+save(opt_results, file='opt_results.RData')
+```
+
+It could be in a file called `opt_graphs.Rscript` and be run like this, or submitted as a job.
+```{r, eval = FALSE}
+Rscript opt_graphs.Rscript
+```
+
+It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.
+
+<br>
+
+
+

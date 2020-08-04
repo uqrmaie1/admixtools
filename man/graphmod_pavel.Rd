@@ -18,15 +18,16 @@ graphmod_pavel(basegraph, addpops, connection_edge, source_nodes)
 \description{
 generates new graphs from basegraph as follows:
 \enumerate{
-\item generates all possible trees using `addpops`` (which are not in basegraph)
+\item generates all possible trees using \code{addpops} (which are not in basegraph)
 \item attaches trees to connection_edge, which is defined by two nodes in basegraph
-\item adds edges originating above each edge in \code{source_node}, to each node above `addpops``
+\item adds edges originating above each edge in \code{source_node}, to each node above \code{addpops}
 }
 }
 \examples{
 \dontrun{
 graphlist = graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
-                           connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+                           connection_edge = c('N2N0', 'N1N'),
+                           source_nodes = c('Denisova.DG', 'N2N2'))
 results = tibble(graph = graphlist) \%>\%
   mutate(res = map(graph, ~qpgraph(example_f2_blocks, .))) \%>\%
   unnest_wider(res) \%>\%

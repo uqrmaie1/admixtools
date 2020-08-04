@@ -4,12 +4,20 @@
 \alias{qpgraph_precompute_f3}
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
-qpgraph_precompute_f3(f2_data, pops, outpop = NULL, f2_denom = 1,
-  boot = FALSE, seed = NULL, fudge_cov = 1e-05, lsqmode = FALSE)
+qpgraph_precompute_f3(
+  f2_data,
+  pops,
+  outpop = NULL,
+  f2_denom = 1,
+  boot = FALSE,
+  seed = NULL,
+  fudge_cov = 1e-05,
+  lsqmode = FALSE
+)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.}
+alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
 
 \item{pops}{Populations for which to compute f3-statistics}
 
@@ -22,6 +30,8 @@ the first population in \code{pops} will be used as the basis.}
 will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either
 equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix
 of f3 statistics will be computed using bootstrapping.}
+
+\item{seed}{Random seed used if \code{boot} is \code{TRUE}.}
 
 \item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 

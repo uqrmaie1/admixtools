@@ -4,8 +4,14 @@
 \alias{read_packedancestrymap}
 \title{Read genotype data from packedancestrymap files}
 \usage{
-read_packedancestrymap(pref, inds = NULL, first = 1, last = Inf,
-  transpose = FALSE, verbose = TRUE)
+read_packedancestrymap(
+  pref,
+  inds = NULL,
+  first = 1,
+  last = Inf,
+  transpose = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of the packedancestrymap files}

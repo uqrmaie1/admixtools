@@ -49,9 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Test if two sets of populations form two clades — test_cladality" />
 
-<meta property="og:description" content="Test if two sets of populations form two clades" />
-
-<meta property="og:image" content="/logo.png" />
+<meta property="og:description" content="A thin wrapper around qpadm_p with rnk set to zero" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -165,18 +166,51 @@
 
     <div class="ref-description">
     
-    <p>Test if two sets of populations form two clades</p>
+    <p>A thin wrapper around <code><a href='qpadm_p.html'>qpadm_p</a></code> with <code>rnk</code> set to zero</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>test_cladality</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
-        
+    <pre class="usage"><span class='fu'>test_cladality</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>f2_data</th>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Alternatively, a directory with f2 statistics.</p></td>
+    </tr>
+    <tr>
+      <th>left</th>
+      <td><p>Left populations (sources)</p></td>
+    </tr>
+    <tr>
+      <th>right</th>
+      <td><p>Right populations (outgroups)</p></td>
+    </tr>
+    <tr>
+      <th>fudge</th>
+      <td><p>Value added to diagonal matrix elements before inverting</p></td>
+    </tr>
+    <tr>
+      <th>boot</th>
+      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
+Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
+or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.</p></td>
+    </tr>
+    <tr>
+      <th>cpp</th>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
+    </tr>
+    </table>
+    
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
+      <li><a href="#arguments">Arguments</a></li>
                 </ul>
 
   </div>

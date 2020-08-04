@@ -16,7 +16,7 @@ alert_danger = function(msg) catfun(crayon::red, cli::symbol$cross, msg)
 
 gg_color_hue = function(n, l=65, c=100) {
   hues = seq(15, 375, length=n+1)
-  hcl(h=hues, l=l, c=c)[1:n]
+  grDevices::hcl(h=hues, l=l, c=c)[1:n]
 }
 
 #qpsolve = function(...) quadprog::solve.QP(...)$solution
@@ -204,7 +204,15 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
   as_tibble(ansret) %>% set_colnames(c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
 }
 
+#' Return shortest unique prefixes
+#'
 #' @export
+#' @param strings A character vector
+#' @param min_length Minimum length of prefixes
+#' @return Character vector with shortest unique prefixes
+#' @examples
+#' strings = c("Abra", "Abracadabra", "Simsalabim")
+#' shortest_unique_prefixes(strings)
 shortest_unique_prefixes = function(strings, min_length = 1) {
   # given a vector of strings, return a vector of the same length with the shortest unique prefixes
   if(length(strings) == 0) return(strings)

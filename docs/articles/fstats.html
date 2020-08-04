@@ -20,7 +20,6 @@
 <link href="../docsearch.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script><script src="../extra.js"></script><meta property="og:title" content="f-statistics">
 <meta property="og:description" content="">
-<meta property="og:image" content="/logo.png">
 <meta name="twitter:card" content="summary">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -46,7 +45,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -75,10 +74,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -109,7 +111,9 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1>f-statistics</h1>
+                        <h4 class="author">Robert Maier</h4>
             
+            <h4 class="date">2020-08-04</h4>
       
       
       <div class="hidden name"><code>fstats.Rmd</code></div>
@@ -118,7 +122,8 @@
 
     
     
-<p><em>f</em>-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, f2-statistics are of particular importance as f3- and f4-statistics are computed from f2-statistics. f2-statistics are conceptually very simple, but estimating them without bias can be complicated. Here, we describe what these complications are, and how we deal with them.</p>
+<p><em>f</em>-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, f2-statistics are of particular importance as f3- and f4-statistics are computed from f2-statistics.</p>
+<p>f2-statistics are conceptually very simple, but estimating them without bias can be complicated.</p>
 <div id="estimating-f2" class="section level2">
 <h2 class="hasAnchor">
 <a href="#estimating-f2" class="anchor"></a>Estimating <em>f<sub>2</sub></em>
@@ -149,7 +154,7 @@
 <h2 class="hasAnchor">
 <a href="#bias-due-to-missing-data" class="anchor"></a>Bias due to missing data</h2>
 <p>Missing data alone will not create any bias in <span class="math inline">\(f_2\)</span> estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, <span class="math inline">\(f_2\)</span> can be over- or underestimated. In contrast to <span class="math inline">\(F_{ST}\)</span>, which is the same in expectation for rare and for common SNPs, <span class="math inline">\(f_2\)</span> tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd <span class="math inline">\(f_2\)</span> estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What’s important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high <span class="math inline">\(f_2\)</span> because most rare alleles are missing in one of the populations, and another pair of populations has a lower <span class="math inline">\(f_2\)</span> beause those rare alleles are not missing, bias can be expected.</p>
-<p>One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the <code>allsnps</code> options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the <code>maxmiss</code> parameter in <code>extract_f2</code> which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.</p>
+<p>One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the <code>allsnps</code> options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the <code>maxmiss</code> parameter in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.</p>
 <p>As we will see in the next section, estimating <span class="math inline">\(f_4\)</span> without bias is actually easier than estimating <span class="math inline">\(f_2\)</span> or <span class="math inline">\(f_{ST}\)</span> without any bias.</p>
 </div>
 <div id="estimating-f4" class="section level2">
@@ -183,11 +188,11 @@ C         D</code></pre>
 <div id="computing-f-statistics-with-admixtools-2" class="section level2">
 <h2 class="hasAnchor">
 <a href="#computing-f-statistics-with-admixtools-2" class="anchor"></a>Computing <em>f</em>-statistics with ADMIXTOOLS 2</h2>
-<p>In ADMIXTOOLS 2 <em>f</em>-statistics are computed from genotype data using the function <code>extract_f2</code></p>
+<p>In ADMIXTOOLS 2 <em>f</em>-statistics are computed from genotype data using the function <code><a href="../reference/extract_f2.html">extract_f2()</a></code></p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">genotype_data =<span class="st"> "/my/geno/prefix"</span></a>
 <a class="sourceLine" id="cb2-2" data-line-number="2">f2_dir =<span class="st"> "/my/f2/directory/"</span></a>
 <a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw"><a href="../reference/extract_f2.html">extract_f2</a></span>(genotype_data, f2_dir)</a></code></pre></div>
-<p>Arguments to <code>extract_f2</code> can be used to decide</p>
+<p>Arguments to <code><a href="../reference/extract_f2.html">extract_f2()</a></code> can be used to decide</p>
 <ul>
 <li>For which samples or populations to compute <span class="math inline">\(f_2\)</span>-statistics</li>
 <li>Which SNPs to use
@@ -211,7 +216,7 @@ C         D</code></pre>
 <div id="allele-frequency-products" class="section level3">
 <h3 class="hasAnchor">
 <a href="#allele-frequency-products" class="anchor"></a>Allele frequency products</h3>
-<p><code>extract_f2</code> computes and stores both regular <span class="math inline">\(f_2\)</span>-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this:</p>
+<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> computes and stores both regular <span class="math inline">\(f_2\)</span>-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">my_f2_dir =<span class="st"> '/store/f2data/here/'</span></a>
 <a class="sourceLine" id="cb4-2" data-line-number="2">afprod_blocks =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_f2_dir, <span class="dt">afprod =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
 <p>This creates a 3d array just like <code>f2_blocks</code>, but it will contain allele frequency products rather than <span class="math inline">\(f_2\)</span>-statistics. For any ADMIXTOOLS application based on <span class="math inline">\(f_4\)</span>-statistics, this allele frequency product array can be used just like the regular <span class="math inline">\(f_2\)</span> array. It will give close to identical results, but without any bias introduced by poor <span class="math inline">\(f_2\)</span>-estimates.</p>
@@ -224,8 +229,8 @@ C         D</code></pre>
 <div id="extracting-f2-for-a-large-number-of-populations" class="section level3">
 <h3 class="hasAnchor">
 <a href="#extracting-f2-for-a-large-number-of-populations" class="anchor"></a>Extracting <em>f<sub>2</sub></em> for a large number of populations</h3>
-<p><code>extract_f2</code> will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions <code>extract_afs</code> and <code>write_split_f2_block</code> is necessary.</p>
-<p><code>extract_afs</code> will compute allele frequencies for a set number of populations (<code>cols_per_chunk</code>, default 20) and store them on disk.</p>
+<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions <code><a href="../reference/extract_afs.html">extract_afs()</a></code> and <code><a href="../reference/write_split_f2_block.html">write_split_f2_block()</a></code> is necessary.</p>
+<p><code><a href="../reference/extract_afs.html">extract_afs()</a></code> will compute allele frequencies for a set number of populations (<code>cols_per_chunk</code>, default 20) and store them on disk.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">genotype_data =<span class="st"> "/my/geno/prefix"</span></a>
 <a class="sourceLine" id="cb5-2" data-line-number="2">my_af_dir =<span class="st"> "/store/afdata/here/"</span></a>
 <a class="sourceLine" id="cb5-3" data-line-number="3">my_f2_dir =<span class="st"> "/store/f2data/here/"</span></a>

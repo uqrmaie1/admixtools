@@ -8,6 +8,8 @@ parse_qpgraph_graphfile(graphfile, split_multi = TRUE)
 }
 \arguments{
 \item{graphfile}{File with admixture graph in qpGraph format.}
+
+\item{split_multi}{Split multifurcations}
 }
 \value{
 Graph represented as two column edge matrix. Can have four columns if edges are locked

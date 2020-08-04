@@ -51,8 +51,6 @@
 
 <meta property="og:description" content="Computes f4 statistics from f2 blocks of the form \(f4(A, B; C, D)\). Equivalent to
 \((f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2\)" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -94,7 +92,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -123,10 +121,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -171,10 +172,23 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpdstat</span>(<span class='no'>f2_data</span>, <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpdstat</span>(
+  <span class='no'>f2_data</span>,
+  <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>sure</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>unique_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>comb</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -228,6 +242,10 @@ from accidently computing all combinations if that number is large.</p></td>
       <td><p>If <code>TRUE</code> (the default), redundant combinations will be excluded</p></td>
     </tr>
     <tr>
+      <th>comb</th>
+      <td><p>Generate all combinations of <code>pop1</code>, <code>pop2</code>, <code>pop3</code>, <code>pop4</code>. If <code>FALSE</code>, <code>pop1</code>, <code>pop2</code>, <code>pop3</code>, <code>pop4</code> should all be vectors of the same length.</p></td>
+    </tr>
+    <tr>
       <th>dist</th>
       <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM). Only used when <code>f2_data</code> is the prefix of genotype files</p></td>
     </tr>
@@ -239,6 +257,10 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of g
     <tr>
       <th>f4mode</th>
       <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of genotype files</p></td>
+    </tr>
+    <tr>
+      <th>afprod</th>
+      <td><p>Compute f4 from allele frequency products instead of f2. Only used if <code>f2_data</code> is a directory with precomputed data.</p></td>
     </tr>
     <tr>
       <th>cpp</th>

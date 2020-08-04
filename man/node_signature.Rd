@@ -6,12 +6,19 @@
 \usage{
 node_signature(graph)
 }
+\arguments{
+\item{graph}{An admixture graph}
+}
+\value{
+A graph signature as character vector
+}
 \description{
 Can be used to determine how often internal nodes occur in a list of other well fitting models
 }
 \examples{
 \dontrun{
-sigs = example_winners \%>\% mutate(sig = map(igraph, node_signature)) \%$\% sig \%>\% unlist \%>\% table \%>\% c
+sigs = example_winners \%>\% mutate(sig = map(igraph, node_signature)) \%$\%
+         sig \%>\% unlist \%>\% table \%>\% c
 node_signature(example_winners$igraph[[1]])
 }
 }

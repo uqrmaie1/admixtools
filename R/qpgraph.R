@@ -132,19 +132,16 @@ optimweightsfun = function(weights, args) {
 opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = 1e-4) {
   # finds optimal edge lengths
   # pwts2d: npair x nedge design matrix with paths to outpop
-  # ppinv: inverse of npair x npair matrix of varianc-covariance matrix of jackknife f3 stats
+  # ppinv: inverse of npair x npair covariance matrix of jackknife f3 stats
   # f3_est: estimated f3 stats
 
   pppp = t(ppwts_2d) %*% ppinv
   cc = pppp %*% ppwts_2d
-  #diag(cc) = diag(cc) + fudge
   diag(cc) = diag(cc) + fudge*mean(diag(cc))
   cc = (cc+t(cc))/2
   q1 = (pppp %*% f3_est)[,1]
   nc = ncol(cc)
-  #tryCatch({
   qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))
-  #}, error = function(e) browser())
 }
 
 get_score = function(f3_fit, f3_est, ppinv) {
@@ -174,6 +171,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param return_f4 Return all f4-statistics. Defaults to `FALSE` because this can be slow.
 #' @param f3precomp Precomputed f3-statistics. This should be the output of `qpgraph_precompute_f3` and can be provided instead of `f2_blocks`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
+#' @param ppinv Inverse of f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.
 #' @param f2_blocks_test An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of `f2_blocks`. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step
 #' @param low_q Reported lower quantile of fitted admixture edge weights across random initializations
 #' @param high_q Reported upper quantile of fitted admixture edge weights across random initializations
@@ -196,7 +194,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
 qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fudge_cov = 1e-5, fnscale = 1e-6, lsqmode = FALSE,
-                   numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, f2_blocks_test = NULL,
+                   numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, ppinv = NULL, f2_blocks_test = NULL,
                    low_q = 0, high_q = 1, verbose = FALSE) {
 
   #----------------- process graph -----------------
@@ -238,6 +236,11 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   } else {
     precomp = qpgraph_precompute_f3(f2_blocks, pops, f2_denom = f2_denom, boot = boot,
                                     seed = seed, fudge_cov = fudge_cov, lsqmode = lsqmode)
+  }
+  if(!is.null(ppinv)) {
+    f3pops = attr(ppinv, 'pops')
+    pairmatch = get_pairindex(match(pops, f3pops))
+    precomp$ppinv = ppinv[pairmatch, pairmatch]
   }
 
   f3_est = precomp$f3_est
@@ -330,7 +333,7 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 #' first population \eqn{p1} and all population pairs \eqn{i, j}: \eqn{f3(p1; p_i, p_j)}
 #' @export
 #' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
+#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pops Populations for which to compute f3-statistics
 #' @param outpop Outgroup population. used as the basis of the f3-statistics. If `NULL` (the default),
 #' the first population in `pops` will be used as the basis.
@@ -339,6 +342,7 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 #' will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times, where `n` is either
 #' equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix
 #' of f3 statistics will be computed using bootstrapping.
+#' @param seed Random seed used if `boot` is `TRUE`.
 #' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
 #' @param lsqmode Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @return A list with four items
@@ -414,7 +418,6 @@ get_pairindex = function(perm) {
   match(new_order, orig_order)
 }
 
-#' @export
 qpgraph_anorexic = function(f3precomp, graph, fudge = 1e-4, fnscale = 1e-6,
                             numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE) {
 
@@ -498,8 +501,10 @@ fitf4 = function(f2_blocks, f2, f3, cmb) {
 #' \dontrun{
 #' nblocks = dim(example_f2_blocks)[3]
 #' train = sample(1:nblocks, round(nblocks/2))
-#' fits1 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph1, f2_blocks_test = example_f2_blocks[,,-train])
-#' fits2 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph2, f2_blocks_test = example_f2_blocks[,,-train])
+#' fits1 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph1,
+#'                               f2_blocks_test = example_f2_blocks[,,-train])
+#' fits2 = qpgraph_resample_snps(example_f2_blocks[,,train], graph = graph2,
+#'                               f2_blocks_test = example_f2_blocks[,,-train])
 #' compare_fits2(fit1, fit2)
 #' }
 compare_fits2 = function(fits1, fits2, boot = FALSE) {
@@ -521,6 +526,7 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #' @export
 #' @param scores1 Scores for the first graph
 #' @param scores2 Scores for the second graph
+#' @seealso \code{\link{qpgraph_resample_snps2}} \code{\link{boo_list}}
 #' @examples
 #' \dontrun{
 #' boo = boo_list(f2_blocks, nboot = 100)
@@ -528,13 +534,19 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
 #' compare_fits3(fits1$score_test, fits2$score_test)
 #' }
+#' # Use all SNP blocks for f3 covariance matrix
 #' \dontrun{
 #' boo = boo_list(f2_blocks, nboot = 100)
-#' f3precomp1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))
-#' f3precomp2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))
-#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, f3precomp = f3precomp1)
-#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, f3precomp = f3precomp2)
+#' ppinv1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))$ppinv
+#' ppinv2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))$ppinv
+#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, ppinv = ppinv1)
+#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, ppinv = ppinv2)
 #' compare_fits3(fits1$score_test, fits2$score_test)
+#' }
+#' # Same as above
+#' \dontrun{
+#' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
+#' compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
 #' }
 compare_fits3 = function(scores1, scores2) {
 
@@ -555,7 +567,20 @@ compare_fits3 = function(scores1, scores2) {
   c(diff=diff, se=se, z=z, p=p, p_emp=p_emp, ci_low=ci_low, ci_high=ci_high)
 }
 
+
+
+
+#' Evaluate a qpgraph model many times
+#'
+#' This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. using a list of bootstrap resampled f2-statistics and corresponding test-set f2-statistics
 #' @export
+#' @param f2_blocks A list of bootstrap resampled f2-statistics
+#' @param graph An admixture graph
+#' @param f2_blocks_test A list of f2-statistics from all blocks which were not used in the corresponding f2-array in `f2_blocks`
+#' @param verbose Print progress updates
+#' @param ... Arguments passed to \code{\link{qpgraph}}
+#' @return A data frame with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
+#' @seealso \code{\link{compare_fits3}} \code{\link{boo_list}}
 qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
 
   ell = list(...)
@@ -568,6 +593,24 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
     select(-out, -fun2) %>% unnest_wider(result)
 }
 
+#' Evaluate a qpgraph models many times
+#'
+#' This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.
+#' @export
+#' @param f2_blocks 3d array of f2-statistics
+#' @param graphlist A list of admixture graphs
+#' @param nboot Number of bootstrap iterations
+#' @param verbose Print progress updates
+#' @param ... Arguments passed to \code{\link{qpgraph}}
+#' @return A list of same length as `graphlist` with data frames with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
+#' @seealso \code{\link{compare_fits3}}
+qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, ...) {
+
+  boo = boo_list(f2_blocks, nboot = nboot)
+  f3pre = map(graphlist, ~qpgraph_precompute_f3(f2_blocks, get_leafnames(.))$ppinv)
+  map2(graphlist, f3pre, function(.x, .y, ...) qpgraph_resample_snps2(
+    boo$boo, .x, boo$test, ppinv = .y, verbose = verbose, ...), ...)
+}
 
 
 #' Compare the fit of two qpgraph models
@@ -578,8 +621,8 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 #' @param fit2 The fit of the second graph
 #' @param f2_blocks f2 blocks used for fitting `fit1` and `fit2`. Used in combination with `f2_blocks_test` to compute f-statistics covariance matrix.
 #' @param f2_blocks_test f2 blocks which were not used for fitting `fit1` and `fit2`
-#' @param boot if `TRUE`, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to the number of blocks. If `FALSE` jackknife will be used. If set to a number, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to `boot`. If bootstrap resampling is enabled, empirical p-values (`p_emp`) and 95\% confidence intervals (`ci_low` and `ci_high`) will be reported.
-#' @param seed random seed used if `boot` is `TRUE`. does not need to match a seed used in fitting the models
+#' @param boot If `TRUE`, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to the number of blocks. If `FALSE` jackknife will be used. If set to a number, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to `boot`. If bootstrap resampling is enabled, empirical p-values (`p_emp`) and 95 confidence intervals (`ci_low` and `ci_high`) will be reported.
+#' @param seed Random seed used if `boot` is `TRUE`. Does not need to match a seed used in fitting the models
 #' @examples
 #' \dontrun{
 #' nblocks = dim(example_f2_blocks)[3]

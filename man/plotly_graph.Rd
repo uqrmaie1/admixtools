@@ -4,20 +4,21 @@
 \alias{plotly_graph}
 \title{Plot an admixture graph using plotly}
 \usage{
-plotly_graph(graph, collapse_threshold = 0, fix = FALSE,
-  shift_down = TRUE)
+plotly_graph(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE)
 }
 \arguments{
-\item{graph}{an admixture graph}
+\item{graph}{An admixture graph}
 
-\item{fix}{if \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
+\item{collapse_threshold}{Collapse nodes if they are separated by less than this distance (for fitted graphs)}
+
+\item{fix}{If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
 
-\item{shift_down}{shift descendent nodes down}
+\item{shift_down}{Shift descendent nodes down}
 }
 \value{
-a plotly object
+A plotly object
 }
 \description{
 Plot an admixture graph using plotly

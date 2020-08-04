@@ -5,8 +5,17 @@
 \alias{qpwave}
 \title{Estimate admixture weights}
 \usage{
-qpadm(f2_data, left, right, target = NULL, fudge = 1e-04,
-  boot = FALSE, constrained = FALSE, cpp = TRUE, verbose = TRUE)
+qpadm(
+  f2_data,
+  left,
+  right,
+  target = NULL,
+  fudge = 1e-04,
+  boot = FALSE,
+  constrained = FALSE,
+  cpp = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.}

@@ -1,11 +1,18 @@
 ---
 title: "Standard errors"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Standard errors}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
+**Under construction**
 
 ## Model robustness
 

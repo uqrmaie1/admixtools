@@ -4,10 +4,22 @@
 \alias{qpadm_wrapper}
 \title{Wrapper function around the original qpAdm program}
 \usage{
-qpadm_wrapper(left, right, target = NULL, bin = "~np29/o2bin/qpAdm",
-  pref = NULL, outdir = "./", parfile = NULL, useallsnps = "NO",
-  fancyf4 = "YES", f4mode = "YES", inbreed = "NO",
-  printonly = FALSE, env = "", verbose = TRUE)
+qpadm_wrapper(
+  left,
+  right,
+  target = NULL,
+  bin = "~np29/o2bin/qpAdm",
+  pref = NULL,
+  outdir = "./",
+  parfile = NULL,
+  useallsnps = "NO",
+  fancyf4 = "YES",
+  f4mode = "YES",
+  inbreed = "NO",
+  printonly = FALSE,
+  env = "",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{left}{Left populations (or leftlist file)}
@@ -23,7 +35,19 @@ qpadm_wrapper(left, right, target = NULL, bin = "~np29/o2bin/qpAdm",
 \item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{leftlist},
 \code{rightlist} will be overwritten}
 
+\item{parfile}{qpAdm parameter file}
+
+\item{useallsnps}{useallsnps}
+
+\item{fancyf4}{fancyf4}
+
+\item{f4mode}{f4mode}
+
+\item{inbreed}{inbreed}
+
 \item{printonly}{Should the command be printed or executed?}
+
+\item{env}{Export environmental variables. See examples.}
 
 \item{verbose}{Print progress updates}
 }

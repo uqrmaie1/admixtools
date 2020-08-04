@@ -156,12 +156,12 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' Find LD-independent blocks
 #'
 #' A new block begins at the SNP after the first SNP which is not within `dist` of the start of the last block.
-#' `afdat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+#' `dat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 #' @export
-#' @param afdat data frame with columns 'CHR' and either 'POS' or 'cm'
-#' @param dist minimum distance between blocks
-#' @param distcol which column should be used as distance column
-#' @return a numeric vector where the ith element lists the number of SNPs in the ith block.
+#' @param dat Data frame with columns 'CHR' and either 'POS' or 'cm'
+#' @param dist Minimum distance between blocks
+#' @param distcol Column to use as distance column
+#' @return A numeric vector where the ith element lists the number of SNPs in the ith block.
 #' @examples
 #' \dontrun{
 #' prefix = 'path/to/packedancestrymap_prefix'
@@ -204,7 +204,14 @@ get_block_lengths = function(dat, dist = 0.05, distcol = 'cm') {
 
 
 
+#' Turn per-block estimates into leave-one-out estimates
+#'
+#' This works for any statistics which, when computed across `N` blocks, are equal
+#' to the weighted mean of the statistics across the `N` blocks.
 #' @export
+#' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension, and block lengths in `dimnames`.
+#' @return A 3d array with leave-one-out estimates for jackknife. Dimensions are equal to those of `arr`.
+#' @seealso \code{\link{loo_to_est}} \code{\link{est_to_boo}}
 est_to_loo = function(arr) {
   # turns block estimates into leave-one-block-out estimates
   # assumes blocks are along 3rd dimension
@@ -219,7 +226,15 @@ est_to_loo = function(arr) {
 
 
 
+#' Turn leave-one-out estimates to per-block estimates
+#'
+#' Inverse of \code{\link{est_to_loo}}
+#' This works for any statistics which, when computed across `N` blocks, are equal
+#' to the weighted mean of the statistics across the `N` blocks.
 #' @export
+#' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension.
+#' @return A 3d array with leave-one-out estimates for jackknife. Dimensions are equal to those of `arr`.
+#' @seealso \code{\link{est_to_loo}}
 loo_to_est = function(arr) {
   # inverse of est_to_res
 
@@ -233,7 +248,6 @@ loo_to_est = function(arr) {
 }
 
 
-#' @export
 est_to_loo_nafix = function(arr) {
   # turns block estimates into leave-one-block-out estimates
   # assumes blocks are along 3rd dimension
@@ -248,7 +262,16 @@ est_to_loo_nafix = function(arr) {
   out
 }
 
+#' Turn per-block estimates into bootstrap estimates
+#'
+#' This works for any statistics which, when computed across `N` blocks, are equal
+#' to the weighted mean of the statistics across the `N` blocks.
 #' @export
+#' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension.
+#' @param nboot Number of bootstrap iterations
+#' @return A 3d array with bootstrap estimates. The first two dimensions are equal to those of `arr`.
+#'   The 3rd dimension is equal to `nboot`.
+#' @seealso \code{\link{est_to_loo}}
 est_to_boo = function(arr, nboot = dim(arr)[3]) {
   # turns block estimates into bootstrap estimates
   # assumes blocks are along 3rd dimension
@@ -271,14 +294,23 @@ est_to_boo = function(arr, nboot = dim(arr)[3]) {
           dimnames = c(dimnames(arr)[1:2], list(rep('l1', nboot))))
 }
 
-# returns list of arrays, with each block left out at a time.
-# arr is k x k x n; output is length n, output arrs are k x k x (n-1)
+#' Generate a list of leave-one-out arrays
+#'
 #' @export
+#' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension
+#' @return A list of leave-one-out arrays, each of which is 1 element shorter than `arr` along the 3rd dimension
+#' @seealso \code{\link{boo_list}} \code{\link{est_to_loo}}
 loo_list = function(arr) map(1:dim(arr)[3], ~arr[,,-.])
 
+#' Generate a list of bootstrap resampled arrays
+#'
 #' @export
+#' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension
+#' @param nboot Number of bootstrap iterations
+#' @return A list of bootstrap resampled arrays, with 3rd dimension equal to `nboot`
+#' @seealso \code{\link{loo_list}} \code{\link{est_to_boo}} \code{\link{qpgraph_resample_snps2}}
 boo_list = function(arr, nboot = dim(arr)[3]) {
-  # returns list of arrays, with each block left out at a time.
+  # returns list of bootstrap resampled arrays
   # arr is k x k x n; output is length nboot, output arrs are k x k x n
   sel = rerun(nboot, sample(1:dim(arr)[3], replace = TRUE))
   list(boo = map(sel, ~arr[,,.]), sel = sel, test = map(sel, ~arr[,,-.]))
@@ -294,6 +326,7 @@ est_to_loo_dat = function(dat) {
            loo = (.tot - est*.rel_bl) / (1-.rel_bl)) %>%
     select(-.rel_bl, -.tot)
 }
+
 
 loo_to_est_dat = function(dat) {
   # like loo_to_est, but for a grouped data frame with columns 'loo', 'block', and 'length'
@@ -321,10 +354,9 @@ est_to_boo_dat = function(dat, nboot = 1000) {
     mutate(length = 1)
 }
 
-#' Takes a function `qpfun` which takes f2_blocks as input
-#' Returns a function which will repeadetly evaluate `qpfun` on
-#' jackknife or bootstrap resamplings of the f2_blocks, returning a nested data frame
-#' @export
+# Takes a function `qpfun` which takes f2_blocks as input
+# Returns a function which will repeadetly evaluate `qpfun` on
+# jackknife or bootstrap resamplings of the f2_blocks, returning a nested data frame
 make_resample_snps_fun = function(qpfun) {
   function(f2_blocks, boot = FALSE, verbose = TRUE, ...) {
     if(boot) {
@@ -345,10 +377,9 @@ make_resample_snps_fun = function(qpfun) {
   }
 }
 
-#' Takes a function `qpfun` which takes f2_blocks as input
-#' Returns a function which will repeadetly evaluate `qpfun` on
-#' a subset of all samples, returning a nested data frame
-#' @export
+# Takes a function `qpfun` which takes f2_blocks as input
+# Returns a function which will repeadetly evaluate `qpfun` on
+# a subset of all samples, returning a nested data frame
 make_resample_inds_fun = function(qpfun) {
   function(dir, inds, pops, verbose = TRUE, ...) {
     stopifnot(length(pops) == length(inds))
@@ -400,7 +431,6 @@ NULL
 #' @param dir directory with precomputed data
 #' @param inds vector of individual names
 #' @param pops vector of population names. Should be the same length as `inds`
-#' @param multiprocess If `TRUE` (the default), models will run on multiple cores in parallel.
 #' @param verbose print progress updates
 #' @param ... named arguments passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs

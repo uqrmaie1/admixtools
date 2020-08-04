@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Lightweight R implementations of some AdmixTools programs. — admixtools • admixtools</title>
+<title>Tools for inferring demographic history from genetic data — admixtools • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,16 +47,14 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Lightweight R implementations of some AdmixTools programs. — admixtools" />
+<meta property="og:title" content="Tools for inferring demographic history from genetic data — admixtools" />
 
-<meta property="og:description" content="The admixtools package provides implementations of some AdmixTools programs
-which make use of pre-computed f2 block jackknife statistics.
+<meta property="og:description" content="admixtools is a collection of several programs for calculating f-statistics
+and using them to make inferences about demographic history from genetic data
 Aside from the core functions qp3pop, qpdstat, qpadm,
 and qpgraph, there are also wrapper functions and parsing functions around the original
-AdmixTools software, as well as functions to read genotype files and precompute the data necessary
+ADMIXTOOLS software, as well as functions to read genotype files and precompute the data necessary
 to quickly compute f statistics." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -98,7 +96,7 @@ to quickly compute f statistics." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -127,10 +125,13 @@ to quickly compute f statistics." />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -163,18 +164,18 @@ to quickly compute f statistics." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Lightweight R implementations of some AdmixTools programs.</h1>
+    <h1>Tools for inferring demographic history from genetic data</h1>
     
     <div class="hidden name"><code>admixtools.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>The admixtools package provides implementations of some AdmixTools programs
-which make use of pre-computed f2 block jackknife statistics.
+    <p>admixtools is a collection of several programs for calculating f-statistics
+and using them to make inferences about demographic history from genetic data
 Aside from the core functions <code><a href='qp3pop.html'>qp3pop</a></code>, <code><a href='qpdstat.html'>qpdstat</a></code>, <code><a href='qpadm.html'>qpadm</a></code>,
 and <code><a href='qpgraph.html'>qpgraph</a></code>, there are also wrapper functions and parsing functions around the original
-AdmixTools software, as well as functions to read genotype files and precompute the data necessary
+ADMIXTOOLS software, as well as functions to read genotype files and precompute the data necessary
 to quickly compute f statistics.</p>
     
     </div>

@@ -21,12 +21,21 @@ fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
 fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
 compare_fits3(fits1$score_test, fits2$score_test)
 }
+# Use all SNP blocks for f3 covariance matrix
 \dontrun{
 boo = boo_list(f2_blocks, nboot = 100)
-f3precomp1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))
-f3precomp2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))
-fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, f3precomp = f3precomp1)
-fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, f3precomp = f3precomp2)
+ppinv1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))$ppinv
+ppinv2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))$ppinv
+fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, ppinv = ppinv1)
+fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, ppinv = ppinv2)
 compare_fits3(fits1$score_test, fits2$score_test)
 }
+# Same as above
+\dontrun{
+fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
+compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
+}
+}
+\seealso{
+\code{\link{qpgraph_resample_snps2}} \code{\link{boo_list}}
 }

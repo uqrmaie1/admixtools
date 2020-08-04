@@ -7,18 +7,18 @@
 get_block_lengths(dat, dist = 0.05, distcol = "cm")
 }
 \arguments{
-\item{dist}{minimum distance between blocks}
+\item{dat}{Data frame with columns 'CHR' and either 'POS' or 'cm'}
 
-\item{distcol}{which column should be used as distance column}
+\item{dist}{Minimum distance between blocks}
 
-\item{afdat}{data frame with columns 'CHR' and either 'POS' or 'cm'}
+\item{distcol}{Column to use as distance column}
 }
 \value{
-a numeric vector where the ith element lists the number of SNPs in the ith block.
+A numeric vector where the ith element lists the number of SNPs in the ith block.
 }
 \description{
 A new block begins at the SNP after the first SNP which is not within \code{dist} of the start of the last block.
-\code{afdat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
+\code{dat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 }
 \examples{
 \dontrun{

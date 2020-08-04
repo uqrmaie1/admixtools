@@ -5,8 +5,16 @@
 \alias{f3}
 \title{Estimate f3 statistics}
 \usage{
-qp3pop(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-  boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE)
+qp3pop(
+  f2_data,
+  pop1 = NULL,
+  pop2 = NULL,
+  pop3 = NULL,
+  boot = FALSE,
+  sure = FALSE,
+  unique_only = TRUE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.

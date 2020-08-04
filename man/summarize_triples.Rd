@@ -7,7 +7,7 @@
 summarize_triples(results, maxscore = NA)
 }
 \arguments{
-\item{results}{the output of \code{\link{optimize_admixturegraph}}}
+\item{results}{the output of \code{\link{find_graphs}}}
 
 \item{maxscore}{restrict summary to graphs with score not larger than \code{maxscore}}
 }

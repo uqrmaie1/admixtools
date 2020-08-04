@@ -21,7 +21,7 @@ A new, lightning fast implementation of [ADMIXTOOLS](https://github.com/DReichLa
 
 ## Overview
 
-ADMIXTOOLS is a set of programs which use f-statistics to infer demographic models. It has been used in countless publications to test whether populations form clades (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
+ADMIXTOOLS is a set of programs which uses genetic data to infer how populations are related to one another, using f-statistics. It has been used in countless publications to test whether populations form clades (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
 ADMIXTOOLS 2 provides the same functionality in a new look, and it's orders of magnitude faster. This is achieved through separating the computation of f2-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model:
 
@@ -37,7 +37,6 @@ ADMIXTOOLS 2 provides the same functionality in a new look, and it's orders of m
   + Simultaneous exploration of hundreds of *qpAdm* models
   + Unbiased comparison of any two *qpGraph* models using out-of-sample scores
   + Jackknife and bootstrap confidence intervals for any *qpAdm*, *qpWave*, and *qpGraph* parameters
-  + Detailed output for each fitted model
 * Full support for genotype data in (PACKED)ANCESTRYMAP/EIGENSTRAT format and PLINK format
 * Wrapper functions around the original ADMIXTOOLS software (see also [admixr](https://bodkan.net/admixr/index.html))
 <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
@@ -88,7 +87,7 @@ If the installation still fails, please [contact me](mailto:rmaier@broadinstitut
 
 ## Usage
 
-First we need to extract f2-statistics from genotype files. These f2-statistics will be written to disk so that the slow part of the computation does not have to be repeated.
+The first step is to extract f2-statistics from genotype files. These f2-statistics will be written to disk so that the slow part of the computation does not have to be repeated.
 
 ```{r, eval = FALSE}
 genotype_data = "/my/geno/prefix"
@@ -101,6 +100,7 @@ After that, we can fit an admixture graph like this:
 ```{r, eval = FALSE}
 f2_blocks = f2_from_precomp(f2_dir)
 fit = qpgraph(f2_blocks, example_graph)
+fit$score
 plot_graph(fit$edges)
 ```
 
@@ -152,9 +152,9 @@ run_shiny_admixtools()
 
 One of the design goals behind ADMIXTOOLS 2 is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.
 
-To this end, all programs and parameters are (or should be) explained [here](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
+To this end, all ADMIXTOOLS 2 functions are [documented](https://uqrmaie1.github.io/admixtools/reference/index.html). You can also take a look at the [tutorial](articles/admixtools.html), read more about how ADMIXTOOLS 2 computes [f-statistics](https://uqrmaie1.github.io/admixtools/articles/fstats.html) and [standard errors](https://uqrmaie1.github.io/admixtools/resampling.html), and what you can do with [admixture graphs](https://uqrmaie1.github.io/admixtools/articles/graphs.html).
 
-In addition to that, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step.
+For even greater transparency, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step. For example, if you want to know how weights are computed in `qpadm()`, you can type `qpadm` in R to get the function code and you will see another function which is called `qpadm_weights()`. By default, this function will be replaced by its faster C++ version `cpp_qpadm_weights()`. But you can still see what it's doing without reading the C++ code by typing `admixtools:::qpadm_weights`. And you can tell `qpadm()` to use the R versions instead of the C++ versions by calling `qpadm(cpp = FALSE)`.
 
 
 ## Contact

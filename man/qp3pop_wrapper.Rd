@@ -4,11 +4,22 @@
 \alias{qp3pop_wrapper}
 \title{Wrapper function around the original qp3Pop program}
 \usage{
-qp3pop_wrapper(source1, source2 = NULL, target = NULL,
-  bin = "~np29/o2bin/qp3Pop", pref = NULL, outdir = ".",
-  parfile = NULL, inbreed = "NO", outgroupmode = "YES",
-  f4mode = "YES", useallsnps = "NO", printonly = FALSE, env = "",
-  verbose = TRUE)
+qp3pop_wrapper(
+  source1,
+  source2 = NULL,
+  target = NULL,
+  bin = "~np29/o2bin/qp3Pop",
+  pref = NULL,
+  outdir = ".",
+  parfile = NULL,
+  inbreed = "NO",
+  outgroupmode = "YES",
+  f4mode = "YES",
+  useallsnps = "NO",
+  printonly = FALSE,
+  env = "",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{source1}{One of the following four:
@@ -35,7 +46,17 @@ population combinations to be tested. \code{source2} and \code{target} will be i
 \item{parfile}{qp3Pop parameter file. If this is specified, \code{source1}, \code{source2},
 \code{target} will be ignored.}
 
+\item{inbreed}{inbreed}
+
+\item{outgroupmode}{outgroupmode}
+
+\item{f4mode}{f4mode}
+
+\item{useallsnps}{useallsnps}
+
 \item{printonly}{Should the command be printed or executed?}
+
+\item{env}{Export environmental variables. See examples.}
 
 \item{verbose}{Print progress updates}
 }

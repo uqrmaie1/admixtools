@@ -4,8 +4,13 @@
 \alias{packedancestrymap_to_aftable}
 \title{Read allele frequencies from packedancestrymap files}
 \usage{
-packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
-  adjust_pseudohaploid = TRUE, verbose = TRUE)
+packedancestrymap_to_aftable(
+  pref,
+  inds = NULL,
+  pops = NULL,
+  adjust_pseudohaploid = TRUE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp})}
@@ -14,7 +19,7 @@ packedancestrymap_to_aftable(pref, inds = NULL, pops = NULL,
 
 \item{pops}{Populations from which to compute allele frequencies. If \code{NULL} (default), populations will be extracted from the third column in the \code{.ind} file. If population labels are provided, they should have the same length as \code{inds}, and will be matched to them by position}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are coded as \code{0} or \code{2}, although only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Pseudohaploid samples are identified as those that don't have any genotypes coded as \code{1} among the first 1000 SNPs.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }

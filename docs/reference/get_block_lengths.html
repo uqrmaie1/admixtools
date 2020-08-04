@@ -50,9 +50,7 @@
 <meta property="og:title" content="Find LD-independent blocks — get_block_lengths" />
 
 <meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within dist of the start of the last block.
-afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
-
-<meta property="og:image" content="/logo.png" />
+dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -94,7 +92,7 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -123,10 +121,13 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -167,7 +168,7 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     <div class="ref-description">
     
     <p>A new block begins at the SNP after the first SNP which is not within <code>dist</code> of the start of the last block.
-<code>afdat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
+<code>dat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
     
     </div>
 
@@ -177,22 +178,22 @@ afdat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>dat</th>
+      <td><p>Data frame with columns 'CHR' and either 'POS' or 'cm'</p></td>
+    </tr>
+    <tr>
       <th>dist</th>
-      <td><p>minimum distance between blocks</p></td>
+      <td><p>Minimum distance between blocks</p></td>
     </tr>
     <tr>
       <th>distcol</th>
-      <td><p>which column should be used as distance column</p></td>
-    </tr>
-    <tr>
-      <th>afdat</th>
-      <td><p>data frame with columns 'CHR' and either 'POS' or 'cm'</p></td>
+      <td><p>Column to use as distance column</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a numeric vector where the ith element lists the number of SNPs in the ith block.</p>
+    <p>A numeric vector where the ith element lists the number of SNPs in the ith block.</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

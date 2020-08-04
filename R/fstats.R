@@ -13,7 +13,6 @@
 #' \item `counts` A matrix of allele counts for all populations (columns) and SNPs (rows)
 #' \item `snpdat` A data frame with SNP metadata
 #' }
-#' @param block_lengths vector with lengths of each block. \code{sum(block_lengths)}
 #' has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).

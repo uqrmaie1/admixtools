@@ -4,13 +4,32 @@
 \alias{qpgraph_wrapper}
 \title{Wrapper function around the original qpGraph program}
 \usage{
-qpgraph_wrapper(graph, bin = "~np29/o2bin/qpGraph", pref = NULL,
-  parfile = NULL, outdir = ".", printonly = FALSE, badsnps = NULL,
-  lambdascale = NULL, inbreed = "NO", diag = 1e-04,
-  outpop = "NULL", loadf3 = NULL, lsqmode = "NO", fstdmode = "NO",
-  hires = "NO", forcezmode = "NO", zthresh = 0, allsnps = "NO",
-  oldallsnps = "NO", doanalysis = "YES", bigiter = 100,
-  initmix = 0, env = "", verbose = TRUE)
+qpgraph_wrapper(
+  graph,
+  bin = "~np29/o2bin/qpGraph",
+  pref = NULL,
+  parfile = NULL,
+  outdir = ".",
+  printonly = FALSE,
+  badsnps = NULL,
+  lambdascale = NULL,
+  inbreed = "NO",
+  diag = 1e-04,
+  outpop = "NULL",
+  loadf3 = NULL,
+  lsqmode = "NO",
+  fstdmode = "NO",
+  hires = "NO",
+  forcezmode = "NO",
+  zthresh = 0,
+  allsnps = "NO",
+  oldallsnps = "NO",
+  doanalysis = "YES",
+  bigiter = 100,
+  initmix = 0,
+  env = "",
+  verbose = TRUE
+)
 }
 \arguments{
 \item{graph}{An admixture graph or qpGraph graph file}
@@ -25,21 +44,39 @@ qpgraph_wrapper(graph, bin = "~np29/o2bin/qpGraph", pref = NULL,
 
 \item{printonly}{Should output be executed or the command just be printed?}
 
+\item{badsnps}{badsnps}
+
 \item{lambdascale}{lambdascale}
+
+\item{inbreed}{inbreed}
 
 \item{diag}{diag}
 
 \item{outpop}{outgroup population}
 
+\item{loadf3}{loadf3}
+
 \item{lsqmode}{least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
+
+\item{fstdmode}{fstdmode}
 
 \item{hires}{hires}
 
 \item{forcezmode}{forcezmode}
 
+\item{zthresh}{zthresh}
+
 \item{allsnps}{allsnps}
 
+\item{oldallsnps}{oldallsnps}
+
+\item{doanalysis}{doanalysis}
+
 \item{bigiter}{bigiter}
+
+\item{initmix}{initmix}
+
+\item{env}{Export environmental variables. See examples.}
 
 \item{verbose}{Print progress updates}
 }

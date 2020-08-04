@@ -1,8 +1,50 @@
 ---
-title: "Input data"
+title: "Genotype data"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Genotype data}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
+
+**Under construction**
+
+ADMIXTOOLS 2 includes functions for reading genotype data that may be useful outside the scope of demographic inference.
+
+While there are other R packages for reading and writing binary PLINK files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist for binary EIGENSTRAT/PACKEDANCESTRYMAP format files yet exist. Some of the functions shown here can also read only a subset of all SNPs (as long as they are consecutive) or samples.
+
+### Reading genotype files
+
+```{r, eval = FALSE}
+geno = read_plink("plink/prefix")
+geno = read_packedancestrymap("packedancestrymap/prefix")
+```
+
+
+### Computing allele frequencies
+
+```{r, eval = FALSE}
+afs = plink_to_aftable("plink/prefix")
+afs = packedancestrymap_to_aftable("packedancestrymap/prefix")
+```
+
+
+### Converting PACKEDANCESTRYMAP to PLINK
+
+This function's original purpose was to extract samples from genotype files, but it can also be used to convert genotype files from PACKEDANCESTRYMAP to PLINK format: If no samples are provided, it defaults to all samples.
+
+ADMIXTOOLS 2 currently doesn't provide the option to write binary PACKEDANCESTRYMAP files, so the conversion only goes one way.
+
+```{r, eval = FALSE}
+extract_samples("packedancestrymap/prefix", "plink_output")
+```
+
+
+
+
 

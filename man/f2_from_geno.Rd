@@ -4,8 +4,15 @@
 \alias{f2_from_geno}
 \title{Read f2 jackknife blocks from genotype data}
 \usage{
-f2_from_geno(pref, inds = NULL, pops = NULL, maxmem = 8000,
-  dist = 0.05, format = NULL, verbose = TRUE)
+f2_from_geno(
+  pref,
+  inds = NULL,
+  pops = NULL,
+  maxmem = 8000,
+  dist = 0.05,
+  format = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},

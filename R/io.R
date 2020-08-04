@@ -5,7 +5,7 @@
 #' @param pref Prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
 #' @param inds Individuals from which to compute allele frequencies
 #' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Pseudohaploid samples are identified as those that don't have any genotypes coded as `1` among the first 1000 SNPs.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param verbose Print progress updates
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
@@ -468,9 +468,9 @@ match_samples = function(haveinds, havepops, inds, pops) {
 
 #' Read genotype data from `PLINK` files
 #'
-#' This is based on Gad Abraham's \code{\href{https://github.com/gabraham/plink2R}{plink2R}} package,
+#' This is based on Gad Abraham's \href{https://github.com/gabraham/plink2R}{plink2R} package,
 #' but genotypes are `m` x `n`, not `n` x `m`.
-#' See \code{\href{https://www.rdocumentation.org/packages/genio}{genio}} for a dedicated `R` package for
+#' See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated `R` package for
 #' reading and writing `PLINK` files.
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
@@ -481,9 +481,8 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_plink = function(pref, inds = NULL, auto_only = TRUE, verbose = FALSE) {
+read_plink = function(pref, inds = NULL, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package, but genotypes are m x n, not n x m
-  stopifnot(!is.null(auto_only))
   if(verbose) alert_info('Reading PLINK files...\n')
 
   bedfile = paste0(pref, '.bed')
@@ -646,6 +645,8 @@ write_pairdat = function(aa_arr, nn_arr, outdir, overwrite = FALSE) {
 #' @param mat The matrix to be split
 #' @param cols_per_chunk Number of columns per block
 #' @param prefix Prefix of output files
+#' @param overwrite Overwrite existing files
+#' @param verbose Print progress updates
 #' @seealso \code{\link{packedancestrymap_to_aftable}}, \code{\link{write_split_f2_block}}
 #' @examples
 #' \dontrun{
@@ -689,15 +690,16 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = T
 #' afdir = 'tmp_af_dir/'
 #' f2dir = 'f2_dir'
 #' extract_afs('path/to/packedancestrymap_prefix', afdir)
-#' numchunks = length(list.files(afdir, 'afs.+rds')) # this should be the number of split allele frequency files
-#' for(j in 1:numchunks) {
+#' numchunks = length(list.files(afdir, 'afs.+rds'))
+#' # numchunks should be the number of split allele frequency files
+#' for(i in 1:numchunks) {
 #'   for(j in i:numchunks) {
 #'     write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = j)
 #'   }
 #' }
 #' }
 #' # Alternatively, the following code will do the same, while submitting each chunk as a separate job.
-#' # (if `future::plan()` has been set up appropriately)
+#' # (if \code{\link[future]{plan}} has been set up appropriately)
 #' \dontrun{
 #' furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
 #'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
@@ -717,6 +719,10 @@ write_split_f2_block = function(afdir, outdir, chunk1, chunk2, dist = 0.05, verb
   poly = snpdat$poly
   block_lengths = get_block_lengths(snpdat[poly,], dist = dist)
   block_lengths_a = get_block_lengths(snpdat, dist = dist)
+  fl = paste0(outdir, '/block_lengths.rds')
+  fla = paste0(outdir, '/block_lengths_a.rds')
+  if(!file.exists(fl)) saveRDS(block_lengths, file = fl)
+  if(!file.exists(fla)) saveRDS(block_lengths_a, file = fla)
   filenames = expand_grid(nam1, nam2) %>%
     transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2))) %$%
     nam %>% rep(each = 2) %>% paste0(c('_f2.rds', '_ap.rds'))
@@ -732,46 +738,8 @@ write_split_f2_block = function(afdir, outdir, chunk1, chunk2, dist = 0.05, verb
   write_f2(namedList(f2, counts, afprod, countsap), outdir = outdir)
 }
 
-#' Compute and write block lengths
-#'
-#' @export
-#' @examples
-#' \dontrun{
-#' pref = 'path/to/packedancestrymap_prefix'
-#' genodir = 'split_v42.1'
-#' outdir = 'indpairs_v42.1'
-#' write_block_lengths(pref, outdir)
-#' dat = read_packedancestrymap(pref, inds = inds)
-#' split_mat(dat$geno, cols_per_chunk = 20, outdir = genodir)
-#' write_split_inddat(genodir, outdir)
-#' numchunks = 185 # this should be the number of split allele frequency files
-#' for(j in 1:numchunks) {
-#'   for(j in i:numchunks) {
-#'     write_split_pairdat(genodir, outdir, chunk1 = i, chunk2 = j)
-#'     }
-#'   }
-#' }
-write_block_lengths = function(pref, outdir, dist = 0.05, distcol = 'cm', auto_only = TRUE) {
-
-  if(!dir.exists(outdir)) dir.create(outdir, recursive = TRUE)
-  plinkfile = paste0(pref, '.bim')
-  pafile = paste0(pref, '.snp')
-  plink = file.exists(plinkfile)
-  if(plink) {
-    nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-    snpfile = plinkfile
-  } else {
-    nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-    snpfile = pafile
-  }
-  snps = read_table2(snpfile, col_names = nam, col_types = cols(), progress = FALSE)
-  if(auto_only) snps %<>% filter(between(CHR, 1, 22))
-  block_lengths = get_block_lengths(snps, dist = dist, distcol = distcol)
-  saveRDS(block_lengths, file = paste0(outdir, '/block_lengths.rds'))
-}
 
 
-#' @export
 write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000, verbose = TRUE) {
   # reads split genotype matrices, computes a and n, and writes output to outdir
 
@@ -791,7 +759,6 @@ write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000,
 }
 
 
-#' @export
 write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE) {
   # reads two (possibly split) genotype matrices, computes aa and nn, and writes output to outdir
 
@@ -840,7 +807,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
 #' @param poly_only Exclude sites with identical allele frequencies in all populations
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are coded as `0` or `2`, although only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Pseudohaploid samples are identified as those that don't have any genotypes coded as `1` among the first 1000 SNPs.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param verbose Print progress updates
 #' @return SNP metadata (invisibly)
 #' @examples
@@ -938,10 +905,6 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @inheritParams extract_f2
-#' @examples
-#' \dontrun{
-#'
-#' }
 extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
@@ -1023,6 +986,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
+#' @param cols_per_chunk Number of columns per block. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.
 #' @return SNP metadata (invisibly)
 #' @examples
 #' \dontrun{
@@ -1030,7 +994,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' outdir = 'dir/for/afdata/'
 #' extract_afs(pref, outdir)
 #' }
-extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 20,
+extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 10,
                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
                        verbose = TRUE) {
@@ -1073,7 +1037,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols
 #' outdir = 'dir/for/afdata/'
 #' extract_f2_subset(pref, outdir)
 #' }
-extract_f2_subset = function(from, to, pops) {
+extract_f2_subset = function(from, to, pops, verbose = TRUE) {
 
   if(!dir.exists(to)) dir.create(to)
   file.copy(paste0(from, '/block_lengths.rds'), paste0(to, '/block_lengths.rds'))
@@ -1251,7 +1215,7 @@ f2_from_precomp_nonsquare = function(dir, pops1, pops2, afprod = FALSE, remove_n
   }
   if(remove_na) {
     keep = apply(arr, 3, function(x) sum(is.na(x)) == 0)
-    arr = arr[,,keep]
+    arr = arr[,,keep, drop = FALSE]
   }
   arr
 }
@@ -1565,7 +1529,6 @@ delete_groups = function(dir, groups = NULL, verbose = TRUE) {
   invisible(ids)
 }
 
-#' @export
 is_group = function(dir, group) file.exists(paste0(dir, '/groups/', group, '.rds'))
 
 

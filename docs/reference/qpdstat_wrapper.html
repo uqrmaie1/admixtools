@@ -50,8 +50,6 @@
 <meta property="og:title" content="Wrapper function around the original qpDstat program — qpdstat_wrapper" />
 
 <meta property="og:description" content="This requires a working installation of qpDstat, which will be called using system" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,11 +170,23 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpdstat_wrapper</span>(<span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpDstat"</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
-  <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>, <span class='kw'>useallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
-  <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>, <span class='kw'>lambdascale</span> <span class='kw'>=</span> -<span class='fl'>1</span>, <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpdstat_wrapper</span>(
+  <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpDstat"</span>,
+  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
+  <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>,
+  <span class='kw'>useallsnps</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>inbreed</span> <span class='kw'>=</span> <span class='st'>"NO"</span>,
+  <span class='kw'>lambdascale</span> <span class='kw'>=</span> -<span class='fl'>1</span>,
+  <span class='kw'>printonly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>""</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -220,8 +233,28 @@ the populations or population combinations to be tested. <code>pop2</code>, <cod
 and <code>pop4</code> will be ignored.</p></td>
     </tr>
     <tr>
+      <th>f4mode</th>
+      <td><p>f4mode</p></td>
+    </tr>
+    <tr>
+      <th>useallsnps</th>
+      <td><p>useallsnps</p></td>
+    </tr>
+    <tr>
+      <th>inbreed</th>
+      <td><p>inbreed</p></td>
+    </tr>
+    <tr>
+      <th>lambdascale</th>
+      <td><p>lambdascale</p></td>
+    </tr>
+    <tr>
       <th>printonly</th>
       <td><p>Should the command be printed or executed?</p></td>
+    </tr>
+    <tr>
+      <th>env</th>
+      <td><p>Export environmental variables. See examples.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

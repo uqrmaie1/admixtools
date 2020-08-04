@@ -4,11 +4,26 @@
 \alias{qpgraph}
 \title{Compute the fit of an admixture graph}
 \usage{
-qpgraph(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-04,
-  fudge_cov = 1e-05, fnscale = 1e-06, lsqmode = FALSE,
-  numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE,
-  f3precomp = NULL, f2_blocks_test = NULL, low_q = 0, high_q = 1,
-  verbose = FALSE)
+qpgraph(
+  f2_blocks,
+  graph,
+  f2_denom = 1,
+  boot = FALSE,
+  fudge = 1e-04,
+  fudge_cov = 1e-05,
+  fnscale = 1e-06,
+  lsqmode = FALSE,
+  numstart = 10,
+  seed = NULL,
+  cpp = TRUE,
+  return_f4 = FALSE,
+  f3precomp = NULL,
+  ppinv = NULL,
+  f2_blocks_test = NULL,
+  low_q = 0,
+  high_q = 1,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{f2_blocks}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
@@ -39,6 +54,8 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 \item{return_f4}{Return all f4-statistics. Defaults to \code{FALSE} because this can be slow.}
 
 \item{f3precomp}{Precomputed f3-statistics. This should be the output of \code{qpgraph_precompute_f3} and can be provided instead of \code{f2_blocks}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
+
+\item{ppinv}{Inverse of f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
 
 \item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
 

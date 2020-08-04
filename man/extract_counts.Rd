@@ -4,10 +4,22 @@
 \alias{extract_counts}
 \title{Extract and store data needed to compute blocked f2}
 \usage{
-extract_counts(pref, outdir, inds = NULL, dist = 0.05, maxmiss = 1,
-  minmaf = 0, maxmaf = 0.5, transitions = TRUE,
-  transversions = TRUE, keepsnps = NULL, maxmem = 8000,
-  overwrite = FALSE, format = NULL, verbose = TRUE)
+extract_counts(
+  pref,
+  outdir,
+  inds = NULL,
+  dist = 0.05,
+  maxmiss = 1,
+  minmaf = 0,
+  maxmaf = 0.5,
+  transitions = TRUE,
+  transversions = TRUE,
+  keepsnps = NULL,
+  maxmem = 8000,
+  overwrite = FALSE,
+  format = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
@@ -47,9 +59,4 @@ and extracts data required to compute blocked f-statistics for any sets of sampl
 and alternative allele counts for each pair.
 The function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
 and \code{\link{afs_to_f2_blocks}}.
-}
-\examples{
-\dontrun{
-
-}
 }

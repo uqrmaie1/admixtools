@@ -23,7 +23,7 @@ To speed this up, this function groups individuals into populations, computes al
 pairwise allele counts with all individuals and groups, and writes the data to disk. f2 statistics for a
 combination of grouped and ungrouped precomputed data can then be read using \code{\link{f2_from_precomp}},
 replacing individual IDs of the grouped samples with the new group labels.
-All groupings are listed in \code{{dir}/groups/{groupname}.rds}
+All groupings are listed in \verb{\{dir\}/groups/\{groupname\}.rds}
 }
 \examples{
 \dontrun{

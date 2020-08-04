@@ -3,14 +3,13 @@
 \docType{package}
 \name{admixtools}
 \alias{admixtools}
-\alias{admixtools-package}
-\title{Lightweight R implementations of some AdmixTools programs.}
+\title{Tools for inferring demographic history from genetic data}
 \description{
-The admixtools package provides implementations of some AdmixTools programs
-which make use of pre-computed f2 block jackknife statistics.
+admixtools is a collection of several programs for calculating f-statistics
+and using them to make inferences about demographic history from genetic data
 Aside from the core functions \code{\link{qp3pop}}, \code{\link{qpdstat}}, \code{\link{qpadm}},
 and \code{\link{qpgraph}}, there are also wrapper functions and parsing functions around the original
-AdmixTools software, as well as functions to read genotype files and precompute the data necessary
+ADMIXTOOLS software, as well as functions to read genotype files and precompute the data necessary
 to quickly compute f statistics.
 }
 \references{

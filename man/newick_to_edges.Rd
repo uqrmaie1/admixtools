@@ -7,14 +7,14 @@
 newick_to_edges(newick, node = "R", edgemat = matrix(NA, 0, 2))
 }
 \arguments{
-\item{newick}{tree in newick format.}
+\item{newick}{Tree in newick format.}
 
-\item{node}{root label of the tree.}
+\item{node}{Root label of the tree.}
 
-\item{edgemat}{argument used for recursive function calls.}
+\item{edgemat}{Used for recursive function calls.}
 }
 \value{
-tree as two column matrix of edges (adjacency list)
+Tree as two column matrix of edges (adjacency list)
 }
 \description{
 Turn a newick format tree to a matrix of edges

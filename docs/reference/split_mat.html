@@ -51,8 +51,6 @@
 
 <meta property="og:description" content="This function splits a large matrix into smaller blocks with cols_per_chunk columns per block,
 and saves them as .rds files with prefix prefix" />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -94,7 +92,7 @@ and saves them as .rds files with prefix prefix" />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -123,10 +121,13 @@ and saves them as .rds files with prefix prefix" />
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -171,8 +172,7 @@ and saves them as <code>.rds</code> files with prefix <code>prefix</code></p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>split_mat</span>(<span class='no'>mat</span>, <span class='no'>cols_per_chunk</span>, <span class='no'>prefix</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>split_mat</span>(<span class='no'>mat</span>, <span class='no'>cols_per_chunk</span>, <span class='no'>prefix</span>, <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -188,6 +188,14 @@ and saves them as <code>.rds</code> files with prefix <code>prefix</code></p>
     <tr>
       <th>prefix</th>
       <td><p>Prefix of output files</p></td>
+    </tr>
+    <tr>
+      <th>overwrite</th>
+      <td><p>Overwrite existing files</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     

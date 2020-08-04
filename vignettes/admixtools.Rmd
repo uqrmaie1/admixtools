@@ -1,9 +1,15 @@
 ---
 title: "ADMIXTOOLS 2 Torial"
+author: "Robert Maier"
+date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{ADMIXTOOLS 2 Torial}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 
@@ -71,7 +77,7 @@ $$
 
 In practice, the estimation of f-statistics can be more complicated, as it needs to account for low sample counts, missing data, and differences in ploidy, as described [here](fstats.html).
 
-In ADMIXTOOLS 2, extracting f2-statistics from genotype data is the foundation for all further analyses: 
+In ADMIXTOOLS 2, f2-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
 
 ```{r, eval = FALSE}
 prefix = '/path/to/geno'
@@ -79,6 +85,7 @@ my_f2_dir = '/store/f2data/here/'
 
 extract_f2(prefix, my_f2_dir)
 ```
+
 This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and blocked f2 statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2`. To get a description of the arguemnts and to see examples of how to use it, type
 
 ```{r, eval = FALSE}
@@ -123,6 +130,10 @@ head(block_lengths)
 ```
 
 If you want to try any of this without extracting and loading your own f2-statistics, you can instead use `example_f2_blocks` which becomes available as you load `admixtools`.
+
+<br>
+
+For more information on f-statistics in ADMIXTOOLS 2, click [here](fstats.html).
 
 <br>
 
@@ -231,10 +242,11 @@ results$weights
 results$popdrop
 ```
 
+<br>
 
 The following two functions can be used to explore many *qpWave* or *qpAdm* models at the same time.
 
-### Pairwise cladality tests
+#### Pairwise cladality tests
 
 `qpadm_pairs` forms all pairs of *left* populations and tests whether they form a clade with respect to the *right* populations.
 
@@ -246,7 +258,7 @@ qpadm_pairs(example_f2_blocks, left = c(target, left), right = right)
 ```
 
 
-### Rotating outgroups
+#### Rotating outgroups
 
 ```{r, eval = FALSE}
 qpadm_rotate(f2_blocks, left = pops[3:7], right = pops[1:2], target = pops[1])
@@ -266,9 +278,11 @@ Single $f_3$- and $f_4$-statistics can tell us how three or four populations are
 
 ```{r, eval = FALSE}
 qpg_results = qpgraph(f2_dir, example_graph)
+qpg_results$score
 ```
 ```{r, echo = FALSE}
 qpg_results = qpgraph(example_f2_blocks, example_graph)
+qpg_results$score
 ```
 
 Here, `example_graph` is a specific graph included in this R package, but you can provide any other graph in one of three formats.
@@ -316,7 +330,9 @@ The other regularization terms is added to the covariance matrix of fitted branc
 
 As these regularization terms affect the likelihood score, they should be kept constant whenever fits of different graphs are compared to each other.
 
-ADMIXTOOLS 2 can automatically find well-fitting graphs, and it has several functions for exploring the topological neighborhood of a graph. These functions are described [here](graph_optim.html).
+### More about graphs
+
+ADMIXTOOLS 2 can automatically find well-fitting graphs, and it has several functions for exploring the topological neighborhood of a graph. These functions are described [here](graphs.html).
 
 <br>
 

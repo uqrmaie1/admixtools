@@ -20,12 +20,20 @@ numadmixplacements = function(numedges, nadmix) {
   choose(numedges, 2) * numadmixplacements(numedges+3, nadmix-1)
 }
 
+#' Count number of admixture nodes
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return Number of admixture nodes
 numadmix = function(graph) {
   sum(degree(graph, mode='in') == 2)
 }
 
+#' Get the population names of a graph
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return Population names
 get_leafnames = function(graph) {
   graph %>% V %>% {names(which(degree(graph, ., mode='out') == 0))}
 }
@@ -39,13 +47,22 @@ get_leaves2 = function(graph) {
   graph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(graph))
 }
 
+#' Get the root name
+#'
+#' @export
+#' @param graph An admixture graph
+#' @return Root name
 get_root = function(graph) {
   root = names(which(igraph::degree(graph, mode = 'in') == 0))
   if(length(root) != 1) stop(paste0('Root problem ', root))
   root
 }
 
+#' Get the outgroup from a graph (if it exists)
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return Outgroup name
 get_outpop = function(graph) {
   # returns outpop, if there is an edge from the root to a leave, NULL otherwise
   #graph %>% V %>% names %>% pluck(2)
@@ -156,9 +173,9 @@ simplify_graph = function(graph) {
 #'
 #' This is used to revert simplify_graph.
 #' @export
-#' @param graph an admixture graph
+#' @param graph An admixture graph
 #' @examples
-#' simple = simplify_graph(igraph1)
+#' simple = simplify_graph(example_igraph)
 #' desimple = desimplify_graph(simple)
 #' plot_graph(simple)
 #' plot_graph(desimple)
@@ -250,15 +267,15 @@ random_newick_named = function(names, start='', end='') {
 
 #' Turn a newick format tree to a matrix of edges
 #' @export
-#' @param newick tree in newick format.
-#' @param node root label of the tree.
-#' @param edgemat argument used for recursive function calls.
-#' @return tree as two column matrix of edges (adjacency list)
+#' @param newick Tree in newick format.
+#' @param node Root label of the tree.
+#' @param edgemat Used for recursive function calls.
+#' @return Tree as two column matrix of edges (adjacency list)
 #' @examples
 #' newick = random_newick(c('a', 'b', 'c', 'd'))
 #' newick
 #' newick_to_edges(newick)
-newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
+newick_to_edges = function(newick, node='R', edgemat = matrix(NA,0,2)) {
   # turns binary tree in newick format into matrix of edges (adjacency list)
 
   newick = gsub('^\\(', '', gsub('\\)$', '', gsub(';$', '', newick)))
@@ -289,22 +306,37 @@ newick_to_edges = function(newick, node='R', edgemat=matrix(NA,0,2)) {
   rbind(c(node, nodel), edgesleft, c(node, noder), edgesright, edgemat)
 }
 
-
+#' Insert a single edge into graph
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param from List of nodes. New edges will originate above this node
+#' @param to List of nodes. New edges will end above this node
+#' @return Adxmiture graph with inserted edge
+#' @seealso \code{\link{insert_edges}}, \code{\link{delete_admix}}
 insert_edge = function(graph, from, to) {
   # inserts edge from edge 'from' and to edge 'to'
   # more atomic than 'insert_admix_igraph', for better reusability
-  n1 = as_ids(from)
-  n2 = as_ids(to)
+  n1 = ifelse(is.character(from), from, as_ids(from))
+  n2 = ifelse(is.character(to), to, as_ids(to))
   v1 = str_split(n1, '\\|')[[1]]
   v2 = str_split(n2, '\\|')[[1]]
   o1 = str_replace(n1, '\\|', '_')
   o2 = str_replace(n2, '\\|', '_')
   graph %>%
-    add_vertices(2, name = c(o1, o2)) %>%
-    add_edges(c(v1[1], o1, o1, v1[2], v2[1], o2, o2, v2[2], o1, o2)) %>%
-    delete_edges(c(n1, n2))
+    igraph::add_vertices(2, name = c(o1, o2)) %>%
+    igraph::add_edges(c(v1[1], o1, o1, v1[2], v2[1], o2, o2, v2[2], o1, o2)) %>%
+    igraph::delete_edges(c(n1, n2))
 }
 
+#' Insert admixture edges into graph
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param from List of nodes. New edges will originate above these nodes.
+#' @param to List of nodes. New edges will end above these nodes.
+#' @return Adxmiture graph with inserted edges
+#' @seealso \code{\link{insert_edge}} \code{\link{delete_admix}}
 insert_edges = function(graph, from, to) {
   # from and to are vectors of node names
   # edges will be inserted above each node pair
@@ -315,7 +347,17 @@ insert_edges = function(graph, from, to) {
   })
 }
 
-#' @export
+#' Insert admixture edges into graph
+#'
+#' @param graph An admixture graph
+#' @param fromnodes List of nodes. New edges will originate above these nodes.
+#' @param tonodes List of nodes. New edges will end above these nodes.
+#' @param substitute_missing If `TRUE`, an attempt will be made to insert random other edges
+#'   if some of the provided edges could not be inserted.
+#' @param allow_below_admix Allow insertion of edges which begin or end directly underneath an admixture node
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return Adxmiture graph with inserted edges
+#' @seealso \code{\link{insert_edge}}
 insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = FALSE,
                                allow_below_admix = FALSE, desimplify = FALSE) {
   # inserts edges fromnodes -> tonodes into graph
@@ -462,12 +504,27 @@ admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leave
   if(desimplify) graph = desimplify_graph(graph)
   graph
 }
+
+#' Modify a graph by regrafting a leaf
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return A new admixture graph
 spr_leaves = function(graph) admixturegraph_prune_and_regraft(graph, only_leaves = TRUE)
+
+#' Modify a graph by regrafting a subcomponent
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return A new admixture graph
 spr_all = function(graph) admixturegraph_prune_and_regraft(graph, only_leaves = FALSE)
 
+#' Modify a graph by moving an admixture edge
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return A new admixture graph
 move_admixedge_once = function(graph, desimplify = TRUE) {
   # selects random admixture edge, and moves it to next closest possible spot
   # if not possible, select other admix node
@@ -507,8 +564,13 @@ move_admixedge_once = function(graph, desimplify = TRUE) {
   return(graph)
 }
 
+#' Modify a graph by permuting leaf nodes
+#'
 #' @export
-permute_leaves = function(graph, fix_outgroup=TRUE) {
+#' @param graph An admixture graph
+#' @param fix_outgroup Keep outgroup in place
+#' @return A new admixture graph
+permute_leaves = function(graph, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -516,8 +578,13 @@ permute_leaves = function(graph, fix_outgroup=TRUE) {
   igraph::set_vertex_attr(graph, 'name', leaves, sample(nam))
 }
 
+#' Modify a graph by swapping two leaf nodes
+#'
 #' @export
-swap_leaves = function(graph, fix_outgroup=TRUE) {
+#' @param graph An admixture graph
+#' @param fix_outgroup Keep outgroup in place
+#' @return A new admixture graph
+swap_leaves = function(graph, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -526,7 +593,12 @@ swap_leaves = function(graph, fix_outgroup=TRUE) {
   igraph::set_vertex_attr(graph, 'name', leaves, sample(nam))
 }
 
+#' Modify a graph flipping the direction of an admixture edge
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return A new admixture graph
 flipadmix_random = function(graph, desimplify = TRUE) {
   graph %<>% simplify_graph
   admixedges = graph %>% find_admixedges %>% sample_frac(1)
@@ -657,14 +729,14 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' Find well fitting admixture graphs
 #'
 #' This function generates and evaluates admixture graphs in `numgen` iterations across `numrep` independent repeats
-#' to find well fitting admixturegraphs. It uses the function \code{\link{future_map}} from the \code{\link{furrr}}
-#' package to parallelize across the independent repeats. The function \code{\link{future::plan}} can be called
+#' to find well fitting admixturegraphs. It uses the function \code{\link[furrr]{future_map}}
+#' to parallelize across the independent repeats. The function \code{\link[future]{plan}} can be called
 #' to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
 #' @export
 #' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_indpairs}}.
+#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pops Populations for which to fit admixture graphs
 #' @param outpop Outgroup population
 #' @param numrep Number of independent repetitions (each repetition can be run in parallel)
@@ -686,9 +758,9 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' \item `flipadmix_random` Flips the direction of an admixture edge (if possible).
 #' }
 #' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
-#' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing `purrr::map` with `furrr::future_map`. Will only be effective if `future::plan()` has been set.
+#' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.
 #' @param stop_at Stop execution after finishing the generation running at `stop_at` seconds. Currently not working.
-#' @param debug If `TRUE` each repeat is run sequentially in a loop and not via \code{\link{furrr::map}}).
+#' @param debug If `TRUE` each repeat is run sequentially in a loop and not via \code{\link[furrr]{future_map}}).
 #' Errors will interrupt execution. This is the default if `numrep = 1`
 #' @param fudge_cov Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
 #' @param verbose Print progress updates
@@ -810,14 +882,14 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
 #' This summarizes topologies of population triples across graphs
 #'
 #' @export
-#' @param results the output of \code{\link{optimize_admixturegraph}}
+#' @param results the output of \code{\link{find_graphs}}
 #' @param maxscore restrict summary to graphs with score not larger than `maxscore`
 #' @examples
 #' \dontrun{
 #' summarize_triples(opt_results)
 #' }
 summarize_triples = function(results, maxscore = NA) {
-  # results is output from 'optimize_admixturegraph'
+  # results is output from 'find_graphs'
   # takes at most one graph from each independent run
 
   sel = results %>% group_by(run) %>% top_n(1, -jitter(score, amount = 1e-9)) %>% ungroup
@@ -842,7 +914,13 @@ summarize_triples = function(results, maxscore = NA) {
               topos = list(setNames(cnt, toposet))) %>% ungroup
 }
 
+#' Find identical graphs
+#'
+#' @param igraphlist A list with admixture graphs
+#' @return An integer vector with isomorphism classes.
+#' Graphs with the same number have identical topology (but may have different labels).
 #' @export
+#' @seealso \code{\link{isomorphism_classes2}}
 isomorphism_classes = function(igraphlist) {
   # retuns integer vector with the same length as 'igraphlist', which assigns each graph to a class
   # only considers topology
@@ -868,7 +946,13 @@ isomorphism_classes = function(igraphlist) {
   sets
 }
 
+#' Find identical graphs
+#'
+#' @param igraphlist A list with admixture graphs
+#' @return An integer vector with isomorphism classes.
+#' Graphs with the same number have identical topology and leaf labels (but may have different internal labels).
 #' @export
+#' @seealso \code{\link{isomorphism_classes}}
 isomorphism_classes2 = function(igraphlist) {
 
   # considers topology and leaf labels
@@ -971,14 +1055,14 @@ qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 #' @return A data frame with columns `name` and `graph`
 #' @examples
 #' \dontrun{
-#' trees = decompose_graph(example_igraph)
+#' trees = graph_splittrees(example_igraph)
 #' # now evaluate the trees
 #' trees %>%
 #'   rowwise %>%
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-decompose_graph = function(graph) {
+graph_splittrees = function(graph) {
   # splits an admixture graph into trees
   if(!'igraph' %in% class(graph)) {
     graph %<>% graph_from_edgelist
@@ -998,16 +1082,27 @@ decompose_graph = function(graph) {
     map(simplify_graph) %>% enframe(value = 'graph')
 }
 
+#' Find all trees within SPR distance of 1 of all graph component trees
+#'
+#' Returns all trees which can be reached through one iteration of subtree-prune-and-regraft on any graph component tree
 #' @export
+#' @param graph An admixture graph
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return A data frame with all trees
 decomposed_tree_neighbors = function(graph, desimplify = TRUE) {
-  graph %>% simplify_graph %>% decompose_graph %$% graph %>% map(tree_neighbors) %>%
+  graph %>% simplify_graph %>% graph_splittrees %$% graph %>% map(tree_neighbors) %>%
     bind_rows %>% rename(graph = itree) %>%
     mutate(isoclass = isomorphism_classes2(graph)) %>%
     filter(!duplicated(isoclass)) %>% select(-isoclass)
 }
 
 
+#' Find all trees within SPR distance of 1
+#'
+#' Returns all trees which can be reached through one iteration of subtree-prune-and-regraft
 #' @export
+#' @param tree A tree in `igraph` format
+#' @return A data frame with all trees
 tree_neighbors = function(tree) {
   # returns nested data frame with all trees within edit distance 1
   root = V(tree)[1]
@@ -1038,7 +1133,7 @@ replace_edge = function(tree, from, to) {
   newgrandparent = names(neighbors(tree, from, mode = 'in'))
   tree %>%
     add_edges(c(grandparent, sibling)) %>%
-    delete_vertices(parent) %>%
+    igraph::delete_vertices(parent) %>%
     add_vertices(1, name = parent) %>%
     delete_edges(paste(newgrandparent, from, sep = '|')) %>%
     add_edges(c(parent, to, newgrandparent, parent, parent, from))
@@ -1154,14 +1249,27 @@ flipadmix = function(edges, from, to) {
   g
 }
 
+#' Add a population to an admixture graph
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param pop Population to add to the graph
+#' @return Admixture graph with the added population
+#' @seealso \code{\link{insert_leaf}} adds pop at a specific position
 graph_addleaf = function(graph, pop) {
   graph %>%
     find_normedges(exclude_first = TRUE) %>%
     mutate(graph = map2(from, to, ~insert_leaf(graph, pop, .x, .y)))
 }
 
+
+#' Find possible new edges
+#'
+#' @param graph An admixture graph
+#' @return A data frame with columns `from` and `to`. New edges which begin above `from`
+#'   and end above `to` could be inserted
 #' @export
+#' @seealso \code{\link{find_normedges}} \code{\link{find_admixedges}}
 find_newedges = function(graph) {
   # returns a two column data frame with edges that can be inserted into the graph
 
@@ -1187,7 +1295,12 @@ find_newedges = function(graph) {
   edges %>% as_tibble(.name_repair = ~c('from', 'to'))
 }
 
+#' Find admixture edges
+#'
 #' @export
+#' @param graph An admixture graph
+#' @return A data frame with columns `from` and `to` with admixture edges
+#' @seealso \code{\link{find_normedges}} \code{\link{find_newedges}}
 find_admixedges = function(graph) {
   # returns a two column data frame with edges that can be removed from the graph
 
@@ -1199,7 +1312,13 @@ find_admixedges = function(graph) {
     unnest_longer(from) %>% select(2:1)
 }
 
+#' Find drift edges
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param exclude_first Do not return edge from root to outgroup
+#' @return A data frame with columns `from` and `to` with drift edges
+#' @seealso \code{\link{find_newedges}} \code{\link{find_admixedges}}
 find_normedges = function(graph, exclude_first = FALSE) {
   # returns a two column data frame with non-admixture edges
   el = graph %>% as_edgelist
@@ -1208,7 +1327,15 @@ find_normedges = function(graph, exclude_first = FALSE) {
     group_by(to) %>% filter(n() == 1) %>% ungroup
 }
 
+#' Delete an admixture edge
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param from Edge source node
+#' @param to Edge target node
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return Admixture graph with one deleted edge
+#' @seealso \code{\link{insert_edge}}
 delete_admix = function(graph, from, to, desimplify = TRUE) {
   # returns graph with admixture edge deleted
   # does not conserve internal node names
@@ -1217,7 +1344,7 @@ delete_admix = function(graph, from, to, desimplify = TRUE) {
   if(length(parents) == 1) {
     del = from
     if(length(neighbors(graph, parents, mode = 'in')) == 2) del = c(del, names(parents))
-    graph %<>% delete_vertices(del)
+    graph %<>% igraph::delete_vertices(del)
   } else {
     graph %<>% delete_edges(paste(from, to, sep = '|'))
   }
@@ -1226,19 +1353,36 @@ delete_admix = function(graph, from, to, desimplify = TRUE) {
   graph
 }
 
+#' Remove population from graph
+#'
 #' @export
+#' @param graph An admixture graph
+#' @param leaf Population to be removed
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @return Admixture graph with removed population
+#' @seealso \code{\link{insert_leaf}}
 delete_leaf = function(graph, leaf, desimplify = TRUE) {
   # deletes leaf and all internal nodes leading to no other leaves
 
   leaves = get_leafnames(graph)
   graph %<>%
     subcomponent(leaf, mode = 'in') %>%
-    keep(~length(intersect(leaves, names(subcomponent(graph, .x, mode = 'out')))) == 1) %>%
-    delete_vertices(graph, .) %>%
+    keep(~length(intersect(leaves, names(igraph::subcomponent(graph, .x, mode = 'out')))) == 1) %>%
+    igraph::delete_vertices(graph, .) %>%
     simplify_graph()
   if(desimplify) graph %<>% desimplify_graph
+  graph
 }
 
+#' Add population to graph
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param leaf Population to be added
+#' @param from Source node of edge onto which `leaf` should be added
+#' @param to Target node of edge onto which `leaf` should be added
+#' @return Admixture graph with added population
+#' @seealso \code{\link{delete_leaf}}, \code{\link{graph_addleaf}} to add `leaf` at any position
 insert_leaf = function(graph, leaf, from, to) {
   # inserts new leaf at edge from -> to
   nn = paste(from, to, sep = '_')
@@ -1258,7 +1402,6 @@ generate_all_trees = function(leaves) {
 }
 
 generate_all_graphs = function(leaves, nadmix = 0, sure = FALSE, verbose = TRUE) {
-  #numtot = admixtools:::numtreesadmix(length(leaves), nadmix)
   #if(numtot > 1000 && !sure) stop(paste0('If you really want to generate ', numtot, ' graphs, set sure to TRUE'))
   nleaves = length(leaves)
   if(nleaves > 5 | nadmix > 2) stop('If you really want to generate that many graphs, set sure to TRUE')
@@ -1306,9 +1449,9 @@ add_edges_rec = function(graph, nadmix) {
 #' Return all graphs created from permuting a subclade
 #'
 #' generates new graphs from basegraph as follows:
-#' 1. generates all possible trees using `addpops`` (which are not in basegraph)
+#' 1. generates all possible trees using `addpops` (which are not in basegraph)
 #' 2. attaches trees to connection_edge, which is defined by two nodes in basegraph
-#' 3. adds edges originating above each edge in `source_node`, to each node above `addpops``
+#' 3. adds edges originating above each edge in `source_node`, to each node above `addpops`
 #'
 #' @export
 #' @param basegraph an admixture graph as igraph object. (convert from edge list using `igraph::graph_from_edgelist`)
@@ -1318,7 +1461,8 @@ add_edges_rec = function(graph, nadmix) {
 #' @examples
 #' \dontrun{
   #' graphlist = graphmod_pavel(example_igraph, addpops = c('pop1', 'pop2', 'pop3'),
-  #'                            connection_edge = c('N2N0', 'N1N'), source_nodes = c('Denisova.DG', 'N2N2'))
+  #'                            connection_edge = c('N2N0', 'N1N'),
+  #'                            source_nodes = c('Denisova.DG', 'N2N2'))
   #' results = tibble(graph = graphlist) %>%
   #'   mutate(res = map(graph, ~qpgraph(example_f2_blocks, .))) %>%
   #'   unnest_wider(res) %>%
@@ -1375,9 +1519,12 @@ split_multifurcations = function(graph) {
 #'
 #' Can be used to determine how often internal nodes occur in a list of other well fitting models
 #' @export
+#' @param graph An admixture graph
+#' @return A graph signature as character vector
 #' @examples
 #' \dontrun{
-#' sigs = example_winners %>% mutate(sig = map(igraph, node_signature)) %$% sig %>% unlist %>% table %>% c
+#' sigs = example_winners %>% mutate(sig = map(igraph, node_signature)) %$%
+#'          sig %>% unlist %>% table %>% c
 #' node_signature(example_winners$igraph[[1]])
 #' }
 node_signature = function(graph) {
@@ -1400,11 +1547,8 @@ node_signature = function(graph) {
 
 #' Count how often each node in graph occurs in other graphs
 #'
-#' @examples
-#' \dontrun{
-#' sigs = example_winners %>% mutate(sig = map(igraph, node_signature)) %$% sig %>% unlist %>% table %>% c
-#' node_signature(example_winners$igraph[[1]])
-#' }
+#' @param graph An admixture graph
+#' @param graphlist List of graphs
 node_counts = function(graph, graphlist) {
   counts = map(graphlist, node_signature) %>%
     map(unique) %>%

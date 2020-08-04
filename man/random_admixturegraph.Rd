@@ -4,8 +4,7 @@
 \alias{random_admixturegraph}
 \title{Generate a random admixture graph}
 \usage{
-random_admixturegraph(leaves, numadmix = 0, simple = FALSE,
-  outpop = NULL)
+random_admixturegraph(leaves, numadmix = 0, simple = FALSE, outpop = NULL)
 }
 \arguments{
 \item{leaves}{the names of the leaf nodes, or a number specifying how many leaf nodes there should be}

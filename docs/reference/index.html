@@ -49,9 +49,6 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Function reference" />
 
-<meta property="og:image" content="/logo.png" />
-<meta name="twitter:card" content="summary" />
-
 
 
 <!-- mathjax -->
@@ -91,7 +88,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -120,10 +117,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -415,7 +415,7 @@
         <td>
           <p><code><a href="admixtools.html">admixtools</a></code> </p>
         </td>
-        <td><p>Lightweight R implementations of some AdmixTools programs.</p></td>
+        <td><p>Tools for inferring demographic history from genetic data</p></td>
       </tr><tr>
         
         <td>
@@ -428,6 +428,12 @@
           <p><code><a href="ancestrymap_to_aftable.html">ancestrymap_to_aftable()</a></code> </p>
         </td>
         <td><p>Read allele frequencies from ancestrymap files</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="boo_list.html">boo_list()</a></code> </p>
+        </td>
+        <td><p>Generate a list of bootstrap resampled arrays</p></td>
       </tr><tr>
         
         <td>
@@ -449,9 +455,15 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="decompose_graph.html">decompose_graph()</a></code> </p>
+          <p><code><a href="decomposed_tree_neighbors.html">decomposed_tree_neighbors()</a></code> </p>
         </td>
-        <td><p>Find all trees which are part of the admixture graph</p></td>
+        <td><p>Find all trees within SPR distance of 1 of all graph component trees</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="delete_admix.html">delete_admix()</a></code> </p>
+        </td>
+        <td><p>Delete an admixture edge</p></td>
       </tr><tr>
         
         <td>
@@ -461,9 +473,75 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="delete_leaf.html">delete_leaf()</a></code> </p>
+        </td>
+        <td><p>Remove population from graph</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="desimplify_graph.html">desimplify_graph()</a></code> </p>
         </td>
         <td><p>Add two nodes before each admixture node</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="est_to_boo.html">est_to_boo()</a></code> </p>
+        </td>
+        <td><p>Turn per-block estimates into bootstrap estimates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="est_to_loo.html">est_to_loo()</a></code> </p>
+        </td>
+        <td><p>Turn per-block estimates into leave-one-out estimates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_anno.html">example_anno</a></code> </p>
+        </td>
+        <td><p>Data frame with sample annotations</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_f2_blocks.html">example_f2_blocks</a></code> </p>
+        </td>
+        <td><p>Blocked f2-statistics for 7 populations</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_graph.html">example_graph</a></code> </p>
+        </td>
+        <td><p>Admixture graph for 7 populations</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_igraph.html">example_igraph</a></code> </p>
+        </td>
+        <td><p>Admixture graph for 7 populations</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_qpgraph_ref_results.html">example_qpgraph_ref_results</a></code> </p>
+        </td>
+        <td><p>example_graph fitted using qpGraph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_triples.html">example_triples</a></code> </p>
+        </td>
+        <td><p>Data frame with population triples</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_winner.html">example_winner</a></code> </p>
+        </td>
+        <td><p>Data frame with one fitted admixture graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="example_winners.html">example_winners</a></code> </p>
+        </td>
+        <td><p>Data frame with fitted admixture graphs</p></td>
       </tr><tr>
         
         <td>
@@ -515,15 +593,69 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="f4_from_f2_pops.html">f4_from_f2_pops()</a></code> </p>
+        </td>
+        <td><p>Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="find_admixedges.html">find_admixedges()</a></code> </p>
+        </td>
+        <td><p>Find admixture edges</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="find_graphs.html">find_graphs()</a></code> </p>
         </td>
         <td><p>Find well fitting admixture graphs</p></td>
       </tr><tr>
         
         <td>
+          <p><code><a href="find_newedges.html">find_newedges()</a></code> </p>
+        </td>
+        <td><p>Find possible new edges</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="find_normedges.html">find_normedges()</a></code> </p>
+        </td>
+        <td><p>Find drift edges</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="flipadmix_random.html">flipadmix_random()</a></code> </p>
+        </td>
+        <td><p>Modify a graph flipping the direction of an admixture edge</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="get_block_lengths.html">get_block_lengths()</a></code> </p>
         </td>
         <td><p>Find LD-independent blocks</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="get_leafnames.html">get_leafnames()</a></code> </p>
+        </td>
+        <td><p>Get the population names of a graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="get_outpop.html">get_outpop()</a></code> </p>
+        </td>
+        <td><p>Get the outgroup from a graph (if it exists)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="get_root.html">get_root()</a></code> </p>
+        </td>
+        <td><p>Get the root name</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="graph_addleaf.html">graph_addleaf()</a></code> </p>
+        </td>
+        <td><p>Add a population to an admixture graph</p></td>
       </tr><tr>
         
         <td>
@@ -551,6 +683,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="graph_splittrees.html">graph_splittrees()</a></code> </p>
+        </td>
+        <td><p>Find all trees which are part of the admixture graph</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="graphmod_pavel.html">graphmod_pavel()</a></code> </p>
         </td>
         <td><p>Return all graphs created from permuting a subclade</p></td>
@@ -563,25 +701,63 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="insert_admix_igraph.html">insert_admix_igraph()</a></code> </p>
+        </td>
+        <td><p>Insert admixture edges into graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="insert_edge.html">insert_edge()</a></code> </p>
+        </td>
+        <td><p>Insert a single edge into graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="insert_edges.html">insert_edges()</a></code> </p>
+        </td>
+        <td><p>Insert admixture edges into graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="insert_leaf.html">insert_leaf()</a></code> </p>
+        </td>
+        <td><p>Add population to graph</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="isomorphism_classes.html">isomorphism_classes()</a></code> </p>
+        </td>
+        <td><p>Find identical graphs</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="isomorphism_classes2.html">isomorphism_classes2()</a></code> </p>
+        </td>
+        <td><p>Find identical graphs</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="lazadm.html">lazadm()</a></code> </p>
         </td>
         <td><p>Estimate admixture weights</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="make_resample_inds_fun.html">make_resample_inds_fun()</a></code> </p>
+          <p><code><a href="loo_list.html">loo_list()</a></code> </p>
         </td>
-        <td><p>Takes a function <code>qpfun</code> which takes f2_blocks as input
-Returns a function which will repeadetly evaluate <code>qpfun</code> on
-a subset of all samples, returning a nested data frame</p></td>
+        <td><p>Generate a list of leave-one-out arrays</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="make_resample_snps_fun.html">make_resample_snps_fun()</a></code> </p>
+          <p><code><a href="loo_to_est.html">loo_to_est()</a></code> </p>
         </td>
-        <td><p>Takes a function <code>qpfun</code> which takes f2_blocks as input
-Returns a function which will repeadetly evaluate <code>qpfun</code> on
-jackknife or bootstrap resamplings of the f2_blocks, returning a nested data frame</p></td>
+        <td><p>Turn leave-one-out estimates to per-block estimates</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="move_admixedge_once.html">move_admixedge_once()</a></code> </p>
+        </td>
+        <td><p>Modify a graph by moving an admixture edge</p></td>
       </tr><tr>
         
         <td>
@@ -606,6 +782,12 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
           <p><code><a href="node_signature.html">node_signature()</a></code> </p>
         </td>
         <td><p>Returns a signature of a graph consisting of the left and right descendent leaf nodes of each internal node (sorted and concatenated)</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="numadmix.html">numadmix()</a></code> </p>
+        </td>
+        <td><p>Count number of admixture nodes</p></td>
       </tr><tr>
         
         <td>
@@ -642,6 +824,12 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
           <p><code><a href="parse_qpgraph_output.html">parse_qpgraph_output()</a></code> </p>
         </td>
         <td><p>Read qpGraph output file</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="permute_leaves.html">permute_leaves()</a></code> </p>
+        </td>
+        <td><p>Modify a graph by permuting leaf nodes</p></td>
       </tr><tr>
         
         <td>
@@ -705,6 +893,12 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
       </tr><tr>
         
         <td>
+          <p><code><a href="qpadm_p.html">qpadm_p()</a></code> </p>
+        </td>
+        <td><p>Faster version of <code>qpadm</code> with reduced output</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="qpadm_pairs.html">qpadm_pairs()</a></code> </p>
         </td>
         <td><p>Compute all pairwise qpwave p-values</p></td>
@@ -744,6 +938,18 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
           <p><code><a href="qpgraph_precompute_f3.html">qpgraph_precompute_f3()</a></code> </p>
         </td>
         <td><p>Compute f3-statistics from f2-statistics.</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpgraph_resample_multi.html">qpgraph_resample_multi()</a></code> </p>
+        </td>
+        <td><p>Evaluate a qpgraph models many times</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpgraph_resample_snps2.html">qpgraph_resample_snps2()</a></code> </p>
+        </td>
+        <td><p>Evaluate a qpgraph model many times</p></td>
       </tr><tr>
         
         <td>
@@ -801,6 +1007,18 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
       </tr><tr>
         
         <td>
+          <p><code><a href="run_shiny_admixtools.html">run_shiny_admixtools()</a></code> </p>
+        </td>
+        <td><p>Launch ADMIXTOOLS 2 GUI</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="shortest_unique_prefixes.html">shortest_unique_prefixes()</a></code> </p>
+        </td>
+        <td><p>Return shortest unique prefixes</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="simplify_graph.html">simplify_graph()</a></code> </p>
         </td>
         <td><p>Remove redundant edges</p></td>
@@ -813,9 +1031,27 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
       </tr><tr>
         
         <td>
+          <p><code><a href="spr_all.html">spr_all()</a></code> </p>
+        </td>
+        <td><p>Modify a graph by regrafting a subcomponent</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="spr_leaves.html">spr_leaves()</a></code> </p>
+        </td>
+        <td><p>Modify a graph by regrafting a leaf</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="summarize_triples.html">summarize_triples()</a></code> </p>
         </td>
         <td><p>Summarize triples across graphs</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="swap_leaves.html">swap_leaves()</a></code> </p>
+        </td>
+        <td><p>Modify a graph by swapping two leaf nodes</p></td>
       </tr><tr>
         
         <td>
@@ -825,9 +1061,9 @@ jackknife or bootstrap resamplings of the f2_blocks, returning a nested data fra
       </tr><tr>
         
         <td>
-          <p><code><a href="write_block_lengths.html">write_block_lengths()</a></code> </p>
+          <p><code><a href="tree_neighbors.html">tree_neighbors()</a></code> </p>
         </td>
-        <td><p>Compute and write block lengths</p></td>
+        <td><p>Find all trees within SPR distance of 1</p></td>
       </tr><tr>
         
         <td>

@@ -50,8 +50,6 @@
 <meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits4" />
 
 <meta property="og:description" content="Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other." />
-
-<meta property="og:image" content="/logo.png" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -93,7 +91,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -122,10 +120,13 @@
       <a href="../articles/fstats.html">f-statistics</a>
     </li>
     <li>
-      <a href="../articles/graph_optim.html">Finding admixture graphs</a>
+      <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Input data</a>
+      <a href="../articles/io.html">Genotype data</a>
+    </li>
+    <li>
+      <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
       <a href="../articles/plotting.html">Plotting</a>
@@ -169,8 +170,7 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>compare_fits4</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='no'>f2_blocks</span>, <span class='no'>f2_blocks_test</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>compare_fits4</span>(<span class='no'>fit1</span>, <span class='no'>fit2</span>, <span class='no'>f2_blocks</span>, <span class='no'>f2_blocks_test</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -193,11 +193,11 @@
     </tr>
     <tr>
       <th>boot</th>
-      <td><p>if <code>TRUE</code>, bootstrap resampling will be used on <code>f2_blocks_test</code> with the number of resamplings equal to the number of blocks. If <code>FALSE</code> jackknife will be used. If set to a number, bootstrap resampling will be used on <code>f2_blocks_test</code> with the number of resamplings equal to <code>boot</code>. If bootstrap resampling is enabled, empirical p-values (<code>p_emp</code>) and 95% confidence intervals (<code>ci_low</code> and <code>ci_high</code>) will be reported.</p></td>
+      <td><p>If <code>TRUE</code>, bootstrap resampling will be used on <code>f2_blocks_test</code> with the number of resamplings equal to the number of blocks. If <code>FALSE</code> jackknife will be used. If set to a number, bootstrap resampling will be used on <code>f2_blocks_test</code> with the number of resamplings equal to <code>boot</code>. If bootstrap resampling is enabled, empirical p-values (<code>p_emp</code>) and 95 confidence intervals (<code>ci_low</code> and <code>ci_high</code>) will be reported.</p></td>
     </tr>
     <tr>
       <th>seed</th>
-      <td><p>random seed used if <code>boot</code> is <code>TRUE</code>. does not need to match a seed used in fitting the models</p></td>
+      <td><p>Random seed used if <code>boot</code> is <code>TRUE</code>. Does not need to match a seed used in fitting the models</p></td>
     </tr>
     </table>
     

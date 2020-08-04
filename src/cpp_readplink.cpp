@@ -96,7 +96,7 @@ List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const Numeri
 
   NumericMatrix X, afmat, countmat, scanmat;
   unsigned int N, p;
-  unsigned long long len, filesize;
+  unsigned long long len;
   unsigned int np, nsnps;
 
   N = indvec.length();
@@ -109,7 +109,7 @@ List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const Numeri
   std::ifstream in(bedfile.get_cstring(), std::ios::in | std::ios::binary);
 
   if(!in) {
-    std::cerr << "[read_afs] Error reading file " << bedfile.get_cstring() << std::endl;
+    Rcout << "[read_afs] Error reading file " << bedfile.get_cstring() << std::endl;
     throw std::runtime_error("io error");
   }
   in.seekg(0, std::ifstream::end);

@@ -572,7 +572,7 @@ server = function(input, output, session) {
           countdir = global$countdir
           inds = poplist[[.x]]
           #if(is.null(global$poplistbak[[.x]])) {
-          isgrouped = length(inds) == 1 && is_group(countdir, inds)
+          isgrouped = length(inds) == 1 && admixtools:::is_group(countdir, inds)
           if(!isgrouped) {
             if(.x %in% global$allinds) {
               shinyalert('Error', 'Group name cannot be identical to an existing sample or group name!')
@@ -831,7 +831,7 @@ server = function(input, output, session) {
     names(edges)[1:2] = c('from', 'to')
     if('collapse_edges' %in% input$plotopt) {
       withProgress(message = 'collapsing edges...', {
-        edges %<>% collapse_edges(10^input$collapse_threshold)
+        edges %<>% admixtools:::collapse_edges(10^input$collapse_threshold)
       })
     }
 
@@ -847,7 +847,7 @@ server = function(input, output, session) {
 
     if('reorder_edges' %in% input$plotopt) {
       withProgress(message = 'reordering edges...', {
-        eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
+        eg = admixtools:::fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
       })
     }
     if('shift_down' %in% input$plotopt) {
@@ -1016,7 +1016,7 @@ server = function(input, output, session) {
   get_minus1 = make_reactive_graphtabs(graph_minusone, input$qpgraph_similar_minus1)
   get_plus1 = make_reactive_graphtabs(graph_plusone, input$qpgraph_similar_plus1)
   get_minusplus = make_reactive_graphtabs(graph_minusplus, input$qpgraph_similar_minusplus)
-  get_decomposed = make_reactive_graphtabs(admixtools::decompose_graph, input$qpgraph_similar_decomposed)
+  get_decomposed = make_reactive_graphtabs(admixtools::graph_splittrees, input$qpgraph_similar_decomposed)
   get_treeneighbors = make_reactive_graphtabs(decomposed_tree_neighbors, input$qpgraph_similar_treeneighbors)
   get_flipadmix = make_reactive_graphtabs(admixtools::graph_flipadmix, input$qpgraph_similar_flipadmix)
 
@@ -1099,7 +1099,7 @@ server = function(input, output, session) {
     f2blocks = get_f2blocks()
     g = global$graph
     qpgfun = qpgraphfun()
-    fun = make_resample_inds_fun(~qpgfun(..., y = g))
+    fun = admixtools:::make_resample_inds_fun(~qpgfun(..., y = g))
     withProgress(message = paste('Evaluating graph ', length(inds)-numsingle, ' times...'), {
       out = fun(countdir, inds = inds, pops = pops, numstart = 1)
     })
@@ -1129,7 +1129,7 @@ server = function(input, output, session) {
     g = global$graph
     bootnum = ifelse(input$boot, input$bootnum, FALSE)
     withProgress(message = paste('Evaluating graph ', ifelse(bootnum, bootnum, dim(f2blocks)[[3]]),' times...'), {
-      out = make_resample_snps_fun(~qpgraphfun()(..., y = g))(f2blocks, boot = bootnum, numstart = 1)
+      out = admixtools:::make_resample_snps_fun(~qpgraphfun()(..., y = g))(f2blocks, boot = bootnum, numstart = 1)
     })
   })
   get_snpresample = reactive({
@@ -1171,7 +1171,7 @@ server = function(input, output, session) {
 
     sellist = imap(names(poplist), ~{
       #buttlab = ifelse(is.null(global$poplistbak[[.x]]), 'group', 'ungroup')
-      isgrouped = length(poplist[[.x]]) == 1 && is_group(global$countdir, poplist[[.x]])
+      isgrouped = length(poplist[[.x]]) == 1 && admixtools:::is_group(global$countdir, poplist[[.x]])
       buttlab = ifelse(isgrouped, 'ungroup', 'group')
       fillCol(tagList(textInput(paste0('pop', .y), NULL, .x, placeholder = 'pop name'),
                       shiny::actionButton(paste0('group', .y), buttlab),
@@ -1327,7 +1327,7 @@ server = function(input, output, session) {
     leaves = get_leafnames(g)
     alert = function(x) shinyalert('Could not insert edge!', as.character(x))
     tryCatch({
-      gnew = insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
+      gnew = admixtools:::insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
     }, warning = alert, error = alert)
     if(!exists('gnew') || is.null(gnew)) return()
     if(!igraph::is.dag(gnew)) {
@@ -1473,7 +1473,7 @@ server = function(input, output, session) {
       out$f2 = NULL
       print('parse fstats')
       fstatsfile = paste0(dir, '/fstats.out')
-      if(file.exists(fstatsfile)) global$precomp = parse_fstats(fstatsfile)
+      if(file.exists(fstatsfile)) global$precomp = admixtools:::parse_fstats(fstatsfile)
     })
     out
   })
@@ -1973,7 +1973,7 @@ server = function(input, output, session) {
 
   output$downloadgraph = downloadHandler('graph.tsv', function(file) {
     edges = get_fit()$edges
-    if(input$downloadgraph_format == 'admixtools') edges %>% fit_to_qpgraph_format %>% write(file)
+    if(input$downloadgraph_format == 'admixtools') edges %>% admixtools:::fit_to_qpgraph_format %>% write(file)
     else if(input$downloadgraph_format == 'edgelist') edges %>% write_tsv(file)
     else stop()
   })
