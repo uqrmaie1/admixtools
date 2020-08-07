@@ -66,7 +66,7 @@ List cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv,
   rhs = x.t() * x;
   lhs = x.t() * y;
   vec w;
-  if(constrained) w = -as<vec>(qpsolve(rhs, lhs, -mat(nr, nr, fill::eye), zeros(nr)));
+  if(constrained) w = as<vec>(qpsolve(rhs, lhs, mat(nr, nr, fill::eye), zeros(nr)));
   else w = solve(rhs, lhs);
   vec weights = w / sum(w);
 
@@ -97,7 +97,7 @@ vec cpp_qpadm_weights2(const arma::mat& xmat, const arma::mat& qinv,
   rhs = x.t() * x;
   lhs = x.t() * y;
   vec w;
-  if(constrained) w = -as<vec>(qpsolve(rhs, lhs, -mat(nr, nr, fill::eye), zeros(nr)));
+  if(constrained) w = as<vec>(qpsolve(rhs, lhs, mat(nr, nr, fill::eye), zeros(nr)));
   else w = solve(rhs, lhs);
   return w / sum(w);
 }

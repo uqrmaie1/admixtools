@@ -29,7 +29,7 @@ extract_f2(
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory data where data will be stored}
+\item{outdir}{Directory where data will be stored}
 
 \item{inds}{Individuals for which data should be extracted}
 
@@ -77,6 +77,10 @@ and \code{\link{afs_to_f2_blocks}}.
 \examples{
 \dontrun{
 pref = 'my/genofiles/prefix'
-extract_f2(pref, pops = c('popA', 'popB', 'popC'))
+f2dir = 'my/f2dir/'
+extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 }
+}
+\seealso{
+\code{\link{extract_f2_large}}
 }

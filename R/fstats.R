@@ -42,7 +42,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05, poly_only = TRUE,
 
   nc = ncol(afmat)
   mem1 = lobstr::obj_size(afmat)
-  mem2 = mem1*nc
+  mem2 = mem1*nc*2
   numsplits = ceiling(mem2/1e6/maxmem)
   width = ceiling(nc/numsplits)
   starts = seq(1, nc, width)
@@ -130,9 +130,7 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   }
   out %<>% block_arr_mean(block_lengths)
 
-  dimnames(out)[[1]] = colnames(afmat1)
-  dimnames(out)[[2]] = colnames(afmat2)
-  dimnames(out)[[3]] = paste0('l', block_lengths)
+  dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
   out
 }
 
@@ -151,9 +149,7 @@ mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   }
   out %<>% block_arr_mean(block_lengths)
 
-  dimnames(out)[[1]] = colnames(afmat1)
-  dimnames(out)[[2]] = colnames(afmat2)
-  dimnames(out)[[3]] = paste0('l', block_lengths)
+  dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
   out
 }
 
@@ -170,9 +166,7 @@ mats_to_ctarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   }
   out %<>% block_arr_mean(block_lengths)
 
-  dimnames(out)[[1]] = colnames(afmat1)
-  dimnames(out)[[2]] = colnames(afmat2)
-  dimnames(out)[[3]] = paste0('l', block_lengths)
+  dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
   out
 }
 

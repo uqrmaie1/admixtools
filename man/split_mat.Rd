@@ -4,7 +4,7 @@
 \alias{split_mat}
 \title{Split a matrix into blocks}
 \usage{
-split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = TRUE)
+split_mat(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{mat}{The matrix to be split}
@@ -13,7 +13,7 @@ split_mat(mat, cols_per_chunk, prefix, overwrite = FALSE, verbose = TRUE)
 
 \item{prefix}{Prefix of output files}
 
-\item{overwrite}{Overwrite existing files}
+\item{overwrite}{Overwrite existing files (default \code{TRUE})}
 
 \item{verbose}{Print progress updates}
 }

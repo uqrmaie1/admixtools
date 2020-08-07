@@ -119,7 +119,7 @@
 <div id="overview" class="section level2">
 <h2 class="hasAnchor">
 <a href="#overview" class="anchor"></a>Overview</h2>
-<p>ADMIXTOOLS is a set of programs which uses genetic data to infer how populations are related to one another, using f-statistics. It has been used in countless publications to test whether populations form clades (<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions (<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
+<p>ADMIXTOOLS is a collection of programs which use genetic data to infer how populations are related to one another. It has been used in countless publications to test whether populations form clades (<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions (<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
 <p>ADMIXTOOLS 2 provides the same functionality in a new look, and it’s orders of magnitude faster. This is achieved through separating the computation of f2-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new <em>qpGraph</em> model:</p>
 <p><img src="reference/figures/shinyapp1.gif" alt="app demo"></p>
 </div>
@@ -135,7 +135,7 @@
 <li>Automated and semi-automated admixture graph inference</li>
 <li>Simultaneous exploration of hundreds of <em>qpAdm</em> models</li>
 <li>Unbiased comparison of any two <em>qpGraph</em> models using out-of-sample scores</li>
-<li>Jackknife and bootstrap confidence intervals for any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em> parameters</li>
+<li>Jackknife and bootstrap standard errors and confidence intervals for any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em> parameters</li>
 </ul>
 </li>
 <li>Full support for genotype data in (PACKED)ANCESTRYMAP/EIGENSTRAT format and PLINK format</li>
@@ -222,7 +222,7 @@
 <h2 class="hasAnchor">
 <a href="#documentation" class="anchor"></a>Documentation</h2>
 <p>One of the design goals behind ADMIXTOOLS 2 is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.</p>
-<p>To this end, all ADMIXTOOLS 2 functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html">documented</a>. You can also take a look at the <a href="admixtools.html">tutorial</a>, read more about how ADMIXTOOLS 2 computes <a href="fstats.html">f-statistics</a> and <a href="resampling.html">standard errors</a>, and what you can do with <a href="graphs.html">admixture graphs</a>.</p>
+<p>To this end, all ADMIXTOOLS 2 functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html">documented</a>. You can also take a look at the <a href="articles/admixtools.html">tutorial</a>, read more about how ADMIXTOOLS 2 computes <a href="https://uqrmaie1.github.io/admixtools/articles/fstats.html">f-statistics</a> and <a href="https://uqrmaie1.github.io/admixtools/resampling.html">standard errors</a>, and what you can do with <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html">admixture graphs</a>.</p>
 <p>For even greater transparency, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step. For example, if you want to know how weights are computed in <code><a href="reference/qpadm.html">qpadm()</a></code>, you can type <code>qpadm</code> in R to get the function code and you will see another function which is called <code>qpadm_weights()</code>. By default, this function will be replaced by its faster C++ version <code>cpp_qpadm_weights()</code>. But you can still see what it’s doing without reading the C++ code by typing <code>admixtools:::qpadm_weights</code>. And you can tell <code><a href="reference/qpadm.html">qpadm()</a></code> to use the R versions instead of the C++ versions by calling <code><a href="reference/qpadm.html">qpadm(cpp = FALSE)</a></code>.</p>
 </div>
 <div id="contact" class="section level2">

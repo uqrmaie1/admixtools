@@ -8,9 +8,9 @@ A new, lightning fast implementation of
 
 ## Overview
 
-ADMIXTOOLS is a set of programs which uses genetic data to infer how
-populations are related to one another, using f-statistics. It has been
-used in countless publications to test whether populations form clades
+ADMIXTOOLS is a collection of programs which use genetic data to infer
+how populations are related to one another. It has been used in
+countless publications to test whether populations form clades
 (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and
 to fit admixture graphs (*qpGraph*).
 
@@ -33,8 +33,8 @@ takes much longer than computing the fit of a new *qpGraph* model:
       - Simultaneous exploration of hundreds of *qpAdm* models
       - Unbiased comparison of any two *qpGraph* models using
         out-of-sample scores
-      - Jackknife and bootstrap confidence intervals for any *qpAdm*,
-        *qpWave*, and *qpGraph* parameters
+      - Jackknife and bootstrap standard errors and confidence intervals
+        for any *qpAdm*, *qpWave*, and *qpGraph* parameters
   - Full support for genotype data in (PACKED)ANCESTRYMAP/EIGENSTRAT
     format and PLINK format
   - Wrapper functions around the original ADMIXTOOLS software (see also

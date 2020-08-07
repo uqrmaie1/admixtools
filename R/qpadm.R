@@ -56,7 +56,7 @@ get_weights_covariance = function(f4_lo, qinv, block_lengths, fudge = 0.0001, bo
     wmat[i,] = qpadm_weights(as.matrix(f4_lo[,,i]), qinv, rnk, fudge = fudge,
                              constrained = constrained, qpsolve = qpsolve)$weights
   }
-  if(!boot) wmat = wmat * sqrt(numreps-1)
+  if(!boot) wmat = wmat * (numreps-1) / sqrt(numreps)
   cov(wmat)
 }
 
@@ -185,6 +185,8 @@ qpwave = qpadm
 
 f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
 
+  if(length(right) < 2) stop('Not enough right populations!')
+  if(length(left) < 2) stop('Not enough left populations!')
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
   statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
 
@@ -208,6 +210,57 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
   out$f4_lo = f4_lo
   out$block_lengths = block_lengths
   out
+}
+
+
+lazadm_old = function(f2_data, left, right, target = NULL,
+                      boot = FALSE, constrained = TRUE) {
+
+  #----------------- prepare f4 stats -----------------
+  if(is.null(target)) {
+    left %<>% readLines
+    right %<>% readLines
+    target = left[1]
+    left = left[-1]
+  }
+  pops = c(target, left, right)
+  stopifnot(!any(duplicated(pops)))
+
+  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
+  f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
+  block_lengths = parse_number(dimnames(f2_blocks)[[3]])
+
+  f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
+
+  r = 1:length(right)
+  og_indices = expand.grid(r, r, r) %>%
+    filter(Var1 != Var2, Var1 != Var3, Var2 < Var3)
+
+  pos1 = target
+  pos2 = right[og_indices[,1]]
+  pos3 = right[og_indices[,2]]
+  pos4 = right[og_indices[,3]]
+
+  y = f2_mat[cbind(pos1, pos4)] +
+      f2_mat[cbind(pos2, pos3)] -
+      f2_mat[cbind(pos1, pos3)] -
+      f2_mat[cbind(pos2, pos4)]
+
+  x = f2_mat[pos4, left] +
+      f2_mat[cbind(pos2, pos3)] -
+      f2_mat[pos3, left] -
+      f2_mat[cbind(pos2, pos4)]
+
+  #----------------- compute admixture weights -----------------
+  lhs = crossprod(x, y)
+  rhs = crossprod(x)
+  nc = length(left)
+
+  if(constrained) weight = qpsolve(rhs, lhs, diag(nc), rep(0, nc))
+  else weight = solve(rhs, lhs)[,1]
+  weight = weight/sum(weight)
+
+  tibble(target, left, weight)
 }
 
 
@@ -244,9 +297,9 @@ lazadm = function(f2_data, left, right, target = NULL,
   #----------------- prepare f4 stats -----------------
   if(is.null(target)) {
     left %<>% readLines
+    right %<>% readLines
     target = left[1]
     left = left[-1]
-    right %<>% readLines
   }
   pops = c(target, left, right)
   stopifnot(!any(duplicated(pops)))
@@ -254,39 +307,49 @@ lazadm = function(f2_data, left, right, target = NULL,
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
   f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
-
-  f2_mat = apply(f2_blocks, 1:2, weighted.mean, block_lengths)
+  numblocks = length(block_lengths)
 
   r = 1:length(right)
   og_indices = expand.grid(r, r, r) %>%
     filter(Var1 != Var2, Var1 != Var3, Var2 < Var3)
+  ncomb = nrow(og_indices)
+  nleft = length(left)
+  blocknums = rep(1:numblocks, each = ncomb)
 
-  pos1 = target
-  pos2 = right[og_indices[,1]]
-  pos3 = right[og_indices[,2]]
-  pos4 = right[og_indices[,3]]
+  pos1 = 1
+  pos2 = og_indices[,1]
+  pos3 = og_indices[,2]
+  pos4 = og_indices[,3]
 
-  y = f2_mat[cbind(pos1, pos4)] +
-      f2_mat[cbind(pos2, pos3)] -
-      f2_mat[cbind(pos1, pos3)] -
-      f2_mat[cbind(pos2, pos4)]
+  ymat = matrix(f2_blocks[cbind(pos1, pos4, blocknums)] +
+                f2_blocks[cbind(pos2, pos3, blocknums)] -
+                f2_blocks[cbind(pos1, pos3, blocknums)] -
+                f2_blocks[cbind(pos2, pos4, blocknums)], ncomb)
 
-  x = f2_mat[pos4, left] +
-      f2_mat[cbind(pos2, pos3)] -
-      f2_mat[pos3, left] -
-      f2_mat[cbind(pos2, pos4)]
+  xarr = f2_blocks[pos4, left,] +
+    array(f2_blocks[cbind(pos2, pos3, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks)) -
+    f2_blocks[pos3, left,] -
+    array(f2_blocks[cbind(pos2, pos4, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks))
 
   #----------------- compute admixture weights -----------------
-  lhs = crossprod(x, y)
-  rhs = crossprod(x)
-  nc = length(left)
+  lhs = matrix(NA, nleft, numblocks)
+  rhs = array(NA, c(nleft, nleft, numblocks))
+  for(i in 1:numblocks) {
+    lhs[,i] = crossprod(xarr[,,i], ymat[,i])
+    rhs[,,i] = crossprod(xarr[,,i])
+  }
 
-  if(constrained) weight = -qpsolve(rhs, lhs, -diag(nc), rep(0, nc))
-  else weight = solve(rhs, lhs)[,1]
-  weight = weight/sum(weight)
+  if(constrained) fun = function(rhs, lhs) qpsolve(rhs, lhs, diag(nleft), rep(0, nleft))
+  else fun = function(rhs, lhs) solve(rhs, lhs)[,1]
 
-  tibble(target, left, weight)
+  wmat = sapply(1:numblocks, function(i) {w = fun(rhs[,,i], lhs[,i,drop = FALSE]); w/sum(w)})
+  weight = rowMeans(wmat)
+  se = sqrt(diag(cov(t(wmat))))
+  if(!boot) se = se * (numblocks-1) / sqrt(numblocks)
+
+  tibble(target, left, weight, se) %>% mutate(z = weight/se)
 }
+
 
 
 drop_ranks = function(f4_est, qinv, fudge, constrained, cpp) {

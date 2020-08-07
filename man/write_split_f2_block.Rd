@@ -10,19 +10,22 @@ write_split_f2_block(
   chunk1,
   chunk2,
   dist = 0.05,
+  overwrite = FALSE,
   verbose = TRUE
 )
 }
 \arguments{
 \item{afdir}{Directory with allele frequency and counts \code{.rds} files created by \code{\link{split_mat}}}
 
-\item{outdir}{Directory data where data will be stored}
+\item{outdir}{Directory where data will be stored}
 
 \item{chunk1}{Index of the first chunk of populations}
 
 \item{chunk2}{Index of the second chunk of populations}
 
 \item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+
+\item{overwrite}{Overwrite existing files (default \code{FALSE})}
 
 \item{verbose}{Print progress updates}
 }

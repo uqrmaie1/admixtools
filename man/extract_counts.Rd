@@ -25,7 +25,7 @@ extract_counts(
 \item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory data where data will be stored}
+\item{outdir}{Directory where data will be stored}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
 

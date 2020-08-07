@@ -10,7 +10,7 @@ write_f2(f2_arrs, outdir, overwrite = FALSE)
 \item{f2_arrs}{3d arrays with blocked f2, allele frequency products, and counts for each population pair.
 The first two dimensions of each array have to have population names.}
 
-\item{outdir}{Directory data where data will be stored}
+\item{outdir}{Directory where data will be stored}
 
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 }

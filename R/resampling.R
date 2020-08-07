@@ -138,7 +138,7 @@ jack_pairarr_stats = function(loo_arr, block_lengths) {
 make_bootfun = function(jackfun) {
   function(x, y) {
     out = jackfun(x, y)
-    out[[2]] = out[[2]]/length(y)
+    out[[2]] = out[[2]]*length(y)/(length(y)-1)^2
     out
   }
 }

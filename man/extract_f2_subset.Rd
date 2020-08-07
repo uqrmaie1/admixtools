@@ -2,7 +2,7 @@
 % Please edit documentation in R/io.R
 \name{extract_f2_subset}
 \alias{extract_f2_subset}
-\title{Copy a subset of f2-statistics to a new directory}
+\title{Copy f2-statistics}
 \usage{
 extract_f2_subset(from, to, pops, verbose = TRUE)
 }

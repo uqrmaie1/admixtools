@@ -49,8 +49,12 @@ cpp_read_packedancestrymap <- function(genofile, nsnp, nind, indvec, first, last
     .Call('_admixtools_cpp_read_packedancestrymap', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
 
-cpp_packedancestrymap_to_aftable <- function(genofile, nsnp, nind, indvec, first, last, adjust_pseudohaploid, transpose, verbose) {
-    .Call('_admixtools_cpp_packedancestrymap_to_aftable', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, adjust_pseudohaploid, transpose, verbose)
+cpp_geno_detect_ploidy <- function(genofile, nsnp, nind, indvec, ntest = 1000L) {
+    .Call('_admixtools_cpp_geno_detect_ploidy', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, ntest)
+}
+
+cpp_packedancestrymap_to_aftable <- function(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose) {
+    .Call('_admixtools_cpp_packedancestrymap_to_aftable', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose)
 }
 
 cpp_read_plink_afs <- function(bedfile, indvec, indvec2, adjust_pseudohaploid, verbose) {
