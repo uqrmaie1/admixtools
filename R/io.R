@@ -139,7 +139,7 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, au
                            minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
-  map(afdat, ~.[remaining,])
+  map(afdat, ~.[remaining,,drop = FALSE])
 }
 
 
@@ -1098,6 +1098,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
     format = 'packedancestrymap'
     nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+    indnam = c('ind', 'sex', 'pop')
     snpend = '.snp'
     indend = '.ind'
     genoend = '.geno'
@@ -1106,6 +1107,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
     format = 'plink'
     nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
+    indnam = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
     snpend = '.bim'
     indend = '.fam'
     genoend = '.bed'
@@ -1113,12 +1115,13 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     cpp_geno_to_aftable = cpp_plink_to_aftable
   } else stop('Genotype files not found!')
 
-  indfile = read_table2(paste0(pref, indend), col_names = FALSE, col_types = cols(), progress = FALSE)
+  if(verbose) alert_info(paste0('Reading meta data...\n'))
+  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
-  ip = match_samples(indfile$X1, indfile$X3, inds, pops)
+  ip = match_samples(indfile$ind, indfile$pop, inds, pops)
   indvec = ip$indvec - 1
 
   snpfile %<>% filter(CHR <= 22)

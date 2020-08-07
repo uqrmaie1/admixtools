@@ -14,7 +14,7 @@ vignette: >
 
 **Under construction**
 
-
+Some function in ADMIXTOOLS 2 support multithreaded computations or other types of parallelization by making use of the packages [`future`](https://github.com/HenrikBengtsson/future) and [`furrr`](https://github.com/DavisVaughan/furrr).
 
 ### Parallelization
 
