@@ -49,8 +49,8 @@ cpp_read_packedancestrymap <- function(genofile, nsnp, nind, indvec, first, last
     .Call('_admixtools_cpp_read_packedancestrymap', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
 
-cpp_geno_detect_ploidy <- function(genofile, nsnp, nind, indvec, ntest = 1000L) {
-    .Call('_admixtools_cpp_geno_detect_ploidy', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, ntest)
+cpp_packedancestrymap_ploidy <- function(genofile, nsnp, nind, indvec, ntest = 1000L) {
+    .Call('_admixtools_cpp_packedancestrymap_ploidy', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, ntest)
 }
 
 cpp_packedancestrymap_to_aftable <- function(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose) {
@@ -63,6 +63,14 @@ cpp_read_plink_afs <- function(bedfile, indvec, indvec2, adjust_pseudohaploid, v
 
 cpp_read_plink <- function(bedfile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
     .Call('_admixtools_cpp_read_plink', PACKAGE = 'admixtools', bedfile, nsnp, nind, indvec, first, last, transpose, verbose)
+}
+
+cpp_plink_ploidy <- function(genofile, nsnp, nind, indvec, ntest = 1000L) {
+    .Call('_admixtools_cpp_plink_ploidy', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, ntest)
+}
+
+cpp_plink_to_aftable <- function(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose) {
+    .Call('_admixtools_cpp_plink_to_aftable', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose)
 }
 
 cpp_get_block_lengths <- function(chr, pos, dist = 0.05) {

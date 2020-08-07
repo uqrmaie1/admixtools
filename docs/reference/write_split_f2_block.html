@@ -184,6 +184,7 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
   <span class='no'>chunk1</span>,
   <span class='no'>chunk2</span>,
   <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
     
@@ -196,7 +197,7 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>Directory data where data will be stored</p></td>
+      <td><p>Directory where data will be stored</p></td>
     </tr>
     <tr>
       <th>chunk1</th>
@@ -209,6 +210,10 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
     <tr>
       <th>dist</th>
       <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+    </tr>
+    <tr>
+      <th>overwrite</th>
+      <td><p>Overwrite existing files (default <code>FALSE</code>)</p></td>
     </tr>
     <tr>
       <th>verbose</th>

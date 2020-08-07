@@ -321,14 +321,6 @@ plotly_graph(qpg_results$edges)
 
 <br>
 
-### Regularization terms
-
-There are two regularization terms (fudge factors) used in qpGraph, which make matrix inversions more stable.
-One is added to the diagonal elements of the $f_3$ covariance matrix (after multiplying it by the mean of the diagonal elements). It is called `fudge_cov` and defaults to 10^-5^. Increasing this factor has a small effect on admixture weights and branch lengths, but will shift the likelihood scores to be *closer to zero*.
-
-The other regularization terms is added to the covariance matrix of fitted branch lengths (after scaling as before). It is called `fudge` and defaults to 10^-4^. In the original *qpGraph* program, this parameter can be set through the `diag` parameter. Increasing `fudge` will shift the likelihood scores to be *further away from zero*. This regularization term ensures that edge weights will be evenly distributed across a set of edges whose weights could otherwise not be determined unambiguously. (As is often the case with the two edges originating in the root node.)
-
-As these regularization terms affect the likelihood score, they should be kept constant whenever fits of different graphs are compared to each other.
 
 ### More about graphs
 

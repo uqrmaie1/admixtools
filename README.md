@@ -185,8 +185,8 @@ You can also take a look at the [tutorial](articles/admixtools.html),
 read more about how ADMIXTOOLS 2 computes
 [f-statistics](https://uqrmaie1.github.io/admixtools/articles/fstats.html)
 and [standard
-errors](https://uqrmaie1.github.io/admixtools/resampling.html), and what
-you can do with [admixture
+errors](https://uqrmaie1.github.io/admixtools/articles/resampling.html),
+and what you can do with [admixture
 graphs](https://uqrmaie1.github.io/admixtools/articles/graphs.html).
 
 For even greater transparency, many of the core functions are

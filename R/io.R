@@ -43,7 +43,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  if(adjust_pseudohaploid) ploidy = cpp_geno_detect_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
+  if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
   afdat = cpp_packedancestrymap_to_aftable(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
                                            last = nsnpall, ploidy = ploidy,
@@ -1095,18 +1095,22 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
                        verbose = TRUE) {
 
   pref %<>% normalizePath(mustWork = FALSE)
-  if(is_geno_prefix(pref)) {
+  if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
     format = 'packedancestrymap'
     nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
     snpend = '.snp'
     indend = '.ind'
     genoend = '.geno'
-  } else if(is_plink_prefix) {
+    cpp_geno_ploidy = cpp_packedancestrymap_ploidy
+    cpp_geno_to_aftable = cpp_packedancestrymap_to_aftable
+  } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
     format = 'plink'
     nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
     snpend = '.bim'
     indend = '.fam'
     genoend = '.bed'
+    cpp_geno_ploidy = cpp_plink_ploidy
+    cpp_geno_to_aftable = cpp_plink_to_aftable
   } else stop('Genotype files not found!')
 
   indfile = read_table2(paste0(pref, indend), col_names = FALSE, col_types = cols(), progress = FALSE)
@@ -1124,14 +1128,14 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   ends = c(lead(starts)[-numparts], nrow(snpfile))
 
   snpparts = list()
-  if(adjust_pseudohaploid) ploidy = cpp_geno_detect_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
+  if(adjust_pseudohaploid) ploidy = cpp_geno_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
 
   for(i in 1:numparts) {
     if(verbose) alert_info(paste0('Reading part ', i, ' out of ', numparts, '...\r'))
     # read data and compute allele frequencies
-    afdat = cpp_packedancestrymap_to_aftable(paste0(pref, genoend), nsnpall, nindall, indvec, first = starts[i],
-                                             last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
+    afdat = cpp_geno_to_aftable(paste0(pref, genoend), nsnpall, nindall, indvec, first = starts[i],
+                                last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
     afdat$snpfile = snpfile %>% slice((starts[i]+1):(ends[i]))
 
     afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
@@ -1169,11 +1173,6 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   unlink(paste0(outdir, '/part', seq_len(numparts), '/'), recursive = TRUE)
   if(verbose) alert_info('\n')
 
-  # compute jackknife blocks
-  # block_lengths = get_block_lengths(snpparts %>% filter(poly), dist = dist, distcol = 'cm')
-  # block_lengths_a = get_block_lengths(snpparts, dist = dist, distcol = 'cm')
-  # saveRDS(block_lengths, file = paste0(outdir, '/block_lengths.rds'))
-  # saveRDS(block_lengths_a, file = paste0(outdir, '/block_lengths_a.rds'))
   write_tsv(snpparts, paste0(outdir, '/snpdat.tsv.gz'))
   invisible(snpparts)
 }

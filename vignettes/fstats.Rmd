@@ -20,14 +20,18 @@ f2-statistics are conceptually very simple, but estimating them without bias can
 
 ## Estimating *f~2~*
 
-$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. It is the between-population variance, or the numerator in the more widely used $F_{ST}$, which is the ratio of between-population variance to total variance: $F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}$.
+$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$.
 
 In the simplest case, we can estimate $f_2$ across $M$ SNPs like this:
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}$$
 
-The simplest case is one where:
+$f_2$ is closely related to the more widely used $F_{ST}$. $f_2$ is the genetic variance between populations, and $F_{ST}$ is the ratio of between-population variance ($f_2$) to total variance.
 
-1. The infinite sites model is approximately correct
+$$F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}$$
+
+The estimator of $f_2$ shown above will only be unbiased if:
+
+1. Genetic drift is neutral, and there are no backmutations or recurrent mutations
 2. We have very accurate estimates of allele frequencies
 3. There is no missing data
 

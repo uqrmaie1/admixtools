@@ -113,7 +113,7 @@
       <h1>f-statistics</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-04</h4>
+            <h4 class="date">2020-08-07</h4>
       
       
       <div class="hidden name"><code>fstats.Rmd</code></div>
@@ -128,11 +128,13 @@
 <h2 class="hasAnchor">
 <a href="#estimating-f2" class="anchor"></a>Estimating <em>f<sub>2</sub></em>
 </h2>
-<p><span class="math inline">\(f_2\)</span> is the expected squared difference in allele frequencies between two populations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span>. It is the between-population variance, or the numerator in the more widely used <span class="math inline">\(F_{ST}\)</span>, which is the ratio of between-population variance to total variance: <span class="math inline">\(F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}\)</span>.</p>
+<p><span class="math inline">\(f_2\)</span> is the expected squared difference in allele frequencies between two populations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span>.</p>
 <p>In the simplest case, we can estimate <span class="math inline">\(f_2\)</span> across <span class="math inline">\(M\)</span> SNPs like this: <span class="math display">\[f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}\]</span></p>
-<p>The simplest case is one where:</p>
+<p><span class="math inline">\(f_2\)</span> is closely related to the more widely used <span class="math inline">\(F_{ST}\)</span>. <span class="math inline">\(f_2\)</span> is the genetic variance between populations, and <span class="math inline">\(F_{ST}\)</span> is the ratio of between-population variance (<span class="math inline">\(f_2\)</span>) to total variance.</p>
+<p><span class="math display">\[F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}\]</span></p>
+<p>The estimator of <span class="math inline">\(f_2\)</span> shown above will only be unbiased if:</p>
 <ol style="list-style-type: decimal">
-<li>The infinite sites model is approximately correct</li>
+<li>Genetic drift is neutral, and there are no backmutations or recurrent mutations</li>
 <li>We have very accurate estimates of allele frequencies</li>
 <li>There is no missing data</li>
 </ol>

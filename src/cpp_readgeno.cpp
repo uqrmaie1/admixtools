@@ -89,13 +89,6 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
       tmp2[k+1] = (tmpi & MASK2) >> 4;
       tmp2[k+2] = (tmpi & MASK1) >> 2;
       tmp2[k+3] = (tmpi & MASK0);
-
-      // if(verbose && j == 0) Rcout << "test " << (long)2145295790*2 << std::endl;
-      // if(verbose && j == 0) Rcout << "tellg " << (long)in.tellg() << std::endl;
-      // if(verbose && j == 0) Rcout << "l " << l << std::endl;
-      // if(verbose && j == 0) Rcout << "tmp " << (int)tmp[l] << std::endl;
-      // if(verbose && j == 0) Rcout << "tmpi " << (int)tmpi << std::endl;
-      // if(verbose && j == 0) Rcout << "tmp2 " << tmp2 << std::endl;
     }
 
     int c = 0;
@@ -127,10 +120,11 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
 
 
 // [[Rcpp::export]]
-NumericVector cpp_geno_detect_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest = 1000) {
+NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest = 1000) {
 
   int val, k;
   long bytespersnp, len;
+
   ntest = std::min(ntest, nsnp);
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
   if(!in) {

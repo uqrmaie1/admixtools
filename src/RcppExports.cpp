@@ -184,9 +184,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_geno_detect_ploidy
-NumericVector cpp_geno_detect_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest);
-RcppExport SEXP _admixtools_cpp_geno_detect_ploidy(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP ntestSEXP) {
+// cpp_packedancestrymap_ploidy
+NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest);
+RcppExport SEXP _admixtools_cpp_packedancestrymap_ploidy(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP ntestSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -195,7 +195,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type nind(nindSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
     Rcpp::traits::input_parameter< int >::type ntest(ntestSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_geno_detect_ploidy(genofile, nsnp, nind, indvec, ntest));
+    rcpp_result_gen = Rcpp::wrap(cpp_packedancestrymap_ploidy(genofile, nsnp, nind, indvec, ntest));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -248,6 +248,40 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_read_plink(bedfile, nsnp, nind, indvec, first, last, transpose, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_plink_ploidy
+NumericVector cpp_plink_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest);
+RcppExport SEXP _admixtools_cpp_plink_ploidy(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP ntestSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type genofile(genofileSEXP);
+    Rcpp::traits::input_parameter< int >::type nsnp(nsnpSEXP);
+    Rcpp::traits::input_parameter< int >::type nind(nindSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
+    Rcpp::traits::input_parameter< int >::type ntest(ntestSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_plink_ploidy(genofile, nsnp, nind, indvec, ntest));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_plink_to_aftable
+List cpp_plink_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, IntegerVector ploidy, bool transpose, bool verbose);
+RcppExport SEXP _admixtools_cpp_plink_to_aftable(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP ploidySEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type genofile(genofileSEXP);
+    Rcpp::traits::input_parameter< int >::type nsnp(nsnpSEXP);
+    Rcpp::traits::input_parameter< int >::type nind(nindSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
+    Rcpp::traits::input_parameter< int >::type first(firstSEXP);
+    Rcpp::traits::input_parameter< int >::type last(lastSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type ploidy(ploidySEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_plink_to_aftable(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -340,10 +374,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
     {"_admixtools_cpp_get_pairindex", (DL_FUNC) &_admixtools_cpp_get_pairindex, 1},
     {"_admixtools_cpp_read_packedancestrymap", (DL_FUNC) &_admixtools_cpp_read_packedancestrymap, 8},
-    {"_admixtools_cpp_geno_detect_ploidy", (DL_FUNC) &_admixtools_cpp_geno_detect_ploidy, 5},
+    {"_admixtools_cpp_packedancestrymap_ploidy", (DL_FUNC) &_admixtools_cpp_packedancestrymap_ploidy, 5},
     {"_admixtools_cpp_packedancestrymap_to_aftable", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_aftable, 9},
     {"_admixtools_cpp_read_plink_afs", (DL_FUNC) &_admixtools_cpp_read_plink_afs, 5},
     {"_admixtools_cpp_read_plink", (DL_FUNC) &_admixtools_cpp_read_plink, 8},
+    {"_admixtools_cpp_plink_ploidy", (DL_FUNC) &_admixtools_cpp_plink_ploidy, 5},
+    {"_admixtools_cpp_plink_to_aftable", (DL_FUNC) &_admixtools_cpp_plink_to_aftable, 9},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 2},
     {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
