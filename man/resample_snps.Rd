@@ -4,6 +4,7 @@
 \alias{resample_snps}
 \alias{qp3pop_resample_snps}
 \alias{qpdstat_resample_snps}
+\alias{qpwave_resample_snps}
 \alias{qpadm_resample_snps}
 \alias{qpgraph_resample_snps}
 \title{Run models while leaving out SNP blocks}
@@ -11,6 +12,8 @@
 qp3pop_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 
 qpdstat_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+
+qpwave_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 
 qpadm_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 

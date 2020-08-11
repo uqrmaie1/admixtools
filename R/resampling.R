@@ -450,6 +450,9 @@ qp3pop_resample_snps = make_resample_snps_fun(qp3pop)
 qpdstat_resample_snps = make_resample_snps_fun(qpdstat)
 #' @rdname resample_snps
 #' @export
+qpwave_resample_snps = make_resample_snps_fun(qpwave)
+#' @rdname resample_snps
+#' @export
 qpadm_resample_snps = make_resample_snps_fun(function(...) qpadm(..., getcov = FALSE))
 #' @rdname resample_snps
 #' @export
@@ -462,6 +465,9 @@ qp3pop_resample_inds = make_resample_inds_fun(qp3pop)
 #' @rdname resample_inds
 #' @export
 qpdstat_resample_inds = make_resample_inds_fun(qpdstat)
+#' @rdname resample_inds
+#' @export
+qpwave_resample_inds = make_resample_inds_fun(qpwave)
 #' @rdname resample_inds
 #' @export
 qpadm_resample_inds = make_resample_inds_fun(function(...) qpadm(..., getcov = FALSE))

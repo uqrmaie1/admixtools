@@ -10,6 +10,7 @@ extract_afs(
   inds = NULL,
   pops = NULL,
   cols_per_chunk = 10,
+  numparts = 100,
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
@@ -33,6 +34,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
 \item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.}
+
+\item{numparts}{Number of parts in which genotype data will be read for computing allele frequencies}
 
 \item{maxmiss}{Discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
 

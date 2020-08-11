@@ -28,9 +28,13 @@ takes much longer than computing the fit of a new *qpGraph* model:
   - Simple R command line interface
   - Even simpler point-and-click interface
   - Several new features and methodological innovations that make it
-    easier to find robust models:
-      - Automated and semi-automated admixture graph inference
-      - Simultaneous exploration of hundreds of *qpAdm* models
+    easier to find robust
+        models:
+      - [Automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#automatic-graph-optimization)
+        and
+        [semi-automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#semi-automated-graph-exploration)
+        admixture graph inference
+      - Simultaneous exploration of many *qpAdm* models
       - Unbiased comparison of any two *qpGraph* models using
         out-of-sample scores
       - Jackknife and bootstrap standard errors and confidence intervals
@@ -76,22 +80,14 @@ install.packages("igraph")
 install.packages("plotly")
 ```
 
-If you get the following error on Linux `Error: package or namespace
-load failed for 'admixtools' in dyn.load(file, DLLpath = DLLpath, ...):`
-try adding the following two lines to the file `~/.R/Makevars` (and
-create the file first if it doesn’t exist)
-
-    #LAPACK_LIBS=-llapack
-    PKG_LIBS = $(LAPACK_LIBS)
-
-If the installation still fails, please [contact
+If this doesn’t help, please [contact
 me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
 The first step is to extract f2-statistics from genotype files. These
 f2-statistics will be written to disk so that the slow part of the
-computation does not have to be repeated.
+computation doesn’t have to be repeated.
 
 ``` r
 genotype_data = "/my/geno/prefix"
@@ -223,3 +219,5 @@ Maier under <rmaier@broadinstitute.org>.
   - [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
     A program to estimate the history of population size, subdivision,
     and gene flow
+  - [qpBrute](https://github.com/ekirving/qpbrute) Automated graph
+    fitting and Bayes factor calculations

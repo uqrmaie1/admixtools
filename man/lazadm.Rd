@@ -4,7 +4,7 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(f2_data, left, right, target = NULL, boot = FALSE, constrained = TRUE)
+lazadm(f2_data, left, right, target, boot = FALSE, constrained = TRUE)
 }
 \arguments{
 \item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}

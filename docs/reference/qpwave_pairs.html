@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Run models while leaving out SNP blocks — resample_snps • admixtools</title>
+<title>Compute all pairwise qpwave p-values — qpwave_pairs • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,10 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Run models while leaving out SNP blocks — resample_snps" />
+<meta property="og:title" content="Compute all pairwise qpwave p-values — qpwave_pairs" />
 
-<meta property="og:description" content="These are wrapper functions around various qp functions, which will evaluate a model on multiple subdivisions of the data.
-The subdivisions are formed by leaving out one or more SNP block at a time (see boot for details)." />
+<meta property="og:description" content="For all pairs of left populations qpwave rank 0 Chi-squared statistics and p-values will be computed. This tests for each pair of left populations whether it forms a clade with respect to the right populations." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -160,69 +159,53 @@ The subdivisions are formed by leaving out one or more SNP block at a time (see 
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Run models while leaving out SNP blocks</h1>
+    <h1>Compute all pairwise qpwave p-values</h1>
     
-    <div class="hidden name"><code>resample_snps.Rd</code></div>
+    <div class="hidden name"><code>qpwave_pairs.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>These are wrapper functions around various <code>qp</code> functions, which will evaluate a model on multiple subdivisions of the data.
-The subdivisions are formed by leaving out one or more SNP block at a time (see <code>boot</code> for details).</p>
+    <p>For all pairs of left populations qpwave rank 0 Chi-squared statistics and p-values will be computed. This tests for each pair of left populations whether it forms a clade with respect to the right populations.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qp3pop_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpdstat_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpwave_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpadm_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpgraph_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>qpwave_pairs</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_blocks</th>
-      <td><p>a 3d array of blocked f2 statistics</p></td>
+      <th>f2_data</th>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Alternatively, a directory with f2 statistics.</p></td>
     </tr>
     <tr>
-      <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time.
-Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
-or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p></td>
+      <th>left</th>
+      <td><p>Left populations</p></td>
     </tr>
     <tr>
-      <th>verbose</th>
-      <td><p>print progress updates</p></td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td><p>named arguments which are passed to the <code>qp</code> function.</p></td>
+      <th>right</th>
+      <td><p>Right populations</p></td>
     </tr>
     </table>
-    
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>a nested data frame where each model is a row, and the columns are model parameters and model outputs</p>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>res</span> <span class='kw'>=</span> <span class='fu'>qpadm_resample_snps</span>(<span class='no'>example_f2_blocks</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='no'>target</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='no'>left</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='no'>right</span>)
-<span class='fu'>unnest</span>(<span class='no'>res</span>, <span class='no'>weights</span>)
+<span class='no'>left</span> <span class='kw'>=</span> <span class='no'>pops</span>[<span class='fl'>5</span>:<span class='fl'>7</span>]
+<span class='no'>right</span> <span class='kw'>=</span> <span class='no'>pops</span>[<span class='fl'>1</span>:<span class='fl'>4</span>]
+<span class='no'>f2_blocks</span> <span class='kw'>=</span> <span class='fu'><a href='f2_from_precomp.html'>f2_from_precomp</a></span>(<span class='st'>'/my/f2/dir/'</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='no'>left</span>, <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='no'>right</span>, <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'>qpwave_pairs</span>(<span class='no'>f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>)
+<span class='co'># If f2-stats are too big to load them into memory,</span>
+<span class='co'># the following will read the data for each pair from disk:</span>
+<span class='fu'>qpwave_pairs</span>(<span class='st'>'/my/f2/dir/'</span>, <span class='no'>left</span>, <span class='no'>right</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-      
+            
       <li><a href="#examples">Examples</a></li>
     </ul>
 

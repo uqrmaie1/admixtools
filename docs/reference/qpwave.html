@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Run models while leaving out SNP blocks — resample_snps • admixtools</title>
+<title>Estimate admixture waves — qpwave • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,10 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Run models while leaving out SNP blocks — resample_snps" />
+<meta property="og:title" content="Estimate admixture waves — qpwave" />
 
-<meta property="og:description" content="These are wrapper functions around various qp functions, which will evaluate a model on multiple subdivisions of the data.
-The subdivisions are formed by leaving out one or more SNP block at a time (see boot for details)." />
+<meta property="og:description" content="qpwave compares two sets of populations (left and right) to each other. It estimates a lower bound on the number of admixtue waves that went from left into right, by comparing a matrix of f4-statistics to low-rank approximations. For a rank of 0 this is equivalent to testing whether left and right form clades relative to each other." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -160,61 +159,108 @@ The subdivisions are formed by leaving out one or more SNP block at a time (see 
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Run models while leaving out SNP blocks</h1>
+    <h1>Estimate admixture waves</h1>
     
-    <div class="hidden name"><code>resample_snps.Rd</code></div>
+    <div class="hidden name"><code>qpwave.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>These are wrapper functions around various <code>qp</code> functions, which will evaluate a model on multiple subdivisions of the data.
-The subdivisions are formed by leaving out one or more SNP block at a time (see <code>boot</code> for details).</p>
+    <p><code>qpwave</code> compares two sets of populations (<code>left</code> and <code>right</code>) to each other. It estimates a lower bound on the number of admixtue waves that went from <code>left</code> into <code>right</code>, by comparing a matrix of f4-statistics to low-rank approximations. For a rank of 0 this is equivalent to testing whether <code>left</code> and <code>right</code> form clades relative to each other.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>qp3pop_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpdstat_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpwave_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpadm_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)
-
-<span class='fu'>qpgraph_resample_snps</span>(<span class='no'>f2_blocks</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='no'>...</span>)</pre>
+    <pre class="usage"><span class='fu'>qpwave</span>(
+  <span class='no'>f2_data</span>,
+  <span class='no'>left</span>,
+  <span class='no'>right</span>,
+  <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_blocks</th>
-      <td><p>a 3d array of blocked f2 statistics</p></td>
+      <th>f2_data</th>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Alternatively, a directory with f2 statistics.</p></td>
+    </tr>
+    <tr>
+      <th>left</th>
+      <td><p>Left populations (sources)</p></td>
+    </tr>
+    <tr>
+      <th>right</th>
+      <td><p>Right populations (outgroups)</p></td>
+    </tr>
+    <tr>
+      <th>fudge</th>
+      <td><p>value added to diagonal matrix elements before inverting</p></td>
     </tr>
     <tr>
       <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time.
+      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
+of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
 Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
-or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p></td>
+or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The the covariance matrix of f4 statistics,
+as well as the weight standard errors, will be computed using bootstrapping.</p></td>
+    </tr>
+    <tr>
+      <th>constrained</th>
+      <td><p>Constrain admixture weights to be non-negative</p></td>
+    </tr>
+    <tr>
+      <th>cpp</th>
+      <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
-      <td><p>print progress updates</p></td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td><p>named arguments which are passed to the <code>qp</code> function.</p></td>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a nested data frame where each model is a row, and the columns are model parameters and model outputs</p>
+    <p>A list with output describing the model fit:</p><ol>
+<li><p><code>f4</code> A data frame with estimated f4-statistics</p></li>
+<li><p><code>rankdrop</code> A data frame describing model fits with different ranks, including p-values for the overall fit
+and for nested models (comparing two models with rank difference of one).</p></li>
+</ol>
+
+    
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
+<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European
+languages in Europe.</em> Nature (SI 10)</p>
+    
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='qpadm.html'>qpadm</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>res</span> <span class='kw'>=</span> <span class='fu'>qpadm_resample_snps</span>(<span class='no'>example_f2_blocks</span>, <span class='kw'>target</span> <span class='kw'>=</span> <span class='no'>target</span>, <span class='kw'>left</span> <span class='kw'>=</span> <span class='no'>left</span>, <span class='kw'>right</span> <span class='kw'>=</span> <span class='no'>right</span>)
-<span class='fu'>unnest</span>(<span class='no'>res</span>, <span class='no'>weights</span>)
-}</div></pre>
+    <pre class="examples"><div class='input'><span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
+<span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
+<span class='fu'>qpwave</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>)</div><div class='output co'>#&gt; <span style='color: #00BBBB;'>ℹ Computing f4 stats...
+#&gt; ℹ Computing number of admixture waves...
+#&gt; </span><span></div><div class='output co'>#&gt; $f4
+#&gt; </span><span style='color: #555555;'># A tibble: 3 x 8</span><span>
+#&gt;   pop1           pop2     pop3     pop4                est      se     z       p
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>          </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>             </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Altai_Neander… Vindija… Chimp.R… Mbuti.DG        1.24</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 1.35</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 0.920 0.358  
+#&gt; </span><span style='color: #555555;'>2</span><span> Altai_Neander… Vindija… Chimp.R… Russia_Ust_Ish… 4.45</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 1.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 2.72  0.006</span><span style='text-decoration: underline;'>53</span><span>
+#&gt; </span><span style='color: #555555;'>3</span><span> Altai_Neander… Vindija… Chimp.R… Switzerland_Bi… 4.22</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 1.72</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 2.45  0.014</span><span style='text-decoration: underline;'>4</span><span> 
+#&gt; 
+#&gt; $rankdrop
+#&gt; </span><span style='color: #555555;'># A tibble: 1 x 7</span><span>
+#&gt;   f4rank   dof chisq       p dofdiff chisqdiff p_nested
+#&gt; </span><span style='color: #555555;'>*</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span>      0     3  11.9 0.007</span><span style='text-decoration: underline;'>68</span><span>      </span><span style='color: #BB0000;'>NA</span><span>        </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>
+#&gt; </div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
@@ -222,6 +268,10 @@ or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p><
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
+
+      <li><a href="#references">References</a></li>
+
+      <li><a href="#see-also">See also</a></li>
       
       <li><a href="#examples">Examples</a></li>
     </ul>

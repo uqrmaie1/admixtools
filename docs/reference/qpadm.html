@@ -178,9 +178,10 @@ admixture events.</p>
   <span class='no'>f2_data</span>,
   <span class='no'>left</span>,
   <span class='no'>right</span>,
-  <span class='kw'>target</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='no'>target</span>,
   <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
@@ -218,6 +219,10 @@ or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>. The 
 as well as the weight standard errors, will be computed using bootstrapping.</p></td>
     </tr>
     <tr>
+      <th>getcov</th>
+      <td><p>Compute weights covariance. If not needed, turning this off will speed things up.</p></td>
+    </tr>
+    <tr>
       <th>constrained</th>
       <td><p>Constrain admixture weights to be non-negative</p></td>
     </tr>
@@ -234,30 +239,22 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>A list with output describing the model fit:</p><ol>
-<li><p><code>weights</code> A data frame with estimated admixture proportions where each row is a left population.
-Returned only if <code>target</code> is specified</p></li>
-<li><p><code>f4</code> A data frame with estimated (and fitted) f4-statistics</p></li>
+<li><p><code>weights</code> A data frame with estimated admixture proportions where each row is a left population.</p></li>
+<li><p><code>f4</code> A data frame with estimated and fitted f4-statistics</p></li>
 <li><p><code>rankdrop</code> A data frame describing model fits with different ranks, including p-values for the overall fit
 and for nested models (comparing two models with rank difference of one).</p></li>
-<li><p><code>popdrop</code> A data frame describing model fits with different populations. Returned only if <code>target</code> is specified</p></li>
+<li><p><code>popdrop</code> A data frame describing model fits with different populations.</p></li>
 </ol>
 
     
-    <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
-
-    
-
-<p><code>qpwave</code></p>
-    
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
-    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history.</em> Genetics</p>
-<p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European
+    <p>Haak, W. et al. (2015) <em>Massive migration from the steppe was a source for Indo-European
 languages in Europe.</em> Nature (SI 10)</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='lazadm.html'>lazadm</a></code></p></div>
+    <div class='dont-index'><p><code><a href='qpwave.html'>qpwave</a></code>, <code><a href='lazadm.html'>lazadm</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
@@ -315,8 +312,6 @@ languages in Europe.</em> Nature (SI 10)</p>
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
-
-      <li><a href="#alias">Alias</a></li>
 
       <li><a href="#references">References</a></li>
 

@@ -1656,9 +1656,55 @@ match_graphs = function(graph1, graph2) {
 
 
 
+leafdistances = function(graph) {
+
+  graph %<>% simplify_graph
+  leaves = get_leafnames(graph)
+  dist = distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>% pivot_longer(-from, names_to = 'to', values_to = 'dist')
+  dist2 = dist %>% filter(is.finite(dist), from != to)
+  dist2 %>% left_join(dist2, by = 'from') %>% filter(to.x != to.y, to.x %in% leaves, to.y %in% leaves) %>% mutate(pp = paste(to.x, to.y)) %>% group_by(pp) %>% top_n(1, -jitter(dist.y)) %>% ungroup %>% transmute(from = to.y, to = to.x, dist = dist.y)
+
+}
+
+reconstruct_from_leafdist = function(leafdist) {
+
+  leaves = union(leafdist$from, leafdist$to)
+  pref = admixtools:::shortest_unique_prefixes(leaves)
+
+  parents = leafdist %>% group_by(to) %>% filter(dist == 1) %>% mutate(node = paste0(to, '_p1'), dist = 1, d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(d), collapse = ' '), from = to) %>% ungroup %>% select(node, dist, from, d, dnum, desc) %>% distinct %>% group_by(desc) %>% top_n(1, node) %>% ungroup
+
+  # merge with desc from parent generation
+  leafdist %>% filter(from %in% parents$from) %>% group_by(to) %>% filter(dist == 2) %>% mutate(node = paste0(to, '_p2'), dist = 2, desc = paste(sort(union(from, to)), collapse = ' '), dnum = length(union(from, to)), from = to) %>% ungroup %>% select(node, dist, from, dnum, desc) %>% distinct %>% group_by(desc) %>% top_n(1, node) %>% ungroup
 
 
 
+  parents = leafdist %>% filter(dist == 1) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
+
+  p2 = leafdist %>% filter(dist == 2) %>% filter(from %in% parents$from) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
+
+  p2 %>% left_join(parents %>% select(from, d), by = 'from') %>% rowwise %>% mutate(d = list(union(to, d)), dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup
+
+
+  graph = graph.empty()
+  graph %<>% add_vertices(length(leaves), name = leaves)
+  for(i in seq_along(leaves)) {
+    l = leaves[i]
+    ld = leafdist %>% filter(from == l)
+    reachable = l
+    cat(paste0(i,'\r'))
+    for(j in seq_len(max(ld$dist))) {
+      nn = ld %>% filter(dist == j)
+      reachable = union(reachable, nn$to)
+      oldnam = if(j == 1) l else newnam
+      newnam = admixtools:::shortest_unique_prefixes(reachable) %>% sort %>% paste(collapse = '_') %>% paste0('_', .)
+      if(!newnam %in% names(V(graph))) graph %<>% add_vertices(1, name = newnam)
+      if(oldnam != newnam) graph %<>% add_edges(c(newnam, oldnam))
+      if(nrow(nn) == 0) break
+    }
+  }
+
+
+}
 
 
 

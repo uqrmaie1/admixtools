@@ -4,6 +4,7 @@
 \alias{resample_inds}
 \alias{qp3pop_resample_inds}
 \alias{qpdstat_resample_inds}
+\alias{qpwave_resample_inds}
 \alias{qpadm_resample_inds}
 \alias{qpgraph_resample_inds}
 \title{Run models while leaving out individuals}
@@ -11,6 +12,8 @@
 qp3pop_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 
 qpdstat_resample_inds(dir, inds, pops, verbose = TRUE, ...)
+
+qpwave_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 
 qpadm_resample_inds(dir, inds, pops, verbose = TRUE, ...)
 

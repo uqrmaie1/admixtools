@@ -113,7 +113,7 @@
       <h1>Standard errors</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-07</h4>
+            <h4 class="date">2020-08-11</h4>
       
       
       <div class="hidden name"><code>resampling.Rmd</code></div>
@@ -123,29 +123,54 @@
     
     
 <p><strong>Under construction</strong></p>
-<div id="model-robustness" class="section level2">
+<div id="quantifying-uncertainty" class="section level2">
 <h2 class="hasAnchor">
-<a href="#model-robustness" class="anchor"></a>Model robustness</h2>
-<p>One of the advantages of being able to evaluate models quickly is that it becomes easier to test their robustness. For each <code>qp</code> function, there is a function which tests robustness by resampling SNPs (<code>resample_snps</code>), and another function which tests robustness by resampling individuals (<code>resample_inds</code>).</p>
-<div id="resampling-snps" class="section level3">
-<h3 class="hasAnchor">
-<a href="#resampling-snps" class="anchor"></a>Resampling SNPs</h3>
-<p>The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the <code>resample_snps</code> functions generalize this approach in two ways. First, they evaluate and returns <em>all</em> model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn’t give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.</p>
-<p>Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of <strong>n times</strong> the sampling variance.</p>
-<p>In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1">snpres =<span class="st"> </span><span class="kw"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span>(example_f2_blocks, <span class="dt">graph =</span> example_graph, <span class="dt">boot =</span> <span class="dv">1000</span>)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span>(snpres<span class="op">$</span>score, <span class="dv">100</span>)</a></code></pre></div>
+<a href="#quantifying-uncertainty" class="anchor"></a>Quantifying uncertainty</h2>
+<p>The estimates produced by ADMIXTOOLS 2 (and by any other software) have high, but still limited precision, and it’s often important to know what those limits are. There are several reasons why there is uncertainty in an estimate, but the two major ones in our case are the random sampling of individuals, and the random sampling (or rather the random drift) of SNPs: How different would the results be if we had used DNA from different individuals (from the same populations)? And how different would the results be if we could replay the same history, while letting the SNPs drift randomly another time?</p>
+<p>We can answer these questions with resampling procedures such as jackknife and bootstrap. The original ADMIXTOOLS software uses jackknife to estimate standard errors of f-statistic estimates and other parameters, while ADMIXTOOLS 2 can also compute bootstrap standard errors. See <em>add section</em> for a comparison of the two methods. Unless otherwhise mentioned, standard errors estimate the uncertainty due to the random sampling of SNPs, although ADMIXTOOLS 2 also has functions that estimate the uncertainty due to the random sampling of individuals.</p>
 </div>
-<div id="resampling-individuals" class="section level3">
-<h3 class="hasAnchor">
-<a href="#resampling-individuals" class="anchor"></a>Resampling individuals</h3>
-<p>We can also test how robust a model is to changes in the individuals that make up a population. The <code>resample_inds</code> functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">pops =<span class="st"> </span><span class="kw"><a href="../reference/get_leafnames.html">get_leafnames</a></span>(example_igraph)[<span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="dv">1</span><span class="op">:</span><span class="dv">3</span>, <span class="kw"><a href="https://rdrr.io/r/base/rep.html">rep</a></span>(<span class="dv">4</span>,<span class="dv">4</span>), <span class="dv">5</span><span class="op">:</span><span class="dv">7</span>)]</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">indres =<span class="st"> </span><span class="kw"><a href="../reference/resample_inds.html">qpgraph_resample_inds</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops, <span class="dt">graph =</span> example_graph)</a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">ggplot</span>(indres, <span class="kw">aes</span>(score, score)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_text</span>(<span class="kw">aes</span>(<span class="dt">label =</span> ind))</a></code></pre></div>
-<p>For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.</p>
+<div id="standard-errors-and-hypothesis-testing" class="section level2">
+<h2 class="hasAnchor">
+<a href="#standard-errors-and-hypothesis-testing" class="anchor"></a>Standard errors and hypothesis testing</h2>
+<p>Let’s say we want to know whether populations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> form a clade relative to <span class="math inline">\(C\)</span> and <span class="math inline">\(D\)</span>. We can reject the null hypothesis that they do form a clade if <span class="math inline">\(f_4(A, B; C, D)\)</span> significantly deviates from zero – if there is a significant covariance between the allele frequency differences <span class="math inline">\(A-B\)</span> and <span class="math inline">\(C-D\)</span>.</p>
+<p>To test whether this covariance is significant, we have to estimate its standard error, which will allow us to calculate a <em>p</em>-value – the probability to observe an <span class="math inline">\(f_4\)</span> statistic of that or greater magnitude under the null hypothesis that the two population pairs form a clade and that the true covariance is zero.</p>
+</div>
+<div id="bootstrap-standard-errors" class="section level2">
+<h2 class="hasAnchor">
+<a href="#bootstrap-standard-errors" class="anchor"></a>Bootstrap standard errors</h2>
+<p>The idea behind jackknife and bootstrap is that while it’s impossible to know with certainty how different a result would be if we had different data, we can make an educated guess by analyzing many different subsets of our data. In the case of jackknife, the subsets are generated by leaving out each sample at a time, and for bootstrap they are generated by repeatedly resampling with replacement until the total number of samples is reached. In our case “samples” are usually blocks of SNPs.</p>
+<p>We then calculate whichever statistic we’re interested in on each of the subsets, resulting in <span class="math inline">\(n\)</span> subset-statistics <span class="math inline">\(s_i\)</span>. From the variation in <span class="math inline">\(s_i\)</span> we can estimate the standard error.</p>
+<p>For jackknife, the squared standard error, <span class="math inline">\(\sigma^2\)</span>, is given by</p>
+<p><span class="math display">\[\sigma^2 = \frac{n-1}{n} \sum_{i=1}^n (\mu - s_i)^2\]</span></p>
+<p>and for bootstrap, where the <span class="math inline">\(s_i\)</span> are more different from each other, the squared standard error estimate is just the variance across <span class="math inline">\(s_i\)</span>:</p>
+<p><span class="math display">\[\sigma^2 = \frac{1}{n-1} \sum_{i=1}^n (\mu - s_i)^2\]</span></p>
+<p>In both cases <span class="math inline">\(\mu\)</span> is the mean across <span class="math inline">\(s_i\)</span>: <span class="math inline">\(\mu = \frac{1}{n} \sum_{i=1}^n s_i\)</span></p>
 <p><br></p>
 </div>
+<div id="block-jackknife-standard-errors" class="section level2">
+<h2 class="hasAnchor">
+<a href="#block-jackknife-standard-errors" class="anchor"></a>Block-jackknife standard errors</h2>
+<p>We can’t actually use the approach described so far because SNPs do not drift independently of each other. While there are tens of millions of common SNPs in the human genome, the number of independent SNPs is closer to 50,000. If we don’t account for that, we underestimate the true standard errors by orders of magnitude, leading to many false positive results.</p>
+<p>The non-independence of SNPs (linkage disequilibrium) is mostly limited to SNPs in close proximity which are not separated by recombination hotspots. If we take two SNPs separated by 5 centiMorgan or more, they are usually independent of each other. So while we can’t use the standard jackknife to get standard error estimates by leaving out each SNP at a time, we can divide the genome into blocks of 5 centiMorgan and leave out each block at a time. This complicates things a bit because some blocks have more SNPs than others, and should be weighted appropriately.</p>
+<p>The actual standard error estimate is given by</p>
+<!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n (\frac{tot - s_i}{l_i} + s_i - est) / sqrt(\frac{1}{l_i}-1)$$ -->
+<!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n (\frac{\sum_{i=1}^n s_i * l_i}{l_i} - \frac{s_i}{l_i} + \frac{s_i l_i}{l_i} - \frac{\sum_{i=1}^n s_i}{n}) / sqrt(\frac{1}{l_i}-1)$$ -->
+<!-- The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics. -->
+<!-- Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of **n times** the sampling variance. -->
+<!-- In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted. -->
+<!-- ```{r, eval = FALSE} -->
+<!-- snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 1000) -->
+<!-- hist(snpres$score, 100) -->
+<!-- ``` -->
+<!-- ### Resampling individuals -->
+<!-- We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals. -->
+<!-- ```{r, eval = FALSE} -->
+<!-- pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)] -->
+<!-- indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph) -->
+<!-- ggplot(indres, aes(score, score)) + geom_text(aes(label = ind)) -->
+<!-- ``` -->
+<!-- For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population. -->
+<!-- <br> -->
 </div>
   </div>
 
@@ -154,7 +179,10 @@
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
       <ul class="nav nav-pills nav-stacked">
-<li><a href="#model-robustness">Model robustness</a></li>
+<li><a href="#quantifying-uncertainty">Quantifying uncertainty</a></li>
+      <li><a href="#standard-errors-and-hypothesis-testing">Standard errors and hypothesis testing</a></li>
+      <li><a href="#bootstrap-standard-errors">Bootstrap standard errors</a></li>
+      <li><a href="#block-jackknife-standard-errors">Block-jackknife standard errors</a></li>
       </ul>
 </div>
       </div>

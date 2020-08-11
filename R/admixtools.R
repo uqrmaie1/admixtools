@@ -81,6 +81,11 @@ NULL
 "example_qpgraph_ref_results"
 
 
+.onUnload = function (libpath) {
+  library.dynam.unload("admixtools", libpath)
+}
+
+
 # a = devtools::check()
 # a$notes[[2]] %>% str_split('’\n') %>% `[[`(1) %>% str_extract_all('‘.+') %>% unlist %>% str_sub(2) %>% unique %>% paste0(., collapse = '",\n"') %>% paste0('globalVariables(c("', ., '"))') %>% write_lines('r/admixtools.R', append = T)
 # a$notes[3] %>% str_split('’\n') %>% `[[`(1) %>% str_extract_all('‘.+') %>% unlist %>% str_sub(2) %>% unique %>% paste0(., collapse = '", "') %>% paste0('globalVariables(c("', ., '"))') %>% write_lines('r/admixtools.R', append = T)

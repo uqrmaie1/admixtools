@@ -504,7 +504,6 @@ read_plink = function(pref, inds = NULL, verbose = FALSE) {
   rownames(g) = bim$SNP
   colnames(g) = keepinds
 
-  #outdat = treat_missing(g, NULL, bim, na.action = na.action, verbose = verbose)
   outlist = list(bed = g, fam = fam[indvec2,], bim = bim)
   outlist
 }
@@ -876,7 +875,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
-  extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk,
+  extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
               maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, transitions = transitions, transversions = transversions,
               keepsnps = keepsnps, format = format, poly_only = FALSE,
               adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
@@ -1082,6 +1081,7 @@ extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, 
 #' @export
 #' @inheritParams extract_f2
 #' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.
+#' @param numparts Number of parts in which genotype data will be read for computing allele frequencies
 #' @return SNP metadata (invisibly)
 #' @examples
 #' \dontrun{
@@ -1089,7 +1089,7 @@ extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, 
 #' outdir = 'dir/for/afdata/'
 #' extract_afs(pref, outdir)
 #' }
-extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10,
+extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10, numparts = 100,
                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
                        verbose = TRUE) {
@@ -1115,7 +1115,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     cpp_geno_to_aftable = cpp_plink_to_aftable
   } else stop('Genotype files not found!')
 
-  if(verbose) alert_info(paste0('Reading meta data...\n'))
+  if(verbose) alert_info(paste0('Reading metadata...\n'))
   indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = cols(), progress = FALSE)
   snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
   nindall = nrow(indfile)
@@ -1126,7 +1126,6 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
 
   snpfile %<>% filter(CHR <= 22)
 
-  numparts = 100
   starts = seq(0, nrow(snpfile), length.out = numparts+1) %>% round %>% head(-1)
   ends = c(lead(starts)[-numparts], nrow(snpfile))
 

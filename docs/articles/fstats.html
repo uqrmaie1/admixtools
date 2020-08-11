@@ -113,7 +113,7 @@
       <h1>f-statistics</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-07</h4>
+            <h4 class="date">2020-08-11</h4>
       
       
       <div class="hidden name"><code>fstats.Rmd</code></div>
@@ -122,46 +122,27 @@
 
     
     
-<p><em>f</em>-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, f2-statistics are of particular importance as f3- and f4-statistics are computed from f2-statistics.</p>
+<p><em>f</em>-statistics are the foundation of ADMIXTOOLS. In ADMIXTOOLS 2, <span class="math inline">\(f_2\)</span>-statistics are of particular importance as <span class="math inline">\(f_3\)</span>- and <span class="math inline">\(f_4\)</span>-statistics are computed from <span class="math inline">\(f_2\)</span>-statistics.</p>
 <p>f2-statistics are conceptually very simple, but estimating them without bias can be complicated.</p>
-<div id="estimating-f2" class="section level2">
+<div id="f_2" class="section level2">
 <h2 class="hasAnchor">
-<a href="#estimating-f2" class="anchor"></a>Estimating <em>f<sub>2</sub></em>
+<a href="#f_2" class="anchor"></a><span class="math inline">\(f_2\)</span>
 </h2>
 <p><span class="math inline">\(f_2\)</span> is the expected squared difference in allele frequencies between two populations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span>.</p>
 <p>In the simplest case, we can estimate <span class="math inline">\(f_2\)</span> across <span class="math inline">\(M\)</span> SNPs like this: <span class="math display">\[f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}\]</span></p>
 <p><span class="math inline">\(f_2\)</span> is closely related to the more widely used <span class="math inline">\(F_{ST}\)</span>. <span class="math inline">\(f_2\)</span> is the genetic variance between populations, and <span class="math inline">\(F_{ST}\)</span> is the ratio of between-population variance (<span class="math inline">\(f_2\)</span>) to total variance.</p>
-<p><span class="math display">\[F_{ST}(A, B) = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}\]</span></p>
+<p><span class="math display">\[F_{ST}(A, B) = \frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}} = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}\]</span></p>
 <p>The estimator of <span class="math inline">\(f_2\)</span> shown above will only be unbiased if:</p>
 <ol style="list-style-type: decimal">
 <li>Genetic drift is neutral, and there are no backmutations or recurrent mutations</li>
 <li>We have very accurate estimates of allele frequencies</li>
-<li>There is no missing data</li>
 </ol>
-<p>Here we will look at what happens if 2. and 3. are not true.</p>
+<p>The second assumption is often not met because allele frequencies are estimated using only few samples in some populations. For this reason, we don’t estimate <span class="math inline">\(f_2\)</span> with the simple estimator shown above, but with the following estimator which is robust to sample size:</p>
+<p><span class="math display">\[f_2(A, B) = \frac{1}{M} \sum_{j=1}^M (a_j-b_j)^2 - \frac{a_j(1-a_j)}{n_{A,j}-1} - \frac{b_j(1-b_j)}{n_{B,j}-1}\]</span> <span class="math inline">\(n_{A,j}\)</span> and <span class="math inline">\(n_{B,j}\)</span> are the counts of independently sampled alleles in popoulations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> at SNP <span class="math inline">\(j\)</span>. See <a href="#biases">Biases</a> for more information.</p>
 </div>
-<div id="bias-due-to-inaccurate-allele-frequency-estimates" class="section level2">
+<div id="f_4" class="section level2">
 <h2 class="hasAnchor">
-<a href="#bias-due-to-inaccurate-allele-frequency-estimates" class="anchor"></a>Bias due to inaccurate allele frequency estimates</h2>
-<p>Inaccurate allele frequency estimates lead to over-esimation of <span class="math inline">\(f_2\)</span>: If two populations have diverged very recently, their allele frequencies will be very similar. But if the allele frequencies of one or both population are estimated very inaccurately, the allele frequency differences (and <span class="math inline">\(f_2\)</span>) will appear larger than they really are.</p>
-<p>The most common reason for inaccurate allele frequency estimates is low sample count (or a low number of independently sampled alleles). The upward bias due to low sample count at a single SNP in one population is <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, where <span class="math inline">\(p\)</span> is the allele frequency and <span class="math inline">\(n\)</span> is the number of independently sampled alleles. Therefore, an unbiased estimate of <span class="math inline">\(f_2\)</span> at a single SNP is given by</p>
-<p><span class="math display">\[f_2(A, B) = (a-b)^2 - \frac{a(1-a)}{n_A-1} - \frac{b(1-b)}{n_B-1}\]</span> Population-wide estimates of <span class="math inline">\(f_2\)</span> are again averages over all SNPs. In most cases, <span class="math inline">\(n\)</span>, the number of independently sampled alleles, will be twice the number of samples, with two exceptions:</p>
-<p><em>1. Pseudohaploid data</em></p>
-<p>Many ancient DNA data sets don’t call heterozygous genotypes in order to avoid a number of biases. If two different alleles are observed in one sample at a particular site, one of the two alleles is chosen at random and the genotype is declared homozygous for that allele. In pseudohaploid samples, the number of independently sampled alleles is therefore equal to the number of samples.</p>
-<p><em>2. Inbreeding</em></p>
-<p>If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, <span class="math inline">\(n\)</span> can therefore be less than two.</p>
-<p>Some of the programs in the original ADMIXTOOLS have an <code>inbreed</code> option which uses an estimator of <span class="math inline">\(f_2\)</span> that is robust to inbreeding. This option is also recommended to use for pseudohaploid data. ADMIXTOOLS 2 automatically detects pseudohaploid samples by checking if any heterozyous genotypes are observed among the first 1000 SNPs. If not, the sample is assumed to be pseudohaploid.</p>
-</div>
-<div id="bias-due-to-missing-data" class="section level2">
-<h2 class="hasAnchor">
-<a href="#bias-due-to-missing-data" class="anchor"></a>Bias due to missing data</h2>
-<p>Missing data alone will not create any bias in <span class="math inline">\(f_2\)</span> estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, <span class="math inline">\(f_2\)</span> can be over- or underestimated. In contrast to <span class="math inline">\(F_{ST}\)</span>, which is the same in expectation for rare and for common SNPs, <span class="math inline">\(f_2\)</span> tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd <span class="math inline">\(f_2\)</span> estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What’s important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high <span class="math inline">\(f_2\)</span> because most rare alleles are missing in one of the populations, and another pair of populations has a lower <span class="math inline">\(f_2\)</span> beause those rare alleles are not missing, bias can be expected.</p>
-<p>One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the <code>allsnps</code> options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the <code>maxmiss</code> parameter in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.</p>
-<p>As we will see in the next section, estimating <span class="math inline">\(f_4\)</span> without bias is actually easier than estimating <span class="math inline">\(f_2\)</span> or <span class="math inline">\(f_{ST}\)</span> without any bias.</p>
-</div>
-<div id="estimating-f4" class="section level2">
-<h2 class="hasAnchor">
-<a href="#estimating-f4" class="anchor"></a>Estimating <em>f<sub>4</sub></em>
+<a href="#f_4" class="anchor"></a><span class="math inline">\(f_4\)</span>
 </h2>
 <p><span class="math inline">\(f_4\)</span> is the covariance of allele frequency differences between two pairs of populations. It can also be expressed as a sum of <span class="math inline">\(f_2\)</span>-statistics:</p>
 <p><span class="math display">\[
@@ -173,18 +154,41 @@ f_4(A, B; C, D) &amp;= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ 
 \end{equation}
 \]</span></p>
 <p>This makes it clear that <span class="math inline">\(f_4\)</span> is a generalization of <span class="math inline">\(f_2\)</span>: <span class="math inline">\(f_4(A, B; A, B) = f_2(A, B)\)</span></p>
-<p>D-statistics differ from <span class="math inline">\(f_4\)</span> only by a scaling factor: <span class="math inline">\(D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j) (c_j + d_j - 2 c_j d_j)}\)</span></p>
+<p><em>D</em>-statistics differ from <span class="math inline">\(f_4\)</span> only by a scaling factor: <span class="math inline">\(D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j) (c_j + d_j - 2 c_j d_j)}\)</span>.</p>
 <p>Naively one might think that estimating <span class="math inline">\(f_4\)</span> without bias is at least as difficult as estimating <span class="math inline">\(f_2\)</span> without bias, but that is not the case. Since each population is represented in <span class="math inline">\(f_4\)</span> through two <span class="math inline">\(f_2\)</span> terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, which is not necessary when estimating <span class="math inline">\(f_4\)</span>.</p>
 <p>For a visual interpretation of this effect, consider the following phylogeny:</p>
 <pre><code>A         B
  \_______/
  /       \
 C         D</code></pre>
-<p><span class="math inline">\(f_2\)</span> is the total branch length between any two populations, while <span class="math inline">\(f_4(A, B; C, D)\)</span> is the length of the horizontal line. Any increase or decrease in the lengths of the terminal branches leading to <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, <span class="math inline">\(C\)</span>, or <span class="math inline">\(D\)</span> will affect two <span class="math inline">\(f_2\)</span> statistics equally, but will leave <span class="math inline">\(f_4(A, B; C, D)\)</span> unaffected. This robustness is a major strength of methods based on f4-statistics (and to a large extent also of f3-based methods): Terminal branch lengths are affected by many factors such as divergence time, changes in population size, as well as by data quality, but none of this affects <span class="math inline">\(f_4\)</span>, the covariance of allele freuquency differences.</p>
-<div id="f4-as-a-sum-of-allele-frequency-products" class="section level3">
+<p><span class="math inline">\(f_2\)</span> is the total branch length between any two populations, while <span class="math inline">\(f_4(A, B; C, D)\)</span> is the length of the horizontal line. Any increase or decrease in the length of one of the terminal branches - say for example the branch leading to <span class="math inline">\(D\)</span> - will equally affect <span class="math inline">\(f_2(A, D)\)</span>, <span class="math inline">\(f_2(B, D)\)</span>, and <span class="math inline">\(f_2(C, D)\)</span>. But it will not affect <span class="math inline">\(f_4(A, B; C, D)\)</span> - the horizontal line. This robustness is a major strength of methods based on <span class="math inline">\(f_4\)</span>-statistics (and to a large extent also of <span class="math inline">\(f_3\)</span>-based methods): Terminal branch lengths are affected by many factors such as divergence time, changes in population size, as well as by data quality, but in expectation, none of this affects <span class="math inline">\(f_4\)</span>, the covariance of allele freuquency differences.</p>
+<div id="f_4-as-a-sum-of-allele-frequency-products" class="section level3">
 <h3 class="hasAnchor">
-<a href="#f4-as-a-sum-of-allele-frequency-products" class="anchor"></a>f<sub>4</sub> as a sum of allele frequency products</h3>
-<p>In the presence of large amounts of missing data it is possible that not all biases cancel out when combining <span class="math inline">\(f_2\)</span>-statistics to <span class="math inline">\(f_4\)</span>-statistics. For this reason <span class="math inline">\(f_4\)</span>-statistics in ADMIXTOOLS 2 can not only be computed by adding up <span class="math inline">\(f_2\)</span>-statistics, but also by adding up pairwise allele frequency products. While <span class="math inline">\(f_2\)</span> can be difficult to estimate without bias as described above, allele frequencies and allele frequency products can easily be estimated without bias even with only one observed allele.</p>
+<a href="#f_4-as-a-sum-of-allele-frequency-products" class="anchor"></a><span class="math inline">\(f_4\)</span> as a sum of allele frequency products</h3>
+<p>In the presence of large amounts of missing data it is possible that not all biases cancel out when combining <span class="math inline">\(f_2\)</span>-statistics to <span class="math inline">\(f_4\)</span>-statistics. For this reason <span class="math inline">\(f_4\)</span>-statistics in ADMIXTOOLS 2 can not only be computed by adding up <span class="math inline">\(f_2\)</span>-statistics, but also by adding up pairwise allele frequency products. While <span class="math inline">\(f_2\)</span> can be difficult to estimate without bias as described in the next section, allele frequencies and allele frequency products can easily be estimated without bias even with only one observed allele.</p>
+</div>
+</div>
+<div id="biases" class="section level2">
+<h2 class="hasAnchor">
+<a href="#biases" class="anchor"></a>Biases</h2>
+<div id="bias-due-to-inaccurate-allele-frequency-estimates" class="section level3">
+<h3 class="hasAnchor">
+<a href="#bias-due-to-inaccurate-allele-frequency-estimates" class="anchor"></a>Bias due to inaccurate allele frequency estimates</h3>
+<p>Inaccurate allele frequency estimates lead to over-esimation of <span class="math inline">\(f_2\)</span>: If two populations have diverged very recently, their allele frequencies will be very similar. But if the allele frequencies of one or both population are estimated very inaccurately, the allele frequency differences (and <span class="math inline">\(f_2\)</span>) will appear larger than they really are.</p>
+<p>The most common reason for inaccurate allele frequency estimates is low sample count (or a low number of independently sampled alleles). The upward bias due to low sample count at a single SNP in one population is <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, where <span class="math inline">\(p\)</span> is the allele frequency and <span class="math inline">\(n\)</span> is the number of independently sampled alleles. Therefore, an unbiased estimate of <span class="math inline">\(f_2\)</span> at a single SNP is given by</p>
+<p><span class="math display">\[f_2(A, B) = (a-b)^2 - \frac{a(1-a)}{n_A-1} - \frac{b(1-b)}{n_B-1}\]</span> Population-wide estimates of <span class="math inline">\(f_2\)</span> are again averages over all SNPs. In most cases, <span class="math inline">\(n\)</span>, the number of independently sampled alleles, will be twice the number of samples, with two exceptions:</p>
+<p><em>1. Pseudohaploid data</em></p>
+<p>Many ancient DNA data sets don’t call heterozygous genotypes in order to avoid a number of biases. If two different alleles are observed in one sample at a particular site, one of the two alleles is chosen at random and the genotype is declared homozygous for that allele. In pseudohaploid samples, the number of independently sampled alleles is therefore equal to the number of samples.</p>
+<p><em>2. Inbreeding</em></p>
+<p>If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, <span class="math inline">\(n\)</span> can therefore be less than two.</p>
+<p>Some of the programs in the original ADMIXTOOLS have an <code>inbreed</code> option which uses an estimator of <span class="math inline">\(f_2\)</span> that is robust to inbreeding. This option is also recommended to use for pseudohaploid data. ADMIXTOOLS 2 automatically detects pseudohaploid samples by checking if any heterozyous genotypes are observed among the first 1000 SNPs. If not, the sample is assumed to be pseudohaploid.</p>
+</div>
+<div id="bias-due-to-missing-data-and-snp-ascertainment" class="section level3">
+<h3 class="hasAnchor">
+<a href="#bias-due-to-missing-data-and-snp-ascertainment" class="anchor"></a>Bias due to missing data and SNP ascertainment</h3>
+<p>Missing data alone will not create any bias in <span class="math inline">\(f_2\)</span> estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, <span class="math inline">\(f_2\)</span> can be over- or underestimated. In contrast to <span class="math inline">\(F_{ST}\)</span>, which is the same in expectation for rare and for common SNPs, <span class="math inline">\(f_2\)</span> tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd <span class="math inline">\(f_2\)</span> estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What’s important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. ADMIXTOOLS draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high <span class="math inline">\(f_2\)</span> because most rare alleles are missing in one of the populations, and another pair of populations has a lower <span class="math inline">\(f_2\)</span> beause those rare alleles are not missing, bias can be expected.</p>
+<p>One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original ADMIXTOOLS software, the <code>allsnps</code> options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In ADMIXTOOLS 2, the <code>maxmiss</code> parameter in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.</p>
+<p>As we will see in the next section, estimating <span class="math inline">\(f_4\)</span> without bias is actually easier than estimating <span class="math inline">\(f_2\)</span> or <span class="math inline">\(f_{ST}\)</span> without any bias.</p>
 </div>
 </div>
 <div id="computing-f-statistics-with-admixtools-2" class="section level2">
@@ -228,59 +232,69 @@ C         D</code></pre>
 <li><p>ADMIXTOOLS excludes any SNPs with identical allele frequencies in all populations. This makes very little differences when computing <span class="math inline">\(f_2\)</span>, but shouldn’t be done for allele frequency products. Because those SNPs are not excluded, the number of SNPs and the number of blocks can be larger for allele frequency products than for <span class="math inline">\(f_2\)</span>.</p></li>
 </ol>
 </div>
-<div id="extracting-f2-for-a-large-number-of-populations" class="section level3">
+<div id="extracting-f_2-for-a-large-number-of-populations" class="section level3">
 <h3 class="hasAnchor">
-<a href="#extracting-f2-for-a-large-number-of-populations" class="anchor"></a>Extracting <em>f<sub>2</sub></em> for a large number of populations</h3>
-<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> will only work when extracting data for a moderate number of populations. If there is not enough memory to keep allele frequency estimates for all SNPs and populations in memory, a two-step approach using the functions <code><a href="../reference/extract_afs.html">extract_afs()</a></code> and <code><a href="../reference/write_split_f2_block.html">write_split_f2_block()</a></code> is necessary.</p>
-<p><code><a href="../reference/extract_afs.html">extract_afs()</a></code> will compute allele frequencies for a set number of populations (<code>cols_per_chunk</code>, default 20) and store them on disk.</p>
+<a href="#extracting-f_2-for-a-large-number-of-populations" class="anchor"></a>Extracting <span class="math inline">\(f_2\)</span> for a large number of populations</h3>
+<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> will only work when extracting data for a moderate number of populations because it keeps the allele frequency matrix for all SNPs and populations in memory. If <code><a href="../reference/extract_f2.html">extract_f2()</a></code> runs out of memory, you can instead use <code><a href="../reference/extract_f2_large.html">extract_f2_large()</a></code>, which splits the allele frequency matrix into chunks and saves it on disk. This is slower, but less memory intensive.</p>
+<p><code><a href="../reference/extract_f2_large.html">extract_f2_large()</a></code> performs two operations:</p>
+<ol style="list-style-type: decimal">
+<li>Saving the allele frequency chunks using <code><a href="../reference/extract_afs.html">extract_afs()</a></code>
+</li>
+<li>Computes <span class="math inline">\(f_2\)</span> for each pair of chunks using <code><a href="../reference/write_split_f2_block.html">write_split_f2_block()</a></code>
+</li>
+</ol>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">genotype_data =<span class="st"> "/my/geno/prefix"</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2">my_af_dir =<span class="st"> "/store/afdata/here/"</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">my_f2_dir =<span class="st"> "/store/f2data/here/"</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw"><a href="../reference/extract_afs.html">extract_afs</a></span>(genotype_data, my_af_dir)</a></code></pre></div>
-<p>Once that is done, f2-statistics can be computed for each pair of chunks. This can take a while, so it might be a good idea to parallelize this, rather than running one pair after the other, as in this example.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">numchunks =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span>(my_af_dir, <span class="st">'afs.+rds'</span>))</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>numchunks) {</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3">  <span class="cf">for</span>(j <span class="cf">in</span> i<span class="op">:</span>numchunks) {</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">    <span class="kw"><a href="../reference/write_split_f2_block.html">write_split_f2_block</a></span>(my_af_dir, my_f2_dir, <span class="dt">chunk1 =</span> i, <span class="dt">chunk2 =</span> j)</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">  }</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">}</a></code></pre></div>
+<a class="sourceLine" id="cb5-2" data-line-number="2">outdir =<span class="st"> "/store/f2data/here/"</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="co"># 1st Step</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="kw"><a href="../reference/extract_afs.html">extract_afs</a></span>(genotype_data, outdir, <span class="dt">cols_per_chunk =</span> <span class="dv">10</span>)</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">numchunks =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="kw"><a href="https://rdrr.io/r/base/list.files.html">list.files</a></span>(outdir, <span class="st">'afs.+rds'</span>))</a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="co"># 2nd Step</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span>numchunks) {</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">  <span class="cf">for</span>(j <span class="cf">in</span> i<span class="op">:</span>numchunks) {</a>
+<a class="sourceLine" id="cb5-11" data-line-number="11">    <span class="kw"><a href="../reference/write_split_f2_block.html">write_split_f2_block</a></span>(outdir, outdir, <span class="dt">chunk1 =</span> i, <span class="dt">chunk2 =</span> j)</a>
+<a class="sourceLine" id="cb5-12" data-line-number="12">  }</a>
+<a class="sourceLine" id="cb5-13" data-line-number="13">}</a></code></pre></div>
+<p>Increasing <code>cols_per_chunk</code> in the first step can speed things up, but will require more memory in the second step. Once <code><a href="../reference/extract_afs.html">extract_afs()</a></code> has finished, <span class="math inline">\(f_2\)</span>-statistics can be computed for each pair of chunks.</p>
+<p>The second step can take a long time when running one pair after another, so it can make sense to run the calls to <code><a href="../reference/write_split_f2_block.html">write_split_f2_block()</a></code> in parallel.</p>
 </div>
-<div id="extracting-f2-for-arbitrary-populations" class="section level3">
+<div id="extracting-f_2-for-arbitrary-populations" class="section level3">
 <h3 class="hasAnchor">
-<a href="#extracting-f2-for-arbitrary-populations" class="anchor"></a>Extracting <em>f<sub>2</sub></em> for arbitrary populations</h3>
+<a href="#extracting-f_2-for-arbitrary-populations" class="anchor"></a>Extracting <span class="math inline">\(f_2\)</span> for arbitrary populations</h3>
 <p><strong>This section hasn’t been updated in a while and may not accurately reflect all recent changes</strong></p>
 <p>What if you decide that a particular sample should be added or removed from a population? With the approach described so far, you would have to go back to the genotype data to get new estimates of f2 for all pairs of the modified population and any other populations. Even if you had computed f2 for all pairs of individuals (rather than for pairs of populations), it would not be possible to combine the f2 statistics from individual pairs into f2 statistics on population pairs formed from these individuals. It <em>is</em> possible, however, to store <em>other</em> statistics for all individuals and individual pairs, which can be combined into estimates of f2 for any populations formed from these individuals. These statistics are simply the mean alternative allele counts (<code>a</code>) and total allele counts (<code>n</code>) for each individual and block, and the mean products of allele counts for all individual pairs (<code>aa</code> and <code>nn</code>).</p>
 <p>The upside of this approach is that it allows you to change population definitions however you like and still get very fast results without accessing the genotype data more than once. The downside is that it makes it necessary to store data for all individual pairs, rather than just all population pairs.</p>
 <p>The following function extracts data for a set of individuals which can then be combined to get estimates of f2 for any populations:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">inds =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">         <span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">         <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">my_counts_dir =<span class="st"> 'my/counts/dir'</span></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5"><span class="kw"><a href="../reference/extract_counts.html">extract_counts</a></span>(prefix, my_counts_dir, inds)</a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">inds =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">         <span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3">         <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb6-4" data-line-number="4">my_counts_dir =<span class="st"> 'my/counts/dir'</span></a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw"><a href="../reference/extract_counts.html">extract_counts</a></span>(prefix, my_counts_dir, inds)</a></code></pre></div>
 <p>You can again use <code>f2_from_precomp</code> to load a subset of the extracted data into memory. If the directory you provide contains allele count data rather than f2 statistics, this function will not only read the data, but combine it into f2 statistics for populations that you define. The populations can be defined by providing a vector of individuals and another vector of equal length with population labels.</p>
 <p>For example, the following code should return f2 statistics very similar to the f2 statistics in the earlier examples. They will not be exactly identical, because some approximations are necessary when computing f2 statistics this way.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Altai'</span>, <span class="st">'Vindija'</span>,</a>
-<a class="sourceLine" id="cb8-2" data-line-number="2">         <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb8-3" data-line-number="3">         <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
-<a class="sourceLine" id="cb8-4" data-line-number="4">f2_blocks_v2 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Altai'</span>, <span class="st">'Vindija'</span>,</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2">         <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3">         <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
+<a class="sourceLine" id="cb7-4" data-line-number="4">f2_blocks_v2 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds, <span class="dt">pops =</span> pops)</a></code></pre></div>
 <p>It’s now easy to test how the inclusion or exclusion of specific samples affects the fit of a model. The following example uses only two Mbuti samples, and combines the two Neanderthal samples into one group.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">inds_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
-<a class="sourceLine" id="cb9-2" data-line-number="2">            <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
-<a class="sourceLine" id="cb9-3" data-line-number="3">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb9-4" data-line-number="4">pops_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Neanderthal'</span>, <span class="st">'Neanderthal'</span>,</a>
-<a class="sourceLine" id="cb9-5" data-line-number="5">            <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb9-6" data-line-number="6">            <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
-<a class="sourceLine" id="cb9-7" data-line-number="7">f2_blocks_v3 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v3, <span class="dt">pops =</span> pops_v3)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">inds_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">            <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4">pops_v3 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp'</span>, <span class="st">'Neanderthal'</span>, <span class="st">'Neanderthal'</span>,</a>
+<a class="sourceLine" id="cb8-5" data-line-number="5">            <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb8-6" data-line-number="6">            <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span>)</a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">f2_blocks_v3 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v3, <span class="dt">pops =</span> pops_v3)</a></code></pre></div>
 <p><br></p>
 <p>This approach is very flexible, but it gets slow when some populations consist of large numbers of samples. If you find yourself in this situation, you can group individuals into populations and store the combined allele count data for those populations on disk. The following example stores a <code>Mbuti</code> group on disk, and then uses that group, rather than each sample in it, to compute f2 statistics.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">mbuti =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>)</a>
-<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw"><a href="../reference/group_samples.html">group_samples</a></span>(my_counts_dir, mbuti, <span class="st">'Mbuti'</span>)</a>
-<a class="sourceLine" id="cb10-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4">inds_v4 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>, <span class="st">'Mbuti'</span>,</a>
-<a class="sourceLine" id="cb10-5" data-line-number="5">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
-<a class="sourceLine" id="cb10-6" data-line-number="6">f2_blocks_v4 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v4)</a></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">mbuti =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>)</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw"><a href="../reference/group_samples.html">group_samples</a></span>(my_counts_dir, mbuti, <span class="st">'Mbuti'</span>)</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4">inds_v4 =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>, <span class="st">'Mbuti'</span>,</a>
+<a class="sourceLine" id="cb9-5" data-line-number="5">            <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span>)</a>
+<a class="sourceLine" id="cb9-6" data-line-number="6">f2_blocks_v4 =<span class="st"> </span><span class="kw"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span>(my_counts_dir, <span class="dt">inds =</span> inds_v4)</a></code></pre></div>
 <p>Data from these groups can be deleted like this:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw"><a href="../reference/delete_groups.html">delete_groups</a></span>(my_counts_dir, <span class="st">'Mbuti'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw"><a href="../reference/delete_groups.html">delete_groups</a></span>(my_counts_dir, <span class="st">'Mbuti'</span>)</a></code></pre></div>
 <p><br></p>
 </div>
 </div>
@@ -291,10 +305,9 @@ C         D</code></pre>
       <h2 class="hasAnchor">
 <a href="#tocnav" class="anchor"></a>Contents</h2>
       <ul class="nav nav-pills nav-stacked">
-<li><a href="#estimating-f2">Estimating <em>f<sub>2</sub></em></a></li>
-      <li><a href="#bias-due-to-inaccurate-allele-frequency-estimates">Bias due to inaccurate allele frequency estimates</a></li>
-      <li><a href="#bias-due-to-missing-data">Bias due to missing data</a></li>
-      <li><a href="#estimating-f4">Estimating <em>f<sub>4</sub></em></a></li>
+<li><a href="#f_2"><span class="math inline">\(f_2\)</span></a></li>
+      <li><a href="#f_4"><span class="math inline">\(f_4\)</span></a></li>
+      <li><a href="#biases">Biases</a></li>
       <li><a href="#computing-f-statistics-with-admixtools-2">Computing <em>f</em>-statistics with ADMIXTOOLS 2</a></li>
       </ul>
 </div>

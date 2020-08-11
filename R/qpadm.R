@@ -99,32 +99,28 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
 #' as well as the weight standard errors, will be computed using bootstrapping.
+#' @param getcov Compute weights covariance. If not needed, turning this off will speed things up.
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
 #' @return A list with output describing the model fit:
 #' \enumerate{
 #' \item `weights` A data frame with estimated admixture proportions where each row is a left population.
-#' Returned only if `target` is specified
-#' \item `f4` A data frame with estimated (and fitted) f4-statistics
+#' \item `f4` A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
 #' and for nested models (comparing two models with rank difference of one).
-#' \item `popdrop` A data frame describing model fits with different populations. Returned only if `target` is specified
+#' \item `popdrop` A data frame describing model fits with different populations.
 #' }
-#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
 #' languages in Europe.} Nature (SI 10)
-#' @aliases qpwave
-#' @section Alias:
-#' `qpwave`
-#' @seealso \code{\link{lazadm}}
+#' @seealso \code{\link{qpwave}}, \code{\link{lazadm}}
 #' @examples
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' target = 'Denisova.DG'
 #' qpadm(example_f2_blocks, left, right, target)
-qpadm = function(f2_data, left, right, target = NULL,
-                 fudge = 0.0001, boot = FALSE,
+qpadm = function(f2_data, left, right, target,
+                 fudge = 0.0001, boot = FALSE, getcov = TRUE,
                  constrained = FALSE, cpp = TRUE, verbose = TRUE) {
 
   if(all(file.exists(left, right))) {
@@ -157,10 +153,11 @@ qpadm = function(f2_data, left, right, target = NULL,
     }
     weight = qpadm_weights(f4_est, qinv, rnk = length(left)-2, fudge = fudge, constrained = constrained,
                            qpsolve = qpsolve)$weights %>% c
-    if(verbose) alert_info('Computing standard errors...\n')
-    se = sqrt(diag(get_weights_covariance(f4_lo, qinv, block_lengths, fudge = fudge, boot = boot,
-                                          constrained = constrained, qpsolve = qpsolve)))
-
+    if(getcov) {
+      if(verbose) alert_info('Computing standard errors...\n')
+      se = sqrt(diag(get_weights_covariance(f4_lo, qinv, block_lengths, fudge = fudge, boot = boot,
+                                            constrained = constrained, qpsolve = qpsolve)))
+    } else se = NA
     out$weights = tibble(target, left = left[-1], weight, se) %>% mutate(z = weight/se)
 
     wvec = out$weights %>% select(left, weight) %>% deframe
@@ -179,8 +176,31 @@ qpadm = function(f2_data, left, right, target = NULL,
   out
 }
 
+#' Estimate admixture waves
+#'
+#' `qpwave` compares two sets of populations (`left` and `right`) to each other. It estimates a lower bound on the number of admixtue waves that went from `left` into `right`, by comparing a matrix of f4-statistics to low-rank approximations. For a rank of 0 this is equivalent to testing whether `left` and `right` form clades relative to each other.
 #' @export
-qpwave = qpadm
+#' @inheritParams qpadm
+#' @return A list with output describing the model fit:
+#' \enumerate{
+#' \item `f4` A data frame with estimated f4-statistics
+#' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
+#' and for nested models (comparing two models with rank difference of one).
+#' }
+#' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
+#' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
+#' languages in Europe.} Nature (SI 10)
+#' @seealso \code{\link{qpadm}}
+#' @examples
+#' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
+#' qpwave(example_f2_blocks, left, right)
+qpwave = function(f2_data, left, right,
+                  fudge = 0.0001, boot = FALSE,
+                  constrained = FALSE, cpp = TRUE, verbose = TRUE)
+  qpadm(f2_data = f2_data, left = left, right = right, target = NULL,
+        fudge = fudge, boot = boot,
+        constrained = constrained, cpp = cpp, verbose = verbose)
 
 
 f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
@@ -291,7 +311,7 @@ lazadm_old = function(f2_data, left, right, target = NULL,
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' lazadm(example_f2_blocks, left, right, target)
 #' lazadm(example_f2_blocks, left, right, target, constrained = FALSE)
-lazadm = function(f2_data, left, right, target = NULL,
+lazadm = function(f2_data, left, right, target,
                   boot = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
@@ -584,12 +604,12 @@ all_lr2 = function(pops, rightfix = 0) {
 #' left = pops[5:7]
 #' right = pops[1:4]
 #' f2_blocks = f2_from_precomp('/my/f2/dir/', pops = left, pops2 = right, afprod = TRUE)
-#' qpadm_pairs(f2_blocks, left, right)
+#' qpwave_pairs(f2_blocks, left, right)
 #' # If f2-stats are too big to load them into memory,
 #' # the following will read the data for each pair from disk:
-#' qpadm_pairs('/my/f2/dir/', left, right)
+#' qpwave_pairs('/my/f2/dir/', left, right)
 #' }
-qpadm_pairs = function(f2_data, left, right) {
+qpwave_pairs = function(f2_data, left, right) {
   expand_grid(pop1 = left, pop2 = left) %>%
     filter(pop1 < pop2) %>%
     mutate(out = furrr::future_map2(pop1, pop2, ~qpadm_p(f2_data, .y, right, .x, rnk = 0))) %>%

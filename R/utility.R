@@ -142,31 +142,6 @@ weighted_row_means = function(mat, weights, na.rm = TRUE) {
 }
 
 
-treat_missing = function(afmatrix, countmatrix = NULL, snpfile = NULL,
-                         na.action = 'none', verbose = TRUE) {
-  discard = FALSE
-  if(na.action == 'impute') {
-    afmatrix = mean_impute(afmatrix, by=1)
-    isnan = is.nan(afmatrix)
-    afmatrix[isnan] = NA
-    discard = apply(afmatrix, 1, function(x) all(is.na(x)))
-    if(verbose) {
-      alert_danger(paste0(sumna-sum(isnan), ' allele frequencies were imputed, (on average ',
-                          round((sumna-sum(isnan))/numpop),' per population) ',
-                          sum(discard), ' SNPs were removed\n'))
-    }
-  }
-  if(na.action == 'remove') {
-    discard = apply(afmatrix, 1, function(x) any(is.na(x)))
-    if(verbose) alert_danger(paste0(sum(discard), ' SNPs were removed, ', sum(!discard), ' SNPs remain\n'))
-  }
-  afmatrix = afmatrix[!discard,]
-  countmatrix = countmatrix[!discard,]
-  snpfile = snpfile[!discard,]
-
-  namedList(afmatrix, countmatrix, snpfile)
-}
-
 
 power_set = function(l, nmax=length(l)) flatten(map(seq_along(l[seq_len(nmax)]), ~combn(l, ., simplify=F)))
 
@@ -202,6 +177,25 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
   }
   if(verbose) cat('\n')
   as_tibble(ansret) %>% set_colnames(c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
+}
+
+# on OSX, multiprocess multistart is only slightly faster than sequential in qpGraph. Need to test on Linux.
+multistart2 = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, method = NULL,
+                       hessian = FALSE, control = list(), verbose = TRUE, ...) {
+
+  nset = nrow(parmat)
+  npar = ncol(parmat)
+  if(nset < 1) stop("multistart: no starting parameters!")
+  ansret = matrix(NA, nset, npar + 4)
+  furrr::future_map(seq_len(nset), function(.x, ...) {
+    ans = optim(par = parmat[.x, ], fn = fn, gr = gr, lower = lower,
+                upper = upper, method = method, hessian = hessian,
+                control = control, args = args, ...)
+    c(ans$par, ans$value, ans$counts[1], ans$counts[2], ans$convergence)
+  }, .progress = verbose, ...) %>%
+    do.call(rbind, .) %>%
+    as_tibble %>%
+    set_colnames(c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
 }
 
 #' Return shortest unique prefixes
