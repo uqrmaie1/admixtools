@@ -748,24 +748,29 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' @param numgen Number of generations
 #' @param numsel Number of graphs which are selected in each generation. Should be less than `numgraphs`.
 #' @param numadmix Number of admixture events within each graph
-#' @param numstart Number of random initializations. Defaults to 1, to speed up the graph optimization.
-#' @param keep By default (`all`), all evaluated graphs will be returned. `best` will only return the best fitting
-#' graph from each repeat and each generation. `last` will return all graphs from the last generation.
+#' @param numstart Number of random initializations in each call to `qpgraph`. Defaults to 1, to speed up the graph optimization.
+#' @param keep Which models should be returned. One of `all`, `best`, `last`
+#' \itemize{
+#' \item `all` (default): Return all evaluated graphs
+#' \item `best`: Return only the best fitting graph from each repeat and each generation
+#' \item `last`: Return all graphs from the last generation
+#' }
 #' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
 #' @param mutfuns The names of funcations used to modify graphs.
 #' \itemize{
-#' \item `spr_leaves` Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
-#' \item `spr_all` Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
-#' \item `swap_leaves` Swaps two leaf nodes.
-#' \item `move_admixedge_once` Moves an admixture edge to a nearby location.
-#' \item `flipadmix_random` Flips the direction of an admixture edge (if possible).
+#' \item `spr_leaves`: Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
+#' \item `spr_all`: Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+#' \item `swap_leaves`: Swaps two leaf nodes.
+#' \item `move_admixedge_once`: Moves an admixture edge to a nearby location.
+#' \item `flipadmix_random`: Flips the direction of an admixture edge (if possible).
 #' }
 #' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
 #' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.
 #' @param stop_after Stop optimization after `stop_after` seconds (and after finishing the current generation).
 #' @param verbose Print progress updates
-#' @param ... Additional arguments passed to `qpgraph`
-#' @return a nested data frame with one model per line
+#' @param ... Additional arguments passed to \code{\link{qpgraph}}
+#' @return A nested data frame with one model per line
+#' @seealso \code{\link{qpgraph}}
 #' @examples
 #' \dontrun{
 #' find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,

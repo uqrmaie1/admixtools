@@ -12,6 +12,7 @@ extract_counts(
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
+  hetoutgroup = "",
   transitions = TRUE,
   transversions = TRUE,
   keepsnps = NULL,
@@ -36,6 +37,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
+
+\item{hetoutgroup}{Keep only SNPs which are heterozygous in this population}
 
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 

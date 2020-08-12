@@ -43,20 +43,24 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 
 \item{numadmix}{Number of admixture events within each graph}
 
-\item{numstart}{Number of random initializations. Defaults to 1, to speed up the graph optimization.}
+\item{numstart}{Number of random initializations in each call to \code{qpgraph}. Defaults to 1, to speed up the graph optimization.}
 
-\item{keep}{By default (\code{all}), all evaluated graphs will be returned. \code{best} will only return the best fitting
-graph from each repeat and each generation. \code{last} will return all graphs from the last generation.}
+\item{keep}{Which models should be returned. One of \code{all}, \code{best}, \code{last}
+\itemize{
+\item \code{all} (default): Return all evaluated graphs
+\item \code{best}: Return only the best fitting graph from each repeat and each generation
+\item \code{last}: Return all graphs from the last generation
+}}
 
 \item{initgraph}{Optional graph to start with. If \code{NULL}, optimization will start with random graphs.}
 
 \item{mutfuns}{The names of funcations used to modify graphs.
 \itemize{
-\item \code{spr_leaves} Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
-\item \code{spr_all} Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
-\item \code{swap_leaves} Swaps two leaf nodes.
-\item \code{move_admixedge_once} Moves an admixture edge to a nearby location.
-\item \code{flipadmix_random} Flips the direction of an admixture edge (if possible).
+\item \code{spr_leaves}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
+\item \code{spr_all}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+\item \code{swap_leaves}: Swaps two leaf nodes.
+\item \code{move_admixedge_once}: Moves an admixture edge to a nearby location.
+\item \code{flipadmix_random}: Flips the direction of an admixture edge (if possible).
 }}
 
 \item{store_intermediate}{Path and prefix of files for intermediate results to \code{.rds}. Can be useful if \code{find_graphs} doesn't finish sucessfully.}
@@ -67,10 +71,10 @@ graph from each repeat and each generation. \code{last} will return all graphs f
 
 \item{verbose}{Print progress updates}
 
-\item{...}{Additional arguments passed to \code{qpgraph}}
+\item{...}{Additional arguments passed to \code{\link{qpgraph}}}
 }
 \value{
-a nested data frame with one model per line
+A nested data frame with one model per line
 }
 \description{
 This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats
@@ -85,4 +89,7 @@ for admixture graphs with many admixture nodes.
 find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,
             numgen = 20, numsel = 5, numadmix = 3)
 }
+}
+\seealso{
+\code{\link{qpgraph}}
 }

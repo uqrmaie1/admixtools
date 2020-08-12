@@ -27,7 +27,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
@@ -43,7 +43,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
+  if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
   afdat = cpp_packedancestrymap_to_aftable(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
                                            last = nsnpall, ploidy = ploidy,
@@ -84,7 +84,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   if(verbose) alert_info('Reading allele frequencies from ancestrymap files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
@@ -117,7 +117,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
 }
 
 
-discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, auto_only = TRUE,
+discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
@@ -134,6 +134,10 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, au
   if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
   else snpdat %<>% mutate(poly = TRUE)
 
+  if(hetoutgroup != '') {
+    if(!hetoutgroup %in% colnames(afdat$afs)) stop("'hetoutgroup' should be a population name!")
+    snpdat %<>% mutate(outgroupaf = afdat$afs[,hetoutgroup])
+  } else snpdat %<>% mutate(outgroupaf = 0.5)
 
   remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
                            minmaf = minmaf, maxmaf = maxmaf,
@@ -146,7 +150,7 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, au
 discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = TRUE,
                              minmaf = 0, maxmaf = 0.5,
                              transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
-  # afdat is list with 'snpfile', 'afs', 'counts'
+  # geno is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
   # keepsnps overrides maxmiss and auto_only
   # maxmiss = 1 is equivalent to na.action = 'none'
@@ -168,8 +172,10 @@ discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = TR
   if(maxmiss < 1) snpdat %<>% mutate(miss = rowMeans(is.na(geno[[bed]])))
   else snpdat %<>% mutate(miss = 0)
 
-  if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
+  if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(geno[[bed]]))
   else snpdat %<>% mutate(poly = TRUE)
+
+  snpdat %<>% mutate(outgroupaf = 0.5)
 
   allsnps = snpdat[['SNP']]
   remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
@@ -213,6 +219,7 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
     filter(
     miss <= maxmiss,
     between(maf, minmaf, maxmaf),
+    outgroupaf > 0 & outgroupaf < 1,
     !auto_only | as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22,
     !poly_only | poly == 1,
     transitions | mutation != 'transition',
@@ -245,7 +252,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 
   pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
 
@@ -317,7 +324,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
   # currently doesn't handle missing data
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   indfile$X3 = indfile$X1
   if(!is.null(inds)) {
@@ -589,7 +596,7 @@ read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE, verbos
         if(afprod) dat = readRDS(paste0(pref, '_ap.rds'))[,1]
         else dat = readRDS(paste0(pref, '_f2.rds'))[,1]
         f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = dat
-        if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
+        #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
       }
     }
   }
@@ -809,8 +816,10 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
+#' @param hetoutgroup Keep only SNPs which are heterozygous in this population
 #' @param transitions Set this to `FALSE` to exclude transition SNPs
 #' @param transversions Set this to `FALSE` to exclude transversion SNPs
+#' @param auto_only Keep only SNPs on chromosomes 1 to 22
 #' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
 #' @param snpblocks Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.
 #' @param overwrite Overwrite existing files in `outdir`
@@ -828,8 +837,8 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                      keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
+                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
+                      auto_only = TRUE, keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
                       adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
@@ -839,7 +848,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = FALSE)
   afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
@@ -870,13 +879,14 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' extract_f2_large(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                            maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
+                            maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
   extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
-              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, transitions = transitions, transversions = transversions,
+              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
+              transitions = transitions, transversions = transversions,
               keepsnps = keepsnps, format = format, poly_only = FALSE,
               adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   numchunks = length(list.files(outdir, 'afs.+rds'))
@@ -957,6 +967,7 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @inheritParams extract_f2
 extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
+                          hetoutgroup = '',
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
   dir.create(outdir, showWarnings = FALSE)
@@ -1037,7 +1048,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
-#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.
+#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.
 #' @return SNP metadata (invisibly)
 #' @examples
 #' \dontrun{
@@ -1045,15 +1056,15 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' outdir = 'dir/for/afdata/'
 #' extract_afs(pref, outdir)
 #' }
-extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
+extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
+                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
                        verbose = TRUE) {
 
   # read data and compute allele frequencies
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 
@@ -1080,7 +1091,7 @@ extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.0
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
-#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.
+#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.
 #' @param numparts Number of parts in which genotype data will be read for computing allele frequencies
 #' @return SNP metadata (invisibly)
 #' @examples
@@ -1090,15 +1101,16 @@ extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.0
 #' extract_afs(pref, outdir)
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10, numparts = 100,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
-                       keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
-                       verbose = TRUE) {
+                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', auto_only = TRUE,
+                       transitions = TRUE, transversions = TRUE, keepsnps = NULL, format = NULL,
+                       poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   pref %<>% normalizePath(mustWork = FALSE)
   if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
     format = 'packedancestrymap'
     nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
     indnam = c('ind', 'sex', 'pop')
+    indtype = 'ccc'
     snpend = '.snp'
     indend = '.ind'
     genoend = '.geno'
@@ -1108,6 +1120,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     format = 'plink'
     nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
     indnam = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
+    indtype = 'cccccc'
     snpend = '.bim'
     indend = '.fam'
     genoend = '.bed'
@@ -1116,7 +1129,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   } else stop('Genotype files not found!')
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
-  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = 'cccccc', progress = FALSE)
+  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = indtype, progress = FALSE)
   snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
@@ -1124,7 +1137,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   ip = match_samples(indfile$ind, indfile$pop, inds, pops)
   indvec = ip$indvec - 1
 
-  snpfile %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR))) %>% filter(CHR <= 22)
+  if(auto_only) snpfile %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR))) %>% filter(CHR <= 22)
 
   starts = seq(0, nrow(snpfile), length.out = numparts+1) %>% round %>% head(-1)
   ends = c(lead(starts)[-numparts], nrow(snpfile))
@@ -1140,7 +1153,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
                                 last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
     afdat$snpfile = snpfile %>% slice((starts[i]+1):(ends[i]))
 
-    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
                                     transitions = transitions, transversions = transversions,
                                     keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 
@@ -1727,7 +1740,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL) {
 
   stopifnot(is.null(inds) || is.null(pops))
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'cccccc') %>%
+    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
   }
   dat = read_packedancestrymap(inpref, inds)

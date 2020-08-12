@@ -4,12 +4,14 @@
 \alias{parse_qpgraph_graphfile}
 \title{Read qpGraph graph file}
 \usage{
-parse_qpgraph_graphfile(graphfile, split_multi = TRUE)
+parse_qpgraph_graphfile(graphfile, split_multi = TRUE, igraph = FALSE)
 }
 \arguments{
 \item{graphfile}{File with admixture graph in qpGraph format.}
 
 \item{split_multi}{Split multifurcations}
+
+\item{igraph}{Convert to igraph format}
 }
 \value{
 Graph represented as two column edge matrix. Can have four columns if edges are locked

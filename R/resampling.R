@@ -171,6 +171,8 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' }
 get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
 
+  if(length(unique(dat[[distcol]])) < 2) warning(paste0("No genetic linkage information found!",
+    "Each chromosome will be its own block, which can make standard error estimates inaccurate."))
   cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], blgsize)
 
   # fpos = -1e20

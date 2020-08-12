@@ -14,8 +14,10 @@ extract_f2(
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
+  hetoutgroup = "",
   transitions = TRUE,
   transversions = TRUE,
+  auto_only = TRUE,
   keepsnps = NULL,
   snpblocks = NULL,
   overwrite = FALSE,
@@ -45,9 +47,13 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
 
+\item{hetoutgroup}{Keep only SNPs which are heterozygous in this population}
+
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
 \item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
+
+\item{auto_only}{Keep only SNPs on chromosomes 1 to 22}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 

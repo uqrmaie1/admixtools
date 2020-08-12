@@ -542,7 +542,7 @@ parse_qpgraph_output = function(outfile) {
   if(is.na(pops)[1]) pops = dat$X1 %>% str_subset('^zzaddw') %>% str_split(' ') %>% map(2) %>% unlist %>% unique
   denom = 1000
   amb = names(which(table(str_sub(pops, 1, 3)) > 1))
-  if(length(amb) > 0) warning(paste('Ambiguous populations ommited from outliers: ', amb))
+  if(length(amb) > 0) warning(paste('Ambiguous populations ommited from outliers: ', paste0(amb, collapse = ', ')))
 
   poppairs = t(combn(pops, 2))
   popquads = cbind(poppairs[rep(1:numpair, numpair:1),], poppairs[unlist(map(1:numpair, ~(.:numpair))),])
@@ -595,8 +595,9 @@ parse_qpgraph_output_edges = function(outfile) {
 #' @export
 #' @param graphfile File with admixture graph in qpGraph format.
 #' @param split_multi Split multifurcations
+#' @param igraph Convert to igraph format
 #' @return Graph represented as two column edge matrix. Can have four columns if edges are locked
-parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE) {
+parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE, igraph = FALSE) {
   # reads graph in qpGraph format
   # returns edge matrix (adjacency list)
   lines = read_lines(graphfile) %>%
@@ -629,6 +630,7 @@ parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE) {
   if(all(is.na(out$lower)) && all(is.na(out$upper))) out %<>% select(-lower, -upper)
   out %<>% as.matrix
   if(split_multi) out %<>% split_multifurcations
+  if(igraph) out %<>% graph_from_edgelist(as.matrix(out[,1:2]))
   out
 }
 

@@ -58,40 +58,43 @@ The non-independence of SNPs (linkage disequilibrium) is mostly limited to SNPs 
 
 The actual standard error estimate is given by
 
+$$\sigma^2 = \frac{1}{n} \sum_{i=1}^n \frac{1}{x_i - 1} (x_i \mu_{tot} - \mu_{jack} - s_i (x_i-1) )^2$$
 
-
-<!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n (\frac{tot - s_i}{l_i} + s_i - est) / sqrt(\frac{1}{l_i}-1)$$ -->
-
-
-<!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n (\frac{\sum_{i=1}^n s_i * l_i}{l_i} - \frac{s_i}{l_i} + \frac{s_i l_i}{l_i} - \frac{\sum_{i=1}^n s_i}{n}) / sqrt(\frac{1}{l_i}-1)$$ -->
+where $\mu_{tot}$ is the mean calculated from all blocks, $\mu_{jack} = \frac{1}{n} \sum_i s_i$ (the jackknife mean), and $x_i = \frac{\sum{l_i}}{l_i}$ (the inverse of the relative block length).
 
 
 
-<!-- The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics. -->
-
-<!-- Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of **n times** the sampling variance. -->
-
-<!-- In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted. -->
-
-<!-- ```{r, eval = FALSE} -->
-<!-- snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 1000) -->
-<!-- hist(snpres$score, 100) -->
-<!-- ``` -->
 
 
-<!-- ### Resampling individuals -->
 
-<!-- We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals. -->
 
-<!-- ```{r, eval = FALSE} -->
-<!-- pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)] -->
-<!-- indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph) -->
-<!-- ggplot(indres, aes(score, score)) + geom_text(aes(label = ind)) -->
-<!-- ``` -->
 
-<!-- For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population. -->
 
-<!-- <br> -->
+The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all AdmixTools programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.
+
+Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of **n times** the sampling variance.
+
+In following example, 1000 models with resampled SNP blocks are evaluated, and a histogram of the likelihood scores is plotted.
+
+```{r, eval = FALSE}
+snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 1000)
+hist(snpres$score, 100)
+```
+
+
+### Resampling individuals
+
+We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.
+
+```{r, eval = FALSE}
+pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)]
+indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph)
+ggplot(indres, aes(score, score)) + geom_text(aes(label = ind))
+```
+
+For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.
+
+<br>
 
 
 

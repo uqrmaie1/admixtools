@@ -14,6 +14,8 @@ extract_afs(
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
+  hetoutgroup = "",
+  auto_only = TRUE,
   transitions = TRUE,
   transversions = TRUE,
   keepsnps = NULL,
@@ -33,7 +35,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
-\item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running \link{\code{write_split_f2_block}}, but more chunk pairs will have to be computed.}
+\item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.}
 
 \item{numparts}{Number of parts in which genotype data will be read for computing allele frequencies}
 
@@ -42,6 +44,10 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
+
+\item{hetoutgroup}{Keep only SNPs which are heterozygous in this population}
+
+\item{auto_only}{Keep only SNPs on chromosomes 1 to 22}
 
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
