@@ -9,7 +9,7 @@ extract_f2_large(
   outdir,
   inds = NULL,
   pops = NULL,
-  dist = 0.05,
+  blgsize = 0.05,
   cols_per_chunk = 10,
   maxmiss = 1,
   minmaf = 0,
@@ -35,7 +35,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
-\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running}
 

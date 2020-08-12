@@ -26,7 +26,7 @@ gg_color_hue = function(n, l=65, c=100) {
 qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
                           error = function(e) {
                             if(str_detect(e$message, 'constraints are inconsistent')) {
-                              # warning(e$message)
+                              #warning(e$message)
                               # set lower bounds to -1e3 for solve.QP, then truncate at 0
                               ell = list(...)
                               ilow = (1:(length(ell[[4]])/2))

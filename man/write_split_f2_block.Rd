@@ -9,7 +9,7 @@ write_split_f2_block(
   outdir,
   chunk1,
   chunk2,
-  dist = 0.05,
+  blgsize = 0.05,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -23,7 +23,7 @@ write_split_f2_block(
 
 \item{chunk2}{Index of the second chunk of populations}
 
-\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{overwrite}{Overwrite existing files (default \code{FALSE})}
 

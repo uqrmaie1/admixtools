@@ -133,7 +133,7 @@ f3 = qp3pop
 #' @param pop3 A vector of population labels
 #' @param pop4 A vector of population labels
 #' @param comb Generate all combinations of `pop1`, `pop2`, `pop3`, `pop4`. If `FALSE`, `pop1`, `pop2`, `pop3`, `pop4` should all be vectors of the same length.
-#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs. only used when `f2_data` is the prefix of genotype files
 #' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
@@ -156,7 +156,7 @@ f3 = qp3pop
 #' }
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    boot = FALSE, sure = FALSE, unique_only = TRUE,
-                   comb = TRUE, dist = NULL, block_lengths = NULL, f4mode = TRUE,
+                   comb = TRUE, blgsize = NULL, block_lengths = NULL, f4mode = TRUE,
                    afprod = TRUE, cpp = TRUE, verbose = TRUE) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
@@ -178,7 +178,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 
   if(is_geno_prefix(f2_data)) {
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
-    return(f4_from_geno(f2_data, out, pops, dist = ifelse(is.null(dist), 0.05, dist),
+    return(f4_from_geno(f2_data, out, pops, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
                         f4mode = f4mode, block_lengths = block_lengths, boot = boot, verbose = verbose))
   }
 
@@ -318,7 +318,7 @@ gmat_to_aftable = function(gmat, popvec) {
 }
 
 
-f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
+f4_from_geno = function(pref, popcombs, pops, blgsize = 0.05, block_lengths = NULL,
                         f4mode = TRUE, summarize = TRUE, boot = FALSE, verbose = TRUE) {
 
   pref = normalizePath(pref, mustWork = FALSE)
@@ -343,7 +343,7 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
   snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
-  snpfile %<>% filter(CHR <= 22)
+  snpfile %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR))) %>% filter(CHR <= 22)
   nsnpaut = nrow(snpfile)
 
   if(!all(pops %in% indfile$pop)) stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
@@ -361,7 +361,7 @@ f4_from_geno = function(pref, popcombs, pops, dist = 0.05, block_lengths = NULL,
   p4 = match(popcombs$pop4, pops)
 
   if(verbose) alert_info('Computing block lengths...\n')
-  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, dist = dist)
+  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, blgsize = blgsize)
   numblocks = length(block_lengths)
   start = lag(cumsum(block_lengths), default = 0)
   end = cumsum(block_lengths)

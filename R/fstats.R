@@ -15,7 +15,7 @@
 #' }
 #' has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
-#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param poly_only Exclude sites with identical allele frequencies in all populations
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
@@ -31,7 +31,7 @@
 #' afdat = plink_to_aftable('/my/geno/prefix')
 #' afs_to_f2_blocks(afdat, outdir = '/my/f2/data/')
 #' }
-afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05, poly_only = TRUE,
+afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE,
                             outdir = NULL, overwrite = FALSE, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
@@ -62,8 +62,8 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, dist = 0.05, poly_only = TRUE,
   }
 
   poly = if(poly_only) afdat$snpfile$poly else 1:nrow(afdat$snpfile)
-  block_lengths_a = get_block_lengths(afdat$snpfile, dist = dist)
-  block_lengths = get_block_lengths(afdat$snpfile[poly,], dist = dist)
+  block_lengths_a = get_block_lengths(afdat$snpfile, blgsize = blgsize)
+  block_lengths = get_block_lengths(afdat$snpfile[poly,], blgsize = blgsize)
 
   cmb = combn(0:numsplits2, 2)+(1:0)
   if(is.null(outdir)) arrlist = replicate(numsplits2, list())

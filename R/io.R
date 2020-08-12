@@ -27,8 +27,8 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
 
@@ -84,8 +84,8 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   if(verbose) alert_info('Reading allele frequencies from ancestrymap files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -245,8 +245,8 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 
   pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), skip = first-1,
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
 
   indfile$.keep = indfile$X1
@@ -317,8 +317,8 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
   # currently doesn't handle missing data
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = cols(), progress = FALSE)
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   indfile$X3 = indfile$X1
   if(!is.null(inds)) {
     stopifnot(all(inds %in% indfile$X1))
@@ -371,8 +371,8 @@ plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = cols())
-  fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = cols())
+  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = 'ccnncc')
+  fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
   nsnpall = nrow(bim)
   nindall = nrow(fam)
 
@@ -491,8 +491,8 @@ read_plink = function(pref, inds = NULL, verbose = FALSE) {
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, col_types = cols(), progress = FALSE)
-  fam = read_table2(famfile, col_names = FALSE, col_types = cols(), progress = FALSE)
+  bim = read_table2(bimfile, col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  fam = read_table2(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
   if(is.null(inds)) inds = fam[[2]]
   indvec = pop_indices(fam, pops = NULL, inds = inds)
   indvec2 = which(indvec > 0)
@@ -683,7 +683,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' @param outdir Directory where data will be stored
 #' @param chunk1 Index of the first chunk of populations
 #' @param chunk2 Index of the second chunk of populations
-#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param overwrite Overwrite existing files (default `FALSE`)
 #' @param verbose Print progress updates
 #' @seealso \code{\link{extract_f2}} Does the same thing in one step for smaller data.
@@ -707,10 +707,10 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
 #'   })})
 #'   }
-write_split_f2_block = function(afdir, outdir, chunk1, chunk2, dist = 0.05, overwrite = FALSE, verbose = TRUE) {
+write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, overwrite = FALSE, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
-  snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = cols(), progress = FALSE)
+  snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = 'ccnncc?', progress = FALSE)
   poly = snpdat$poly
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
   am2 = readRDS(paste0(afdir, '/afs', chunk2, '.rds'))
@@ -723,13 +723,13 @@ write_split_f2_block = function(afdir, outdir, chunk1, chunk2, dist = 0.05, over
   fl = paste0(outdir, '/block_lengths.rds')
   fla = paste0(outdir, '/block_lengths_a.rds')
   if(!file.exists(fl)) {
-    block_lengths = get_block_lengths(snpdat[poly,], dist = dist)
+    block_lengths = get_block_lengths(snpdat[poly,], blgsize = blgsize)
     saveRDS(block_lengths, file = fl)
   } else {
     block_lengths = readRDS(fl)
   }
   if(!file.exists(fla)) {
-    block_lengths_a = get_block_lengths(snpdat, dist = dist)
+    block_lengths_a = get_block_lengths(snpdat, blgsize = blgsize)
     saveRDS(block_lengths_a, file = fla)
   } else {
     block_lengths_a = readRDS(fla)
@@ -804,7 +804,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param outdir Directory where data will be stored
 #' @param inds Individuals for which data should be extracted
 #' @param pops Populations for which data should be extracted. If both `pops` and `inds` are provided, they should have the same length and will be matched by position. If only `pops` is provided, all individuals from the `.ind` or `.fam` file in those populations will be extracted. If only `inds` is provided, each indivdual will be assigned to its own population of the same name. If neither `pops` nor `inds` is provided, all individuals and populations in the `.ind` or `.fam` file will be extracted.
-#' @param dist Genetic distance in Morgan. Default is 0.05 (50 cM).
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param maxmem Maximum amount of memory to be used. If the required amount of memory exceeds `maxmem`, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
@@ -827,7 +827,7 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' f2dir = 'my/f2dir/'
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
-extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxmem = 8000,
+extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                       keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
                       adjust_pseudohaploid = TRUE, verbose = TRUE) {
@@ -848,7 +848,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
   afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite,
-                   maxmem = maxmem, poly_only = poly_only, dist = dist, verbose = verbose)
+                   maxmem = maxmem, poly_only = poly_only, blgsize = blgsize, verbose = verbose)
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
@@ -869,7 +869,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, maxme
 #' f2dir = 'my/f2dir/'
 #' extract_f2_large(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
-extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 10,
+extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
                             maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
@@ -886,7 +886,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05,
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
       if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
-      write_split_f2_block(outdir, outdir, chunk1 = i, chunk2 = j, dist = dist, overwrite = overwrite)
+      write_split_f2_block(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, overwrite = overwrite)
     }
   }
   if(verbose) alert_info('\n')
@@ -956,7 +956,7 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @inheritParams extract_f2
-extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
+extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
   dir.create(outdir, showWarnings = FALSE)
@@ -977,7 +977,7 @@ extract_counts = function(pref, outdir, inds = NULL, dist = 0.05,  maxmiss = 1, 
   g$bed[randsnps, ] = 2 - g$bed[randsnps, ]
 
   if(verbose) alert_info(paste0(nrow(g$bed), ' SNPs remain.\nDetermining SNP blocks...\n'))
-  block_lengths = get_block_lengths(g$bim, dist = dist)
+  block_lengths = get_block_lengths(g$bim, blgsize = blgsize)
   saveRDS(block_lengths, file = bfile)
   xmat_to_inddat(g$bed, block_lengths,
                  outdir = outdir, overwrite = overwrite,
@@ -1045,7 +1045,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' outdir = 'dir/for/afdata/'
 #' extract_afs(pref, outdir)
 #' }
-extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, cols_per_chunk = 10,
+extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
                        verbose = TRUE) {
@@ -1065,8 +1065,8 @@ extract_afs_old = function(pref, outdir, inds = NULL, pops = NULL, dist = 0.05, 
   split_mat(afdat$afs, cols_per_chunk = cols_per_chunk, prefix = paste0(outdir, '/afs'), verbose = verbose)
   split_mat(afdat$counts, cols_per_chunk = cols_per_chunk, prefix = paste0(outdir, '/counts'), verbose = verbose)
   # compute jackknife blocks
-  block_lengths = get_block_lengths(afdat$snpfile %>% filter(poly), dist = dist, distcol = 'cm')
-  block_lengths_a = get_block_lengths(afdat$snpfile, dist = dist, distcol = 'cm')
+  block_lengths = get_block_lengths(afdat$snpfile %>% filter(poly), blgsize = blgsize, distcol = 'cm')
+  block_lengths_a = get_block_lengths(afdat$snpfile, blgsize = blgsize, distcol = 'cm')
   saveRDS(block_lengths, file = paste0(outdir, '/block_lengths.rds'))
   saveRDS(block_lengths_a, file = paste0(outdir, '/block_lengths_a.rds'))
   write_tsv(afdat$snpfile, paste0(outdir, '/snpdat.tsv.gz'))
@@ -1116,15 +1116,15 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   } else stop('Genotype files not found!')
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
-  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = cols(), progress = FALSE)
-  snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
+  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = 'cccccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = 'ccnncc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
   ip = match_samples(indfile$ind, indfile$pop, inds, pops)
   indvec = ip$indvec - 1
 
-  snpfile %<>% filter(CHR <= 22)
+  snpfile %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR))) %>% filter(CHR <= 22)
 
   starts = seq(0, nrow(snpfile), length.out = numparts+1) %>% round %>% head(-1)
   ends = c(lead(starts)[-numparts], nrow(snpfile))
@@ -1231,11 +1231,11 @@ extract_f2_subset = function(from, to, pops, verbose = TRUE) {
 #' f2_blocks = f2_from_geno(pref, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 f2_from_geno = function(pref, inds = NULL, pops = NULL,
-                        maxmem = 8000, dist = 0.05, format = NULL, verbose = TRUE) {
+                        maxmem = 8000, blgsize = 0.05, format = NULL, verbose = TRUE) {
 
   stopifnot(is.character(pref))
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format, verbose = verbose)
-  f2_blocks = afs_to_f2_blocks(afdat, maxmem = maxmem, dist = dist, verbose = verbose)
+  f2_blocks = afs_to_f2_blocks(afdat, maxmem = maxmem, blgsize = blgsize, verbose = verbose)
   f2_blocks
 }
 
@@ -1727,7 +1727,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL) {
 
   stopifnot(is.null(inds) || is.null(pops))
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = cols()) %>%
+    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'cccccc') %>%
       filter(X3 %in% pops) %$% X1
   }
   dat = read_packedancestrymap(inpref, inds)

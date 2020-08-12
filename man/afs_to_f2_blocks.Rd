@@ -7,7 +7,7 @@
 afs_to_f2_blocks(
   afdat,
   maxmem = 8000,
-  dist = 0.05,
+  blgsize = 0.05,
   poly_only = TRUE,
   outdir = NULL,
   overwrite = FALSE,
@@ -25,7 +25,7 @@ has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 
-\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 

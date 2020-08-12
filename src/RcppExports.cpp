@@ -286,15 +286,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_get_block_lengths
-IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double dist);
-RcppExport SEXP _admixtools_cpp_get_block_lengths(SEXP chrSEXP, SEXP posSEXP, SEXP distSEXP) {
+IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double blgsize);
+RcppExport SEXP _admixtools_cpp_get_block_lengths(SEXP chrSEXP, SEXP posSEXP, SEXP blgsizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< IntegerVector >::type chr(chrSEXP);
     Rcpp::traits::input_parameter< DoubleVector >::type pos(posSEXP);
-    Rcpp::traits::input_parameter< double >::type dist(distSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_get_block_lengths(chr, pos, dist));
+    Rcpp::traits::input_parameter< double >::type blgsize(blgsizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_get_block_lengths(chr, pos, blgsize));
     return rcpp_result_gen;
 END_RCPP
 }

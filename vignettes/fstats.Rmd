@@ -141,7 +141,7 @@ Arguments to `extract_f2()` can be used to decide
 For example, the folllowing command would extract data for the populations `mypops`, keeping only SNPs which are missing in no more than 10% of the populations, and grouping SNPs into blocks of 10 centimorgan.
 
 ```{r, eval = FALSE}
-extract_f2(genotype_data, f2_dir, pops = mypops, maxmiss = 0.1, dist = 0.1)
+extract_f2(genotype_data, f2_dir, pops = mypops, maxmiss = 0.1, blgsize = 0.1)
 ```
 
 ### Allele frequency products

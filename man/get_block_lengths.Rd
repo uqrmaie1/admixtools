@@ -4,12 +4,12 @@
 \alias{get_block_lengths}
 \title{Find LD-independent blocks}
 \usage{
-get_block_lengths(dat, dist = 0.05, distcol = "cm")
+get_block_lengths(dat, blgsize = 0.05, distcol = "cm")
 }
 \arguments{
 \item{dat}{Data frame with columns 'CHR' and either 'POS' or 'cm'}
 
-\item{dist}{Minimum distance between blocks}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{distcol}{Column to use as distance column}
 }
@@ -17,7 +17,7 @@ get_block_lengths(dat, dist = 0.05, distcol = "cm")
 A numeric vector where the ith element lists the number of SNPs in the ith block.
 }
 \description{
-A new block begins at the SNP after the first SNP which is not within \code{dist} of the start of the last block.
+A new block begins at the SNP after the first SNP which is not within \code{blgsize} of the start of the last block.
 \code{dat} needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 }
 \examples{

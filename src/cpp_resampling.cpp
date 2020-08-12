@@ -6,7 +6,7 @@ using namespace arma;
 
 
 // [[Rcpp::export]]
-IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double dist = 0.05) {
+IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double blgsize = 0.05) {
 
   double fpos = -1e20;
   int chrom;
@@ -21,7 +21,7 @@ IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double 
     chrom = chr(i);
     gpos = pos(i);
     dis = gpos - fpos;
-    if((chrom != lchrom) || (dis >= dist)) {
+    if((chrom != lchrom) || (dis >= blgsize)) {
       if(xsize > 0) {
         bsize(n) = xsize;
         n++;

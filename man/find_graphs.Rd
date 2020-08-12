@@ -8,22 +8,19 @@ find_graphs(
   f2_data,
   pops = NULL,
   outpop = NULL,
-  numrep = 10,
+  numrep = 1,
   numgraphs = 50,
   numgen = 5,
   numsel = 5,
   numadmix = 0,
+  numstart = 1,
   keep = c("all", "best", "last"),
-  f2_denom = 1,
-  cpp = TRUE,
   initgraph = NULL,
   mutfuns = c("spr_leaves", "spr_all", "swap_leaves", "move_admixedge_once",
     "flipadmix_random"),
   store_intermediate = NULL,
   parallel = TRUE,
-  stop_at = NULL,
-  debug = FALSE,
-  fudge_cov = 1e-05,
+  stop_after = NULL,
   verbose = TRUE,
   ...
 )
@@ -46,12 +43,10 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 
 \item{numadmix}{Number of admixture events within each graph}
 
+\item{numstart}{Number of random initializations. Defaults to 1, to speed up the graph optimization.}
+
 \item{keep}{By default (\code{all}), all evaluated graphs will be returned. \code{best} will only return the best fitting
 graph from each repeat and each generation. \code{last} will return all graphs from the last generation.}
-
-\item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts f2 to Fst.}
-
-\item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
 \item{initgraph}{Optional graph to start with. If \code{NULL}, optimization will start with random graphs.}
 
@@ -68,12 +63,7 @@ graph from each repeat and each generation. \code{last} will return all graphs f
 
 \item{parallel}{Parallelize over repeats (if \code{numrep > 1}) or graphs (if \code{numrep == 1}) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.}
 
-\item{stop_at}{Stop execution after finishing the generation running at \code{stop_at} seconds. Currently not working.}
-
-\item{debug}{If \code{TRUE} each repeat is run sequentially in a loop and not via \code{\link[furrr]{future_map}}).
-Errors will interrupt execution. This is the default if \code{numrep = 1}}
-
-\item{fudge_cov}{Regularization term added to the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
+\item{stop_after}{Stop optimization after \code{stop_after} seconds (and after finishing the current generation).}
 
 \item{verbose}{Print progress updates}
 

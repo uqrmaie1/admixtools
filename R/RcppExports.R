@@ -73,8 +73,8 @@ cpp_plink_to_aftable <- function(genofile, nsnp, nind, indvec, first, last, ploi
     .Call('_admixtools_cpp_plink_to_aftable', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose)
 }
 
-cpp_get_block_lengths <- function(chr, pos, dist = 0.05) {
-    .Call('_admixtools_cpp_get_block_lengths', PACKAGE = 'admixtools', chr, pos, dist)
+cpp_get_block_lengths <- function(chr, pos, blgsize = 0.05) {
+    .Call('_admixtools_cpp_get_block_lengths', PACKAGE = 'admixtools', chr, pos, blgsize)
 }
 
 cpp_jack_vec_stats <- function(loo_vec, block_lengths) {

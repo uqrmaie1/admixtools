@@ -164,7 +164,6 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' The covariance matrix of f3 statistics will be computed using bootstrapping.
 #' @param fudge Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).
 #' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
-#' @param fnscale Optimization parameter passed to `control` in \code{\link{optim}}
 #' @param lsqmode Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
 #' @param numstart Number of random initializations. Defaults to 10.
 #' @param seed Seed for generating starting weights.
@@ -173,8 +172,6 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @param f3precomp Precomputed f3-statistics. This should be the output of `qpgraph_precompute_f3` and can be provided instead of `f2_blocks`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
 #' @param ppinv Inverse of f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.
 #' @param f2_blocks_test An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of `f2_blocks`. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step
-#' @param low_q Reported lower quantile of fitted admixture edge weights across random initializations
-#' @param high_q Reported upper quantile of fitted admixture edge weights across random initializations
 #' @param verbose Print progress updates
 #' @return A list with data describing the model fit:
 #' \enumerate{
@@ -193,9 +190,9 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @examples
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
-qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fudge_cov = 1e-5, fnscale = 1e-6, lsqmode = FALSE,
-                   numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL, ppinv = NULL, f2_blocks_test = NULL,
-                   low_q = 0, high_q = 1, verbose = FALSE) {
+qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fudge_cov = 1e-5,
+                   lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
+                   ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
 
   #----------------- process graph -----------------
   if('matrix' %in% class(graph)) {
@@ -227,17 +224,20 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   cmb = combn(0:(npop-1), 2)+(1:0)
 
   if(!is.null(f3precomp)) {
+    if(!is.null(f2_blocks)) stop("'f2_blocks' and 'f3precomp' can't both be provided!")
     precomp = f3precomp
     f3pops = attr(precomp$f3_est, 'pops')
     pairmatch = get_pairindex(match(pops, f3pops))
     precomp$f3_est = precomp$f3_est[pairmatch]
     precomp$ppinv = precomp$ppinv[pairmatch, pairmatch]
-    stopifnot(all(!is.na(precomp$ppinv)))
+    precomp$f3out %<>% slice(pairmatch)
   } else {
     precomp = qpgraph_precompute_f3(f2_blocks, pops, f2_denom = f2_denom, boot = boot,
                                     seed = seed, fudge_cov = fudge_cov, lsqmode = lsqmode)
   }
+  stopifnot(all(!is.na(precomp$ppinv)))
   if(!is.null(ppinv)) {
+    if(!is.null(f3precomp)) stop("'f3precomp' and 'ppinv' can't both be provided!")
     f3pops = attr(ppinv, 'pops')
     pairmatch = get_pairindex(match(pops, f3pops))
     precomp$ppinv = ppinv[pairmatch, pairmatch]
@@ -261,7 +261,6 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   }
 
   if(nadmix > 0) {
-    #if(is.null(numstart)) numstart = 10*nadmix
     if(!is.null(seed)) set.seed(seed)
     if('lower' %in% names(edges)) {
       alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
@@ -272,29 +271,24 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
       aupper = rep(1, nadmix)
     }
     parmat = matrix(runif(numstart*nadmix), numstart)
-    if(verbose) alert_info(paste0('testing ', nrow(parmat), ' combinations of admixture weight starting values\n'))
+    if(verbose) alert_info(paste0('Testing ', nrow(parmat), ' combinations of admixture weight starting values...\n'))
     weightind = graph_to_weightind(graph)
     arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]], cmb, qpsolve, elower, eupper, fudge)
     oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
-                    lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = fnscale),
+                    lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = 1e-6),
                     verbose = verbose)
     best = oo %>% top_n(1, -value)
-    opt = data.frame(parmat, oo, stringsAsFactors = F) #%>% filter(!is.na(convergence))
-
-    #if(nrow(opt) == 0) stop('Optimization not successful! Increase fudge or numstart!')
-    #else if(verbose) alert_info(paste0('Optimiztion successful for ', nrow(opt), ' combinations\n'))
+    opt = data.frame(parmat, oo, stringsAsFactors = F)
 
     admnames = names(V(graph))[admixnodes]
     colnames(opt)[1:(nadmix*2)] = paste0(rep(c('i.', 'e.'), each = nadmix), rep(admnames, 2))
-    hilo = apply(as.matrix(oo[,1:nadmix]), 2, function(x) quantile(x, c(low_q, high_q), na.rm = TRUE))
+    hilo = apply(as.matrix(oo[,1:nadmix]), 2, function(x) quantile(x, c(0, 1), na.rm = TRUE))
 
     wts = as.matrix(best[,1:nadmix])[1,]
-    weight[admixedgesfull[1,]] = wts
-    weight[admixedgesfull[2,]] = 1-wts
-    low[admixedgesfull[1,]] = pmin(hilo[1,], hilo[2,])
-    low[admixedgesfull[2,]] = pmin(1-hilo[1,], 1-hilo[2,])
-    high[admixedgesfull[1,]] = pmax(hilo[1,], hilo[2,])
-    high[admixedgesfull[2,]] = pmax(1-hilo[1,], 1-hilo[2,])
+    ta = c(t(admixedgesfull))
+    weight[ta] = c(wts, 1-wts)
+    low[ta] = c(pmin(hilo[1,], hilo[2,]), pmin(1-hilo[1,], 1-hilo[2,]))
+    high[ta] = c(pmax(hilo[1,], hilo[2,]), pmax(1-hilo[1,], 1-hilo[2,]))
     pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
   pwts = pwts[,-1] - pwts[,1]
@@ -308,7 +302,6 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
     score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
   }
 
-  #weight[normedges] = branch_lengths
   weight[normedges] = pmax(0, branch_lengths)
   edges %<>% select(1:2) %>% set_colnames(c('from', 'to')) %>%  as_tibble %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight, low = low, high = high)
@@ -316,7 +309,6 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p = ztop(z))
 
   out = namedList(edges, score, f2, f3, opt, ppinv)
-  #if(return_f4) out$f4 = f4(f2_blocks)
   if(!is.null(f2_blocks_test)) out[['score_test']] = score_test
   if(return_f4) {
     if(verbose) alert_info(paste0('Computing f4\n'))
@@ -418,7 +410,7 @@ get_pairindex = function(perm) {
   match(new_order, orig_order)
 }
 
-qpgraph_anorexic = function(f3precomp, graph, fudge = 1e-4, fnscale = 1e-6,
+qpgraph_anorexic = function(f3precomp, graph, fudge = 1e-4,
                             numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE) {
 
   # only works for trees at the moment, because weightind order is coupled to pwts order

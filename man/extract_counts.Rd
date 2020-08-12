@@ -8,7 +8,7 @@ extract_counts(
   pref,
   outdir,
   inds = NULL,
-  dist = 0.05,
+  blgsize = 0.05,
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
@@ -29,7 +29,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
-\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{maxmiss}{Discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
 

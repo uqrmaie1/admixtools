@@ -11,7 +11,6 @@ qpgraph(
   boot = FALSE,
   fudge = 1e-04,
   fudge_cov = 1e-05,
-  fnscale = 1e-06,
   lsqmode = FALSE,
   numstart = 10,
   seed = NULL,
@@ -20,8 +19,6 @@ qpgraph(
   f3precomp = NULL,
   ppinv = NULL,
   f2_blocks_test = NULL,
-  low_q = 0,
-  high_q = 1,
   verbose = FALSE
 )
 }
@@ -41,8 +38,6 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 
 \item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 
-\item{fnscale}{Optimization parameter passed to \code{control} in \code{\link{optim}}}
-
 \item{lsqmode}{Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
 
 \item{numstart}{Number of random initializations. Defaults to 10.}
@@ -58,10 +53,6 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 \item{ppinv}{Inverse of f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
 
 \item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
-
-\item{low_q}{Reported lower quantile of fitted admixture edge weights across random initializations}
-
-\item{high_q}{Reported upper quantile of fitted admixture edge weights across random initializations}
 
 \item{verbose}{Print progress updates}
 }

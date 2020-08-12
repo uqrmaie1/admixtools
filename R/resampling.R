@@ -155,11 +155,11 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 
 #' Find LD-independent blocks
 #'
-#' A new block begins at the SNP after the first SNP which is not within `dist` of the start of the last block.
+#' A new block begins at the SNP after the first SNP which is not within `blgsize` of the start of the last block.
 #' `dat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 #' @export
 #' @param dat Data frame with columns 'CHR' and either 'POS' or 'cm'
-#' @param dist Minimum distance between blocks
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param distcol Column to use as distance column
 #' @return A numeric vector where the ith element lists the number of SNPs in the ith block.
 #' @examples
@@ -169,9 +169,9 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
-get_block_lengths = function(dat, dist = 0.05, distcol = 'cm') {
+get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
 
-  cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], dist)
+  cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], blgsize)
 
   # fpos = -1e20
   # lchrom = -1
@@ -182,7 +182,7 @@ get_block_lengths = function(dat, dist = 0.05, distcol = 'cm') {
   #   chrom = dat$CHR[i]
   #   gpos = dat[[distcol]][i]
   #   dis = gpos - fpos
-  #   if ((chrom != lchrom) || (dis >= dist)) {
+  #   if ((chrom != lchrom) || (dis >= blgsize)) {
   #     if (xsize > 0) {
   #       bsize[n+1] = xsize
   #       n = n+1

@@ -9,7 +9,7 @@ f2_from_geno(
   inds = NULL,
   pops = NULL,
   maxmem = 8000,
-  dist = 0.05,
+  blgsize = 0.05,
   format = NULL,
   verbose = TRUE
 )
@@ -24,7 +24,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
 
-\item{dist}{Genetic distance in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
