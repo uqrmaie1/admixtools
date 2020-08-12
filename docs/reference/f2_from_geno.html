@@ -183,7 +183,7 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
   <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
-  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
@@ -209,8 +209,8 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.</p></td>
     </tr>
     <tr>
-      <th>dist</th>
-      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>format</th>

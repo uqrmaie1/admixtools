@@ -10,6 +10,7 @@ write_split_f2_block(
   chunk1,
   chunk2,
   blgsize = 0.05,
+  snpwt = NULL,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -24,6 +25,8 @@ write_split_f2_block(
 \item{chunk2}{Index of the second chunk of populations}
 
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+
+\item{snpwt}{A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.}
 
 \item{overwrite}{Overwrite existing files (default \code{FALSE})}
 

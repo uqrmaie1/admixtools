@@ -183,7 +183,8 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
   <span class='no'>outdir</span>,
   <span class='no'>chunk1</span>,
   <span class='no'>chunk2</span>,
-  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>snpwt</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
@@ -208,8 +209,12 @@ which takes a (sub-)chunk of pairwise f2-statistics, and writes one pair at a ti
       <td><p>Index of the second chunk of populations</p></td>
     </tr>
     <tr>
-      <th>dist</th>
-      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
+    </tr>
+    <tr>
+      <th>snpwt</th>
+      <td><p>A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.</p></td>
     </tr>
     <tr>
       <th>overwrite</th>

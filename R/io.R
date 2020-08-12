@@ -117,7 +117,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
 }
 
 
-discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', auto_only = TRUE,
+discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
@@ -134,9 +134,9 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, he
   if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
   else snpdat %<>% mutate(poly = TRUE)
 
-  if(hetoutgroup != '') {
-    if(!hetoutgroup %in% colnames(afdat$afs)) stop("'hetoutgroup' should be a population name!")
-    snpdat %<>% mutate(outgroupaf = afdat$afs[,hetoutgroup])
+  if(!is.null(outpop)) {
+    if(!outpop %in% colnames(afdat$afs)) stop("'outpop' should be a population name!")
+    snpdat %<>% mutate(outgroupaf = afdat$afs[,outpop])
   } else snpdat %<>% mutate(outgroupaf = 0.5)
 
   remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
@@ -691,6 +691,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' @param chunk1 Index of the first chunk of populations
 #' @param chunk2 Index of the second chunk of populations
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
+#' @param snpwt A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.
 #' @param overwrite Overwrite existing files (default `FALSE`)
 #' @param verbose Print progress updates
 #' @seealso \code{\link{extract_f2}} Does the same thing in one step for smaller data.
@@ -714,10 +715,10 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
 #'   })})
 #'   }
-write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, overwrite = FALSE, verbose = TRUE) {
+write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
-  snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = 'ccnncc?', progress = FALSE)
+  snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = 'ccnncc??', progress = FALSE)
   poly = snpdat$poly
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
   am2 = readRDS(paste0(afdir, '/afs', chunk2, '.rds'))
@@ -747,7 +748,7 @@ write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, o
     nam %>% rep(each = 2) %>% paste0(c('_f2.rds', '_ap.rds'))
   if(all(file.exists(filenames)) && !overwrite) return()
 
-  f2 = mats_to_f2arr(am1[poly,,drop=F], am2[poly,,drop=F], cm1[poly,,drop=F], cm2[poly,,drop=F], block_lengths)
+  f2 = mats_to_f2arr(am1[poly,,drop=F], am2[poly,,drop=F], cm1[poly,,drop=F], cm2[poly,,drop=F], block_lengths, snpwt)
   counts = mats_to_ctarr(am1[poly,,drop=F], am2[poly,,drop=F], cm1[poly,,drop=F], cm2[poly,,drop=F], block_lengths)
   afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
   countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
@@ -816,16 +817,15 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
-#' @param hetoutgroup Keep only SNPs which are heterozygous in this population
+#' @param outpop Keep only SNPs which are heterozygous in this population
+#' @param outpop_scale Scale f2 statistics by the inverse outgroup heteroygosity (`1/(p*(1-p))`)
 #' @param transitions Set this to `FALSE` to exclude transition SNPs
 #' @param transversions Set this to `FALSE` to exclude transversion SNPs
 #' @param auto_only Keep only SNPs on chromosomes 1 to 22
 #' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
-#' @param snpblocks Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.
 #' @param overwrite Overwrite existing files in `outdir`
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
-#' @param poly_only Exclude sites with identical allele frequencies in all populations
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param verbose Print progress updates
 #' @return SNP metadata (invisibly)
@@ -837,8 +837,9 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
-                      auto_only = TRUE, keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
+                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                      transitions = TRUE, transversions = TRUE,
+                      auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   outdir = normalizePath(outdir, mustWork = FALSE)
@@ -848,16 +849,16 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
                                   transitions = transitions, transversions = transversions,
-                                  keepsnps = keepsnps, auto_only = TRUE, poly_only = FALSE)
+                                  keepsnps = keepsnps, auto_only = auto_only, poly_only = FALSE)
   afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
 
   if(verbose) alert_warning(paste0(nrow(afdat$afs), ' SNPs remain after filtering. ',
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
-  afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite,
-                   maxmem = maxmem, poly_only = poly_only, blgsize = blgsize, verbose = verbose)
+  afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = TRUE,
+                   outpop = if(outpop_scale) outpop else NULL, blgsize = blgsize, verbose = verbose)
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
@@ -879,24 +880,31 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' extract_f2_large(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                            maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
+                            maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                            transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL, poly_only = TRUE,
                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
-  extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
-              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
+  snpdat = extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
+              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
               transitions = transitions, transversions = transversions,
               keepsnps = keepsnps, format = format, poly_only = FALSE,
               adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   numchunks = length(list.files(outdir, 'afs.+rds'))
+
+  if(outpop_scale) {
+    p = snpdat$outpopaf
+    snpwt = 1/(p*(1-p))
+  } else snpwt = NULL
 
   if(verbose) alert_warning(paste0('Computing ', choose(numchunks, 2), ' chunk pairs. If this takes too long,
   consider running "extract_afs" and then paralellizing over "write_split_f2_block".\n'))
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
       if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
-      write_split_f2_block(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, overwrite = overwrite)
+      write_split_f2_block(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize,
+                           snpwt = snpwt, overwrite = overwrite)
     }
   }
   if(verbose) alert_info('\n')
@@ -967,7 +975,6 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @inheritParams extract_f2
 extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
-                          hetoutgroup = '',
                           transitions = TRUE, transversions = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
   dir.create(outdir, showWarnings = FALSE)
@@ -1057,14 +1064,13 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' extract_afs(pref, outdir)
 #' }
 extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', transitions = TRUE, transversions = TRUE,
-                       keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE,
-                       verbose = TRUE) {
+                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, transitions = TRUE, transversions = TRUE,
+                       keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   # read data and compute allele frequencies
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 
@@ -1101,7 +1107,7 @@ extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 
 #' extract_afs(pref, outdir)
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10, numparts = 100,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, hetoutgroup = '', auto_only = TRUE,
+                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
                        transitions = TRUE, transversions = TRUE, keepsnps = NULL, format = NULL,
                        poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
@@ -1153,14 +1159,16 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
                                 last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
     afdat$snpfile = snpfile %>% slice((starts[i]+1):(ends[i]))
 
-    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, hetoutgroup = hetoutgroup,
+    colnames(afdat$afs) = colnames(afdat$counts) = ip$upops
+    rownames(afdat$afs) = rownames(afdat$counts) = afdat$snpfile$SNP
+
+    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
                                     transitions = transitions, transversions = transversions,
                                     keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 
     afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
+    if(!is.null(outpop)) afdat$snpfile %<>% mutate(outpopaf = afdat$afs[,outpop])
     snpparts[[i]] = afdat$snpfile
-    colnames(afdat$afs) = colnames(afdat$counts) = ip$upops
-    rownames(afdat$afs) = rownames(afdat$counts) = afdat$snpfile$SNP
 
     # split allele frequency data into chunks and write to disk
     partdir = paste0(outdir, '/part',i,'/')

@@ -17,6 +17,7 @@
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param poly_only Exclude sites with identical allele frequencies in all populations
+#' @param outpop If specified, f2-statistics will be weighted by heterozygosity in this population
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
 #' @param verbose Print progress updates
@@ -31,7 +32,7 @@
 #' afdat = plink_to_aftable('/my/geno/prefix')
 #' afs_to_f2_blocks(afdat, outdir = '/my/f2/data/')
 #' }
-afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE,
+afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE, outpop = NULL,
                             outdir = NULL, overwrite = FALSE, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
@@ -67,6 +68,10 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
 
   cmb = combn(0:numsplits2, 2)+(1:0)
   if(is.null(outdir)) arrlist = replicate(numsplits2, list())
+  if(!is.null(outpop)) {
+    p = afmat[,outpop]
+    snpwt = 1/(p*(1-p))
+  } else snpwt = NULL
 
   for(i in 1:ncol(cmb)) {
     if(numsplits2 > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', ncol(cmb)))
@@ -80,7 +85,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     cm2 = countmat[, s2, drop=F]
 
     # compute f2 arr only from polymorphic SNPs, but afprod arr from all SNPs
-    f2 = mats_to_f2arr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
+    f2 = mats_to_f2arr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
     counts = mats_to_ctarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
     afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
     if(!poly_only) countsap = counts
@@ -113,11 +118,15 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
 
 
 
-mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cpp = TRUE) {
+mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = TRUE) {
+
+  nc1 = ncol(countmat1)
+  nc2 = ncol(countmat2)
+  nr = nrow(afmat1)
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
-  stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
-  stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
+  stopifnot(all.equal(ncol(afmat1), nc1))
+  stopifnot(all.equal(ncol(afmat2), nc2))
 
   if(cpp) {
     out = cpp_mats_to_f2_arr(afmat1, afmat2, countmat1, countmat2)
@@ -127,6 +136,11 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
     pq1 = afmat1*(1-afmat1)/denom1
     pq2 = afmat2*(1-afmat2)/denom2
     out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`))
+    #out = (outer_array(afmat1, afmat2, `-`)^2)
+  }
+  if(!is.null(snpwt)) {
+    stopifnot(length(snpwt) == nr)
+    out = out * rep(snpwt, each = nc1*nc2)
   }
   out %<>% block_arr_mean(block_lengths)
 

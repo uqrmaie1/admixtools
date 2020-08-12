@@ -13,6 +13,7 @@ qpadm_wrapper(
   outdir = "./",
   parfile = NULL,
   useallsnps = "NO",
+  blgsize = 0.05,
   fancyf4 = "YES",
   f4mode = "YES",
   inbreed = "NO",
@@ -38,6 +39,8 @@ qpadm_wrapper(
 \item{parfile}{qpAdm parameter file}
 
 \item{useallsnps}{useallsnps}
+
+\item{blgsize}{blgsize}
 
 \item{fancyf4}{fancyf4}
 

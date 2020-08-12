@@ -184,7 +184,7 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
   <span class='no'>pref</span>,
   <span class='no'>outdir</span>,
   <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
   <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
@@ -214,8 +214,8 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>Individuals for which data should be read. Defaults to all individuals</p></td>
     </tr>
     <tr>
-      <th>dist</th>
-      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>maxmiss</th>

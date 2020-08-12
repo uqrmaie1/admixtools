@@ -47,7 +47,7 @@ library(tidyverse)
 <br>
 
 
-## *f*-statistics
+## *f*-statistics basics
 
 $f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of ADMIXTOOLS. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
@@ -137,7 +137,7 @@ For more information on f-statistics in ADMIXTOOLS 2, click [here](fstats.html).
 
 <br>
 
-## qp3Pop
+## $f_3$ and qp3Pop
 
 The original ADMIXTOOLS program for computing $f_3$-statistics is called *qp3Pop*. In ADMIXTOOLS 2, you can compute $f_3$-statistics like this:
 
@@ -164,7 +164,7 @@ Typing just `f3(f2_blocks)` will compute all possible combinations (which can be
 
 <br>
 
-## qpDstat
+## $f_4$ and qpDstat
 
 The original ADMIXTOOLS program for computing $f_4$-statistics is called *qpDstat*. As the name suggests, it computes *D*-statistics by default. To get $f_4$-statistics instead, the `f4mode` argument needs to set to `YES`. In ADMIXTOOLS 2, almost everything starts with f2-statistics, so the `qpdstat`/`f4` function computes $f_4$-statistics by default.
 
@@ -195,7 +195,7 @@ Computing $f_4$- or D-statistics from genotype data directly is slower, but it h
 
 ## qpWave and qpAdm
 
-*qpWave* and *qpAdm* are two programs with diffent goals - one estimates the number of admixture events, the other admixture weights - but they perform almost the same computations. The key difference is that *qpWave* is about comparing two sets of populations (`left` and `right`), while *qpAdm* is about testing how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In ADMIXTOOLS 2, both `qpadm()` and `qpwave()`require at least three arguments:
+*qpWave* and *qpAdm* are two programs with diffent goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In ADMIXTOOLS 2, both `qpadm()` and `qpwave()`require at least three arguments:
 
 1. $f_2$-statistics
 2. A set of left populations

@@ -9,6 +9,7 @@ afs_to_f2_blocks(
   maxmem = 8000,
   blgsize = 0.05,
   poly_only = TRUE,
+  outpop = NULL,
   outdir = NULL,
   overwrite = FALSE,
   verbose = TRUE
@@ -28,6 +29,8 @@ has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}}
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
+
+\item{outpop}{If specified, f2-statistics will be weighted by heterozygosity in this population}
 
 \item{outdir}{Directory into which to write f2 data (if \code{NULL}, data is returned instead)}
 

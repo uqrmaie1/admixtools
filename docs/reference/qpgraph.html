@@ -177,7 +177,6 @@
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
   <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
-  <span class='kw'>fnscale</span> <span class='kw'>=</span> <span class='fl'>1e-06</span>,
   <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
   <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -186,8 +185,6 @@
   <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>ppinv</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>low_q</span> <span class='kw'>=</span> <span class='fl'>0</span>,
-  <span class='kw'>high_q</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
 )</pre>
     
@@ -222,10 +219,6 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
       <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
     </tr>
     <tr>
-      <th>fnscale</th>
-      <td><p>Optimization parameter passed to <code>control</code> in <code><a href='https://rdrr.io/r/stats/optim.html'>optim</a></code></p></td>
-    </tr>
-    <tr>
       <th>lsqmode</th>
       <td><p>Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
     </tr>
@@ -256,14 +249,6 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     <tr>
       <th>f2_blocks_test</th>
       <td><p>An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of <code>f2_blocks</code>. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step</p></td>
-    </tr>
-    <tr>
-      <th>low_q</th>
-      <td><p>Reported lower quantile of fitted admixture edge weights across random initializations</p></td>
-    </tr>
-    <tr>
-      <th>high_q</th>
-      <td><p>Reported upper quantile of fitted admixture edge weights across random initializations</p></td>
     </tr>
     <tr>
       <th>verbose</th>

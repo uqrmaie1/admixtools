@@ -49,7 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Find LD-independent blocks — get_block_lengths" />
 
-<meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within dist of the start of the last block.
+<meta property="og:description" content="A new block begins at the SNP after the first SNP which is not within blgsize of the start of the last block.
 dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
 <meta name="twitter:card" content="summary" />
 
@@ -167,12 +167,12 @@ dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
 
     <div class="ref-description">
     
-    <p>A new block begins at the SNP after the first SNP which is not within <code>dist</code> of the start of the last block.
+    <p>A new block begins at the SNP after the first SNP which is not within <code>blgsize</code> of the start of the last block.
 <code>dat</code> needs to be ordered first by 'CHR', then by 'POS' or 'cm'</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>dat</span>, <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>distcol</span> <span class='kw'>=</span> <span class='st'>"cm"</span>)</pre>
+    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>dat</span>, <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>distcol</span> <span class='kw'>=</span> <span class='st'>"cm"</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -182,8 +182,8 @@ dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
       <td><p>Data frame with columns 'CHR' and either 'POS' or 'cm'</p></td>
     </tr>
     <tr>
-      <th>dist</th>
-      <td><p>Minimum distance between blocks</p></td>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>distcol</th>

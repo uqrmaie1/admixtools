@@ -195,6 +195,7 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 #' \code{rightlist} will be overwritten
 #' @param parfile qpAdm parameter file
 #' @param useallsnps useallsnps
+#' @param blgsize blgsize
 #' @param fancyf4 fancyf4
 #' @param f4mode f4mode
 #' @param inbreed inbreed
@@ -213,7 +214,7 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 #'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
 #' }
 qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', pref = NULL,
-                         outdir = './', parfile = NULL, useallsnps = 'NO', fancyf4 = 'YES',
+                         outdir = './', parfile = NULL, useallsnps = 'NO', blgsize = 0.05, fancyf4 = 'YES',
                          f4mode = 'YES', inbreed = 'NO', printonly = FALSE, env = '', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
@@ -242,6 +243,7 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
                      'popleft: ', leftfile, '\n',
                      'popright: ', rightfile, '\n',
                      'useallsnps: ', useallsnps, '\n',
+                     'blgsize: ', blgsize, '\n',
                      'fancyf4: ', fancyf4, '\n',
                      'f4mode: ', f4mode, '\n',
                      'inbreed: ', inbreed, '\n',
@@ -273,6 +275,7 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
 #' @param lambdascale lambdascale
 #' @param inbreed inbreed
 #' @param diag diag
+#' @param blgsize blgsize
 #' @param outpop outgroup population
 #' @param loadf3 loadf3
 #' @param lsqmode least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.
@@ -304,7 +307,7 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
 #' }
 qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
                            printonly = FALSE, badsnps = NULL, lambdascale = NULL, inbreed = 'NO',
-                           diag = 0.0001, outpop = 'NULL', loadf3 = NULL,
+                           diag = 0.0001, blgsize = 0.05, outpop = 'NULL', loadf3 = NULL,
                            lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 0,
                            allsnps = 'NO', oldallsnps = 'NO', doanalysis = 'YES',
                            bigiter = 100, initmix = 0, env = '', verbose = TRUE) {
@@ -321,7 +324,7 @@ qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parf
                      'snpname:         ', pref, '.snp\n',
                      'genotypename:    ', pref, '.geno\n',
                      'outpop:         ', outpop, '\n',
-                     'blgsize: 0.05\n',
+                     'blgsize: ', blgsize, '\n',
                      'details: YES\n',
                      'fstdetails: YES\n',
                      'diag: ', diag, '\n',

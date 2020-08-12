@@ -181,8 +181,9 @@ non-missing haplotypes in populations \(1\) and \(2\). See <code>details</code><
     <pre class="usage"><span class='fu'>afs_to_f2_blocks</span>(
   <span class='no'>afdat</span>,
   <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
-  <span class='kw'>dist</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
   <span class='kw'>poly_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
@@ -204,12 +205,16 @@ non-missing haplotypes in populations \(1\) and \(2\). See <code>details</code><
       <td><p>split up allele frequency data into blocks, if memory requirements exceed <code>maxmem</code> MB.</p></td>
     </tr>
     <tr>
-      <th>dist</th>
-      <td><p>Genetic distance in Morgan. Default is 0.05 (50 cM).</p></td>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
     </tr>
     <tr>
       <th>poly_only</th>
       <td><p>Exclude sites with identical allele frequencies in all populations</p></td>
+    </tr>
+    <tr>
+      <th>outpop</th>
+      <td><p>If specified, f2-statistics will be weighted by heterozygosity in this population</p></td>
     </tr>
     <tr>
       <th>outdir</th>

@@ -14,7 +14,8 @@ extract_f2_large(
   maxmiss = 1,
   minmaf = 0,
   maxmaf = 0.5,
-  hetoutgroup = "",
+  outpop = NULL,
+  outpop_scale = TRUE,
   transitions = TRUE,
   transversions = TRUE,
   keepsnps = NULL,
@@ -46,7 +47,9 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
 
-\item{hetoutgroup}{Keep only SNPs which are heterozygous in this population}
+\item{outpop}{Keep only SNPs which are heterozygous in this population}
+
+\item{outpop_scale}{Scale f2 statistics by the inverse outgroup heteroygosity (\code{1/(p*(1-p))})}
 
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
@@ -54,14 +57,10 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{snpblocks}{Optional data frame with pre-assigned SNP blocks. Should have columns 'SNP' and 'block'. Can also have a column 'weight'. If present, the average 'weight' in each SNP block will be used for jackknife weights, instead of the number of SNPs in that block.}
-
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
-
-\item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 

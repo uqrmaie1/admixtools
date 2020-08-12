@@ -15,6 +15,7 @@ qpgraph_wrapper(
   lambdascale = NULL,
   inbreed = "NO",
   diag = 1e-04,
+  blgsize = 0.05,
   outpop = "NULL",
   loadf3 = NULL,
   lsqmode = "NO",
@@ -51,6 +52,8 @@ qpgraph_wrapper(
 \item{inbreed}{inbreed}
 
 \item{diag}{diag}
+
+\item{blgsize}{blgsize}
 
 \item{outpop}{outgroup population}
 
