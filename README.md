@@ -8,23 +8,24 @@ A new, lightning fast implementation of
 
 ## Overview
 
-ADMIXTOOLS is a collection of programs which use genetic data to infer
+*ADMIXTOOLS* is a collection of programs which use genetic data to infer
 how populations are related to one another. It has been used in
 countless publications to test whether populations form clades
 (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and
 to fit admixture graphs (*qpGraph*).
 
-ADMIXTOOLS 2 provides the same functionality in a new look, and it’s
+*ADMIXTOOLS 2* provides the same functionality in a new look, and it’s
 orders of magnitude faster. This is achieved through separating the
-computation of f2-statistics from all other computations, and through a
-number of other optimizations. In the example below, rendering the plot
-takes much longer than computing the fit of a new *qpGraph* model:
+computation of \(f_2\)-statistics from all other computations, and
+through a number of other optimizations. In the example below, rendering
+the plot takes much longer than computing the fit of a new *qpGraph*
+model:
 
 ![app demo](man/figures/shinyapp1.gif)
 
 ## Features
 
-  - Much faster than the original ADMIXTOOLS software
+  - Much faster than the original *ADMIXTOOLS* software
   - Simple R command line interface
   - Even simpler point-and-click interface
   - Several new features and methodological innovations that make it
@@ -39,10 +40,10 @@ takes much longer than computing the fit of a new *qpGraph* model:
         out-of-sample scores
       - Jackknife and bootstrap standard errors and confidence intervals
         for any *qpAdm*, *qpWave*, and *qpGraph* parameters
-  - Full support for genotype data in (PACKED)ANCESTRYMAP/EIGENSTRAT
-    format and PLINK format
-  - Wrapper functions around the original ADMIXTOOLS software (see also
-    [admixr](https://bodkan.net/admixr/index.html))
+  - Full support for genotype data in *(PACKED)ANCESTRYMAP/EIGENSTRAT*
+    format and *PLINK* format
+  - Wrapper functions around the original *ADMIXTOOLS* software (see
+    also [admixr](https://bodkan.net/admixr/index.html))
     <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
   - [Extensive
     documentation](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
@@ -51,7 +52,7 @@ takes much longer than computing the fit of a new *qpGraph* model:
 
 ## Installation
 
-To install and load ADMIXTOOLS 2, start R (version 3.5 or higher) and
+To install and load *ADMIXTOOLS 2*, start R (version 3.5 or higher) and
 follow these steps:
 
 ``` r
@@ -61,7 +62,7 @@ library("admixtools")
 ```
 
 The above commands will install all R package dependencies which are
-required to run ADMIXTOOLS 2 on the command line. For the interactive
+required to run *ADMIXTOOLS 2* on the command line. For the interactive
 app, additional packages are required, which can be installed like this:
 
 ``` r
@@ -85,20 +86,16 @@ me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-The first step is to extract f2-statistics from genotype files. These
-f2-statistics will be written to disk so that the slow part of the
-computation doesn’t have to be repeated.
+The first step is to extract \(f_2\)-statistics from genotype files.
 
 ``` r
 genotype_data = "/my/geno/prefix"
-f2_dir = "/my/f2/directory/"
-extract_f2(genotype_data, f2_dir)
+f2_blocks = extract_f2(genotype_data)
 ```
 
-After that, we can fit an admixture graph like this:
+Now we can fit an admixture graph:
 
 ``` r
-f2_blocks = f2_from_precomp(f2_dir)
 fit = qpgraph(f2_blocks, example_graph)
 fit$score
 plot_graph(fit$edges)
@@ -110,7 +107,7 @@ Clearly not a historically accurate model, but it gets the idea across.
 
 <br>
 
-We can also use the f2-statistics to estimate admixture weights:
+We can also use the \(f_2\)-statistics to estimate admixture weights:
 
 ``` r
 left = c("Altai_Neanderthal.DG", "Vindija.DG")
@@ -130,7 +127,7 @@ qpadm(f2_blocks, left, right, target)$weights
 
 <br>
 
-Or we can use them to get f4-statistics:
+Or we can use them to get \(f_4\)-statistics:
 
 ``` r
 f4(f2_blocks)
@@ -157,9 +154,9 @@ f4(f2_blocks)
 
 ## Interactive browser app
 
-ADMIXTOOLS 2 also has a simple point-and-click interface. This makes it
-easy to explore many *qpAdm* or *qpGraph* models at the same time, for
-example by allowing you to build and change admixture graphs
+*ADMIXTOOLS 2* also has a simple point-and-click interface. This makes
+it easy to explore many *qpAdm* or *qpGraph* models at the same time,
+for example by allowing you to build and change admixture graphs
 interactively. Typing the following command in the R console launches
 the app:
 
@@ -171,14 +168,14 @@ run_shiny_admixtools()
 
 ## Documentation
 
-One of the design goals behind ADMIXTOOLS 2 is to make the algorithms
+One of the design goals behind *ADMIXTOOLS 2* is to make the algorithms
 more transparent, so that the steps leading from from genotype data to
 conclusions about demographic history are easier to follow.
 
-To this end, all ADMIXTOOLS 2 functions are
+To this end, all *ADMIXTOOLS 2* functions are
 [documented](https://uqrmaie1.github.io/admixtools/reference/index.html).
 You can also take a look at the [tutorial](articles/admixtools.html),
-read more about how ADMIXTOOLS 2 computes
+read more about how *ADMIXTOOLS 2* computes
 [f-statistics](https://uqrmaie1.github.io/admixtools/articles/fstats.html)
 and [standard
 errors](https://uqrmaie1.github.io/admixtools/articles/resampling.html),
@@ -204,9 +201,9 @@ Maier under <rmaier@broadinstitute.org>.
 ## See also
 
   - [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools) The original
-    ADMIXTOOLS software
+    *ADMIXTOOLS* software
   - [admixr](https://bodkan.net/admixr/index.html) An R package with
-    ADMIXTOOLS wrapper functions and many useful tutorials
+    *ADMIXTOOLS* wrapper functions and many useful tutorials
   - [admixturegraph](https://github.com/mailund/admixture_graph) An R
     package for automatic graph inference
   - [miqoGraph](https://github.com/juliayyan/PhylogeneticTrees.jl) A

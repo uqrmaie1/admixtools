@@ -113,7 +113,7 @@
       <h1>Genotype data</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-14</h4>
+            <h4 class="date">2020-08-15</h4>
       
       
       <div class="hidden name"><code>io.Rmd</code></div>
@@ -124,12 +124,18 @@
     
 <p><strong>Under construction</strong></p>
 <p><em>ADMIXTOOLS 2</em> includes functions for reading genotype data that may be useful outside the scope of demographic inference.</p>
-<p>While there are other R packages for reading and writing binary <em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary <em>EIGENSTRAT</em>/<em>PACKEDANCESTRYMAP</em> format files. Some of the functions shown here can also read only a subset of all SNPs (as long as they are consecutive) or samples.</p>
+<p>While there are other R packages for reading and writing binary <em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary <em>EIGENSTRAT</em>/<em>PACKEDANCESTRYMAP</em> format files. Some of the functions shown here can also read only a subset of all samples or SNPs (as long as they are consecutive).</p>
 <div id="reading-genotype-files" class="section level3">
 <h3 class="hasAnchor">
 <a href="#reading-genotype-files" class="anchor"></a>Reading genotype files</h3>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1">geno =<span class="st"> </span><span class="kw"><a href="../reference/read_plink.html">read_plink</a></span>(<span class="st">"plink/prefix"</span>)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">geno =<span class="st"> </span><span class="kw"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span>(<span class="st">"packedancestrymap/prefix"</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb1-2" data-line-number="2">geno =<span class="st"> </span><span class="kw"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span>(<span class="st">"packedancestrymap/prefix"</span>)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="co"># read SNPs 1000 to 2000</span></a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">geno =<span class="st"> </span><span class="kw"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span>(<span class="st">"packedancestrymap/prefix"</span>,</a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">                              <span class="dt">first =</span> <span class="dv">1000</span>, <span class="dt">last =</span> <span class="dv">2000</span>)</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6"><span class="co"># read only ind1 and ind2</span></a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">geno =<span class="st"> </span><span class="kw"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span>(<span class="st">"packedancestrymap/prefix"</span>,</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">                              <span class="dt">inds =</span> <span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'ind1'</span>, <span class="st">'ind2'</span>))</a></code></pre></div>
 </div>
 <div id="computing-allele-frequencies" class="section level3">
 <h3 class="hasAnchor">

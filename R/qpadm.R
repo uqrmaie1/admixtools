@@ -89,7 +89,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Can be used to estimate admixture proportions, and to estimate the number of independent
 #' admixture events.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}. Alternatively, a directory with f2 statistics.
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
@@ -289,7 +289,7 @@ lazadm_old = function(f2_data, left, right, target = NULL,
 #' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
 #' based non-negative least squares of f4 matrix.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
@@ -492,19 +492,8 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 #' Can be used to estimate admixture proportions, and to estimate the number of independent
 #' admixture events.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}. Alternatively, a directory with f2 statistics.
-#' @param left Left populations (sources)
-#' @param right Right populations (outgroups)
-#' @param target Target population
-#' @param fudge Value added to diagonal matrix elements before inverting
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
-#' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
-#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
-#' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
-#' as well as the weight standard errors, will be computed using bootstrapping.
-#' @param constrained Constrain admixture weights to be non-negative
+#' @inheritParams qpadm
 #' @param rnk Rank of f4-matrix. Defaults to one less than full rank.
-#' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @return Data frame with `f4rank`, `dof`, `chisq`, `p`, `feasible`
 #' @seealso \code{\link{qpadm}}
 #' @examples
@@ -534,7 +523,7 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
 #'
 #' A thin wrapper around \code{\link{qpadm_p}} with `rnk` set to zero
 #' @export
-#' @inheritParams qpadm_p
+#' @inheritParams qpadm
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
   qpadm_p(f2_data, left, right, fudge = fudge, boot = boot, rnk = 0, cpp = cpp)
 }

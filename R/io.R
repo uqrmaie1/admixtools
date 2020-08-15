@@ -477,8 +477,6 @@ match_samples = function(haveinds, havepops, inds, pops) {
 
 #' Read genotype data from `PLINK` files
 #'
-#' This is based on Gad Abraham's \href{https://github.com/gabraham/plink2R}{plink2R} package,
-#' but genotypes are `m` x `n`, not `n` x `m`.
 #' See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated `R` package for
 #' reading and writing `PLINK` files.
 #' @export

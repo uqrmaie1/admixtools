@@ -157,17 +157,20 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #'
 #' Computes the fit of a given admixturegraph from f2-statistics. Drift edge weights and admixture edges weights are optimized until the (negative) likelihood score is minimized. The likelihood score is based on the squared difference between estimated and fitted f3-statistics.
 #' @export
-#' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
+#' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.
 #' @param graph An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled `lower` and `upper` with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.
 #' @param f2_denom Scales f2-statistics. A value of around 0.278 converts F2 to Fst.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of
 #' f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
 #' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
-#' The covariance matrix of f3 statistics will be computed using bootstrapping.
+#' The covariance matrix of f3 statistics will be computed using bootstrap resampling.
 #' @param fudge Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).
 #' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
 #' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * fudge_cov)`, in place of the inverse f3-statistic covariance matrix.
-#' `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (` sum((f3_est-f3_fit)^2)`). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to `lsqmode = TRUE` that doesn't completely ignore the covariance of f3-statistics is to increase `fudge_cov`.
+#'
+#' `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (`sum((f3_est-f3_fit)^2)`).
+#'
+#' Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to `lsqmode = TRUE` that doesn't completely ignore the covariance of f3-statistics is to increase `fudge_cov`.
 #' @param numstart Number of random initializations of starting weights. Defaults to 10.
 #' @param seed Seed for generating starting weights.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.

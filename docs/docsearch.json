@@ -2,21 +2,21 @@
   "index_name": "admixtools",
   "start_urls": [
     {
-      "url": "/index.html",
+      "url": "https://uqrmaie1.github.io/admixtools/index.html/index.html",
       "selectors_key": "homepage",
       "tags": [
         "homepage"
       ]
     },
     {
-      "url": "/reference",
+      "url": "https://uqrmaie1.github.io/admixtools/index.html/reference",
       "selectors_key": "reference",
       "tags": [
         "reference"
       ]
     },
     {
-      "url": "/articles",
+      "url": "https://uqrmaie1.github.io/admixtools/index.html/articles",
       "selectors_key": "articles",
       "tags": [
         "articles"
@@ -30,7 +30,7 @@
     "/articles/index.html"
   ],
   "sitemap_urls": [
-    "/sitemap.xml"
+    "https://uqrmaie1.github.io/admixtools/index.html/sitemap.xml"
   ],
   "selectors": {
     "homepage": {

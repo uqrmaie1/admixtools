@@ -6,6 +6,8 @@ template:
       index_name: admixtools
     ganalytics: UA-155330476-1
 
+url: https://uqrmaie1.github.io/admixtools/index.html
+
 articles:
   - title: Plotting
     contents:

@@ -9,4 +9,7 @@ articles:
   parallel: parallel.html
   plotting: plotting.html
   resampling: resampling.html
+urls:
+  reference: https://uqrmaie1.github.io/admixtools/index.html/reference
+  article: https://uqrmaie1.github.io/admixtools/index.html/articles
 

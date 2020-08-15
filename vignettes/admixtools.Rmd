@@ -313,7 +313,7 @@ The output of `qpgraph()` is a list with several items:
 * **opt** A data frame with details from the weight optimization, with one row per set of starting values.
 * **ppinv** The inverse of the $f_3$-statistics covariance matrix
 
-Optionally, fitted and estimated $f_4$-statistics and the worst residual z-score can be returned by setting `return_f4 = TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
+Optionally, fitted and estimated $f_4$-statistics are returned as **f4** and the worst residual z-score as **worst_residual** if `return_f4` is set to `TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
 
 The fitted graph can be plotted like this:
 
@@ -321,7 +321,7 @@ The fitted graph can be plotted like this:
 plot_graph(qpg_results$edges)
 ```
 
-or as an interactive plot:
+or as an interactive plot if you want to know the names of the inner nodes:
 
 ```{r, warning = FALSE}
 plotly_graph(qpg_results$edges)
