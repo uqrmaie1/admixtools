@@ -44,7 +44,15 @@ get_leaves = function(graph) {
 
 get_leaves2 = function(graph) {
   # uses 'subcomponent' to return leaves in a consistent order
-  graph %>% subcomponent(V(.)[1], mode='out') %>% igraph::intersection(get_leaves(graph))
+  root = get_root(graph)
+  graph %>% subcomponent(root, mode='out') %>% igraph::intersection(get_leaves(graph))
+}
+
+
+get_root = function(graph) {
+  root = which(igraph::degree(graph, mode = 'in') == 0)
+  if(length(root) != 1) stop(paste0('Root problem ', root))
+  root
 }
 
 #' Get the root name
@@ -52,10 +60,8 @@ get_leaves2 = function(graph) {
 #' @export
 #' @param graph An admixture graph
 #' @return Root name
-get_root = function(graph) {
-  root = names(which(igraph::degree(graph, mode = 'in') == 0))
-  if(length(root) != 1) stop(paste0('Root problem ', root))
-  root
+get_rootname = function(graph) {
+  names(get_root(graph))
 }
 
 #' Get the outgroup from a graph (if it exists)
@@ -104,7 +110,7 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
   nammap = unify_vertex_names_rec(g, V(g)[1], ormap, sep1 = sep1, sep2 = sep2)
   nammap[lv] = names(leaves)
   names(nammap)[match(lv, names(nammap))] = names(leaves)
-  nammap['R'] = 'R'
+  nammap['R'] = get_rootname(graph)
   if(!keep_unique) {
     changed = setdiff(names(nammap), c('R', names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
@@ -129,14 +135,15 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
   # makes a random admixture graph
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
+
   stopifnot(class(leaves)[1] %in% c('numeric', 'character'))
   if(length(leaves) == 1) leaves = paste0('l', 1:leaves)
-  if(is.null(outpop)) outpop = sample(leaves, 1)
+  #if(is.null(outpop)) outpop = sample(leaves, 1)
   newick = random_newick(sample(setdiff(leaves, outpop)), outpop = outpop)
   graph = graph_from_edgelist(newick_to_edges(newick))
   graph = insert_admix_igraph_random(graph, numadmix)
-  if(simple) return(graph)
-  desimplify_graph(graph)
+  if(!simple) graph %<>% desimplify_graph
+  graph
 }
 
 
@@ -190,8 +197,8 @@ desimplify_graph = function(graph) {
   if(length(admix) == 0) return(graph)
   parents = names(unlist(unname(lapply(admix, function(v) neighbors(graph, v, mode='in')))))
   admixnamesrep = rep(names(admix), each=2)
-  newnam = paste0(admixnamesrep, c('a', 'b'))
-  graph = igraph::add_vertices(graph, length(admix)*2, name=newnam)
+  newnam = newnodenam(paste0(admixnamesrep, c('a', 'b')), names(V(graph)))
+  graph = igraph::add_vertices(graph, length(admix)*2, name = newnam)
   newedges = c(rbind(parents, newnam, newnam, admixnamesrep))
   deledges = paste(parents, admixnamesrep, sep='|')
   graph = igraph::add_edges(graph, newedges)
@@ -226,7 +233,15 @@ split_graph = function(graph) {
   namedList(tree, fromnodes, tonodes)
 }
 
-
+newnodenam = function(newnam, current) {
+  # this function takes a vector of proposed new node names (newnam), checks if they already exist,
+  # and if so, returns unique newnams with newnam as prefix
+  while(any(newnam %in% current)) {
+    mod = which(newnam %in% current)
+    newnam[mod] = paste0(newnam[mod], sample(letters)[1:length(mod)])
+  }
+  newnam
+}
 
 
 #' Generate a random, binary graph with n terminal nodes
@@ -240,7 +255,7 @@ split_graph = function(graph) {
 #' random_newick(5)
 #' random_newick(c('a', 'b', 'c', 'd')) # toplogy random, but pop order fixed
 #' random_newick(sample(c('a', 'b', 'c', 'd'))) # toplogy and pop order random
-random_newick = function(n, start='', end='', outpop=NULL) {
+random_newick = function(n, start = '', end = '', outpop = NULL) {
   # recursive function which returns topology of a random, binary tree in newick format
   # redirects to 'random_newick_named' when length(n) > 1
   if(length(n) > 1) {
@@ -275,7 +290,7 @@ random_newick_named = function(names, start='', end='') {
 #' newick = random_newick(c('a', 'b', 'c', 'd'))
 #' newick
 #' newick_to_edges(newick)
-newick_to_edges = function(newick, node='R', edgemat = matrix(NA,0,2)) {
+newick_to_edges = function(newick, node = 'R', edgemat = matrix(NA,0,2)) {
   # turns binary tree in newick format into matrix of edges (adjacency list)
 
   newick = gsub('^\\(', '', gsub('\\)$', '', gsub(';$', '', newick)))
@@ -454,13 +469,15 @@ insert_admix_igraph_random2 = function(graph, nadmix) {
 }
 
 
-subtree_prune_and_regraft = function(graph, only_leaves = FALSE) {
+subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = TRUE) {
   # cuts of a parts of the tree and attaches it at a random location
   # root -> outgroup stays fixed
-  stopifnot(degree(graph, V(graph)[1], mode='in') == 0)
+  root = get_root(graph)
+  stopifnot(degree(graph, root, mode='in') == 0)
   stopifnot(max(degree(graph, V(graph), mode='in')) == 1)
 
-  firstgen = neighbors(graph, V(graph)[1], mode='out')
+  if(fix_outgroup) firstgen = neighbors(graph, root, mode='out')
+  else firstgen = c()
   repeat({
     excl = firstgen
     if(only_leaves) excl = c(excl, V(graph)[degree(graph, mode='out') > 0])
@@ -469,7 +486,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE) {
     cutparent = neighbors(graph, cutnode, mode='in')
     cutgrandparent = neighbors(graph, cutparent, mode='in')
     cutsibling = igraph::difference(neighbors(graph, cutparent, mode='out'), cutnode)
-    hostnodes = igraph::difference(V(graph)[-1], c(cutnodes, cutparent, cutsibling, firstgen))
+    hostnodes = igraph::difference(V(graph), c(root, cutnodes, cutparent, cutsibling, firstgen))
     if(length(hostnodes) > 0) break
   })
 
@@ -491,14 +508,14 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE) {
 }
 
 
-admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leaves = FALSE) {
+admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leaves = FALSE, fix_outgroup = TRUE) {
   # 1. remove admixture edges (one randomly selected from each admixture node)
   # 2. runs subtree_prune_and_regraft on resulting tree
   # 3. add admixture edges back on
-  if(numadmix(graph) == 0) return(subtree_prune_and_regraft(graph, only_leaves = only_leaves))
+  if(numadmix(graph) == 0) return(subtree_prune_and_regraft(graph, only_leaves = only_leaves, fix_outgroup = fix_outgroup))
   graph = simplify_graph(graph)
   spl = split_graph(graph)
-  graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves)
+  graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves, fix_outgroup = fix_outgroup)
   graph = insert_admix_igraph(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
   stopifnot(igraph::is_simple(graph))
   if(desimplify) graph = desimplify_graph(graph)
@@ -510,14 +527,16 @@ admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leave
 #' @export
 #' @param graph An admixture graph
 #' @return A new admixture graph
-spr_leaves = function(graph) admixturegraph_prune_and_regraft(graph, only_leaves = TRUE)
+spr_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE)
+  admixturegraph_prune_and_regraft(graph, only_leaves = TRUE, desimplify = desimplify, fix_outgroup = fix_outgroup)
 
 #' Modify a graph by regrafting a subcomponent
 #'
 #' @export
 #' @param graph An admixture graph
 #' @return A new admixture graph
-spr_all = function(graph) admixturegraph_prune_and_regraft(graph, only_leaves = FALSE)
+spr_all = function(graph, desimplify = TRUE, fix_outgroup = TRUE)
+  admixturegraph_prune_and_regraft(graph, only_leaves = FALSE, desimplify = desimplify, fix_outgroup = fix_outgroup)
 
 #' Modify a graph by moving an admixture edge
 #'
@@ -525,14 +544,16 @@ spr_all = function(graph) admixturegraph_prune_and_regraft(graph, only_leaves = 
 #' @param graph An admixture graph
 #' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return A new admixture graph
-move_admixedge_once = function(graph, desimplify = TRUE) {
+move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
   # selects random admixture edge, and moves it to next closest possible spot
   # if not possible, select other admix node
   # if none possible, print warning
   graph = simplify_graph(graph)
   admix = sample(names(V(graph)[(degree(graph, mode='in') > 1)]))
   nadmix = length(admix)
-  firstgen = names(neighbors(graph, V(graph)[1], mode='out'))
+  root = get_rootname(graph)
+  if(fix_outgroup) firstgen = names(neighbors(graph, root, mode='out'))
+  else firstgen = ''
   for(i in seq_len(nadmix)) {
     parents = sample(names(neighbors(graph, admix[i], mode='in')))
     for(j in 1:2) {
@@ -540,7 +561,7 @@ move_admixedge_once = function(graph, desimplify = TRUE) {
       grandparent = names(neighbors(graph, parents[j], mode='in'))
       for(n in names(subcomponent(graph, parents[j]))) {
         # subcomponent will return nodes ordered by distance to n
-        if(!n %in% names(V(graph)[1]) &
+        if(!n %in% root &
            !n %in% firstgen &
            !n %in% parents &
            !n %in% admix &
@@ -570,7 +591,7 @@ move_admixedge_once = function(graph, desimplify = TRUE) {
 #' @param graph An admixture graph
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-permute_leaves = function(graph, fix_outgroup = TRUE) {
+permute_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -584,7 +605,7 @@ permute_leaves = function(graph, fix_outgroup = TRUE) {
 #' @param graph An admixture graph
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-swap_leaves = function(graph, fix_outgroup = TRUE) {
+swap_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -599,7 +620,7 @@ swap_leaves = function(graph, fix_outgroup = TRUE) {
 #' @param graph An admixture graph
 #' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return A new admixture graph
-flipadmix_random = function(graph, desimplify = TRUE) {
+flipadmix_random = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
   graph %<>% simplify_graph
   admixedges = graph %>% find_admixedges %>% sample_frac(1)
   el = igraph::as_edgelist(graph)
@@ -613,6 +634,15 @@ flipadmix_random = function(graph, desimplify = TRUE) {
   }
   if(desimplify) out %<>% desimplify_graph
   out
+}
+
+
+get_mutfuns = function(mutfuns = c('spr_leaves', 'spr_all', 'move_admixedge_once',
+                                   'permute_leaves', 'swap_leaves', 'flipadmix_random'),
+                       desimplify = TRUE, fix_outgroup = TRUE) {
+  # return a list of n graph mutation functions
+  map(mutfuns, ~function(graph) get(.)(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
+    set_names(mutfuns)
 }
 
 
@@ -742,7 +772,7 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
 #' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pops Populations for which to fit admixture graphs
-#' @param outpop Outgroup population
+#' @param outpop An outgroup population which will split at the root from all other populations in all tested graphs. If one population is know to be an outgroup, designating it as `outpop` will greatly reduce the search space compared to including it and not designating it as `outpop`.
 #' @param numrep Number of independent repetitions (each repetition can be run in parallel)
 #' @param numgraphs Number of graphs in each generation
 #' @param numgen Number of generations
@@ -803,11 +833,12 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
       pops = dimnames(f2_data)[[1]]
     } else stop('Please provide population names!')
   }
-  if(is.null(outpop)) outpop = pops[1]
-  else if(!outpop %in% pops) pops = c(outpop, pops)
+  #if(is.null(outpop)) outpop = pops[1]
+  #else if(!outpop %in% pops) pops = c(outpop, pops)
 
-  precomp = qpgraph_precompute_f3(f2_data, pops, outpop = outpop, ...)
-  mutfuns = sapply(mutfuns, get)
+  precomp = qpgraph_precompute_f3(f2_data, pops, f3basepop = outpop, ...)
+  #mutfuns = sapply(mutfuns, get)
+  mutfuns = get_mutfuns(mutfuns, fix_outgroup = !is.null(outpop))
 
   oa = function(i) optimize_admixturegraph_single(pops, precomp, repnum = i,
                                                  numgen = numgen, numsel = numsel,
@@ -980,12 +1011,12 @@ isomorphism_classes2 = function(igraphlist) {
 #' For large admixturegraph, there may be a large number of valid qpAdm models!
 #'
 #' @export
-#' @param graph an admixture graph as igraph object
-#' @param add_outgroup should the graph outgroup be added to the qpAdm right populations?
+#' @param graph An admixture graph as igraph object
+#' @param add_outgroup Should the graph outgroup be added to the qpAdm right populations?
 #' Technically this shouldn't be an informative outgroup for qpAdm.
-#' @param nested should a nested data frame be returned (`TRUE`), or should populations be concatenated
+#' @param nested Should a nested data frame be returned (`TRUE`), or should populations be concatenated
 #' into strings (`FALSE`)?
-#' @param abbr maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
+#' @param abbr Maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
 #' @examples
 #' \dontrun{
 #' qpadm_models(igraph2, add_outgroup = TRUE)
@@ -1237,7 +1268,10 @@ flipadmix = function(edges, from, to) {
   row = which(edges[,1] == from & edges[,2] == to)
   edges[row,] = c(to, from)
   g = igraph::graph_from_edgelist(edges)
-  if(!is.dag(g) || max(degree(g, mode = 'in')) > 2 || max(degree(g, mode = 'out')) > 2) g = NULL
+  if(!is.dag(g) ||
+     max(degree(g, mode = 'in')) > 2 ||
+     max(degree(g, mode = 'out')) > 2 ||
+     max(degree(g, mode = 'all')) > 3) g = NULL
   g
 }
 

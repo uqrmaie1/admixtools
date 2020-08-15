@@ -49,7 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Compute the fit of an admixture graph — qpgraph" />
 
-<meta property="og:description" content="Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics." />
+<meta property="og:description" content="Computes the fit of a given admixturegraph from f2-statistics. Drift edge weights and admixture edges weights are optimized until the (negative) likelihood score is minimized. The likelihood score is based on the squared difference between estimated and fitted f3-statistics." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -166,7 +166,7 @@
 
     <div class="ref-description">
     
-    <p>Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.</p>
+    <p>Computes the fit of a given admixturegraph from f2-statistics. Drift edge weights and admixture edges weights are optimized until the (negative) likelihood score is minimized. The likelihood score is based on the squared difference between estimated and fitted f3-statistics.</p>
     
     </div>
 
@@ -183,6 +183,7 @@
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>return_f4</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>f3precomp</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>f3basepop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>ppinv</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>f2_blocks_test</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
@@ -220,11 +221,12 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>lsqmode</th>
-      <td><p>Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.</p></td>
+      <td><p>Least-squares mode. If <code>TRUE</code>, the likelihood score will be computed using a diagonal matrix with <code>1/(sum(diag(f3_var)) * fudge_cov)</code>, in place of the inverse f3-statistic covariance matrix.
+<code>lsqmode = 2</code> will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (<code><a href='https://rdrr.io/r/base/sum.html'> sum((f3_est-f3_fit)^2)</a></code>). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to <code>lsqmode = TRUE</code> that doesn't completely ignore the covariance of f3-statistics is to increase <code>fudge_cov</code>.</p></td>
     </tr>
     <tr>
       <th>numstart</th>
-      <td><p>Number of random initializations. Defaults to 10.</p></td>
+      <td><p>Number of random initializations of starting weights. Defaults to 10.</p></td>
     </tr>
     <tr>
       <th>seed</th>
@@ -236,15 +238,19 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>return_f4</th>
-      <td><p>Return all f4-statistics. Defaults to <code>FALSE</code> because this can be slow.</p></td>
+      <td><p>Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to <code>FALSE</code> because this can be slow.</p></td>
     </tr>
     <tr>
       <th>f3precomp</th>
-      <td><p>Precomputed f3-statistics. This should be the output of <code>qpgraph_precompute_f3</code> and can be provided instead of <code>f2_blocks</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
+      <td><p>Optional precomputed f3-statistics. This should be the output of <code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code> and can be provided instead of <code>f2_blocks</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
+    </tr>
+    <tr>
+      <th>f3basepop</th>
+      <td><p>Optional f3-statistics base population. Inference will be based on f3-statistics of the form <code>f3(f3basepop; i, j)</code> for all population pairs <code>(i, j)</code>. Defaults to the outgroup population if the graph has one. This option is ignored if <code>f3precomp</code> is provided. Changing <code>f3basepop</code> should make very little difference.</p></td>
     </tr>
     <tr>
       <th>ppinv</th>
-      <td><p>Inverse of f3-statistics covariance matrix. Can be used for <code><a href='compare_fits3.html'>compare_fits3</a></code>.</p></td>
+      <td><p>Optional inverse f3-statistics covariance matrix. Can be used for <code><a href='compare_fits3.html'>compare_fits3</a></code>.</p></td>
     </tr>
     <tr>
       <th>f2_blocks_test</th>
@@ -258,7 +264,7 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.</p>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list with data describing the model fit:</p><ol>
+    <p>A list with data describing the model fit:</p><ul>
 <li><p><code>edges</code> a data frame where each row is an edge in the graph. For regular edges,
 the column <code>weight</code> is the estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
 <li><p><code>score</code> the likelihood score of the fitted graph. lower values correspond to better fits.
@@ -268,7 +274,8 @@ fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.</p><
 <li><p><code>f3</code> estimated and fitted f3 statistics</p></li>
 <li><p><code>f4</code> estimated and fitted f4 statistics (if <code>return_f4 = TRUE</code>)</p></li>
 <li><p><code>opt</code> a data frame with details of the weight-fitting step, including the randomly sampled starting weights.</p></li>
-</ol>
+<li><p><code>worst_residual</code> The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if <code>return_f4 = TRUE</code>)</p></li>
+</ul>
 
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
@@ -277,7 +284,7 @@ fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.</p><
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> for a wrapper functions which call the original qpGraph program.</p></div>
+    <div class='dont-index'><p><code><a href='qpgraph_wrapper.html'>qpgraph_wrapper</a></code> for a wrapper functions which calls the original <em>qpGraph</em> program.</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

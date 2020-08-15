@@ -801,15 +801,12 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 
 #' Compute and store blocked f2 statistics
 #'
-#' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-#' and computes allele frequencies and f2 block jackknife statistics for selected populations.
-#' Data is either written to disk in files for each population and population pair, or returned as list.
-#' This function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
-#' and \code{\link{afs_to_f2_blocks}}.
+#' This function prepares data for various other *ADMIXTOOLS 2* functions. It reads data from packedancestrymap or PLINK files,
+#' computes allele frequencies and blocked f2-statistics for selected populations, and optionally writes the results to `outdir`.
 #' @export
-#' @param pref Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in `.geno`, `.snp`, `.ind`,
+#' @param pref Prefix of *(packed)ancestrymap* or *PLINK* files. *(packed)ancestrymap* has to end in `.geno`, `.snp`, `.ind`,
 #' PLINK has to end in `.bed`, `.bim`, `.fam`
-#' @param outdir Directory where data will be stored
+#' @param outdir Directory where data will be stored. If `NULL`, data will be returned instead of written to disk.
 #' @param inds Individuals for which data should be extracted
 #' @param pops Populations for which data should be extracted. If both `pops` and `inds` are provided, they should have the same length and will be matched by position. If only `pops` is provided, all individuals from the `.ind` or `.fam` file in those populations will be extracted. If only `inds` is provided, each indivdual will be assigned to its own population of the same name. If neither `pops` nor `inds` is provided, all individuals and populations in the `.ind` or `.fam` file will be extracted.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
@@ -818,32 +815,36 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
 #' @param outpop Keep only SNPs which are heterozygous in this population
-#' @param outpop_scale Scale f2 statistics by the inverse outgroup heteroygosity (`1/(p*(1-p))`)
+#' @param outpop_scale Scale f2-statistics by the inverse `outpop` heteroygosity (`1/(p*(1-p))`). Providing `outpop` and setting `outpop_scale` to `TRUE` will give the same results as the original *qpGraph* when the `outpop` parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.
 #' @param transitions Set this to `FALSE` to exclude transition SNPs
 #' @param transversions Set this to `FALSE` to exclude transversion SNPs
 #' @param auto_only Keep only SNPs on chromosomes 1 to 22
 #' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
+#' @param afprod Return negative average allele frequency products instead of f2-statistics. This option is only used when `outdir` is not specified and data is returned directly. Otherwise the decision which to use is made in \code{\link{f2_from_precomp}}. Setting `afprod = TRUE` will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+#' This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.
 #' @param overwrite Overwrite existing files in `outdir`
 #' @param format Supply this if the prefix can refer to genotype data in different formats
-#' and you want to choose which one to read. Should be either `plink`, `ancestrymap`, or `packedancestrymap`
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `ancestrymap`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the *ADMIXTOOLS* `inbreed: NO` option.
 #' @param verbose Print progress updates
 #' @return SNP metadata (invisibly)
-#' @seealso \code{\link{extract_f2_large}}
+#' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, and \code{\link{extract_f2_large}} in case you run out of memory
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
 #' f2dir = 'my/f2dir/'
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
-extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
+extract_f2 = function(pref, outdir = NULL, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
-                      auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
+                      auto_only = TRUE, keepsnps = NULL, afprod = FALSE, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
-  outdir = normalizePath(outdir, mustWork = FALSE)
-  if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
+  if(!is.null(outdir)) {
+    outdir = normalizePath(outdir, mustWork = FALSE)
+    if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
+  }
   if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "write_split_f2_block".')
 
 
@@ -857,12 +858,31 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   if(verbose) alert_warning(paste0(nrow(afdat$afs), ' SNPs remain after filtering. ',
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
-  afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = TRUE,
-                   outpop = if(outpop_scale) outpop else NULL, blgsize = blgsize, verbose = verbose)
+  arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = TRUE,
+                          outpop = if(outpop_scale) outpop else NULL, blgsize = blgsize, verbose = verbose)
 
+  if(is.null(outdir)) {
+    if(afprod) {
+      if(verbose) alert_info(paste0('Returning allele frequency products/\n'))
+      blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
+    } else {
+      if(verbose) alert_info(paste0('Returning f2-statistics/\n'))
+      blocks = arrs$f2_blocks
+    }
+    return(blocks)
+  }
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
 }
+
+
+scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
+  ap_blocks = -2*ap_blocks
+  if(!is.null(from) && !is.null(to)) ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
+  ap_blocks
+}
+
+
 
 #' Compute and store blocked f2 statistics
 #'
@@ -963,7 +983,7 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 
 #' Extract and store data needed to compute blocked f2
 #'
-#' Prepare data for various admixtools functions. This function reads data from packedancestrymap or PLINK files,
+#' Prepare data for various *ADMIXTOOLS 2* functions. This function reads data from packedancestrymap or PLINK files,
 #' and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 #' `.rds` files with total and alternative allele counts for each individual, and products of total
 #' and alternative allele counts for each pair.
@@ -1051,7 +1071,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 
 #' Compute and store blocked allele frequency data
 #'
-#' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
+#' Prepare data for various *ADMIXTOOLS 2* functions. Reads data from packedancestrymap or PLINK files,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
@@ -1093,7 +1113,7 @@ extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 
 
 #' Compute and store blocked allele frequency data
 #'
-#' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
+#' Prepare data for various *ADMIXTOOLS 2* functions. Reads data from packedancestrymap or PLINK files,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
@@ -1239,12 +1259,7 @@ extract_f2_subset = function(from, to, pops, verbose = TRUE) {
 
 #' Read f2 jackknife blocks from genotype data
 #'
-#' Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-#' and computes allele frequencies and f2 block jackknife statistics for selected populations.
-#' Data is either written to disk in files for each population and population pair, or returned as list.
-#' This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}}
-#' and \code{\link{afs_to_f2_blocks}}.
-#' @export
+#' This function is currently out of date. The idea is to read a 3d array of f2-statistics directly from genotype data without the intermediate step of writing files to disk. It should combine \code{\link{extract_f2}} and \code{\link{f2_from_precomp}} and could be useful when f2-statistics don't need to be stored on disk. Might be easier to add an option to \code{\link{extract_f2}} to not write to disk.
 #' @inheritParams extract_f2
 #' @examples
 #' \dontrun{
@@ -1300,8 +1315,8 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' @param pops Populations for which data should be read. Defaults to all populations,
 #' which may require a lot of memory.
 #' @param pops2 Optional second vector of populations. Useful if a f4 statistics of a few against many populations should be computed. `pops2` should not be specified in other cases, as most functions depend on f2-statistics for all population pairs in `pops`.
-#' @param afprod Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for qpdstat and qpadm. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for `qpgraph`); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
-#' This option is currently ineffective when reading data extracted with `extract_counts`.
+#' @param afprod Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+#' This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.
 #' @param return_array Return a 3d array (default). If false, a data frame will be returned.
 #' @param apply_corr Subtract the f2 correction factor. Setting this to `FALSE` can occasionally be useful
 #' @param remove_na Remove blocks with missing values
@@ -1338,11 +1353,10 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(pops), ' populations...\n'))
     f2_blocks = read_f2(dir, pops, afprod = FALSE, remove_na = remove_na, verbose = verbose)
     if(afprod) {
-      f2_blocks_ap = -2*read_f2(dir, pops, afprod = TRUE, remove_na = remove_na, verbose = verbose)
-      f2_blocks = (f2_blocks_ap - min(f2_blocks_ap, na.rm=T)) * diff(range(f2_blocks, na.rm = TRUE))/diff(range(f2_blocks_ap, na.rm = TRUE)) + min(f2_blocks, na.rm=T)
+      ap_blocks = read_f2(dir, pops, afprod = TRUE, remove_na = remove_na, verbose = verbose)
+      f2_blocks = scale_ap_blocks(ap_blocks, from = min(f2_blocks, na.rm=T), to = max(f2_blocks, na.rm=T))
     }
   }
-
   f2_blocks
 }
 
@@ -1735,15 +1749,16 @@ is_geno_prefix = function(input) {
   is_packedancestrymap_prefix(input) || is_plink_prefix(input)
 }
 
-#' Extract samples from packedancestrymap files
+#' Convert packedancestrymap to PLINK
 #'
-#' This function extracts samples from packedancestrymap files and saves them as PLINK files, using the package 'genio'
+#' This function converts *packedancestrymap* format files to *PLINK files*, using \code{\link[genio]{write_plink}}.
+#' When `inds` or `pops` is provided, only a subset of samples will be extracted.
 #' @export
 #' @param inpref Prefix of the packedancestrymap input files
 #' @param outpref Prefix of the PLINK output files
 #' @param inds Individuals which should be extracted
 #' @param pops Populations which should be extracted. Can not be provided together with 'inds'
-extract_samples = function(inpref, outpref, inds = NULL, pops = NULL) {
+packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL) {
   # extracts samples from geno file and writes new, smaller PLINK file using genio
 
   stopifnot(is.null(inds) || is.null(pops))

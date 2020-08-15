@@ -31,7 +31,7 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 
 \item{pops}{Populations for which to fit admixture graphs}
 
-\item{outpop}{Outgroup population}
+\item{outpop}{An outgroup population which will split at the root from all other populations in all tested graphs. If one population is know to be an outgroup, designating it as \code{outpop} will greatly reduce the search space compared to including it and not designating it as \code{outpop}.}
 
 \item{numrep}{Number of independent repetitions (each repetition can be run in parallel)}
 

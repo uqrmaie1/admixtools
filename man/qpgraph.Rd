@@ -17,6 +17,7 @@ qpgraph(
   cpp = TRUE,
   return_f4 = FALSE,
   f3precomp = NULL,
+  f3basepop = NULL,
   ppinv = NULL,
   f2_blocks_test = NULL,
   verbose = FALSE
@@ -38,19 +39,22 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 
 \item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 
-\item{lsqmode}{Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
+\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * fudge_cov)}, in place of the inverse f3-statistic covariance matrix.
+\code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{ sum((f3_est-f3_fit)^2)}). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to \code{lsqmode = TRUE} that doesn't completely ignore the covariance of f3-statistics is to increase \code{fudge_cov}.}
 
-\item{numstart}{Number of random initializations. Defaults to 10.}
+\item{numstart}{Number of random initializations of starting weights. Defaults to 10.}
 
 \item{seed}{Seed for generating starting weights.}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
-\item{return_f4}{Return all f4-statistics. Defaults to \code{FALSE} because this can be slow.}
+\item{return_f4}{Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to \code{FALSE} because this can be slow.}
 
-\item{f3precomp}{Precomputed f3-statistics. This should be the output of \code{qpgraph_precompute_f3} and can be provided instead of \code{f2_blocks}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
+\item{f3precomp}{Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of \code{f2_blocks}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
 
-\item{ppinv}{Inverse of f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
+\item{f3basepop}{Optional f3-statistics base population. Inference will be based on f3-statistics of the form \verb{f3(f3basepop; i, j)} for all population pairs \verb{(i, j)}. Defaults to the outgroup population if the graph has one. This option is ignored if \code{f3precomp} is provided. Changing \code{f3basepop} should make very little difference.}
+
+\item{ppinv}{Optional inverse f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
 
 \item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
 
@@ -58,7 +62,7 @@ The covariance matrix of f3 statistics will be computed using bootstrapping.}
 }
 \value{
 A list with data describing the model fit:
-\enumerate{
+\itemize{
 \item \code{edges} a data frame where each row is an edge in the graph. For regular edges,
 the column \code{weight} is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
 \item \code{score} the likelihood score of the fitted graph. lower values correspond to better fits.
@@ -68,10 +72,11 @@ fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.
 \item \code{f3} estimated and fitted f3 statistics
 \item \code{f4} estimated and fitted f4 statistics (if \code{return_f4 = TRUE})
 \item \code{opt} a data frame with details of the weight-fitting step, including the randomly sampled starting weights.
+\item \code{worst_residual} The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_f4 = TRUE})
 }
 }
 \description{
-Computes the fit of an admixturegraph for a given graph topology and empirical f2-block-jackknife statistics.
+Computes the fit of a given admixturegraph from f2-statistics. Drift edge weights and admixture edges weights are optimized until the (negative) likelihood score is minimized. The likelihood score is based on the squared difference between estimated and fitted f3-statistics.
 }
 \examples{
 out = qpgraph(example_f2_blocks, example_graph)
@@ -81,5 +86,5 @@ plot_graph(out$edges)
 Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 }
 \seealso{
-\code{\link{qpgraph_wrapper}} for a wrapper functions which call the original qpGraph program.
+\code{\link{qpgraph_wrapper}} for a wrapper functions which calls the original \emph{qpGraph} program.
 }

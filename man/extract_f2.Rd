@@ -6,7 +6,7 @@
 \usage{
 extract_f2(
   pref,
-  outdir,
+  outdir = NULL,
   inds = NULL,
   pops = NULL,
   blgsize = 0.05,
@@ -20,6 +20,7 @@ extract_f2(
   transversions = TRUE,
   auto_only = TRUE,
   keepsnps = NULL,
+  afprod = FALSE,
   overwrite = FALSE,
   format = NULL,
   adjust_pseudohaploid = TRUE,
@@ -27,10 +28,10 @@ extract_f2(
 )
 }
 \arguments{
-\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory where data will be stored}
+\item{outdir}{Directory where data will be stored. If \code{NULL}, data will be returned instead of written to disk.}
 
 \item{inds}{Individuals for which data should be extracted}
 
@@ -48,7 +49,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{outpop}{Keep only SNPs which are heterozygous in this population}
 
-\item{outpop_scale}{Scale f2 statistics by the inverse outgroup heteroygosity (\code{1/(p*(1-p))})}
+\item{outpop_scale}{Scale f2-statistics by the inverse \code{outpop} heteroygosity (\code{1/(p*(1-p))}). Providing \code{outpop} and setting \code{outpop_scale} to \code{TRUE} will give the same results as the original \emph{qpGraph} when the \code{outpop} parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.}
 
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
@@ -58,12 +59,15 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
+\item{afprod}{Return negative average allele frequency products instead of f2-statistics. This option is only used when \code{outdir} is not specified and data is returned directly. Otherwise the decision which to use is made in \code{\link{f2_from_precomp}}. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.}
+
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }
@@ -71,11 +75,8 @@ and you want to choose which one to read. Should be either \code{plink}, \code{a
 SNP metadata (invisibly)
 }
 \description{
-Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-and computes allele frequencies and f2 block jackknife statistics for selected populations.
-Data is either written to disk in files for each population and population pair, or returned as list.
-This function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
-and \code{\link{afs_to_f2_blocks}}.
+This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,
+computes allele frequencies and blocked f2-statistics for selected populations, and optionally writes the results to \code{outdir}.
 }
 \examples{
 \dontrun{
@@ -85,5 +86,5 @@ extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 }
 }
 \seealso{
-\code{\link{extract_f2_large}}
+\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, and \code{\link{extract_f2_large}} in case you run out of memory
 }

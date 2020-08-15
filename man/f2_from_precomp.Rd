@@ -27,8 +27,8 @@ which may require a lot of memory.}
 
 \item{pops2}{Optional second vector of populations. Useful if a f4 statistics of a few against many populations should be computed. \code{pops2} should not be specified in other cases, as most functions depend on f2-statistics for all population pairs in \code{pops}.}
 
-\item{afprod}{Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for qpdstat and qpadm. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{qpgraph}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
-This option is currently ineffective when reading data extracted with \code{extract_counts}.}
+\item{afprod}{Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.}
 
 \item{return_array}{Return a 3d array (default). If false, a data frame will be returned.}
 

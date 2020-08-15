@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Modify a graph by swapping two leaf nodes — swap_leaves • admixtools</title>
+<title>Convert packedancestrymap to PLINK — packedancestrymap_to_plink • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,9 +47,10 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Modify a graph by swapping two leaf nodes — swap_leaves" />
+<meta property="og:title" content="Convert packedancestrymap to PLINK — packedancestrymap_to_plink" />
 
-<meta property="og:description" content="Modify a graph by swapping two leaf nodes" />
+<meta property="og:description" content="This function converts packedancestrymap format files to PLINK files, using write_plink.
+When inds or pops is provided, only a subset of samples will be extracted." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -159,35 +160,40 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Modify a graph by swapping two leaf nodes</h1>
+    <h1>Convert packedancestrymap to PLINK</h1>
     
-    <div class="hidden name"><code>swap_leaves.Rd</code></div>
+    <div class="hidden name"><code>packedancestrymap_to_plink.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Modify a graph by swapping two leaf nodes</p>
+    <p>This function converts <em>packedancestrymap</em> format files to <em>PLINK files</em>, using <code><a href='https://rdrr.io/pkg/genio/man/write_plink.html'>write_plink</a></code>.
+When <code>inds</code> or <code>pops</code> is provided, only a subset of samples will be extracted.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>swap_leaves</span>(<span class='no'>graph</span>, <span class='kw'>desimplify</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>fix_outgroup</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>packedancestrymap_to_plink</span>(<span class='no'>inpref</span>, <span class='no'>outpref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>graph</th>
-      <td><p>An admixture graph</p></td>
+      <th>inpref</th>
+      <td><p>Prefix of the packedancestrymap input files</p></td>
     </tr>
     <tr>
-      <th>fix_outgroup</th>
-      <td><p>Keep outgroup in place</p></td>
+      <th>outpref</th>
+      <td><p>Prefix of the PLINK output files</p></td>
+    </tr>
+    <tr>
+      <th>inds</th>
+      <td><p>Individuals which should be extracted</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>Populations which should be extracted. Can not be provided together with 'inds'</p></td>
     </tr>
     </table>
-    
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
-
-    <p>A new admixture graph</p>
     
 
   </div>
@@ -195,9 +201,7 @@
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-          </ul>
+                </ul>
 
   </div>
 </div>

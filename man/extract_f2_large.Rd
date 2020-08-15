@@ -28,10 +28,10 @@ extract_f2_large(
 )
 }
 \arguments{
-\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory where data will be stored}
+\item{outdir}{Directory where data will be stored. If \code{NULL}, data will be returned instead of written to disk.}
 
 \item{inds}{Individuals for which data should be extracted}
 
@@ -49,7 +49,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{outpop}{Keep only SNPs which are heterozygous in this population}
 
-\item{outpop_scale}{Scale f2 statistics by the inverse outgroup heteroygosity (\code{1/(p*(1-p))})}
+\item{outpop_scale}{Scale f2-statistics by the inverse \code{outpop} heteroygosity (\code{1/(p*(1-p))}). Providing \code{outpop} and setting \code{outpop_scale} to \code{TRUE} will give the same results as the original \emph{qpGraph} when the \code{outpop} parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.}
 
 \item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
 
@@ -60,9 +60,9 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }

@@ -17,21 +17,16 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
   mat pppp = ppwts_2d.t() * ppinv;
   mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
-  double trace = 0.0;
+  vec sc(nc);
+  double tr = trace(cc)/(nc+0.0);
   for(int i = 0; i < nc; i++) {
-    for(int j = i; j < nc; j++) {
-      cc(i,j) = cc(j,i);
-      if(i == j) trace += cc(j,i);
-    }
+    cc(i,i) += fudge * tr;
+    sc(i) = sqrt(cc(i,i));
   }
-  trace /= (nc+0.0);
-  for(int i = 0; i < nc; i++) {
-    //cc(i,i) += fudge;
-    cc(i,i) += fudge * trace;
-  }
-  vec q1 = pppp * f3_est;
+  vec q1 = pppp * f3_est / sc;
+  cc /= sc*sc.t();
   mat CI(nc, nc, fill::eye);
-  return as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)));
+  return as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)))/sc;
 }
 
 
@@ -86,19 +81,24 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   vec lower = args[8];
   vec upper = args[9];
   double fudge = args[10];
+  int baseind = args[11];
+  baseind--;
+
   double nr = pwts.n_rows;
   double nc = pwts.n_cols;
   cpp_fill_pwts(pwts, weights, path_edge_table, path_admixedge_table, numpaths);
   mat ppwts_2d(nc*(nc-1)/2, nr);
   for(int i=0; i<nr; i++) {
-    for(int j=1; j<nc; j++) {
-      pwts(i, j) -= pwts(i, 0);
+    for(int j=0; j<nc; j++) {
+      if(j != baseind) pwts(i, j) -= pwts(i, baseind);
     }
     int c=0;
-    for(int j=1; j<nc; j++) {
+    for(int j=0; j<nc; j++) {
       for(int k=j; k<nc; k++) {
-        ppwts_2d(c, i) = pwts(i, j) * pwts(i, k);
-        c++;
+        if(j != baseind && k != baseind) {
+          ppwts_2d(c, i) = pwts(i, j) * pwts(i, k);
+          c++;
+        }
       }
     }
   }

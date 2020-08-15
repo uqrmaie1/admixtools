@@ -15,7 +15,7 @@ f2_from_geno(
 )
 }
 \arguments{
-\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{Individuals for which data should be extracted}
@@ -27,16 +27,12 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
 \item{verbose}{Print progress updates}
 }
 \description{
-Prepare data for various admixtools functions. Reads data from packedancestrymap or PLINK files,
-and computes allele frequencies and f2 block jackknife statistics for selected populations.
-Data is either written to disk in files for each population and population pair, or returned as list.
-This function calls \code{\link{packedancestrymap_to_aftable}} / \code{\link{plink_to_aftable}}
-and \code{\link{afs_to_f2_blocks}}.
+This function is currently out of date. The idea is to read a 3d array of f2-statistics directly from genotype data without the intermediate step of writing files to disk. It should combine \code{\link{extract_f2}} and \code{\link{f2_from_precomp}} and could be useful when f2-statistics don't need to be stored on disk. Might be easier to add an option to \code{\link{extract_f2}} to not write to disk.
 }
 \examples{
 \dontrun{

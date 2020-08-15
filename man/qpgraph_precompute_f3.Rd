@@ -7,7 +7,7 @@
 qpgraph_precompute_f3(
   f2_data,
   pops,
-  outpop = NULL,
+  f3basepop = NULL,
   f2_denom = 1,
   boot = FALSE,
   seed = NULL,
@@ -21,7 +21,7 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 
 \item{pops}{Populations for which to compute f3-statistics}
 
-\item{outpop}{Outgroup population. used as the basis of the f3-statistics. If \code{NULL} (the default),
+\item{f3basepop}{f3-statistics base population. If \code{NULL} (the default),
 the first population in \code{pops} will be used as the basis.}
 
 \item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
@@ -35,7 +35,7 @@ of f3 statistics will be computed using bootstrapping.}
 
 \item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
 
-\item{lsqmode}{Least-squares mode. sets the offdiagonal elements of the block-jackknife covariance matrix to zero.}
+\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * fudge_cov)}, in place of the inverse f3-statistic covariance matrix. \code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{sum((f3_est-f3_fit)^2)}). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using \code{lsqmode = TRUE} which doesn't completely ignore the covariance of f3-statistics is to increase \code{fudge_cov}.}
 }
 \value{
 A list with four items

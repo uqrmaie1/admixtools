@@ -4,7 +4,7 @@
 \alias{flipadmix_random}
 \title{Modify a graph flipping the direction of an admixture edge}
 \usage{
-flipadmix_random(graph, desimplify = TRUE)
+flipadmix_random(graph, desimplify = TRUE, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

@@ -21,8 +21,7 @@ afs_to_f2_blocks(
 \item \code{afs} A matrix of allele frequencies for all populations (columns) and SNPs (rows)
 \item \code{counts} A matrix of allele counts for all populations (columns) and SNPs (rows)
 \item \code{snpdat} A data frame with SNP metadata
-}
-has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}}
+}}
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 
@@ -38,14 +37,11 @@ has to match \code{nrow(afmat)}. See \code{\link{get_block_lengths}}}
 
 \item{verbose}{Print progress updates}
 }
-\value{
-\code{NULL} if \code{outdir} is specified. Otherwise, it should return a list with f2 data arrays
-}
 \description{
 This function takes a allele frequency data and computes blocked f2 statistics for all population pairs,
 which are written to \code{outdir}. \eqn{f2} for each SNP is computed as
 \eqn{(p1 - p2)^2 - p1 (1 - p1)/(n1 - 1) - p2 (1 - p2)/(n2 - 1)}, where \eqn{p1} and \eqn{p2} are
-allele frequencies in populations \eqn{1} and \eqn{2}, and \eqn{n1} and \eqn{n2} is the average number of
+allele frequencies in populations \eqn{1} and \eqn{2}, and \eqn{n1} and \eqn{n2} is the number of
 non-missing haplotypes in populations \eqn{1} and \eqn{2}. See \code{details}
 }
 \details{

@@ -198,12 +198,12 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
+      <td><p>Prefix of <em>(packed)ancestrymap</em> or <em>PLINK</em> files. <em>(packed)ancestrymap</em> has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
 PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>Directory where data will be stored</p></td>
+      <td><p>Directory where data will be stored. If <code>NULL</code>, data will be returned instead of written to disk.</p></td>
     </tr>
     <tr>
       <th>inds</th>
@@ -239,7 +239,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>outpop_scale</th>
-      <td><p>Scale f2 statistics by the inverse outgroup heteroygosity (<code>1/(p*(1-p))</code>)</p></td>
+      <td><p>Scale f2-statistics by the inverse <code>outpop</code> heteroygosity (<code>1/(p*(1-p))</code>). Providing <code>outpop</code> and setting <code>outpop_scale</code> to <code>TRUE</code> will give the same results as the original <em>qpGraph</em> when the <code>outpop</code> parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.</p></td>
     </tr>
     <tr>
       <th>transitions</th>
@@ -260,11 +260,11 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     <tr>
       <th>format</th>
       <td><p>Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be either <code>plink</code>, <code>ancestrymap</code>, or <code>packedancestrymap</code></p></td>
+and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>ancestrymap</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

@@ -12,10 +12,11 @@ articles:
     - starts_with("authoring")
 
 reference:
-  - title: "Admixtools programs"
+  - title: "ADMIXTOOLS programs"
     contents:
       - qp3pop
       - qpdstat
+      - qpwave
       - qpadm
       - qpgraph
   - title: "Wrapper functions"
@@ -36,15 +37,16 @@ reference:
       - extract_f2
       - extract_counts
       - f2_from_precomp
-      - f2_from_geno
       - read_packedancestrymap
+      - read_plink
       - packedancestrymap_to_aftable
-  - title: "Graph topology"
+      - plink_to_aftable
+      - packedancestrymap_to_plink
+  - title: "Many models"
     contents:
       - find_graphs
-      - random_admixturegraph
-      - summarize_triples
-      - qpadm_models
+      - qpwave_pairs
+      - qpadm_rotate
   - title: "Everything"
     contents:
       - starts_with(".")

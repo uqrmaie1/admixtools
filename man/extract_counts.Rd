@@ -22,10 +22,10 @@ extract_counts(
 )
 }
 \arguments{
-\item{pref}{Prefix of packedancestrymap or PLINK files. packedancestrymap has to end in \code{.geno}, \code{.snp}, \code{.ind},
+\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory where data will be stored}
+\item{outdir}{Directory where data will be stored. If \code{NULL}, data will be returned instead of written to disk.}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
@@ -48,12 +48,12 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be either \code{plink}, \code{ancestrymap}, or \code{packedancestrymap}}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
 \item{verbose}{Print progress updates}
 }
 \description{
-Prepare data for various admixtools functions. This function reads data from packedancestrymap or PLINK files,
+Prepare data for various \emph{ADMIXTOOLS 2} functions. This function reads data from packedancestrymap or PLINK files,
 and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 \code{.rds} files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.

@@ -4,7 +4,7 @@
 \alias{move_admixedge_once}
 \title{Modify a graph by moving an admixture edge}
 \usage{
-move_admixedge_once(graph, desimplify = TRUE)
+move_admixedge_once(graph, desimplify = TRUE, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

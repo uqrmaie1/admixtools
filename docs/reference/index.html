@@ -170,7 +170,7 @@
     <tbody>
       <tr>
         <th colspan="2">
-          <h2 id="section-admixtools-programs" class="hasAnchor"><a href="#section-admixtools-programs" class="anchor"></a>Admixtools programs</h2>
+          <h2 id="section-admixtools-programs" class="hasAnchor"><a href="#section-admixtools-programs" class="anchor"></a>ADMIXTOOLS programs</h2>
           <p class="section-desc"></p>
         </th>
       </tr>
@@ -186,6 +186,12 @@
           <p><code><a href="qpdstat.html">qpdstat()</a></code> </p>
         </td>
         <td><p>Estimate f4 statistics</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="qpwave.html">qpwave()</a></code> </p>
+        </td>
+        <td><p>Estimate admixture waves</p></td>
       </tr><tr>
         
         <td>
@@ -281,7 +287,7 @@
         <td>
           <p><code><a href="plot_comparison.html">plot_comparison()</a></code> </p>
         </td>
-        <td><p>Plot a comparison of two runs of qpgraph or two runs of qpadm</p></td>
+        <td><p>Compare two models</p></td>
       </tr><tr>
         
         <td>
@@ -300,6 +306,12 @@
           <p><code><a href="plot_map.html">plot_map()</a></code> </p>
         </td>
         <td><p>Plot samples on a map</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotly_comparison.html">plotly_comparison()</a></code> </p>
+        </td>
+        <td><p>Compare two models</p></td>
       </tr><tr>
         
         <td>
@@ -355,26 +367,38 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="f2_from_geno.html">f2_from_geno()</a></code> </p>
-        </td>
-        <td><p>Read f2 jackknife blocks from genotype data</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="read_packedancestrymap.html">read_packedancestrymap()</a></code> </p>
         </td>
         <td><p>Read genotype data from packedancestrymap files</p></td>
       </tr><tr>
         
         <td>
+          <p><code><a href="read_plink.html">read_plink()</a></code> </p>
+        </td>
+        <td><p>Read genotype data from <code>PLINK</code> files</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="packedancestrymap_to_aftable.html">packedancestrymap_to_aftable()</a></code> </p>
         </td>
         <td><p>Read allele frequencies from packedancestrymap files</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plink_to_aftable.html">plink_to_aftable()</a></code> </p>
+        </td>
+        <td><p>Read allele frequencies from <code>PLINK</code> files</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="packedancestrymap_to_plink.html">packedancestrymap_to_plink()</a></code> </p>
+        </td>
+        <td><p>Convert packedancestrymap to PLINK</p></td>
       </tr>
     </tbody><tbody>
       <tr>
         <th colspan="2">
-          <h2 id="section-graph-topology" class="hasAnchor"><a href="#section-graph-topology" class="anchor"></a>Graph topology</h2>
+          <h2 id="section-many-models" class="hasAnchor"><a href="#section-many-models" class="anchor"></a>Many models</h2>
           <p class="section-desc"></p>
         </th>
       </tr>
@@ -387,21 +411,15 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="random_admixturegraph.html">random_admixturegraph()</a></code> </p>
+          <p><code><a href="qpwave_pairs.html">qpwave_pairs()</a></code> </p>
         </td>
-        <td><p>Generate a random admixture graph</p></td>
+        <td><p>Compute all pairwise qpwave p-values</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="summarize_triples.html">summarize_triples()</a></code> </p>
+          <p><code><a href="qpadm_rotate.html">qpadm_rotate()</a></code> </p>
         </td>
-        <td><p>Summarize triples across graphs</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="qpadm_models.html">qpadm_models()</a></code> </p>
-        </td>
-        <td><p>Return all valid qpAdm models for an admixturegraph</p></td>
+        <td><p>Compute all pairwise qpadm p-values</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -581,12 +599,6 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="extract_samples.html">extract_samples()</a></code> </p>
-        </td>
-        <td><p>Extract samples from packedancestrymap files</p></td>
-      </tr><tr>
-        
-        <td>
           <p><code><a href="f2.html">f2()</a></code> </p>
         </td>
         <td><p>Estimate f2 statistics</p></td>
@@ -659,7 +671,7 @@
       </tr><tr>
         
         <td>
-          <p><code><a href="get_root.html">get_root()</a></code> </p>
+          <p><code><a href="get_rootname.html">get_rootname()</a></code> </p>
         </td>
         <td><p>Get the root name</p></td>
       </tr><tr>
@@ -809,6 +821,12 @@
       </tr><tr>
         
         <td>
+          <p><code><a href="packedancestrymap_to_plink.html">packedancestrymap_to_plink()</a></code> </p>
+        </td>
+        <td><p>Convert packedancestrymap to PLINK</p></td>
+      </tr><tr>
+        
+        <td>
           <p><code><a href="parse_qp3pop_output.html">parse_qp3pop_output()</a></code> </p>
         </td>
         <td><p>Read qp3Pop output file</p></td>
@@ -853,7 +871,7 @@
         <td>
           <p><code><a href="plot_comparison.html">plot_comparison()</a></code> </p>
         </td>
-        <td><p>Plot a comparison of two runs of qpgraph or two runs of qpadm</p></td>
+        <td><p>Compare two models</p></td>
       </tr><tr>
         
         <td>
@@ -872,6 +890,12 @@
           <p><code><a href="plot_map.html">plot_map()</a></code> </p>
         </td>
         <td><p>Plot samples on a map</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plotly_comparison.html">plotly_comparison()</a></code> </p>
+        </td>
+        <td><p>Compare two models</p></td>
       </tr><tr>
         
         <td>
@@ -1108,13 +1132,13 @@
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-admixtools-programs">Admixtools programs</a></li>
+      <li><a href="#section-admixtools-programs">ADMIXTOOLS programs</a></li>
       <li><a href="#section-wrapper-functions">Wrapper functions</a></li>
       <li><a href="#section-parsing-functions">Parsing functions</a></li>
       <li><a href="#section-plotting-functions">Plotting functions</a></li>
       <li><a href="#section-resampling-functions">Resampling functions</a></li>
       <li><a href="#section-reading-and-writing">Reading and writing</a></li>
-      <li><a href="#section-graph-topology">Graph topology</a></li>
+      <li><a href="#section-many-models">Many models</a></li>
       <li><a href="#section-everything">Everything</a></li>
     </ul>
   </div>

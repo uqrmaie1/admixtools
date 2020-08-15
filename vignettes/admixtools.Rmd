@@ -14,19 +14,19 @@ vignette: >
 
 
 This tutorial gives an overview of the basic workflow for computing *f*-statistics, and using *qpWave*, *qpAdm*, and *qpGraph*.
-Documentation for each ADMIXTOOLS function can be found under *Reference*, and more detailed information about specific topics under *Articles*.
+Documentation for each *ADMIXTOOLS 2* function can be found under *Reference*, and more detailed information about specific topics under *Articles*.
 
 
 
 ## Introduction
 
-Admixtools is a set of programs used to infer population histories from f-statistics computed from genetic data. ADMIXTOOLS 2 divides the computation into two steps:
+*ADMIXTOOLS* is a set of programs used to infer population histories from f-statistics computed from genetic data. *ADMIXTOOLS 2* divides the computation into two steps:
 
 1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
 2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
 
 
-ADMIXTOOLS 2 can either be run through the `R` command line, or through a browser application that can be launched like this:
+*ADMIXTOOLS 2* can either be run through the `R` command line, or through a browser application that can be launched like this:
 
 ```{r, eval = FALSE}
 library(admixtools)
@@ -49,7 +49,7 @@ library(tidyverse)
 
 ## *f*-statistics basics
 
-$f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of ADMIXTOOLS. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
+$f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of *ADMIXTOOLS*. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
 $f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. (Allele frequencies are denoted in lower case letters here.) We can estimate it by averaging over $M$ SNPs:
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
@@ -77,7 +77,7 @@ $$
 
 In practice, the estimation of f-statistics can be more complicated, as it needs to account for low sample counts, missing data, and differences in ploidy, as described [here](fstats.html).
 
-In ADMIXTOOLS 2, f2-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
+In *ADMIXTOOLS 2*, f2-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
 
 ```{r, eval = FALSE}
 prefix = '/path/to/geno'
@@ -86,14 +86,14 @@ my_f2_dir = '/store/f2data/here/'
 extract_f2(prefix, my_f2_dir)
 ```
 
-This will look for genotype files in `packedancestrymap` or `PLINK` format, compute allele frequencies and blocked f2 statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2`. To get a description of the arguemnts and to see examples of how to use it, type
+This will look for genotype files in *packedancestrymap* or *PLINK* format, compute allele frequencies and blocked $f_4$-statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2()`. To get a description of the arguemnts and to see examples of how to use it, type
 
 ```{r, eval = FALSE}
 ?extract_f2
 ```
 
 
-Once finished, f2-statistics for the populations of interest can be loaded like this.
+Once finished, $f_2$-statistics for the populations of interest can be loaded like this.
 
 ```{r, echo = FALSE}
 f2_blocks = example_f2_blocks
@@ -108,13 +108,19 @@ mypops = c('Denisova.DG', 'Altai_Neanderthal.DG', 'Vindija.DG')
 f2_blocks = f2_from_precomp(my_f2_dir, pops = mypops)
 ```
 
+If your data is so small that computing $f_2$-statistics doesn't take very long, you can also skip writing the data to disk and get the data in one step, by not providing an `outdir` argument:
 
-`f2_blocks` is now a 3d-array with f2-statistics for each population pair (along dimensions 1 and 2) and each SNP block (along the 3rd dimension).
+```{r, eval = FALSE}
+f2_blocks = extract_f2(my_f2_dir, pops = mypops)
+```
+
+
+`f2_blocks` is now a 3d-array with $f_2$-statistics for each population pair along dimensions 1 and 2, and each SNP block along the 3rd dimension.
 ```{r}
 dim(f2_blocks)
 ```
 
-Separate estimates for each SNP block make it possible to compute jackknife or bootstrap standard errors for any f-statistic, and for any other estimated parameter.
+The purpose of having separate estimates for each SNP block is to compute jackknife or bootstrap standard errors for any *f*-statistic, and for any other estimated parameter.
 
 `f2_blocks` can be used like this:
 ```{r, eval = FALSE}
@@ -129,17 +135,17 @@ block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 head(block_lengths)
 ```
 
-If you want to try any of this without extracting and loading your own f2-statistics, you can instead use `example_f2_blocks` which becomes available as you load `admixtools`.
+If you want to try any of this without extracting and loading your own $f_2$-statistics, you can instead use `example_f2_blocks` which becomes available as you load `admixtools`.
 
 <br>
 
-For more information on f-statistics in ADMIXTOOLS 2, click [here](fstats.html).
+For more information on *f*-statistics in *ADMIXTOOLS 2*, click [here](fstats.html).
 
 <br>
 
-## $f_3$ and qp3Pop
+## *f*~3~ and *qp3Pop*
 
-The original ADMIXTOOLS program for computing $f_3$-statistics is called *qp3Pop*. In ADMIXTOOLS 2, you can compute $f_3$-statistics like this:
+The original *ADMIXTOOLS* program for computing $f_3$-statistics is called *qp3Pop*. In *ADMIXTOOLS 2*, you can compute $f_3$-statistics like this:
 
 ```{r}
 pop1 = 'Denisova.DG'
@@ -164,9 +170,9 @@ Typing just `f3(f2_blocks)` will compute all possible combinations (which can be
 
 <br>
 
-## $f_4$ and qpDstat
+## *f*~4~ and *qpDstat*
 
-The original ADMIXTOOLS program for computing $f_4$-statistics is called *qpDstat*. As the name suggests, it computes *D*-statistics by default. To get $f_4$-statistics instead, the `f4mode` argument needs to set to `YES`. In ADMIXTOOLS 2, almost everything starts with f2-statistics, so the `qpdstat`/`f4` function computes $f_4$-statistics by default.
+The original *ADMIXTOOLS* program for computing $f_4$-statistics is called *qpDstat*. As the name suggests, it computes *D*-statistics by default. To get $f_4$-statistics instead, the `f4mode` argument needs to set to `YES`. In *ADMIXTOOLS 2*, almost everything starts with $f_2$-statistics, so the `qpdstat`/`f4` function computes $f_4$-statistics by default.
 
 ```{r}
 pop4 = 'Switzerland_Bichon.SG'
@@ -181,21 +187,21 @@ qpdstat(f2_blocks, pop1, pop2, pop3, pop4)
 f4(example_f2_blocks, pop1, pop2, pop3, pop4, verbose = FALSE)
 ```
 
-The differences between $f_4$-statistics and D-statistics are usually negligible. However, it is still possible to compute D-statistics in ADMIXTOOLS 2, by providing genotype data as the first argument, and setting `f4mode = FALSE`:
+The differences between $f_4$-statistics and *D*-statistics are usually negligible. However, it is still possible to compute *D*-statistics in *ADMIXTOOLS 2*, by providing genotype data as the first argument, and setting `f4mode = FALSE`:
 
 ```{r, eval = FALSE}
 prefix = '/path/to/geno'
 f4(prefix, pop1, pop2, pop3, pop4, f4mode = FALSE)
 ```
 
-Computing $f_4$- or D-statistics from genotype data directly is slower, but it has the advantage that it avoids any problems that may arise from large amounts of missing data. More on this [here](fstats.html).
+Computing $f_4$- or *D*-statistics from genotype data directly is slower, but it has the advantage that it avoids any problems that may arise from large amounts of missing data. More on this [here](fstats.html).
 
 
 <br>
 
-## qpWave and qpAdm
+## *qpWave* and *qpAdm*
 
-*qpWave* and *qpAdm* are two programs with diffent goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In ADMIXTOOLS 2, both `qpadm()` and `qpwave()`require at least three arguments:
+*qpWave* and *qpAdm* are two programs with diffent goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In *ADMIXTOOLS 2*, both `qpadm()` and `qpwave()`require at least three arguments:
 
 1. $f_2$-statistics
 2. A set of left populations
@@ -228,7 +234,7 @@ results$rankdrop
 
 * **weights**: These are the admixture weights, or estimates of the relative contributions of the left population to the target population.
 * **popdrop**: popdrop shows the fits of all models generated by dropping a specific subset of left populations, and will only be returned if a target population is specified.
-* **f4**: The estimated f4-statistics will now also include lines with fitted f4-statistics, where the target population is in the first column, and a weighted sum of the left populations, `fit`, in the second column.
+* **f4**: The estimated $f_4$-statistics will now also include lines with fitted $f_4$-statistics, where the target population is in the first column, and a weighted sum of the left populations, `fit`, in the second column.
 
 
 ```{r, eval = FALSE}
@@ -273,9 +279,9 @@ qpadm_rotate(example_f2_blocks, left = pops[3:7], right = pops[1:2], target = po
 
 <br>
 
-## qpGraph
+## *qpGraph*
 
-Single $f_3$- and $f_4$-statistics can tell us how three or four populations are related to each other. qpGraph generalizes this concept to any number of populations. It takes estimated $f_3$-statistics and the topology of an admixtgure graph, finds the edges weights that minimize the difference between fitted and estimated $f_3$-statistics, and summarizes that difference in a likelihood score.
+Single $f_3$- and $f_4$-statistics can tell us how three or four populations are related to each other. *qpGraph* generalizes this concept to any number of populations. It takes estimated $f_3$-statistics and the topology of an admixtgure graph, finds the edges weights that minimize the difference between fitted and estimated $f_3$-statistics, and summarizes that difference in a likelihood score.
 
 
 ```{r, eval = FALSE}
@@ -298,16 +304,16 @@ The leaf nodes of this graph have to match the $f_2$-statistic population labels
 <br>
 
 
-The output of `qpgraph` is a list with several items:
+The output of `qpgraph()` is a list with several items:
 
 * **edges**: A data frame with estimated edge weights. This includes normal edges as well as admixture edges.
 * **score** The likelihood score. Smaller scores indicate a better fit.
-* **f2** Estimated f2-statistics and standard errors for all population pairs
-* **f3** Estimated and fitted f3-statistics for all population pairs with the outgroup. This includes residuals and Z-scores.
+* **f2** Estimated $f_2$-statistics and standard errors for all population pairs
+* **f3** Estimated and fitted $f_3$-statistics for all population pairs with the outgroup. This includes residuals and z-scores.
 * **opt** A data frame with details from the weight optimization, with one row per set of starting values.
-* **ppinv** The inverse of the f3-statistics covariance matrix
+* **ppinv** The inverse of the $f_3$-statistics covariance matrix
 
-Optionally, fitted and estimated f4-statistics can be returned by setting `return_f4 = TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
+Optionally, fitted and estimated $f_4$-statistics and the worst residual z-score can be returned by setting `return_f4 = TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
 
 The fitted graph can be plotted like this:
 
@@ -326,14 +332,16 @@ plotly_graph(qpg_results$edges)
 
 ### More about graphs
 
-ADMIXTOOLS 2 can automatically find well-fitting graphs, and it has several functions for exploring the topological neighborhood of a graph. These functions are described [here](graphs.html).
+*ADMIXTOOLS 2* can automatically find well-fitting graphs, and it has several functions for exploring the topological neighborhood of a graph. These functions are described [here](graphs.html).
+
+To get a better theoretical understanding of *f*-statistics and admixture graphs, I recommend [this paper](https://onlinelibrary.wiley.com/doi/abs/10.1111/1755-0998.13230).
 
 <br>
 
 
-## Comparing results to ADMIXTOOLS
+## Comparing results to *ADMIXTOOLS*
 
-There are wrapper function which call the origial ADMIXTOOLS programs and read the results. This can be used to check if the results of `qpgraph` are correct.
+There are wrapper function which call the origial *ADMIXTOOLS* programs and read the results. This can be used to check if the results of `qpgraph()` are correct.
 
 ```{r, eval = FALSE}
 binpath = '/home/np29/o2bin/'
@@ -377,7 +385,7 @@ qpgraph_wrapper('graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
 
 <br>
 
-The following function makes it easy to compare qpGraph or qpAdm results.
+The following function makes it easy to compare *qpGraph* or *qpAdm* results.
 
 ```{r, eval = FALSE}
 qpgraph_ref_results = qpgraph_wrapper(example_graph, qpgraph_bin, prefix)
@@ -388,6 +396,12 @@ qpgraph_ref_results = example_qpgraph_ref_results
 
 ```{r}
 plot_comparison(qpg_results, qpgraph_ref_results)
+```
+
+The interactive version of this can be useful for finding out which edges or population pairs behave differently between two models
+
+```{r, warning = FALSE}
+plotly_comparison(qpg_results, qpgraph_ref_results)
 ```
 <br>
 

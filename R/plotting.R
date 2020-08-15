@@ -1,11 +1,12 @@
-
+#' Compare two models
+#'
 #' Plot a comparison of two runs of qpgraph or two runs of qpadm
 #' @export
-#' @param out1 first model
-#' @param out2 second model
-#' @param name1 optional name for first model
-#' @param name2 optional name for second model
-#' @return a ggplot object.
+#' @param out1 First model
+#' @param out2 Second model
+#' @param name1 Optional name for first model
+#' @param name2 Optional name for second model
+#' @return A ggplot object.
 #' @examples
 #' fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
 #' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
@@ -17,6 +18,24 @@ plot_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
 
   f = ifelse('score' %in% names(out1), plot_comparison_qpgraph, plot_comparison_qpadm)
   f(out1, out2, name1, name2)
+}
+
+#' Compare two models
+#'
+#' Plot a comparison of two runs of qpgraph or two runs of qpadm
+#' @export
+#' @param out1 First model
+#' @param out2 Second model
+#' @param name1 Optional name for first model
+#' @param name2 Optional name for second model
+#' @return A plotly object.
+#' @examples
+#' fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
+#' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
+#' plotly_comparison(fit1, fit2)
+plotly_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
+  p = plot_comparison(out1, out2, name1 = NULL, name2 = NULL)
+  plotly::ggplotly(p)
 }
 
 

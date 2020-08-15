@@ -113,7 +113,7 @@
       <h1>Genotype data</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-12</h4>
+            <h4 class="date">2020-08-14</h4>
       
       
       <div class="hidden name"><code>io.Rmd</code></div>
@@ -123,8 +123,8 @@
     
     
 <p><strong>Under construction</strong></p>
-<p>ADMIXTOOLS 2 includes functions for reading genotype data that may be useful outside the scope of demographic inference.</p>
-<p>While there are other R packages for reading and writing binary PLINK files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary EIGENSTRAT/PACKEDANCESTRYMAP format files. Some of the functions shown here can also read only a subset of all SNPs (as long as they are consecutive) or samples.</p>
+<p><em>ADMIXTOOLS 2</em> includes functions for reading genotype data that may be useful outside the scope of demographic inference.</p>
+<p>While there are other R packages for reading and writing binary <em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary <em>EIGENSTRAT</em>/<em>PACKEDANCESTRYMAP</em> format files. Some of the functions shown here can also read only a subset of all SNPs (as long as they are consecutive) or samples.</p>
 <div id="reading-genotype-files" class="section level3">
 <h3 class="hasAnchor">
 <a href="#reading-genotype-files" class="anchor"></a>Reading genotype files</h3>
@@ -139,10 +139,11 @@
 </div>
 <div id="converting-packedancestrymap-to-plink" class="section level3">
 <h3 class="hasAnchor">
-<a href="#converting-packedancestrymap-to-plink" class="anchor"></a>Converting PACKEDANCESTRYMAP to PLINK</h3>
-<p>This function’s original purpose was to extract samples from genotype files, but it can also be used to convert genotype files from PACKEDANCESTRYMAP to PLINK format: If no samples are provided, it defaults to all samples.</p>
-<p>ADMIXTOOLS 2 currently doesn’t provide the option to write binary PACKEDANCESTRYMAP files, so the conversion only goes one way.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw"><a href="../reference/extract_samples.html">extract_samples</a></span>(<span class="st">"packedancestrymap/prefix"</span>, <span class="st">"plink_output"</span>)</a></code></pre></div>
+<a href="#converting-packedancestrymap-to-plink" class="anchor"></a>Converting <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em>
+</h3>
+<p>This function converts genotype files from <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em> format. If <code>inds</code> or <code>pops</code> is specified, only those samples will be extracted.</p>
+<p><em>ADMIXTOOLS 2</em> currently doesn’t provide the option to write binary <em>PACKEDANCESTRYMAP</em> files, so the conversion only goes one way.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw"><a href="../reference/packedancestrymap_to_plink.html">packedancestrymap_to_plink</a></span>(<span class="st">"packedancestrymap_input_prefix"</span>, <span class="st">"plink_output_prefix"</span>)</a></code></pre></div>
 </div>
   </div>
 
