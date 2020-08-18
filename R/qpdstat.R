@@ -157,7 +157,7 @@ f3 = qp3pop
 qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    boot = FALSE, sure = FALSE, unique_only = TRUE,
                    comb = TRUE, blgsize = NULL, block_lengths = NULL, f4mode = TRUE,
-                   afprod = TRUE, cpp = TRUE, verbose = TRUE) {
+                   afprod = TRUE, cpp = TRUE, verbose = is.character(f2_data)) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))

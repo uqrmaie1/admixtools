@@ -2,15 +2,26 @@
 % Please edit documentation in R/io.R
 \name{f2_from_geno}
 \alias{f2_from_geno}
-\title{Read f2 jackknife blocks from genotype data}
+\title{Compute blocked f2 statistics}
 \usage{
 f2_from_geno(
   pref,
   inds = NULL,
   pops = NULL,
-  maxmem = 8000,
   blgsize = 0.05,
+  maxmem = 8000,
+  maxmiss = 1,
+  minmaf = 0,
+  maxmaf = 0.5,
+  outpop = NULL,
+  outpop_scale = TRUE,
+  transitions = TRUE,
+  transversions = TRUE,
+  auto_only = TRUE,
+  keepsnps = NULL,
+  afprod = FALSE,
   format = NULL,
+  adjust_pseudohaploid = TRUE,
   verbose = TRUE
 )
 }
@@ -22,21 +33,44 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{pops}{Populations for which data should be extracted. If both \code{pops} and \code{inds} are provided, they should have the same length and will be matched by position. If only \code{pops} is provided, all individuals from the \code{.ind} or \code{.fam} file in those populations will be extracted. If only \code{inds} is provided, each indivdual will be assigned to its own population of the same name. If neither \code{pops} nor \code{inds} is provided, all individuals and populations in the \code{.ind} or \code{.fam} file will be extracted.}
 
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+
 \item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+\item{maxmiss}{Discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
+
+\item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
+
+\item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
+
+\item{outpop}{Keep only SNPs which are heterozygous in this population}
+
+\item{outpop_scale}{Scale f2-statistics by the inverse \code{outpop} heteroygosity (\code{1/(p*(1-p))}). Providing \code{outpop} and setting \code{outpop_scale} to \code{TRUE} will give the same results as the original \emph{qpGraph} when the \code{outpop} parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.}
+
+\item{transitions}{Set this to \code{FALSE} to exclude transition SNPs}
+
+\item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
+
+\item{auto_only}{Keep only SNPs on chromosomes 1 to 22}
+
+\item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
+
+\item{afprod}{Return negative average allele frequency products instead of f2-statistics. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
+
 \item{verbose}{Print progress updates}
 }
+\value{
+A 3d array of f2-statistics (or scaled allele frequency products if \code{afprod = TRUE})
+}
 \description{
-This function is currently out of date. The idea is to read a 3d array of f2-statistics directly from genotype data without the intermediate step of writing files to disk. It should combine \code{\link{extract_f2}} and \code{\link{f2_from_precomp}} and could be useful when f2-statistics don't need to be stored on disk. Might be easier to add an option to \code{\link{extract_f2}} to not write to disk.
+This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,
+computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array.
 }
-\examples{
-\dontrun{
-pref = 'my/genofiles/prefix'
-f2_blocks = f2_from_geno(pref, pops = c('pop1', 'pop2', 'pop3'))
-}
+\seealso{
+\code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 }

@@ -86,19 +86,25 @@ me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-The first step is to extract *f*<sub>2</sub>-statistics from genotype
-files.
+The first step is to get *f*<sub>2</sub>-statistics from genotype files.
 
 ``` r
 genotype_data = "/my/geno/prefix"
-f2_blocks = extract_f2(genotype_data)
+f2_blocks = f2_from_geno(genotype_data)
 ```
 
 Now we can fit an admixture graph:
 
 ``` r
 fit = qpgraph(f2_blocks, example_graph)
+```
+
+``` r
 fit$score
+#> [1] 19219.98
+```
+
+``` r
 plot_graph(fit$edges)
 ```
 
@@ -135,10 +141,6 @@ Or we can use them to get *f*<sub>4</sub>-statistics:
 f4(f2_blocks)
 ```
 
-    #> ℹ Getting population combinations...
-    #> ℹ 105 population combinations found
-    #> ℹ Loading f2 data for 42 population pairs...
-    #> ℹ Computing f4-statistics
     #> # A tibble: 105 x 8
     #>    pop1        pop2         pop3    pop4            est      se      z         p
     #>    <chr>       <chr>        <chr>   <chr>         <dbl>   <dbl>  <dbl>     <dbl>

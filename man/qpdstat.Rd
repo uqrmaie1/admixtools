@@ -20,7 +20,7 @@ qpdstat(
   f4mode = TRUE,
   afprod = TRUE,
   cpp = TRUE,
-  verbose = TRUE
+  verbose = is.character(f2_data)
 )
 }
 \arguments{

@@ -255,13 +255,13 @@ newnodenam = function(newnam, current) {
 }
 
 
-#' Generate a random, binary graph with n terminal nodes
+#' Generate a random binary graph
 #' @export
-#' @param n the number of terminal nodes, or a vector of population labels.
-#' @param start prefix.
-#' @param end postfix.
-#' @param outpop outgroup (if \code{n} is a vector of labels).
-#' @return tree in newick format.
+#' @param n The number of terminal nodes, or a vector of population labels.
+#' @param start Prefix.
+#' @param end Postfix.
+#' @param outpop Outgroup (if \code{n} is a vector of labels).
+#' @return Tree in newick format.
 #' @examples
 #' random_newick(5)
 #' random_newick(c('a', 'b', 'c', 'd')) # toplogy random, but pop order fixed
@@ -826,14 +826,14 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
 #' @param mutfuns The names of functions used to modify graphs.
 #' \itemize{
-#' \item `spr_leaves`: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+#' \item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
 #' to a random other edge in the graph.
-#' \item `spr_all`: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+#' \item \code{\link{spr_all}}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
 #' to a random other edge in the graph, keeping the number of admixture nodes constant.
-#' \item `swap_leaves`: Swaps two leaf nodes.
-#' \item `move_admixedge_once`: Moves an admixture edge to a nearby location.
-#' \item `flipadmix_random`: Flips the direction of an admixture edge (if possible).
-#' \item `mutate_n`: Apply `n` of the above mutation functions to a graph (defaults to 2).
+#' \item \code{\link{swap_leaves}}: Swaps two leaf nodes.
+#' \item \code{\link{move_admixedge_once}}: Moves an admixture edge to a nearby location.
+#' \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
+#' \item \code{\link{mutate_n}}: Apply `n` of the mutation functions in this list to a graph (defaults to 2).
 #' }
 #' It is possible to define and use your own mutation functions. A mutation function should return
 #' a new graph and take three arguments:

@@ -14,9 +14,11 @@ vignette: >
 
 **Under construction**
 
-*ADMIXTOOLS 2* includes functions for reading genotype data that may be useful outside the scope of demographic inference.
+*ADMIXTOOLS 2* can read genotype data in binary *PLINK* format which is described [here](https://www.cog-genomics.org/plink2/input), and in *EIGENSTRAT*/*ANCESTRYMAP*/*PACKEDANCESTRYMAP* format, described [here](https://reich.hms.harvard.edu/software/InputFileFormats). 
 
-While there are other R packages for reading and writing binary *PLINK* files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist to date for binary *EIGENSTRAT*/*PACKEDANCESTRYMAP* format files. Some of the functions shown here can also read only a subset of all samples or SNPs (as long as they are consecutive).
+While there are other R packages for reading and writing binary *PLINK* files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist to date for binary *EIGENSTRAT*/*PACKEDANCESTRYMAP* format files, so some of the functions shown here may be useful outside of the *ADMIXTOOLS* framework.
+
+Note that the functions below impose the restriction than individual IDs may not be duplicated across populations or families.
 
 ### Reading genotype files
 

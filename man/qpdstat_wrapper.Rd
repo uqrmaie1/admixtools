@@ -14,9 +14,7 @@ qpdstat_wrapper(
   outdir = ".",
   parfile = NULL,
   f4mode = "YES",
-  useallsnps = "NO",
   inbreed = "NO",
-  lambdascale = -1,
   printonly = FALSE,
   env = "",
   verbose = TRUE
@@ -51,11 +49,7 @@ and \code{pop4} will be ignored.}
 
 \item{f4mode}{f4mode}
 
-\item{useallsnps}{useallsnps}
-
 \item{inbreed}{inbreed}
-
-\item{lambdascale}{lambdascale}
 
 \item{printonly}{Should the command be printed or executed?}
 

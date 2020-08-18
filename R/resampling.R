@@ -171,8 +171,17 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' }
 get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
 
-  if(length(unique(dat[[distcol]])) < 2) warning(paste0("No genetic linkage information found!",
-    "Each chromosome will be its own block, which can make standard error estimates inaccurate."))
+  if(distcol == 'cm' && length(unique(dat[[distcol]])) < 2) {
+    distcol = 'POS'
+    blgsize = 50000
+    if(!distcol %in% names(dat) || length(unique(dat[[distcol]])) < 2) {
+      warning(paste0("No genetic linkage map or base positions found!",
+      "Each chromosome will be its own block, which can make standard error estimates inaccurate."))
+    } else {
+      warning(paste0("No genetic linkage map found! Defining blocks by base pair distance of ", blgsize))
+    }
+  }
+
   cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], blgsize)
 
   # fpos = -1e20

@@ -28,7 +28,7 @@ extract_afs_simple(
 \item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory where data will be stored. If \code{NULL}, data will be returned instead of written to disk.}
+\item{outdir}{Directory where data will be stored.}
 
 \item{inds}{Individuals for which data should be extracted}
 

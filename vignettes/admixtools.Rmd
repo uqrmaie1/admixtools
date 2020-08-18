@@ -51,7 +51,7 @@ library(tidyverse)
 
 $f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of *ADMIXTOOLS*. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
-$f_2$ is the average squared difference in allele frequencies between two populations. Here, we use upper case letters for populations ($A$ and $B$) and lower case letters for allele frequencies ($a$ and $b$).
+$f_2$ is the average squared difference in allele frequencies between two populations. Upper case letters denote populations ($A$ and $B$) and lower case letters denote their allele frequencies ($a$ and $b$).
 
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
 
@@ -65,7 +65,7 @@ f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \
 \end{aligned}
 \end{equation}
 $$
-If $f_4(A, B; C, D)$ is significantly different from zero, it suggests that $A$ and $B$ are not a clade relative to $C$ and $D$.
+If $A$ and $B$ form a clade relative to $C$ and $D$, there should not be any correlation in the allele frequency differences $A$ - $B$ and $C$ - $D$, so $f_4(A, B; C, D)$ should be zero. If $f_4(A, B; C, D)$ is significantly different from zero, it suggests that $A$ and $B$ are not a clade relative to $C$ and $D$.
 
 $f_3$ is the covariance of allele frequency differences between two pairs of populations where one population is the same on both sides. $f_3$ is thus a special case of $f_4$, and can also be written as a sum of $f_2$.
 
@@ -75,7 +75,7 @@ f_3(A; B, C) &= f_4(A, B; A, C) \\ &= \frac{1}{2} (f_2(A, B) + f_2(A, C) - f_2(B
 \end{aligned}
 $$
 
-If $f_3(A; B, C)$ is negative, this suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
+If $f_3(A; B, C)$ is negative, this means that the more similar allele frequencies are between $A$ and $B$, the more different they are between $A$ and $C$, which suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
 
 
 In practice, the estimation of *f*-statistics can be more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
@@ -98,7 +98,7 @@ This will look for genotype files in *packedancestrymap* or *PLINK* format, comp
 ```
 
 
-Once finished, $f_2$-statistics for the populations of interest can be loaded like this.
+Once finished, $f_2$-statistics for the populations of interest can be loaded using `f2_from_precomp()`:
 
 ```{r, echo = FALSE}
 f2_blocks = example_f2_blocks
@@ -113,10 +113,10 @@ mypops = c('Denisova.DG', 'Altai_Neanderthal.DG', 'Vindija.DG')
 f2_blocks = f2_from_precomp(my_f2_dir, pops = mypops)
 ```
 
-If your data is so small that computing $f_2$-statistics doesn't take very long, you can also skip writing the data to disk and get the data in one step, by not providing an `outdir` argument:
+If your data is so small that computing $f_2$-statistics doesn't take very long, you can skip writing the data to disk with `extract_f2()` and do everything in one step using `f2_from_geno()`:
 
 ```{r, eval = FALSE}
-f2_blocks = extract_f2(my_f2_dir, pops = mypops)
+f2_blocks = f2_from_geno(my_f2_dir, pops = mypops)
 ```
 
 
@@ -125,7 +125,7 @@ f2_blocks = extract_f2(my_f2_dir, pops = mypops)
 dim(f2_blocks)
 ```
 
-The purpose of having separate estimates for each SNP block is to compute jackknife or bootstrap standard errors for any *f*-statistic, and for any other estimated parameter.
+The purpose of having separate estimates for each SNP block is to compute [jackknife or bootstrap standard errors](resampling.html) for any *f*-statistic, and for any other estimated parameter.
 
 `f2_blocks` can be used like this:
 ```{r, eval = FALSE}

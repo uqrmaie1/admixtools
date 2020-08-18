@@ -2,24 +2,24 @@
 % Please edit documentation in R/toposearch.R
 \name{random_newick}
 \alias{random_newick}
-\title{Generate a random, binary graph with n terminal nodes}
+\title{Generate a random binary graph}
 \usage{
 random_newick(n, start = "", end = "", outpop = NULL)
 }
 \arguments{
-\item{n}{the number of terminal nodes, or a vector of population labels.}
+\item{n}{The number of terminal nodes, or a vector of population labels.}
 
-\item{start}{prefix.}
+\item{start}{Prefix.}
 
-\item{end}{postfix.}
+\item{end}{Postfix.}
 
-\item{outpop}{outgroup (if \code{n} is a vector of labels).}
+\item{outpop}{Outgroup (if \code{n} is a vector of labels).}
 }
 \value{
-tree in newick format.
+Tree in newick format.
 }
 \description{
-Generate a random, binary graph with n terminal nodes
+Generate a random binary graph
 }
 \examples{
 random_newick(5)

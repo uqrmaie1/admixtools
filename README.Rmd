@@ -78,18 +78,25 @@ If this doesn't help, please [contact me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-The first step is to extract *f*~2~-statistics from genotype files.
+The first step is to get *f*~2~-statistics from genotype files.
 
 ```{r, eval = FALSE}
 genotype_data = "/my/geno/prefix"
-f2_blocks = extract_f2(genotype_data)
+f2_blocks = f2_from_geno(genotype_data)
 ```
 
 Now we can fit an admixture graph:
 
 ```{r, eval = FALSE}
 fit = qpgraph(f2_blocks, example_graph)
+```
+```{r, echo = FALSE}
+fit = qpgraph(example_f2_blocks, example_graph)
+```
+```{r}
 fit$score
+```
+```{r, eval = FALSE}
 plot_graph(fit$edges)
 ```
 

@@ -56,14 +56,14 @@ find_graphs(
 
 \item{mutfuns}{The names of functions used to modify graphs.
 \itemize{
-\item \code{spr_leaves}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+\item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
 to a random other edge in the graph.
-\item \code{spr_all}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+\item \code{\link{spr_all}}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
 to a random other edge in the graph, keeping the number of admixture nodes constant.
-\item \code{swap_leaves}: Swaps two leaf nodes.
-\item \code{move_admixedge_once}: Moves an admixture edge to a nearby location.
-\item \code{flipadmix_random}: Flips the direction of an admixture edge (if possible).
-\item \code{mutate_n}: Apply \code{n} of the above mutation functions to a graph (defaults to 2).
+\item \code{\link{swap_leaves}}: Swaps two leaf nodes.
+\item \code{\link{move_admixedge_once}}: Moves an admixture edge to a nearby location.
+\item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
+\item \code{\link{mutate_n}}: Apply \code{n} of the mutation functions in this list to a graph (defaults to 2).
 }
 It is possible to define and use your own mutation functions. A mutation function should return
 a new graph and take three arguments:

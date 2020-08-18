@@ -48,13 +48,15 @@ $f_4$ is the covariance of allele frequency differences between two pairs of pop
 $$
 \begin{equation}
 \begin{aligned}
-f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{M} \sum_{j=1}^M(a_j c_j + b_j d_j - a_j d_j - b_j c_j) \\ &= \frac{1}{2n} (\sum_{j=1}^M(a_j - d_j)^2 + \sum_{j=1}^M(b_j - c_j)^2 - \sum_{j=1}^M(a_j - c_j)^2 - \sum_{j=1}^M(b_j - d_j)^2) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
+f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \frac{1}{M} \sum_{j=1}^M(- a_j d_j - b_j c_j + a_j c_j + b_j d_j) \\ &= \frac{1}{2M} (\sum_{j=1}^M(a_j - d_j)^2 + \sum_{j=1}^M(b_j - c_j)^2 - \sum_{j=1}^M(a_j - c_j)^2 - \sum_{j=1}^M(b_j - d_j)^2) \\ &= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
 \label{eq:f42}
 \end{aligned}
 \end{equation}
 $$
 
-This makes it clear that $f_4$ is a generalization of $f_2$: $f_4(A, B; A, B) = f_2(A, B)$
+This shows that $f_4$ is at the same time the covariance of allele frequency differences (line 1), a sum of $f_2$ statistics (line 4), and a sum of allele frequency products (line 2).
+
+By comparing the definitions of $f_4$ and $f_2$, we also see that $f_4$ is a generalization of $f_2$: $f_4(A, B; A, B) = f_2(A, B)$
 
 
 *D*-statistics differ from $f_4$ only by a scaling factor: 
@@ -115,9 +117,9 @@ Some of the programs in the original *ADMIXTOOLS* have an `inbreed` option which
 
 Missing data alone will not create any bias in $f_2$ estimates, as long as the data are missing at random. However, if rare or common SNPs are more likely to be missing, $f_2$ can be over- or underestimated. In contrast to $F_{ST}$, which is the same in expectation for rare and for common SNPs, $f_2$ tends to be larger for common SNPs. Strictly speaking, there is no such thing as an unbiasd $f_2$ estimate, since it always depends on the allele frequency spectrum of ascertained SNPs. What's important in practice is that there are no systematic differences in ascertainment among the populations in an analysis. *ADMIXTOOLS* draws most of its inferences from comparing allele frequency differences between populations, which means that biases that affect all populations equally are not very important. If, however, one pair of populations has a high $f_2$ because most rare alleles are missing in one of the populations, and another pair of populations has a lower $f_2$ beause those rare alleles are not missing, bias can be expected.
 
-One way to prevent this bias is to not use any SNPs which are missing in one or more populations. But this may not leave enough SNPs to have sufficient statistical power. In the original *ADMIXTOOLS* software, the `allsnps` options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In *ADMIXTOOLS 2*, the `maxmiss` parameter in `extract_f2()` which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.
+One way to prevent this bias is to not use any SNPs which are missing in one or more populations, although this may not leave enough SNPs to have sufficient statistical power. In the original *ADMIXTOOLS* software, the `allsnps` options toggles between using only SNPs which are present in all populations in an analysis, and the largest possible number of SNPs for each f-statistic. In *ADMIXTOOLS 2*, the `maxmiss` parameter in `extract_f2()` which ranges from 0 to 1 can be used to exclude SNPs which are missing in more than a specific fraction of all populations. This can be used to find a balance between statistical power and the potential for bias.
 
-As we will see in the next section, estimating $f_4$ without bias is actually easier than estimating $f_2$ or $f_{ST}$ without any bias.
+As mentioned earlier, estimating $f_4$ without bias is actually easier than estimating $f_2$ or $f_{ST}$ without any bias.
 
 
 

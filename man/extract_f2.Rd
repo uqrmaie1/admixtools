@@ -6,7 +6,7 @@
 \usage{
 extract_f2(
   pref,
-  outdir = NULL,
+  outdir,
   inds = NULL,
   pops = NULL,
   blgsize = 0.05,
@@ -20,7 +20,6 @@ extract_f2(
   transversions = TRUE,
   auto_only = TRUE,
   keepsnps = NULL,
-  afprod = FALSE,
   overwrite = FALSE,
   format = NULL,
   adjust_pseudohaploid = TRUE,
@@ -31,7 +30,7 @@ extract_f2(
 \item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
 PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
-\item{outdir}{Directory where data will be stored. If \code{NULL}, data will be returned instead of written to disk.}
+\item{outdir}{Directory where data will be stored.}
 
 \item{inds}{Individuals for which data should be extracted}
 
@@ -59,9 +58,6 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{afprod}{Return negative average allele frequency products instead of f2-statistics. This option is only used when \code{outdir} is not specified and data is returned directly. If \code{outdir} is specified, \code{afprod} can be set in \code{\link{f2_from_precomp}}. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
-This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.}
-
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
@@ -72,15 +68,11 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 \item{verbose}{Print progress updates}
 }
 \value{
-\itemize{
-\item If \code{outdir = NULL} and \code{afprod = FALSE}: A 3d array of f2-statistics
-\item If \code{outdir = NULL} and \code{afprod = TRUE}: A 3d array of scaled allele frequency products
-\item If \code{outdir != NULL}: SNP metadata (invisibly)
-}
+SNP metadata (invisibly)
 }
 \description{
 This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,
-computes allele frequencies and blocked f2-statistics for selected populations, and optionally writes the results to \code{outdir}.
+computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to \code{outdir}.
 }
 \examples{
 \dontrun{
@@ -90,5 +82,5 @@ extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 }
 }
 \seealso{
-\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, and \code{\link{extract_f2_large}} in case you run out of memory
+\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{extract_f2_large}} in case you run out of memory, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
 }

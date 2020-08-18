@@ -212,6 +212,7 @@ qpgraph = function(f2_blocks, graph, lambdascale = 1, boot = FALSE, diag = 1e-4,
   } else if('data.frame' %in% class(graph)) {
     edges = graph
   } else stop(paste0('Cannot parse graph of class ', class(graph),'!'))
+  stopifnot(lambdascale > 0)
 
   if(cpp) {
     optimweightsfun = cpp_optimweightsfun
