@@ -7,10 +7,10 @@
 qpgraph(
   f2_blocks,
   graph,
-  f2_denom = 1,
+  lambdascale = 1,
   boot = FALSE,
-  fudge = 1e-04,
-  fudge_cov = 1e-05,
+  diag = 1e-04,
+  diag_f3 = 1e-05,
   lsqmode = FALSE,
   numstart = 10,
   seed = NULL,
@@ -24,27 +24,30 @@ qpgraph(
 )
 }
 \arguments{
-\item{f2_blocks}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
+\item{f2_blocks}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.}
 
 \item{graph}{An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled \code{lower} and \code{upper} with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.}
 
-\item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
+\item{lambdascale}{Scales f2-statistics. This has no effect on the fit, but is used in the original \emph{qpGraph} program to display branch weights on a scale that corresponds to FST distances.}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix of
 f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
 where \code{n} is either equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}.
-The covariance matrix of f3 statistics will be computed using bootstrapping.}
+The covariance matrix of f3 statistics will be computed using bootstrap resampling.}
 
-\item{fudge}{Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).}
+\item{diag}{Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace). Default is 0.0001.}
 
-\item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
+\item{diag_f3}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original \emph{qpGraph} program, this is fixed at 0.00001.}
 
-\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * fudge_cov)}, in place of the inverse f3-statistic covariance matrix.
-\code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{ sum((f3_est-f3_fit)^2)}). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to \code{lsqmode = TRUE} that doesn't completely ignore the covariance of f3-statistics is to increase \code{fudge_cov}.}
+\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * diag_f3)}, in place of the inverse f3-statistic covariance matrix.
 
-\item{numstart}{Number of random initializations of starting weights. Defaults to 10.}
+\code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{sum((f3_est-f3_fit)^2)}).
 
-\item{seed}{Seed for generating starting weights.}
+Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to \code{lsqmode = TRUE} that doesn't completely ignore the covariance of f3-statistics is to increase \code{diag_f3}.}
+
+\item{numstart}{Number of random initializations of starting weights. Defaults to 10. Increasing this number will make the optimization slower, but reduce the risk of not finding the optimal weights. Check the \code{opt} output to see how much the optimization depends on the starting weights.}
+
+\item{seed}{Random seed for generating starting weights.}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 

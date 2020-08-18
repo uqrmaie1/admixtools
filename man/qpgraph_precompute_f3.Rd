@@ -8,10 +8,10 @@ qpgraph_precompute_f3(
   f2_data,
   pops,
   f3basepop = NULL,
-  f2_denom = 1,
+  lambdascale = 1,
   boot = FALSE,
   seed = NULL,
-  fudge_cov = 1e-05,
+  diag_f3 = 1e-05,
   lsqmode = FALSE
 )
 }
@@ -24,7 +24,7 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 \item{f3basepop}{f3-statistics base population. If \code{NULL} (the default),
 the first population in \code{pops} will be used as the basis.}
 
-\item{f2_denom}{Scales f2-statistics. A value of around 0.278 converts F2 to Fst.}
+\item{lambdascale}{Scales f2-statistics. This has no effect on the fit, but is used in the original \emph{qpGraph} program to display branch weights on a scale that corresponds to FST distances.}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix of f3 statistics
 will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either
@@ -33,9 +33,9 @@ of f3 statistics will be computed using bootstrapping.}
 
 \item{seed}{Random seed used if \code{boot} is \code{TRUE}.}
 
-\item{fudge_cov}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).}
+\item{diag_f3}{Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original \emph{qpGraph} program, this is fixed at 0.00001.}
 
-\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * fudge_cov)}, in place of the inverse f3-statistic covariance matrix. \code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{sum((f3_est-f3_fit)^2)}). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using \code{lsqmode = TRUE} which doesn't completely ignore the covariance of f3-statistics is to increase \code{fudge_cov}.}
+\item{lsqmode}{Least-squares mode. If \code{TRUE}, the likelihood score will be computed using a diagonal matrix with \code{1/(sum(diag(f3_var)) * diag_f3)}, in place of the inverse f3-statistic covariance matrix. \code{lsqmode = 2} will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (\code{sum((f3_est-f3_fit)^2)}). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using \code{lsqmode = TRUE} which doesn't completely ignore the covariance of f3-statistics is to increase \code{diag_f3}.}
 }
 \value{
 A list with four items
@@ -54,6 +54,6 @@ first population \eqn{p1} and all population pairs \eqn{i, j}: \eqn{f3(p1; p_i, 
 pops = get_leafnames(example_igraph)
 qpgraph_precompute_f3(example_f2_blocks, pops)$f3_est
 \dontrun{
-qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
+qpgraph_precompute_f3(f2_dir, pops)
 }
 }

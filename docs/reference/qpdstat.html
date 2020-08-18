@@ -256,7 +256,7 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of g
     </tr>
     <tr>
       <th>f4mode</th>
-      <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of genotype files</p></td>
+      <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>, which is the same as <code>(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of genotype files</p></td>
     </tr>
     <tr>
       <th>afprod</th>

@@ -57,8 +57,15 @@ $$
 This makes it clear that $f_4$ is a generalization of $f_2$: $f_4(A, B; A, B) = f_2(A, B)$
 
 
-*D*-statistics differ from $f_4$ only by a scaling factor: $D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}$.
-
+*D*-statistics differ from $f_4$ only by a scaling factor: 
+$$
+\begin{equation}
+\begin{aligned}
+D(A, B; C, D) &= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\ &= \frac{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) - (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) + (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)} \\ &= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}
+\end{aligned}
+\end{equation}
+$$
+Here, $P(ABBA)$ is the probability of observing the same allele in populations $A$ and $D$, and a different one in $B$ and $C$, and $P(BABA)$ is the probability of observing the same allele in populations $A$ and $C$, and a different one in $B$ and $D$.
 
 Naively one might think that estimating $f_4$ without bias is at least as difficult as estimating $f_2$ without bias, but that is not the case. Since each population is represented in $f_4$ through two $f_2$ terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor $\frac{p(1-p)}{n-1}$, which is not necessary when estimating $f_4$.
 

@@ -10,6 +10,8 @@ flipadmix_random(graph, desimplify = TRUE, fix_outgroup = TRUE)
 \item{graph}{An admixture graph}
 
 \item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
+
+\item{fix_outgroup}{Keep outgroup in place (has no effect here)}
 }
 \value{
 A new admixture graph

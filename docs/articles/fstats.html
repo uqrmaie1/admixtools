@@ -113,7 +113,7 @@
       <h1>f-statistics</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-15</h4>
+            <h4 class="date">2020-08-17</h4>
       
       
       <div class="hidden name"><code>fstats.Rmd</code></div>
@@ -155,7 +155,13 @@ f_4(A, B; C, D) &amp;= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ 
 \end{equation}
 \]</span></p>
 <p>This makes it clear that <span class="math inline">\(f_4\)</span> is a generalization of <span class="math inline">\(f_2\)</span>: <span class="math inline">\(f_4(A, B; A, B) = f_2(A, B)\)</span></p>
-<p><em>D</em>-statistics differ from <span class="math inline">\(f_4\)</span> only by a scaling factor: <span class="math inline">\(D(A, B; C, D) = \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j) (c_j + d_j - 2 c_j d_j)}\)</span>.</p>
+<p><em>D</em>-statistics differ from <span class="math inline">\(f_4\)</span> only by a scaling factor: <span class="math display">\[
+\begin{equation}
+\begin{aligned}
+D(A, B; C, D) &amp;= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\ &amp;= \frac{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) - (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) + (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)} \\ &amp;= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}
+\end{aligned}
+\end{equation}
+\]</span> Here, <span class="math inline">\(P(ABBA)\)</span> is the probability of observing the same allele in populations <span class="math inline">\(A\)</span> and <span class="math inline">\(D\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(C\)</span>, and <span class="math inline">\(P(BABA)\)</span> is the probability of observing the same allele in populations <span class="math inline">\(A\)</span> and <span class="math inline">\(C\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(D\)</span>.</p>
 <p>Naively one might think that estimating <span class="math inline">\(f_4\)</span> without bias is at least as difficult as estimating <span class="math inline">\(f_2\)</span> without bias, but that is not the case. Since each population is represented in <span class="math inline">\(f_4\)</span> through two <span class="math inline">\(f_2\)</span> terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, which is not necessary when estimating <span class="math inline">\(f_4\)</span>.</p>
 <p>For a visual interpretation of this effect, consider the following phylogeny:</p>
 <pre><code>A         B

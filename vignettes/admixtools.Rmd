@@ -51,7 +51,8 @@ library(tidyverse)
 
 $f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of *ADMIXTOOLS*. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
-$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$. (Allele frequencies are denoted in lower case letters here.) We can estimate it by averaging over $M$ SNPs:
+$f_2$ is the average squared difference in allele frequencies between two populations. Here, we use upper case letters for populations ($A$ and $B$) and lower case letters for allele frequencies ($a$ and $b$).
+
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
 
 
@@ -64,7 +65,7 @@ f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \
 \end{aligned}
 \end{equation}
 $$
-
+If $f_4(A, B; C, D)$ is significantly different from zero, it suggests that $A$ and $B$ are not a clade relative to $C$ and $D$.
 
 $f_3$ is the covariance of allele frequency differences between two pairs of populations where one population is the same on both sides. $f_3$ is thus a special case of $f_4$, and can also be written as a sum of $f_2$.
 
@@ -74,10 +75,14 @@ f_3(A; B, C) &= f_4(A, B; A, C) \\ &= \frac{1}{2} (f_2(A, B) + f_2(A, C) - f_2(B
 \end{aligned}
 $$
 
+If $f_3(A; B, C)$ is negative, this suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
 
-In practice, the estimation of f-statistics can be more complicated, as it needs to account for low sample counts, missing data, and differences in ploidy, as described [here](fstats.html).
 
-In *ADMIXTOOLS 2*, f2-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
+In practice, the estimation of *f*-statistics can be more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
+
+## *f*~2~
+
+In *ADMIXTOOLS 2*, $f_2$-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
 
 ```{r, eval = FALSE}
 prefix = '/path/to/geno'
@@ -139,7 +144,7 @@ If you want to try any of this without extracting and loading your own $f_2$-sta
 
 <br>
 
-For more information on *f*-statistics in *ADMIXTOOLS 2*, click [here](fstats.html).
+[More information](fstats.html) on *f*-statistics in *ADMIXTOOLS 2*
 
 <br>
 
@@ -166,7 +171,7 @@ f3(example_f2_blocks, pop1, pop2, pop3)
 ```
 
 This will compute f3-statistics for all combinations of `pop1`, `pop2`, and `pop3`.
-Typing just `f3(f2_blocks)` will compute all possible combinations (which can be a large number). If only `pop1` is supplied, all combinations of populations in `pop1` will be computed.
+`f3(f2_blocks)` will compute all possible combinations (which can be a large number). If only `pop1` is supplied, all combinations of populations in `pop1` will be computed.
 
 <br>
 
@@ -285,7 +290,7 @@ Single $f_3$- and $f_4$-statistics can tell us how three or four populations are
 
 
 ```{r, eval = FALSE}
-qpg_results = qpgraph(f2_dir, example_graph)
+qpg_results = qpgraph(f2_blocks, example_graph)
 qpg_results$score
 ```
 ```{r, echo = FALSE}
@@ -398,10 +403,19 @@ qpgraph_ref_results = example_qpgraph_ref_results
 plot_comparison(qpg_results, qpgraph_ref_results)
 ```
 
-The interactive version of this can be useful for finding out which edges or population pairs behave differently between two models
+This is not only useful for comparing results between *ADMIXTOOLS* and *ADMIXTOOLS 2*, but also for comparing models which used different parameters.
+
+The interactive `plotly_comparison()` makes it easier to identify outliers.
+
+```{r, eval = FALSE}
+qpg_results2 = qpgraph(f2_blocks, example_graph, lsqmode = TRUE)
+```
+```{r, echo = FALSE}
+qpg_results2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
+```
 
 ```{r, warning = FALSE}
-plotly_comparison(qpg_results, qpgraph_ref_results)
+plotly_comparison(qpg_results, qpg_results2)
 ```
 <br>
 

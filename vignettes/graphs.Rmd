@@ -15,9 +15,9 @@ vignette: >
 
 **Under construction**
 
-ADMIXTOOLS 2 makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in several ways. You can either modify them manually, one edge or one node at a time, or automatically, by generating all possible variations of a certain type (for example all graphs that result from adding one admixture edge to the current graph).
+*ADMIXTOOLS 2* makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in several ways. You can either modify them manually, one edge or one node at a time, or automatically, by generating all possible variations of a certain type (for example all graphs that result from adding one admixture edge to the current graph).
 
-The purpose of all this is to find well fitting models, and to find out which models are not compatible with the data. This is further simplified by `find_graphs()`, a function which automatically finds well fitting graphs by repeatedly selecting the best among a set of randomly modified graphs. ADMIXTOOLS 2 also introduces a method for testing whether one admixture graph fits the data significantly better than another.
+The purpose of all this is to find well fitting models, and to find out which models are not compatible with the data. This is further simplified by `find_graphs()`, a function which automatically finds well fitting graphs by repeatedly selecting the best among a set of randomly modified graphs. *ADMIXTOOLS 2* also introduces a method for testing whether one admixture graph fits the data significantly better than another.
 
 ```{r, warning = FALSE, message = FALSE}
 library(magrittr)
@@ -28,7 +28,7 @@ library(admixtools)
 
 ## Graph formats
 
-ADMIXTOOLS 2 can read and write graphs in a number of different formats, including the format used by the original ADMIXTOOLS software and DOT format, but internally it uses only the following two representations of admixture graphs:
+*ADMIXTOOLS 2* can read and write graphs in a number of different formats, including the format used by the original *ADMIXTOOLS* software and DOT format, but internally it uses only the following two representations of admixture graphs:
 
 1. An edge list
   - This is either a matrix or a data frame where each edge is in a different row. The first column (`from`) contains the names of the source nodes, and the second column (`to`) contains the names of the target nodes. No distinction is made between admixture edges and drift edges, or between different types of nodes. Optionally, there are two more columns (`lower` and `upper`), which put constraints on the length of an edge. For admixture edges, these constraints should be between 0 and 1, and for drift edges they can range from 0 to infinity. No constraints are indicated by `NA`.
@@ -39,7 +39,7 @@ To convert an admixture graph from one of these representations to the other, yo
 
 ### Simplified graphs
 
-If you look at an admixture graph, you will probably notice that admixture edges originate at nodes which have no other outgoing edges. Many functions in ADMIXTOOLS 2 use simplified admixture graphs without those redundant nodes. While these nodes are redundant for the topology of a graph, they are still useful because they allow us to specify both admixture weights and drift weights for two merging branches.
+If you look at an admixture graph, you will probably notice that admixture edges originate at nodes which have no other outgoing edges. Many functions in *ADMIXTOOLS 2* use simplified admixture graphs without those redundant nodes. While these nodes are redundant for the topology of a graph, they are still useful because they allow us to specify both admixture weights and drift weights for two merging branches.
 
 `simplify_graph()` and `desimplify_graph()` can turn one representation into the other.
 
@@ -54,7 +54,7 @@ plotly_graph(simplify_graph(example_graph))
 
 ## Creating admixture graphs
 
-To get started, you can either read an existing graph (using `parse_qpgraph_graphfile()` if it's in the orginial ADMIXTOOLS format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`), or you can make a new one.
+To get started, you can either read an existing graph (using `parse_qpgraph_graphfile()` if it's in the orginial *ADMIXTOOLS* format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`), or you can make a new one.
 
 ```{r, warning = FALSE}
 newgraph = tibble(from = c('R', 'R', 'p1', 'p1'), to = c('p1', 'p2', 'p3', 'p4'))
@@ -81,7 +81,7 @@ insert_leaf(example_igraph, "newpop", from = "N4N", to = "Switzerland_Bichon.SG"
 delete_leaf(example_igraph, "Switzerland_Bichon.SG")
 ```
 
-But it's probably easier to modify a graph interactively using the ADMIXTOOLS 2 GUI.
+But it's probably easier to modify a graph interactively using the *ADMIXTOOLS 2* GUI.
 ```{r, eval = FALSE}
 run_shiny_admixtools()
 ```
@@ -92,7 +92,7 @@ Below you can see how a new admixture edge is added to a graph:
 
 ### Semi-automated graph exploration
 
-Rather than modifying admixture graphs manually and only testing a small number of models, you can start with a graph and let ADMIXTOOLS 2 generate and evaluate graphs for you.
+Rather than modifying admixture graphs manually and only testing a small number of models, you can start with a graph and let *ADMIXTOOLS 2* generate and evaluate graphs for you.
 
 The following functions take a graph and return lists of new, similar graphs:
 
@@ -162,12 +162,13 @@ The `ppinv` argument expects only the inverse of the covariance matrix, while $f
 
 ### Regularization terms
 
-There are two regularization terms (fudge factors) used in qpGraph, which make matrix inversions more stable.
-One is added to the diagonal elements of the $f_3$ covariance matrix (after multiplying it by the mean of the diagonal elements). It is called `fudge_cov` and defaults to 10^-5^. Increasing this factor has a small effect on admixture weights and branch lengths, but will shift the likelihood scores to be *closer to zero*.
+There are two regularization terms used in *qpGraph*, which make matrix inversions more stable.
 
-The other regularization terms is added to the covariance matrix of fitted branch lengths (after scaling as before). It is called `fudge` and defaults to 10^-4^. In the original *qpGraph* program, this parameter can be set through the `diag` parameter. Increasing `fudge` will shift the likelihood scores to be *further away from zero*. This regularization term ensures that edge weights will be evenly distributed across a set of edges whose weights could otherwise not be determined unambiguously. (As is often the case with the two edges originating in the root node.)
+One is called `diag` and is added to the covariance matrix of fitted branch lengths (after multiplying it by the mean of the diagonal elements). It is the same as the `diag` parameter in the original *qpGraph* program and defaults to 10^-4^. Increasing `diag` will shift the likelihood scores to be *further away from zero*. This regularization term ensures that edge weights will be evenly distributed across a set of edges whose weights could otherwise not be determined unambiguously. (As is often the case with the two edges originating in the root node.)
 
-As these regularization terms affect the likelihood score, they should be kept constant whenever fits of different graphs are compared to each other.
+The other regularization term is added to the diagonal elements of the $f_3$ covariance matrix (after multiplying it by the mean of the diagonal elements). It is called `diag_f3` and defaults to 10^-5^. In the original *qpGraph* program it is fixed at that value. Increasing this factor has a small effect on admixture weights and branch lengths, and will shift the likelihood scores to be *closer to zero*.
+
+The regularization terms affect the likelihood score, so they should be kept constant whenever fits of different graphs are compared to each other.
 
 
 ## Automatic graph optimization
@@ -177,11 +178,11 @@ An advantage of being able to quickly evaluate a single model using precomputed 
 <br>
 
 
-The function `find_graphs` attempts to automatically find admixture graphs that are compatible with the observed f-statistics. It generates and evaluates `numgraphs` admixture graphs in `numgen` generations, and in each generation selects and modifies the best graphs.
+The function `find_graphs()` attempts to automatically find admixture graphs that are compatible with the observed f-statistics. It generates and evaluates `numgraphs` admixture graphs in `numgen` generations, and in each generation selects and modifies the best graphs.
 
 
 ```{r, eval = FALSE}
-opt_results = find_graphs(my_f2_dir, pops, outpop = pops[1], numrep = 200,
+opt_results = find_graphs(f2_blocks, pops, outpop = pops[1], numrep = 200,
                           numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
 ```
 
@@ -218,7 +219,7 @@ If two different graphs model the same populations and the second graph has a be
 
 2. It is possible that the difference in scores is due to chance, and not because one of the two models really fits the data better. What if we had picked different samples from each population? Or what if we had picked different SNPs? Would the second model still be preferred over the first one?
 
-ADMIXTOOLS 2 solves the first problem by computing out-of-sample scores, and the second problem by computing the fit of a graph using bootstrap-resampled SNP blocks.
+*ADMIXTOOLS 2* solves the first problem by computing out-of-sample scores, and the second problem by computing the fit of a graph using bootstrap-resampled SNP blocks.
 
 
 ### Out-of-sample scores
@@ -235,7 +236,7 @@ $$S' = -\frac{1}{2} (g_{train} - f_{test})' Q^{-1} (g_{train} - f_{test})$$
 
 These scores tend to be further away from zero, but they allow us to fairly compare models of different complexity to each other.
 
-In ADMIXTOOLS 2, you can compute out-of-sample scores by providing the `qpgraph()` function with an `f2_blocks_test` argument.
+In *ADMIXTOOLS 2*, you can compute out-of-sample scores by providing the `qpgraph()` function with an `f2_blocks_test` argument.
 
 ```{r}
 nblocks = dim(example_f2_blocks)[3]

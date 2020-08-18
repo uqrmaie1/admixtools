@@ -59,7 +59,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{afprod}{Return negative average allele frequency products instead of f2-statistics. This option is only used when \code{outdir} is not specified and data is returned directly. Otherwise the decision which to use is made in \code{\link{f2_from_precomp}}. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+\item{afprod}{Return negative average allele frequency products instead of f2-statistics. This option is only used when \code{outdir} is not specified and data is returned directly. If \code{outdir} is specified, \code{afprod} can be set in \code{\link{f2_from_precomp}}. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.}
 
 \item{overwrite}{Overwrite existing files in \code{outdir}}
@@ -67,12 +67,16 @@ This option is currently ineffective when reading data extracted with \code{\lin
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }
 \value{
-SNP metadata (invisibly)
+\itemize{
+\item If \code{outdir = NULL} and \code{afprod = FALSE}: A 3d array of f2-statistics
+\item If \code{outdir = NULL} and \code{afprod = TRUE}: A 3d array of scaled allele frequency products
+\item If \code{outdir != NULL}: SNP metadata (invisibly)
+}
 }
 \description{
 This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,

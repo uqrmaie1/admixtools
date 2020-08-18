@@ -295,7 +295,7 @@ fix_ploidy = function(xmat) {
 
 # turns f2_data (f2 dir) into f2_blocks; divides by denom
 # returns f2_blocks array with block_lengths in 3rd dimension names
-get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL, afprod = FALSE) {
+get_f2 = function(f2_data, pops, lambdascale = 1, pops2 = NULL, afprod = FALSE) {
 
   stopifnot(!is.character(f2_data) || dir.exists(f2_data))
   if(is.character(f2_data)) {
@@ -311,7 +311,7 @@ get_f2 = function(f2_data, pops, f2_denom = 1, pops2 = NULL, afprod = FALSE) {
                 '\navailable pops: ', paste(blockpops, collapse = ', '),
                 '\ndiff: ', paste(setdiff(allpops, blockpops), collapse = ', ')))
   }
-  f2_blocks = f2_blocks[pops, pops2, , drop = FALSE] / f2_denom
+  f2_blocks = f2_blocks[pops, pops2, , drop = FALSE] * lambdascale
   f2_blocks
 }
 

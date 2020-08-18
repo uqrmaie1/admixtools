@@ -65,7 +65,7 @@ from accidently computing all combinations if that number is large.}
 \item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs. only used when \code{f2_data} is the prefix of genotype files}
 
-\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of genotype files}
+\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of genotype files}
 
 \item{afprod}{Compute f4 from allele frequency products instead of f2. Only used if \code{f2_data} is a directory with precomputed data.}
 

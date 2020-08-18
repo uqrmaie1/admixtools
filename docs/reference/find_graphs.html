@@ -193,7 +193,8 @@ for admixture graphs with many admixture nodes.</p>
   <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>),
   <span class='kw'>initgraph</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>mutfuns</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"spr_leaves"</span>, <span class='st'>"spr_all"</span>, <span class='st'>"swap_leaves"</span>, <span class='st'>"move_admixedge_once"</span>,
-    <span class='st'>"flipadmix_random"</span>),
+    <span class='st'>"flipadmix_random"</span>, <span class='st'>"mutate_n"</span>),
+  <span class='kw'>mutprobs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>store_intermediate</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>parallel</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>stop_after</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -206,16 +207,15 @@ for admixture graphs with many admixture nodes.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_data</th>
-      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.
-alternatively, a directory with precomputed data. see <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code></p></td>
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>Populations for which to fit admixture graphs</p></td>
+      <td><p>Populations for which to fit admixture graphs (default all)</p></td>
     </tr>
     <tr>
       <th>outpop</th>
-      <td><p>An outgroup population which will split at the root from all other populations in all tested graphs. If one population is know to be an outgroup, designating it as <code>outpop</code> will greatly reduce the search space compared to including it and not designating it as <code>outpop</code>.</p></td>
+      <td><p>An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as <code>outpop</code> will greatly reduce the search space compared to including it and not designating it as <code>outpop</code>.</p></td>
     </tr>
     <tr>
       <th>numrep</th>
@@ -255,12 +255,29 @@ alternatively, a directory with precomputed data. see <code><a href='extract_f2.
     </tr>
     <tr>
       <th>mutfuns</th>
-      <td><p>The names of funcations used to modify graphs.</p><ul>
-<li><p><code>spr_leaves</code>: Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.</p></li>
-<li><p><code>spr_all</code>: Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.</p></li>
+      <td><p>The names of functions used to modify graphs.</p><ul>
+<li><p><code>spr_leaves</code>: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+to a random other edge in the graph.</p></li>
+<li><p><code>spr_all</code>: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+to a random other edge in the graph, keeping the number of admixture nodes constant.</p></li>
 <li><p><code>swap_leaves</code>: Swaps two leaf nodes.</p></li>
 <li><p><code>move_admixedge_once</code>: Moves an admixture edge to a nearby location.</p></li>
 <li><p><code>flipadmix_random</code>: Flips the direction of an admixture edge (if possible).</p></li>
+<li><p><code>mutate_n</code>: Apply <code>n</code> of the above mutation functions to a graph (defaults to 2).</p></li>
+</ul><p>It is possible to define and use your own mutation functions. A mutation function should return
+a new graph and take three arguments:</p><ol>
+<li><p><code>graph</code>: An admixture graph in <code>igraph</code> format</p></li>
+<li><p><code>desimplify</code>: Logical; currently not used, the function should return
+a regular (de-simplified) admixture graph.</p></li>
+<li><p><code>fix_outgroup</code>: Logical; should specify whether an edge root -&gt; outgroup will be kept in place.</p></li>
+</ol></td>
+    </tr>
+    <tr>
+      <th>mutprobs</th>
+      <td><p>Relative frequencies of each mutation function.</p><ul>
+<li><p><code>NULL</code> (default) means each mutation function is picked with equal probability</p></li>
+<li><p>A numeric vector of length equal to <code>mutfuns</code> defines the relative frequency of each mutation function</p></li>
+<li><p>A matrix of dimensions <code>numgen</code> x <code><a href='https://rdrr.io/r/base/length.html'>length(mutfuns)</a></code> defines the relative frequency of each mutation function in each generation</p></li>
 </ul></td>
     </tr>
     <tr>

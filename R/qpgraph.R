@@ -159,20 +159,20 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @export
 #' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.
 #' @param graph An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled `lower` and `upper` with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.
-#' @param f2_denom Scales f2-statistics. A value of around 0.278 converts F2 to Fst.
+#' @param lambdascale Scales f2-statistics. This has no effect on the fit, but is used in the original *qpGraph* program to display branch weights on a scale that corresponds to FST distances.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of
 #' f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
 #' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
 #' The covariance matrix of f3 statistics will be computed using bootstrap resampling.
-#' @param fudge Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).
-#' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
-#' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * fudge_cov)`, in place of the inverse f3-statistic covariance matrix.
+#' @param diag Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace). Default is 0.0001.
+#' @param diag_f3 Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original *qpGraph* program, this is fixed at 0.00001.
+#' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * diag_f3)`, in place of the inverse f3-statistic covariance matrix.
 #'
 #' `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (`sum((f3_est-f3_fit)^2)`).
 #'
-#' Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to `lsqmode = TRUE` that doesn't completely ignore the covariance of f3-statistics is to increase `fudge_cov`.
-#' @param numstart Number of random initializations of starting weights. Defaults to 10.
-#' @param seed Seed for generating starting weights.
+#' Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to `lsqmode = TRUE` that doesn't completely ignore the covariance of f3-statistics is to increase `diag_f3`.
+#' @param numstart Number of random initializations of starting weights. Defaults to 10. Increasing this number will make the optimization slower, but reduce the risk of not finding the optimal weights. Check the `opt` output to see how much the optimization depends on the starting weights.
+#' @param seed Random seed for generating starting weights.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param return_f4 Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to `FALSE` because this can be slow.
 #' @param f3precomp Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of `f2_blocks`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
@@ -198,7 +198,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' @examples
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
-qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, fudge_cov = 1e-5,
+qpgraph = function(f2_blocks, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag_f3 = 1e-5,
                    lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
                    f3basepop = NULL, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
 
@@ -241,8 +241,8 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
   } else {
-    precomp = qpgraph_precompute_f3(f2_blocks, pops, f3basepop = f3basepop, f2_denom = f2_denom, boot = boot,
-                                    seed = seed, fudge_cov = fudge_cov, lsqmode = lsqmode)
+    precomp = qpgraph_precompute_f3(f2_blocks, pops, f3basepop = f3basepop, lambdascale = lambdascale, boot = boot,
+                                    seed = seed, diag_f3 = diag_f3, lsqmode = lsqmode)
     baseind = if(is.null(f3basepop)) 1 else which(pops == f3basepop)
   }
   stopifnot(all(!is.na(precomp$ppinv)))
@@ -284,7 +284,7 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
     if(verbose) alert_info(paste0('Testing ', nrow(parmat), ' combinations of admixture weight starting values...\n'))
     weightind = graph_to_weightind(graph)
     arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]],
-                   cmb, qpsolve, elower, eupper, fudge, baseind)
+                   cmb, qpsolve, elower, eupper, diag, baseind)
     oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
                     lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = 1e-6),
                     verbose = verbose)
@@ -304,12 +304,12 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
   }
   pwts = pwts[,-baseind] - pwts[,baseind]
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = fudge)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = diag)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
   if(!is.null(f2_blocks_test)) {
-    precomp_test = qpgraph_precompute_f3(f2_blocks_test, pops, f2_denom = f2_denom, boot = boot,
-                                         seed = seed, fudge_cov = fudge_cov, lsqmode = lsqmode)
+    precomp_test = qpgraph_precompute_f3(f2_blocks_test, pops, lambdascale = lambdascale, boot = boot,
+                                         seed = seed, diag_f3 = diag_f3, lsqmode = lsqmode)
     score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
   }
 
@@ -341,14 +341,14 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 #' @param pops Populations for which to compute f3-statistics
 #' @param f3basepop f3-statistics base population. If `NULL` (the default),
 #' the first population in `pops` will be used as the basis.
-#' @param f2_denom Scales f2-statistics. A value of around 0.278 converts F2 to Fst.
+#' @param lambdascale Scales f2-statistics. This has no effect on the fit, but is used in the original *qpGraph* program to display branch weights on a scale that corresponds to FST distances.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of f3 statistics
 #' will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times, where `n` is either
 #' equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix
 #' of f3 statistics will be computed using bootstrapping.
 #' @param seed Random seed used if `boot` is `TRUE`.
-#' @param fudge_cov Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).
-#' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * fudge_cov)`, in place of the inverse f3-statistic covariance matrix. `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (`sum((f3_est-f3_fit)^2)`). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using `lsqmode = TRUE` which doesn't completely ignore the covariance of f3-statistics is to increase `fudge_cov`.
+#' @param diag_f3 Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original *qpGraph* program, this is fixed at 0.00001.
+#' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * diag_f3)`, in place of the inverse f3-statistic covariance matrix. `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (`sum((f3_est-f3_fit)^2)`). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using `lsqmode = TRUE` which doesn't completely ignore the covariance of f3-statistics is to increase `diag_f3`.
 #' @return A list with four items
 #' \enumerate{
 #' \item `f3_est` a matrix with f3-statistics for all population pairs with the output
@@ -360,10 +360,10 @@ qpgraph = function(f2_blocks, graph, f2_denom = 1, boot = FALSE, fudge = 1e-4, f
 #' pops = get_leafnames(example_igraph)
 #' qpgraph_precompute_f3(example_f2_blocks, pops)$f3_est
 #' \dontrun{
-#' qpgraph_precompute_f3(f2_dir, pops, f2_denom = 0.278)
+#' qpgraph_precompute_f3(f2_dir, pops)
 #' }
-qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, f2_denom = 1, boot = FALSE,
-                                 seed = NULL, fudge_cov = 1e-5, lsqmode = FALSE) {
+qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
+                                 seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE) {
   # returns list of f3_est and ppinv for subset of populations.
   # f3_est and ppinv are required for qpgraph_slim; f2out and f3out are extra output
   # f2_blocks may contain more populations than the ones used in qpgraph
@@ -376,7 +376,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, f2_denom = 1, 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
-  f2_blocks = get_f2(f2_data, pops, f2_denom) %>% samplefun
+  f2_blocks = get_f2(f2_data, pops, lambdascale) %>% samplefun
   #f2_blocks = array(pmax(0, f2_blocks), dim(f2_blocks), dimnames(f2_blocks))
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
@@ -401,10 +401,9 @@ qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, f2_denom = 1, 
                  pop2 = pops[cmb[1,]+1],
                  pop3 = pops[cmb[2,]+1],
                  est = f3_est, se = sqrt(diag(f3_var)))
-  add_diag = sum(diag(f3_var)) * fudge_cov
+  add_diag = sum(diag(f3_var)) * diag_f3
   diag(f3_var) = diag(f3_var) + add_diag
-  # in qpGraph fudge_cov is 1e-5; sometimes quadprog doesn't converge unless this is larger
-  #   has large effect on magnitude of likelihood score
+  # in qpGraph diag_f3 is 1e-5; has large effect on magnitude of likelihood score
   if(lsqmode == 2) ppinv = diag(nrow(f3_var))
   else if(lsqmode) ppinv = diag(nrow(f3_var)) / add_diag
   else ppinv = solve(f3_var)
@@ -424,7 +423,7 @@ get_pairindex = function(perm) {
   match(new_order, orig_order)
 }
 
-qpgraph_anorexic = function(f3precomp, graph, fudge = 1e-4,
+qpgraph_anorexic = function(f3precomp, graph, diag = 1e-4,
                             numstart = 10, seed = NULL, verbose = FALSE, cpp = TRUE) {
 
   # only works for trees at the moment, because weightind order is coupled to pwts order
@@ -447,7 +446,7 @@ qpgraph_anorexic = function(f3precomp, graph, fudge = 1e-4,
 
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve,
                                     lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)),
-                                    fudge = fudge)
+                                    fudge = diag)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 

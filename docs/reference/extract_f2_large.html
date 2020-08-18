@@ -49,7 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Compute and store blocked f2 statistics — extract_f2_large" />
 
-<meta property="og:description" content="extract_f2_large does the same as extract_f2, but it requires less memory." />
+<meta property="og:description" content="extract_f2_large does the same as extract_f2, but it requires less memory and is slower. outdir has to be set in extract_f2_large." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -166,7 +166,7 @@
 
     <div class="ref-description">
     
-    <p><code>extract_f2_large</code> does the same as <code><a href='extract_f2.html'>extract_f2</a></code>, but it requires less memory.</p>
+    <p><code>extract_f2_large</code> does the same as <code><a href='extract_f2.html'>extract_f2</a></code>, but it requires less memory and is slower. <code>outdir</code> has to be set in <code>extract_f2_large</code>.</p>
     
     </div>
 
@@ -188,7 +188,6 @@
   <span class='kw'>snpblocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>poly_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
@@ -264,7 +263,7 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

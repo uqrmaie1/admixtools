@@ -9,6 +9,8 @@ swap_leaves(graph, desimplify = TRUE, fix_outgroup = TRUE)
 \arguments{
 \item{graph}{An admixture graph}
 
+\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
+
 \item{fix_outgroup}{Keep outgroup in place}
 }
 \value{

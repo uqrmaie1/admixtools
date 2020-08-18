@@ -176,10 +176,10 @@ first population \(p1\) and all population pairs \(i, j\): \(f3(p1; p_i, p_j)\)<
   <span class='no'>f2_data</span>,
   <span class='no'>pops</span>,
   <span class='kw'>f3basepop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>lambdascale</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>diag_f3</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
   <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
 )</pre>
     
@@ -201,8 +201,8 @@ alternatively, a directory with precomputed data. see <code><a href='extract_f2.
 the first population in <code>pops</code> will be used as the basis.</p></td>
     </tr>
     <tr>
-      <th>f2_denom</th>
-      <td><p>Scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+      <th>lambdascale</th>
+      <td><p>Scales f2-statistics. This has no effect on the fit, but is used in the original <em>qpGraph</em> program to display branch weights on a scale that corresponds to FST distances.</p></td>
     </tr>
     <tr>
       <th>boot</th>
@@ -216,12 +216,12 @@ of f3 statistics will be computed using bootstrapping.</p></td>
       <td><p>Random seed used if <code>boot</code> is <code>TRUE</code>.</p></td>
     </tr>
     <tr>
-      <th>fudge_cov</th>
-      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
+      <th>diag_f3</th>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original <em>qpGraph</em> program, this is fixed at 0.00001.</p></td>
     </tr>
     <tr>
       <th>lsqmode</th>
-      <td><p>Least-squares mode. If <code>TRUE</code>, the likelihood score will be computed using a diagonal matrix with <code>1/(sum(diag(f3_var)) * fudge_cov)</code>, in place of the inverse f3-statistic covariance matrix. <code>lsqmode = 2</code> will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (<code><a href='https://rdrr.io/r/base/sum.html'>sum((f3_est-f3_fit)^2)</a></code>). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using <code>lsqmode = TRUE</code> which doesn't completely ignore the covariance of f3-statistics is to increase <code>fudge_cov</code>.</p></td>
+      <td><p>Least-squares mode. If <code>TRUE</code>, the likelihood score will be computed using a diagonal matrix with <code>1/(sum(diag(f3_var)) * diag_f3)</code>, in place of the inverse f3-statistic covariance matrix. <code>lsqmode = 2</code> will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (<code><a href='https://rdrr.io/r/base/sum.html'>sum((f3_est-f3_fit)^2)</a></code>). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using <code>lsqmode = TRUE</code> which doesn't completely ignore the covariance of f3-statistics is to increase <code>diag_f3</code>.</p></td>
     </tr>
     </table>
     
@@ -245,7 +245,7 @@ of f3 statistics will be computed using bootstrapping.</p></td>
 #&gt; [1] "Chimp.REF"             "Altai_Neanderthal.DG"  "Vindija.DG"           
 #&gt; [4] "Mbuti.DG"              "Denisova.DG"           "Russia_Ust_Ishim.DG"  
 #&gt; [7] "Switzerland_Bichon.SG"</div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>f2_dir</span>, <span class='no'>pops</span>, <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>0.278</span>)
+<span class='fu'>qpgraph_precompute_f3</span>(<span class='no'>f2_dir</span>, <span class='no'>pops</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

@@ -116,7 +116,7 @@ tt = c('data' = 'Load data here',
        'add_edge' = 'Add an admixture edge by connecting two selected non-admixture edges. Fails if it introduces cycles or attempts to connect admixture edges.',
        'randgraph' = 'Generate a random admixture graph. Uses the current populations, a specified number of admixture nodes, and a specified outgroup.',
        'lsqmode' = 'Least squares mode. By default, the computation of the graph likelihood score uses the inverse of the f3-statistic covariance matrix. When fitting many populations, this inverse can be unstable. Least squares mode sets the offdiagonal elements of the f3-statistic covariance matrix to zero, which makes the matrix inversion stable, but can introduce bias.',
-       'f2_denom' = 'Scale the estimated f2-statistics by a constant factor. A value of around 0.278 usually converts f2 to FST scale.',
+       'lambdascale' = 'Scale the estimated f2-statistics by a constant factor.',
        'seed' = 'Set a random seed to always pick the same initial weights and to make the results reproducible.',
        'multiprocess' = 'Enable parallel evaluation of graphs in multiple R processes. Faster, but may not work on all operating systems. See "A Future for R: A Comprehensive Overview" for more details.',
        'collapse_edges' = 'Collapse all nodes which are separated by less then a certain threshold of estimated drift.',
@@ -275,7 +275,7 @@ ui = function(request) {
                                                                     actionButton('options_update', 'Update'),
                                                                     numericInput('qpgraph_diag', 'diag', value = 0.001, step = 0.001),
                                                                     numericInput('numstart', '# init', value = 10, min = 1),
-                                                                    numericInput('f2_denom', 'f2 scale', value = 0.278, step = 0.001),
+                                                                    numericInput('lambdascale', 'f2 scale', value = 1, step = 0.001),
                                                                     numericInput('seed', 'Random seed', value = NULL),
                                                                     checkboxInput('lsqmode', 'lsqmode')),
                                                            menuItem('Plot', tabName = 'qpgraph_options_plot',
@@ -660,7 +660,7 @@ server = function(input, output, session) {
     numsel = input$optim_nsel
     numrep = input$optim_nrep
     fudge = input$qpgraph_diag
-    f2_denom = as.numeric(input$f2_denom)
+    lambdascale = as.numeric(input$lambdascale)
     f2blocks = get_f2blocks()
     pops = dimnames(f2blocks)[[1]]
     f2blocks = f2blocks[pops, pops,]
@@ -680,7 +680,7 @@ server = function(input, output, session) {
       opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
                                 numgraphs = numgraphs, numgen = numgen, numsel = numsel,
                                 numadmix = nadmix, initgraph = g, mutfuns = mutfuns, debug = FALSE,
-                                fudge = fudge, f2_denom = f2_denom)
+                                fudge = fudge)
     })
     print(opt_results)
     opt_results %<>% filter(!is.na(score))
@@ -728,15 +728,15 @@ server = function(input, output, session) {
 
     isolate({
       numstart = as.numeric(input$numstart)
-      f2_denom = as.numeric(input$f2_denom)
-      if(is.null(f2_denom) || length(f2_denom) == 0) f2_denom = 1
+      lambdascale = as.numeric(input$lambdascale)
+      if(is.null(lambdascale) || length(lambdascale) == 0) lambdascale = 1
       fudge = input$qpgraph_diag
       lsqmode = input$lsqmode
-      print(paste('qpgraphfun:', numstart, seed, fudge, lsqmode, f2_denom))
+      print(paste('qpgraphfun:', numstart, seed, fudge, lsqmode, lambdascale))
       function(x, y, ...) {
         args = list(...)
         if(!'numstart' %in% names(args)) args[['numstart']] = numstart
-        args = c(list(x, y), args, fudge = fudge, f2_denom = f2_denom, lsqmode = lsqmode,
+        args = c(list(x, y), args, fudge = fudge, lambdascale = lambdascale, lsqmode = lsqmode,
                  seed = seed, f3precomp = list(f3precomp))
         do.call(quietly(qpgraph), args)$result
       }

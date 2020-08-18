@@ -17,8 +17,6 @@ read_plink(pref, inds = NULL, verbose = FALSE)
 A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
 }
 \description{
-This is based on Gad Abraham's \href{https://github.com/gabraham/plink2R}{plink2R} package,
-but genotypes are \code{m} x \code{n}, not \code{n} x \code{m}.
 See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated \code{R} package for
 reading and writing \code{PLINK} files.
 }

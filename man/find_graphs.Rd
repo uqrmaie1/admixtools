@@ -17,7 +17,8 @@ find_graphs(
   keep = c("all", "best", "last"),
   initgraph = NULL,
   mutfuns = c("spr_leaves", "spr_all", "swap_leaves", "move_admixedge_once",
-    "flipadmix_random"),
+    "flipadmix_random", "mutate_n"),
+  mutprobs = NULL,
   store_intermediate = NULL,
   parallel = TRUE,
   stop_after = NULL,
@@ -26,12 +27,11 @@ find_graphs(
 )
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
+\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}}
 
-\item{pops}{Populations for which to fit admixture graphs}
+\item{pops}{Populations for which to fit admixture graphs (default all)}
 
-\item{outpop}{An outgroup population which will split at the root from all other populations in all tested graphs. If one population is know to be an outgroup, designating it as \code{outpop} will greatly reduce the search space compared to including it and not designating it as \code{outpop}.}
+\item{outpop}{An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as \code{outpop} will greatly reduce the search space compared to including it and not designating it as \code{outpop}.}
 
 \item{numrep}{Number of independent repetitions (each repetition can be run in parallel)}
 
@@ -54,13 +54,31 @@ alternatively, a directory with precomputed data. see \code{\link{extract_f2}} a
 
 \item{initgraph}{Optional graph to start with. If \code{NULL}, optimization will start with random graphs.}
 
-\item{mutfuns}{The names of funcations used to modify graphs.
+\item{mutfuns}{The names of functions used to modify graphs.
 \itemize{
-\item \code{spr_leaves}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
-\item \code{spr_all}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+\item \code{spr_leaves}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+to a random other edge in the graph.
+\item \code{spr_all}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+to a random other edge in the graph, keeping the number of admixture nodes constant.
 \item \code{swap_leaves}: Swaps two leaf nodes.
 \item \code{move_admixedge_once}: Moves an admixture edge to a nearby location.
 \item \code{flipadmix_random}: Flips the direction of an admixture edge (if possible).
+\item \code{mutate_n}: Apply \code{n} of the above mutation functions to a graph (defaults to 2).
+}
+It is possible to define and use your own mutation functions. A mutation function should return
+a new graph and take three arguments:
+\enumerate{
+\item \code{graph}: An admixture graph in \code{igraph} format
+\item \code{desimplify}: Logical; currently not used, the function should return
+a regular (de-simplified) admixture graph.
+\item \code{fix_outgroup}: Logical; should specify whether an edge root -> outgroup will be kept in place.
+}}
+
+\item{mutprobs}{Relative frequencies of each mutation function.
+\itemize{
+\item \code{NULL} (default) means each mutation function is picked with equal probability
+\item A numeric vector of length equal to \code{mutfuns} defines the relative frequency of each mutation function
+\item A matrix of dimensions \code{numgen} x \code{length(mutfuns)} defines the relative frequency of each mutation function in each generation
 }}
 
 \item{store_intermediate}{Path and prefix of files for intermediate results to \code{.rds}. Can be useful if \code{find_graphs} doesn't finish sucessfully.}

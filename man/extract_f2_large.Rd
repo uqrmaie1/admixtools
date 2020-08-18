@@ -22,7 +22,6 @@ extract_f2_large(
   snpblocks = NULL,
   overwrite = FALSE,
   format = NULL,
-  poly_only = TRUE,
   adjust_pseudohaploid = TRUE,
   verbose = TRUE
 )
@@ -62,7 +61,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
-\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
+\item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
 \item{verbose}{Print progress updates}
 }
@@ -70,7 +69,7 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 SNP metadata (invisibly)
 }
 \description{
-\code{extract_f2_large} does the same as \code{\link{extract_f2}}, but it requires less memory.
+\code{extract_f2_large} does the same as \code{\link{extract_f2}}, but it requires less memory and is slower. \code{outdir} has to be set in \code{extract_f2_large}.
 }
 \details{
 \code{extract_f2_large} requires less memory because it writes allele frequency data to disk, and doesn't store the allele frequency matrix for all populations and SNPs in memory. If you still run out of memory, reduce \code{cols_per_chunk}. This function is a wrapper around \code{\link{extract_afs}} and \code{\link{write_split_f2_block}}, and is slower than \code{\link{extract_f2}}. It may be faster to call \code{\link{extract_afs}} and \code{\link{write_split_f2_block}} directly, parallelizing over the different calls to \code{\link{write_split_f2_block}}.

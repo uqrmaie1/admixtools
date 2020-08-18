@@ -136,7 +136,7 @@ f3 = qp3pop
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs. only used when `f2_data` is the prefix of genotype files
-#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
+#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
 #' @param afprod Compute f4 from allele frequency products instead of f2. Only used if `f2_data` is a directory with precomputed data.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @return A data frame with f4 statistics

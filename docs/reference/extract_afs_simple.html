@@ -255,7 +255,7 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

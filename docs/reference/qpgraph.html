@@ -173,10 +173,10 @@
     <pre class="usage"><span class='fu'>qpgraph</span>(
   <span class='no'>f2_blocks</span>,
   <span class='no'>graph</span>,
-  <span class='kw'>f2_denom</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>lambdascale</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
-  <span class='kw'>fudge_cov</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>diag</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
+  <span class='kw'>diag_f3</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
   <span class='kw'>lsqmode</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>10</span>,
   <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -194,43 +194,44 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>f2_blocks</th>
-      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
+      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code>.</p></td>
     </tr>
     <tr>
       <th>graph</th>
       <td><p>An admixture graph represented as a matrix of edges, an <code>igraph</code> object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled <code>lower</code> and <code>upper</code> with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.</p></td>
     </tr>
     <tr>
-      <th>f2_denom</th>
-      <td><p>Scales f2-statistics. A value of around 0.278 converts F2 to Fst.</p></td>
+      <th>lambdascale</th>
+      <td><p>Scales f2-statistics. This has no effect on the fit, but is used in the original <em>qpGraph</em> program to display branch weights on a scale that corresponds to FST distances.</p></td>
     </tr>
     <tr>
       <th>boot</th>
       <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix of
 f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed <code>n</code> times,
 where <code>n</code> is either equal to <code>boot</code> if it is an integer, or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.
-The covariance matrix of f3 statistics will be computed using bootstrapping.</p></td>
+The covariance matrix of f3 statistics will be computed using bootstrap resampling.</p></td>
     </tr>
     <tr>
-      <th>fudge</th>
-      <td><p>Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace).</p></td>
+      <th>diag</th>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of fitted branch lengths (after scaling by the matrix trace). Default is 0.0001.</p></td>
     </tr>
     <tr>
-      <th>fudge_cov</th>
-      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace).</p></td>
+      <th>diag_f3</th>
+      <td><p>Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original <em>qpGraph</em> program, this is fixed at 0.00001.</p></td>
     </tr>
     <tr>
       <th>lsqmode</th>
-      <td><p>Least-squares mode. If <code>TRUE</code>, the likelihood score will be computed using a diagonal matrix with <code>1/(sum(diag(f3_var)) * fudge_cov)</code>, in place of the inverse f3-statistic covariance matrix.
-<code>lsqmode = 2</code> will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (<code><a href='https://rdrr.io/r/base/sum.html'> sum((f3_est-f3_fit)^2)</a></code>). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to <code>lsqmode = TRUE</code> that doesn't completely ignore the covariance of f3-statistics is to increase <code>fudge_cov</code>.</p></td>
+      <td><p>Least-squares mode. If <code>TRUE</code>, the likelihood score will be computed using a diagonal matrix with <code>1/(sum(diag(f3_var)) * diag_f3)</code>, in place of the inverse f3-statistic covariance matrix.</p>
+<p><code>lsqmode = 2</code> will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (<code><a href='https://rdrr.io/r/base/sum.html'>sum((f3_est-f3_fit)^2)</a></code>).</p>
+<p>Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to <code>lsqmode = TRUE</code> that doesn't completely ignore the covariance of f3-statistics is to increase <code>diag_f3</code>.</p></td>
     </tr>
     <tr>
       <th>numstart</th>
-      <td><p>Number of random initializations of starting weights. Defaults to 10.</p></td>
+      <td><p>Number of random initializations of starting weights. Defaults to 10. Increasing this number will make the optimization slower, but reduce the risk of not finding the optimal weights. Check the <code>opt</code> output to see how much the optimization depends on the starting weights.</p></td>
     </tr>
     <tr>
       <th>seed</th>
-      <td><p>Seed for generating starting weights.</p></td>
+      <td><p>Random seed for generating starting weights.</p></td>
     </tr>
     <tr>
       <th>cpp</th>

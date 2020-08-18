@@ -163,6 +163,7 @@ simplify_graph = function(graph) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
+  graph %<>% igraph::simplify()
   repeat({
     redundant = which(degree(graph, mode='in') == 1 & degree(graph, mode='out') == 1)
     if(length(redundant) == 0) break
@@ -216,17 +217,23 @@ split_graph = function(graph) {
   repeat({
     admix = names(which(degree(graph, mode='in') == 2))
     if(length(admix) == 0) break
-    parents = names(neighbors(graph, admix[1], mode='in'))
-    parents = sample(parents)
+    adm = admix[1]
+    parents = sample(names(neighbors(graph, adm, mode='in')))
+    fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
+    while(length(fromnode0) > 1) {
+      adm = parents[1]
+      parents = sample(names(neighbors(graph, adm, mode='in')))
+      fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
+    }
     # stopifnot(!any(c(parents[1], admix[1]) %in% unlist(admixedges)))
     # too strict; probably won't be able to always reintroduce admixedges at appropriate locations after SPR
-    fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
-    fromnode = setdiff(names(neighbors(graph, parents[1], mode = 'out')), admix[1])
-    tonode0 = setdiff(names(neighbors(graph, admix[1], mode = 'in')), parents[1])
-    tonode = names(neighbors(graph, admix[1], mode = 'out'))
+    fromnode = setdiff(names(neighbors(graph, parents[1], mode = 'out')), adm)
+    tonode0 = setdiff(names(neighbors(graph, adm, mode = 'in')), parents[1])
+    tonode = names(neighbors(graph, adm, mode = 'out'))
     fromnodes = c(fromnodes, fromnode)
     tonodes = c(tonodes, tonode)
-    graph = igraph::delete_vertices(graph, c(admix[1], parents[1]))
+    if(length(fromnode) != length(tonode)) browser()
+    graph = igraph::delete_vertices(graph, c(adm, parents[1]))
     graph = igraph::add_edges(graph, c(fromnode0, fromnode, tonode0, tonode))
   })
   tree = graph
@@ -236,9 +243,13 @@ split_graph = function(graph) {
 newnodenam = function(newnam, current) {
   # this function takes a vector of proposed new node names (newnam), checks if they already exist,
   # and if so, returns unique newnams with newnam as prefix
-  while(any(newnam %in% current)) {
-    mod = which(newnam %in% current)
-    newnam[mod] = paste0(newnam[mod], sample(letters)[1:length(mod)])
+  for(i in seq_along(newnam)) {
+    mod = newnam[i]
+    while(mod %in% current) {
+      mod = paste0(mod, sample(letters)[1])
+    }
+    newnam[i] = mod
+    current = c(current, mod)
   }
   newnam
 }
@@ -387,14 +398,16 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
     fromnode = fromnodes[i]
     tonode = tonodes[i]
     if(!fromnode %in% names(V(graph)) ||
-       !tonode %in% names(V(graph))) {
+       !tonode %in% names(V(graph)) ||
+       is.finite(igraph::distances(graph, tonode, fromnode, mode = 'out'))) {
       miss = miss+1
       next
     }
     toedge2parent = neighbors(graph, tonode, mode='in')
     toedge2sib = setdiff(names(neighbors(graph, toedge2parent, mode='out')), tonode)
     if(!allow_below_admix) {
-      if(degree(graph, fromnode, mode='in') > 1 ||
+      if(length(toedge2sib) == 0 ||
+         degree(graph, fromnode, mode='in') > 1 ||
          degree(graph, toedge2sib, mode='in') > 1) {
         miss = miss+1
         next
@@ -402,14 +415,16 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
     }
     fromnode_parent = names(neighbors(graph, fromnode, mode='in'))
     tonode_parent = names(neighbors(graph, tonode, mode='in'))
+    if(length(fromnode_parent) != 1 || length(tonode_parent) != 1) {
+      miss = miss+1
+      next
+    }
     graph = igraph::delete_edges(graph, c(paste(fromnode_parent, fromnode, sep='|'),
                                           paste(tonode_parent, tonode, sep='|')))
-    new1 = paste0(fromnode_parent, 'x')
-    while(new1 %in% names(V(graph))) new1 = paste0(new1, sample(letters, 1))
-    j = i
-    new2 = paste0('admix', j)
-    while(new2 %in% names(V(graph))) {j=j+1; new2 = paste0('admix', j)}
-    graph = igraph::add_vertices(graph, 2, name=c(new1, new2))
+    newnam = newnodenam(c(paste0(fromnode_parent, 'x'), paste0('admix', i)), names(V(graph)))
+    new1 = newnam[1]
+    new2 = newnam[2]
+    graph = igraph::add_vertices(graph, 2, name = newnam)
     newedges = c(fromnode_parent, new1, new1, fromnode, tonode_parent, new2, new2, tonode, new1, new2)
     graph = igraph::add_edges(graph, newedges)
     stopifnot(max(degree(graph)) <= maxprev)
@@ -453,6 +468,7 @@ insert_admix_igraph_random = function(graph, nadmix) {
     graphnew = insert_admix_igraph(graph, fromnode, tonode, substitute_missing = FALSE)
     stopifnot(numadmix(graphnew) > numadmix(graph))
     stopifnot(igraph::is_simple(graphnew))
+    stopifnot(igraph::is_dag(graphnew))
     graph = graphnew
   }
   graph
@@ -504,6 +520,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
     igraph::delete_vertices(names(cutparent)) %>%
     igraph::delete_edges(paste(hostparent, hostnode, sep='|'))
   stopifnot(igraph::is_simple(graph))
+  stopifnot(igraph::is_dag(graph))
   graph
 }
 
@@ -518,6 +535,7 @@ admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leave
   graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves, fix_outgroup = fix_outgroup)
   graph = insert_admix_igraph(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
   stopifnot(igraph::is_simple(graph))
+  stopifnot(igraph::is_dag(graph))
   if(desimplify) graph = desimplify_graph(graph)
   graph
 }
@@ -558,12 +576,14 @@ move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
     parents = sample(names(neighbors(graph, admix[i], mode='in')))
     for(j in 1:2) {
       sibling = setdiff(names(neighbors(graph, parents[j], mode='out')), admix[i])
+      if(length(sibling) == 0) next
       grandparent = names(neighbors(graph, parents[j], mode='in'))
       for(n in names(subcomponent(graph, parents[j]))) {
         # subcomponent will return nodes ordered by distance to n
         if(!n %in% root &
            !n %in% firstgen &
            !n %in% parents &
+           !n %in% grandparent &
            !n %in% admix &
            !n %in% c(names(neighbors(graph, parents[1], mode='out')),
                      names(neighbors(graph, parents[2], mode='out'))) &
@@ -574,6 +594,7 @@ move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
                                               paste(grandparent, parents[j], sep='|'),
                                               paste(parents[j], sibling, sep='|')))
           stopifnot(igraph::is_simple(graph))
+          stopifnot(igraph::is_dag(graph))
           if(desimplify) graph = desimplify_graph(graph)
           return(graph)
         }
@@ -603,6 +624,7 @@ permute_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
 swap_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
@@ -619,6 +641,7 @@ swap_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #' @export
 #' @param graph An admixture graph
 #' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @param fix_outgroup Keep outgroup in place (has no effect here)
 #' @return A new admixture graph
 flipadmix_random = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
   graph %<>% simplify_graph
@@ -636,13 +659,34 @@ flipadmix_random = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
   out
 }
 
+#' Modify a graph by applying n mutation functions
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param n Number of functions to apply
+#' @param funs List of function from which to choose
+#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @param fix_outgroup Keep outgroup in place
+#' @return A new admixture graph
+mutate_n = function(graph, n = 2, funs = list(spr_all, spr_leaves, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
+                    desimplify = TRUE, fix_outgroup = TRUE) {
 
-get_mutfuns = function(mutfuns = c('spr_leaves', 'spr_all', 'move_admixedge_once',
-                                   'permute_leaves', 'swap_leaves', 'flipadmix_random'),
-                       desimplify = TRUE, fix_outgroup = TRUE) {
-  # return a list of n graph mutation functions
-  map(mutfuns, ~function(graph) get(.)(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
-    set_names(mutfuns)
+  funsn = sample(funs, n, replace = TRUE) %>%
+    map(~function(x) .x(x, desimplify=desimplify, fix_outgroup=fix_outgroup))
+  purrr::compose(!!!funsn)(graph)
+}
+
+
+get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
+  # return a list of list of graph mutation functions
+  # outer list is for each generation, inner list is for each graph, and is named
+  # probs is a matrix numgen x numgraphs with probabilities
+
+  map(seq_len(nrow(probs)), ~{
+    names = sample(mutfuns, ncol(probs), replace = TRUE, prob = probs[.,])
+    map(names, ~function(graph) get(.)(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
+      set_names(names)
+  })
 }
 
 
@@ -670,6 +714,7 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
   newmodels %<>% mutate(mutation = names(mutations),
                         igraph = imap(igraph, ~tryCatch(exec(mutations[[.y]], .x), error = function(e) .x)))
   if(verbose) alert_info(paste0('Evaluating graphs...', space))
+  #if(lastgen == 10) browser()
   newmodels %<>% mutate(out = map(igraph, qpgfun))
   if(verbose) alert_info(paste0('Attaching to previous generations...', space))
   winners %>%
@@ -688,14 +733,13 @@ score_to_prob = function(score) {
 }
 
 
-evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, repnum, parallel = TRUE,
+evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum, parallel = TRUE,
                            keep = 'all', store_intermediate = NULL, stop_after = NULL, verbose = TRUE) {
   out = init
   stop_at = Sys.time() + stop_after
   for(i in seq_len(numgen)) {
     if(!is.null(stop_after) && Sys.time() > stop_at) break
-    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutfuns, parallel = parallel, verbose = verbose)
-    #if(min(newmodels$score) > min(out$score)) browser()
+    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutlist[[i]], parallel = parallel, verbose = verbose)
     if(!is.null(store_intermediate)) {
       fl = paste0(store_intermediate, '_rep', repnum, '_gen', i, '.rds')
       saveRDS(newmodels, fl)
@@ -717,16 +761,11 @@ evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutfuns, rep
 }
 
 
-optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50, numgen = 5,
+optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, numstart = 1, outpop = NA, initgraph = NULL,
-                                          mutfuns = NULL, parallel = TRUE, stop_after = NULL,
+                                          parallel = TRUE, stop_after = NULL,
                                           store_intermediate = NULL,
                                           keep = 'all', verbose = TRUE, ...) {
-
-  if(numadmix == 0 && is.null(initgraph)) {
-    #qpgraph = qpgraph_anorexic
-    mutfuns = mutfuns[setdiff(names(mutfuns), c('move_admixedge_once', 'flipadmix_random'))]
-  }
 
   kp = c('edges', 'score', 'f3')
   qpgfun = function(graph) qpgraph(f2_blocks = NULL, graph = graph, f3precomp = precomp,
@@ -754,7 +793,7 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
     alert_success(paste0('Generation 0  Best scores: ', paste(round(best), collapse=', '), space, '\n'))
   }
 
-  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutfuns, repnum, parallel = parallel,
+  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum, parallel = parallel,
                   keep = keep, store_intermediate = store_intermediate, stop_after = stop_after, verbose = verbose)
 }
 
@@ -769,10 +808,9 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
-#' @param pops Populations for which to fit admixture graphs
-#' @param outpop An outgroup population which will split at the root from all other populations in all tested graphs. If one population is know to be an outgroup, designating it as `outpop` will greatly reduce the search space compared to including it and not designating it as `outpop`.
+#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+#' @param pops Populations for which to fit admixture graphs (default all)
+#' @param outpop An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as `outpop` will greatly reduce the search space compared to including it and not designating it as `outpop`.
 #' @param numrep Number of independent repetitions (each repetition can be run in parallel)
 #' @param numgraphs Number of graphs in each generation
 #' @param numgen Number of generations
@@ -786,13 +824,30 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 #' \item `last`: Return all graphs from the last generation
 #' }
 #' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
-#' @param mutfuns The names of funcations used to modify graphs.
+#' @param mutfuns The names of functions used to modify graphs.
 #' \itemize{
-#' \item `spr_leaves`: Subtree prune and regraft leaves. Cuts a leaf node and attaches it to a random other edge in the graph.
-#' \item `spr_all`: Subtree prune and regraft. Cuts any edge and attaches the new orphan node to a random other edge in the graph, keeping the number of admixture nodes constant.
+#' \item `spr_leaves`: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+#' to a random other edge in the graph.
+#' \item `spr_all`: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+#' to a random other edge in the graph, keeping the number of admixture nodes constant.
 #' \item `swap_leaves`: Swaps two leaf nodes.
 #' \item `move_admixedge_once`: Moves an admixture edge to a nearby location.
 #' \item `flipadmix_random`: Flips the direction of an admixture edge (if possible).
+#' \item `mutate_n`: Apply `n` of the above mutation functions to a graph (defaults to 2).
+#' }
+#' It is possible to define and use your own mutation functions. A mutation function should return
+#' a new graph and take three arguments:
+#' \enumerate{
+#' \item `graph`: An admixture graph in `igraph` format
+#' \item `desimplify`: Logical; currently not used, the function should return
+#' a regular (de-simplified) admixture graph.
+#' \item `fix_outgroup`: Logical; should specify whether an edge root -> outgroup will be kept in place.
+#' }
+#' @param mutprobs Relative frequencies of each mutation function.
+#' \itemize{
+#' \item `NULL` (default) means each mutation function is picked with equal probability
+#' \item A numeric vector of length equal to `mutfuns` defines the relative frequency of each mutation function
+#' \item A matrix of dimensions `numgen` x `length(mutfuns)` defines the relative frequency of each mutation function in each generation
 #' }
 #' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
 #' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.
@@ -809,7 +864,8 @@ optimize_admixturegraph_single = function(pops, precomp, repnum, numgraphs = 50,
 find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'),
                        initgraph = NULL,
-                       mutfuns = c('spr_leaves', 'spr_all', 'swap_leaves', 'move_admixedge_once', 'flipadmix_random'),
+                       mutfuns = c('spr_leaves', 'spr_all', 'swap_leaves', 'move_admixedge_once', 'flipadmix_random', 'mutate_n'),
+                       mutprobs = NULL,
                        store_intermediate = NULL,
                        parallel = TRUE, stop_after = NULL,
                        verbose = TRUE, ...) {
@@ -833,18 +889,27 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
       pops = dimnames(f2_data)[[1]]
     } else stop('Please provide population names!')
   }
-  #if(is.null(outpop)) outpop = pops[1]
-  #else if(!outpop %in% pops) pops = c(outpop, pops)
 
   precomp = qpgraph_precompute_f3(f2_data, pops, f3basepop = outpop, ...)
-  #mutfuns = sapply(mutfuns, get)
-  mutfuns = get_mutfuns(mutfuns, fix_outgroup = !is.null(outpop))
 
-  oa = function(i) optimize_admixturegraph_single(pops, precomp, repnum = i,
+  if(is.null(mutprobs)) {
+    if(numadmix == 0 && is.null(initgraph)) mutfuns %<>% setdiff(c('move_admixedge_once', 'flipadmix_random'))
+    mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(mutfuns)
+  } else if(!is.matrix(mutprobs)) {
+    if(length(mutprobs) != length(mutfuns)) stop("'mutfuns' and 'mutprobs' don't match")
+    mutprobs = t(replicate(numgen, mutprobs)) %>% set_colnames(mutfuns)
+  } else {
+    stopifnot(nrow(mutprobs) == numgen)
+    stopifnot(ncol(mutprobs) == length(mutfuns))
+    if(!isTRUE(all.equal(sort(colnames(mutprobs)), sort(mutfuns)))) mutprobs %>% set_colnames(mutfuns)
+  }
+  mutlist = get_mutfuns(mutfuns, mutprobs, fix_outgroup = !is.null(outpop))
+
+  oa = function(i) optimize_admixturegraph_single(pops, precomp, mutlist = mutlist, repnum = i,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix, numstart = numstart,
                                                  outpop = outpop, initgraph = initgraph,
-                                                 mutfuns = mutfuns, parallel = parallel && numrep == 1,
+                                                 parallel = parallel && numrep == 1,
                                                  stop_after = stop_after, store_intermediate = store_intermediate,
                                                  keep = keep, verbose = verbose && numrep == 1, ...)
   if(parallel && numrep > 1) {
@@ -1686,7 +1751,7 @@ leafdistances = function(graph) {
 
   graph %<>% simplify_graph
   leaves = get_leafnames(graph)
-  dist = distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>% pivot_longer(-from, names_to = 'to', values_to = 'dist')
+  dist = igraph::distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>% pivot_longer(-from, names_to = 'to', values_to = 'dist')
   dist2 = dist %>% filter(is.finite(dist), from != to)
   dist2 %>% left_join(dist2, by = 'from') %>% filter(to.x != to.y, to.x %in% leaves, to.y %in% leaves) %>% mutate(pp = paste(to.x, to.y)) %>% group_by(pp) %>% top_n(1, -jitter(dist.y)) %>% ungroup %>% transmute(from = to.y, to = to.x, dist = dist.y)
 

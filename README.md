@@ -16,10 +16,10 @@ to fit admixture graphs (*qpGraph*).
 
 *ADMIXTOOLS 2* provides the same functionality in a new look, and it’s
 orders of magnitude faster. This is achieved through separating the
-computation of \(f_2\)-statistics from all other computations, and
-through a number of other optimizations. In the example below, rendering
-the plot takes much longer than computing the fit of a new *qpGraph*
-model:
+computation of *f*<sub>2</sub>-statistics from all other computations,
+and through a number of other optimizations. In the example below,
+rendering the plot takes much longer than computing the fit of a new
+*qpGraph* model:
 
 ![app demo](man/figures/shinyapp1.gif)
 
@@ -86,7 +86,8 @@ me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-The first step is to extract \(f_2\)-statistics from genotype files.
+The first step is to extract *f*<sub>2</sub>-statistics from genotype
+files.
 
 ``` r
 genotype_data = "/my/geno/prefix"
@@ -107,7 +108,8 @@ Clearly not a historically accurate model, but it gets the idea across.
 
 <br>
 
-We can also use the \(f_2\)-statistics to estimate admixture weights:
+We can also use the *f*<sub>2</sub>-statistics to estimate admixture
+weights:
 
 ``` r
 left = c("Altai_Neanderthal.DG", "Vindija.DG")
@@ -127,7 +129,7 @@ qpadm(f2_blocks, left, right, target)$weights
 
 <br>
 
-Or we can use them to get \(f_4\)-statistics:
+Or we can use them to get *f*<sub>4</sub>-statistics:
 
 ``` r
 f4(f2_blocks)

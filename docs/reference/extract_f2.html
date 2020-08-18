@@ -261,7 +261,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>afprod</th>
-      <td><p>Return negative average allele frequency products instead of f2-statistics. This option is only used when <code>outdir</code> is not specified and data is returned directly. Otherwise the decision which to use is made in <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Setting <code>afprod = TRUE</code> will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for <code><a href='qpdstat.html'>qpdstat</a></code> and <code><a href='qpadm.html'>qpadm</a></code>. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for <code><a href='qpgraph.html'>qpgraph</a></code>); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+      <td><p>Return negative average allele frequency products instead of f2-statistics. This option is only used when <code>outdir</code> is not specified and data is returned directly. If <code>outdir</code> is specified, <code>afprod</code> can be set in <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Setting <code>afprod = TRUE</code> will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for <code><a href='qpdstat.html'>qpdstat</a></code> and <code><a href='qpadm.html'>qpadm</a></code>. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for <code><a href='qpgraph.html'>qpgraph</a></code>); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 This option is currently ineffective when reading data extracted with <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
     </tr>
     <tr>
@@ -275,7 +275,7 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -285,7 +285,13 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>SNP metadata (invisibly)</p>
+    
+<ul>
+<li><p>If <code>outdir = NULL</code> and <code>afprod = FALSE</code>: A 3d array of f2-statistics</p></li>
+<li><p>If <code>outdir = NULL</code> and <code>afprod = TRUE</code>: A 3d array of scaled allele frequency products</p></li>
+<li><p>If <code>outdir != NULL</code>: SNP metadata (invisibly)</p></li>
+</ul>
+
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
