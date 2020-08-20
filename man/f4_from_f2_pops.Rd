@@ -18,7 +18,7 @@ f4_from_f2_pops(f2_blocks, pop1, pop2, pop3, pop4)
 \item{pop4}{Population 4}
 }
 \value{
-A vector of per-block f4-statistics
+A matrix of per-block f4-statistics (block x popcomb)
 }
 \description{
 Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)

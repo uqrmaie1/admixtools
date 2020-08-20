@@ -136,7 +136,6 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
     pq1 = afmat1*(1-afmat1)/denom1
     pq2 = afmat2*(1-afmat2)/denom2
     out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`))
-    #out = (outer_array(afmat1, afmat2, `-`)^2)
   }
   if(!is.null(snpwt)) {
     stopifnot(length(snpwt) == nr)
@@ -155,10 +154,8 @@ mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   stopifnot(all.equal(ncol(afmat2), ncol(countmat2)))
 
   if(cpp) {
-    #out = cpp_outer_array_mul(afmat1, afmat2)
     out = (cpp_outer_array_mul(afmat1, afmat2) + cpp_outer_array_mul(1-afmat1, 1-afmat2))/2
   } else {
-    #out = outer_array(afmat1, afmat2)
     out = (outer_array(afmat1, afmat2) + outer_array(1-afmat1, 1-afmat2))/2
   }
   out %<>% block_arr_mean(block_lengths)

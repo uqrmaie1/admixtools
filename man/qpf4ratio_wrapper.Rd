@@ -31,6 +31,8 @@ qpf4ratio_wrapper(
 
 \item{blgsize}{blgsize}
 
+\item{fancyf4}{fancyf4}
+
 \item{printonly}{Should the command be printed or executed?}
 
 \item{env}{Export environmental variables. See examples.}

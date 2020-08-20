@@ -15,9 +15,9 @@ find_graphs(
   numadmix = 0,
   numstart = 1,
   keep = c("all", "best", "last"),
-  initgraph = NULL,
-  mutfuns = c("spr_leaves", "spr_all", "swap_leaves", "move_admixedge_once",
-    "flipadmix_random", "mutate_n"),
+  initgraphs = NULL,
+  mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
+    flipadmix_random, mutate_n),
   mutprobs = NULL,
   store_intermediate = NULL,
   parallel = TRUE,
@@ -52,7 +52,7 @@ find_graphs(
 \item \code{last}: Return all graphs from the last generation
 }}
 
-\item{initgraph}{Optional graph to start with. If \code{NULL}, optimization will start with random graphs.}
+\item{initgraphs}{Optional graph or list of igraphs to start with. If \code{NULL}, optimization will start with random graphs.}
 
 \item{mutfuns}{The names of functions used to modify graphs.
 \itemize{

@@ -232,7 +232,7 @@ split_graph = function(graph) {
     tonode = names(neighbors(graph, adm, mode = 'out'))
     fromnodes = c(fromnodes, fromnode)
     tonodes = c(tonodes, tonode)
-    if(length(fromnode) != length(tonode)) browser()
+    #if(length(fromnode) != length(tonode)) browser()
     graph = igraph::delete_vertices(graph, c(adm, parents[1]))
     graph = igraph::add_edges(graph, c(fromnode0, fromnode, tonode0, tonode))
   })
@@ -683,9 +683,9 @@ get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
   # probs is a matrix numgen x numgraphs with probabilities
 
   map(seq_len(nrow(probs)), ~{
-    names = sample(mutfuns, ncol(probs), replace = TRUE, prob = probs[.,])
-    map(names, ~function(graph) get(.)(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
-      set_names(names)
+    nam = sample(names(mutfuns), ncol(probs), replace = TRUE, prob = probs[.,])
+    map(mutfuns, ~function(graph) .(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
+      set_names(nam)
   })
 }
 
@@ -762,7 +762,7 @@ evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutlist, rep
 
 
 optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgraphs = 50, numgen = 5,
-                                          numsel = 5, numadmix = 0, numstart = 1, outpop = NA, initgraph = NULL,
+                                          numsel = 5, numadmix = 0, numstart = 1, outpop = NA, initgraphs = NULL,
                                           parallel = TRUE, stop_after = NULL,
                                           store_intermediate = NULL,
                                           keep = 'all', verbose = TRUE, ...) {
@@ -773,13 +773,9 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
   # qpgfun = possibly(qpgfun, otherwise = NULL)
   space = paste0(paste(rep(' ', 50), collapse=''), '\r')
   if(verbose) alert_info(paste0('Generate new graphs...', space))
-  if(is.null(initgraph)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop = outpop),
+  if(is.null(initgraphs)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop = outpop),
                                                 simplify = FALSE)
-  else {
-    missing = numadmix - numadmix(initgraph)
-    initgraphs = replicate(numgraphs, initgraph, simplify = FALSE)
-    if(missing > 0) initgraphs %<>% map(~insert_admix_igraph_random(., missing))
-  }
+  else initgraphs = initgraphs[round(seq(1, length(initgraphs), numgraphs))]
   if(verbose) alert_info(paste0('Evaluate graphs...', space))
   if(parallel) map = furrr::future_map
   init = tibble(generation=0, index = seq_len(numgraphs),
@@ -823,7 +819,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \item `best`: Return only the best fitting graph from each repeat and each generation
 #' \item `last`: Return all graphs from the last generation
 #' }
-#' @param initgraph Optional graph to start with. If `NULL`, optimization will start with random graphs.
+#' @param initgraphs Optional graph or list of igraphs to start with. If `NULL`, optimization will start with random graphs.
 #' @param mutfuns The names of functions used to modify graphs.
 #' \itemize{
 #' \item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
@@ -862,29 +858,28 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #'             numgen = 20, numsel = 5, numadmix = 3)
 #' }
 find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
-                       numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'),
-                       initgraph = NULL,
-                       mutfuns = c('spr_leaves', 'spr_all', 'swap_leaves', 'move_admixedge_once', 'flipadmix_random', 'mutate_n'),
-                       mutprobs = NULL,
-                       store_intermediate = NULL,
-                       parallel = TRUE, stop_after = NULL,
-                       verbose = TRUE, ...) {
+                       numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
+                       mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
+                       mutprobs = NULL, store_intermediate = NULL, parallel = TRUE, stop_after = NULL, verbose = TRUE, ...) {
 
   keep = rlang::arg_match(keep)
   if(numsel >= numgraphs || numsel < 1) stop("'numsel' has to be smaller than 'numgraphs' and greater than 0!")
-  if(!is.null(pops) && !is.null(initgraph)) stop("You can't provide 'pops' and 'initgraph' at the same time!")
+  if(!is.null(pops) && !is.null(initgraphs)) stop("You can't provide 'pops' and 'initgraphs' at the same time!")
 
-  if(!is.null(initgraph)) {
-    if('data.frame' %in% class(initgraph) || 'matrix' %in% class(initgraph)) {
-      initgraph = graph_from_edgelist(as.matrix(initgraph[,1:2]))
-    } else if('character' %in% class(initgraph)) {
-      initgraph = graph_from_edgelist(as.matrix(parse_qpgraph_graphfile(initgraph)[,1:2]))
-    } else if(!'igraph' %in% class(initgraph)) stop("'initgraph' format not recognized!")
+  if(!is.null(initgraphs)) {
+    if('data.frame' %in% class(initgraphs) || 'matrix' %in% class(initgraphs)) {
+      initgraphs = graph_from_edgelist(as.matrix(initgraphs[,1:2])) %>% list
+    } else if('character' %in% class(initgraphs)) {
+      initgraphs = graph_from_edgelist(as.matrix(parse_qpgraph_graphfile(initgraphs)[,1:2])) %>% list
+    } else if('igraph' %in% class(initgraphs)) {
+      initgraphs %<>% list
+    } else if('list' %in% class(initgraphs)) {
+    } else stop("'initgraphs' should be a single graph or a list of 'igraph' objects")
   }
 
   if(is.null(pops)) {
-    if(!is.null(initgraph)) {
-      pops = get_leafnames(initgraph)
+    if(!is.null(initgraphs)) {
+      pops = get_leafnames(initgraphs[[1]])
     } else if(is.array(f2_data)) {
       pops = dimnames(f2_data)[[1]]
     } else stop('Please provide population names!')
@@ -893,22 +888,22 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
   precomp = qpgraph_precompute_f3(f2_data, pops, f3basepop = outpop, ...)
 
   if(is.null(mutprobs)) {
-    if(numadmix == 0 && is.null(initgraph)) mutfuns %<>% setdiff(c('move_admixedge_once', 'flipadmix_random'))
-    mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(mutfuns)
+    if(numadmix == 0 && is.null(initgraphs)) mutfuns[c('move_admixedge_once', 'flipadmix_random')] = NULL
+    mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(names(mutfuns))
   } else if(!is.matrix(mutprobs)) {
     if(length(mutprobs) != length(mutfuns)) stop("'mutfuns' and 'mutprobs' don't match")
-    mutprobs = t(replicate(numgen, mutprobs)) %>% set_colnames(mutfuns)
+    mutprobs = t(replicate(numgen, mutprobs)) %>% set_colnames(names(mutfuns))
   } else {
     stopifnot(nrow(mutprobs) == numgen)
     stopifnot(ncol(mutprobs) == length(mutfuns))
-    if(!isTRUE(all.equal(sort(colnames(mutprobs)), sort(mutfuns)))) mutprobs %>% set_colnames(mutfuns)
+    if(!isTRUE(all.equal(sort(colnames(mutprobs)), sort(names(mutfuns))))) mutprobs %>% set_colnames(names(mutfuns))
   }
   mutlist = get_mutfuns(mutfuns, mutprobs, fix_outgroup = !is.null(outpop))
 
   oa = function(i) optimize_admixturegraph_single(pops, precomp, mutlist = mutlist, repnum = i,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix, numstart = numstart,
-                                                 outpop = outpop, initgraph = initgraph,
+                                                 outpop = outpop, initgraphs = initgraphs,
                                                  parallel = parallel && numrep == 1,
                                                  stop_after = stop_after, store_intermediate = store_intermediate,
                                                  keep = keep, verbose = verbose && numrep == 1, ...)

@@ -77,8 +77,8 @@ cpp_get_block_lengths <- function(chr, pos, blgsize = 0.05) {
     .Call('_admixtools_cpp_get_block_lengths', PACKAGE = 'admixtools', chr, pos, blgsize)
 }
 
-cpp_jack_vec_stats <- function(loo_vec, block_lengths) {
-    .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths)
+cpp_jack_vec_stats <- function(loo_vec, block_lengths, tot = NA_real_) {
+    .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths, tot)
 }
 
 cpp_outer_array_mul <- function(m1, m2) {

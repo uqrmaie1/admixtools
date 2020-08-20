@@ -4,7 +4,7 @@
 \alias{est_to_boo}
 \title{Turn per-block estimates into bootstrap estimates}
 \usage{
-est_to_boo(arr, nboot = dim(arr)[3])
+est_to_boo(arr, nboot = dim(arr)[3], block_lengths = NULL)
 }
 \arguments{
 \item{arr}{3d array with blocked estimates, with blocks in the 3rd dimension.}

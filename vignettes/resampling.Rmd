@@ -56,11 +56,11 @@ We can't actually use the approach described so far because SNPs do not drift in
 
 The non-independence of SNPs (linkage disequilibrium) is mostly limited to SNPs in close proximity which are not separated by recombination hotspots. If we take two SNPs separated by 5 centiMorgan or more, they are usually independent of each other. So while we can't use the standard jackknife to get standard error estimates by leaving out each SNP at a time, we can divide the genome into blocks of 5 centiMorgan and leave out each block at a time. This complicates things a bit because some blocks have more SNPs than others, and should be weighted appropriately.
 
-The actual standard error estimate is given by
+[weighted block jackknife](https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/wjack.pdf)
 
-$$\sigma^2 = \frac{1}{n} \sum_{i=1}^n \frac{1}{x_i - 1} (x_i \mu_{tot} - \mu_{jack} - s_i (x_i-1) )^2$$
+<!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n \frac{1}{x_i - 1} (x_i \mu_{tot} - \mu_{jack} - s_i (x_i-1) )^2$$ -->
 
-where $\mu_{tot}$ is the mean calculated from all blocks, $\mu_{jack} = \frac{1}{n} \sum_i s_i$ (the jackknife mean), and $x_i = \frac{\sum{l_i}}{l_i}$ (the inverse of the relative block length).
+<!-- where $\mu_{tot}$ is the mean calculated from all blocks, $\mu_{jack} = \frac{1}{n} \sum_i s_i$ (the jackknife mean), and $x_i = \frac{\sum{l_i}}{l_i}$ (the inverse of the relative block length). -->
 
 
 

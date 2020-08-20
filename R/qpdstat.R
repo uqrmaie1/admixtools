@@ -410,13 +410,56 @@ f4_from_geno = function(pref, popcombs, pops, blgsize = 0.05, block_lengths = NU
 #' @param pop2 Population 2
 #' @param pop3 Population 3
 #' @param pop4 Population 4
-#' @return A vector of per-block f4-statistics
+#' @return A matrix of per-block f4-statistics (block x popcomb)
 f4_from_f2_pops = function(f2_blocks, pop1, pop2, pop3, pop4) {
-  stopifnot(length(pop1) == 1 && length(pop2) == 1 && length(pop3) == 1 && length(pop4) == 1)
-  f4_from_f2(f2_blocks[pop1, pop4,],
-             f2_blocks[pop2, pop3,],
-             f2_blocks[pop1, pop3,],
-             f2_blocks[pop2, pop4,]) %>% unname
+  stopifnot(length(unique(c(length(pop1), length(pop2), length(pop3), length(pop4)))) == 1)
+  map(seq_along(pop1), ~{
+    f4_from_f2(f2_blocks[pop1[.], pop4[.],],
+               f2_blocks[pop2[.], pop3[.],],
+               f2_blocks[pop1[.], pop3[.],],
+               f2_blocks[pop2[.], pop4[.],]) %>% unname
+  }) %>% do.call(cbind, .)
+}
+
+
+#' Estimate admixture proportions via f4 ratios
+#'
+#' @export
+#' @param f2_blocks 3d array of f2-statistics
+#' @param pops A vector of 5 populations or a five column population matrix.
+#' The following ratios will be computed: `f4(1, 2; 3, 4)/f4(1, 2; 5, 4)`
+#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
+#' of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
+#' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
+#' The the covariance matrix of the f statistics will be computed using bootstrapping.
+#' @param verbose Print progress updates
+#' @return A data frame with f4 ratios
+qpf4ratio = function(f2_blocks, pops, boot = FALSE, verbose = FALSE) {
+
+  if(!is.matrix(pops)) pops %<>% t
+  if(ncol(pops) != 5) stop("'pops' should be a vector of length 5, or a matrix with 5 columns.")
+
+  samplefun = ifelse(boot, function(x, ...) est_to_boo(x, boot, ...), est_to_loo)
+  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+
+  block_lengths = parse_number(dimnames(f2_blocks)[[3]])
+  f4_num = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4]) %>% t
+  f4_den = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4]) %>% t
+
+  thresh = 1e-6
+  setmiss = abs(f4_den) < thresh
+  f4_den[setmiss] = f4_num[setmiss] = NA
+  totnum = weighted_row_means(f4_num, block_lengths, na.rm = TRUE)
+  totden = weighted_row_means(f4_den, block_lengths, na.rm = TRUE)
+  tot = totnum/totden
+  f4_num_loo = f4_num %>% samplefun(block_lengths)
+  f4_den_loo = f4_den %>% samplefun(block_lengths)
+  if(boot) block_lengths = parse_number(dimnames(f4_num_loo)[[2]])
+  stats = (f4_num_loo/f4_den_loo) %>% statfun(block_lengths, tot = tot)
+
+  pops %>%
+    as_tibble(.name_repair = ~paste0('pop', 1:5)) %>%
+    mutate(alpha = stats$est, se = sqrt(diag(stats$var)), z = alpha/se)
 }
 
 

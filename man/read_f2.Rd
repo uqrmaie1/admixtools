@@ -4,13 +4,22 @@
 \alias{read_f2}
 \title{Read blocked f2 estimates from disk}
 \usage{
-read_f2(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE)
+read_f2(
+  f2_dir,
+  pops = NULL,
+  pops2 = NULL,
+  afprod = FALSE,
+  remove_na = TRUE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{f2_dir}{Directory from which to read files}
 
 \item{pops}{Populations for which f2 statistics should be read. Defaults to all populations,
 which may require a lot of memory.}
+
+\item{pops2}{Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.}
 
 \item{afprod}{Return allele frequency products instead of f2 estimates}
 

@@ -63,7 +63,9 @@ By comparing the definitions of $f_4$ and $f_2$, we also see that $f_4$ is a gen
 $$
 \begin{equation}
 \begin{aligned}
-D(A, B; C, D) &= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\ &= \frac{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) - (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) + (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)} \\ &= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}
+D(A, B; C, D) &= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\
+&= \frac{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) - (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) + (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)} \\
+&= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}
 \end{aligned}
 \end{equation}
 $$

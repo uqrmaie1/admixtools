@@ -1,0 +1,8 @@
+cpp_fstats.o
+cpp_qpadm.o
+cpp_qpgraph.o
+cpp_readgeno.o
+cpp_readplink.o
+cpp_resampling.o
+RcppExports.o
+admixtools.so

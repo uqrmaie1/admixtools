@@ -61,7 +61,7 @@ qpsolve = function(...) quadprog::solve.QP(...)$solution
 
 make_pseudohaploid = function(xmat) round(jitter(xmat/2))*2
 
-
+#' @export
 namedList = function(...) {
   L <- list(...)
   snm <- sapply(substitute(list(...)),deparse)[-1]

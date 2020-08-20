@@ -4,10 +4,12 @@
 \alias{est_to_loo}
 \title{Turn per-block estimates into leave-one-out estimates}
 \usage{
-est_to_loo(arr)
+est_to_loo(arr, block_lengths = NULL)
 }
 \arguments{
-\item{arr}{3d array with blocked estimates, with blocks in the 3rd dimension, and block lengths in \code{dimnames}.}
+\item{arr}{3d array with blocked estimates, with blocks in the 3rd dimension}
+
+\item{block_lengths}{Optional block lengths. If \code{NULL}, will be parsed from 3rd dimnames in blocks}
 }
 \value{
 A 3d array with leave-one-out estimates for jackknife. Dimensions are equal to those of \code{arr}.

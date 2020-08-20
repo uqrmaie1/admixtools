@@ -299,14 +299,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_jack_vec_stats
-List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths);
-RcppExport SEXP _admixtools_cpp_jack_vec_stats(SEXP loo_vecSEXP, SEXP block_lengthsSEXP) {
+List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, double tot);
+RcppExport SEXP _admixtools_cpp_jack_vec_stats(SEXP loo_vecSEXP, SEXP block_lengthsSEXP, SEXP totSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type loo_vec(loo_vecSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type block_lengths(block_lengthsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_jack_vec_stats(loo_vec, block_lengths));
+    Rcpp::traits::input_parameter< double >::type tot(totSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_jack_vec_stats(loo_vec, block_lengths, tot));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -381,7 +382,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_plink_ploidy", (DL_FUNC) &_admixtools_cpp_plink_ploidy, 5},
     {"_admixtools_cpp_plink_to_aftable", (DL_FUNC) &_admixtools_cpp_plink_to_aftable, 9},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
-    {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 2},
+    {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 3},
     {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
     {"_admixtools_cpp_outer_array_plus", (DL_FUNC) &_admixtools_cpp_outer_array_plus, 2},
     {"_admixtools_cpp_outer_array_minus", (DL_FUNC) &_admixtools_cpp_outer_array_minus, 2},

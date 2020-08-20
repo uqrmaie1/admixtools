@@ -554,6 +554,7 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
   }
 }
 
+
 #' Read blocked f2 estimates from disk
 #'
 #' This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by \code{\link{write_f2}}
@@ -562,6 +563,7 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' @param f2_dir Directory from which to read files
 #' @param pops Populations for which f2 statistics should be read. Defaults to all populations,
 #' which may require a lot of memory.
+#' @param pops2 Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.
 #' @param afprod Return allele frequency products instead of f2 estimates
 #' @param remove_na Remove blocks with missing values
 #' @param verbose Print progress updates
@@ -571,41 +573,47 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' \dontrun{
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-read_f2 = function(f2_dir, pops = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE) {
+read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE) {
   # assumes f2 is in first column, afprod in second column
 
-  if(is.null(pops)) {
-    pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
-  }
+  if(is.null(pops)) pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
+  if(is.null(pops2)) pops2 = pops
+  stopifnot(!any(duplicated(pops)))
+  stopifnot(!any(duplicated(pops2)))
+
   if(afprod) block_lengths = readRDS(paste0(f2_dir, '/block_lengths_a.rds'))
   else block_lengths = readRDS(paste0(f2_dir, '/block_lengths.rds'))
-  numblocks = length(block_lengths)
-  numpops = length(pops)
-  f2_blocks = array(NA, c(numpops, numpops, numblocks))
-  dimnames(f2_blocks)[[1]] = dimnames(f2_blocks)[[2]] = pops
-  dimnames(f2_blocks)[[3]] = paste0('l', block_lengths)
-  for(i in seq_along(pops)) {
-    pop1 = pops[i]
+
+  f2_blocks = array(NA, c(length(pops), length(pops2), length(block_lengths)),
+              list(pops, pops2, paste0('l', block_lengths)))
+
+  popcomb = expand_grid(pops, pops2) %>%
+    mutate(p1 = pmin(pops, pops2), p2 = pmax(pops, pops2)) %>%
+    add_count(p1, p2) %>%
+    filter(!duplicated(paste(p1, p2)))
+
+  if(afprod) suffix = '_ap.rds' else suffix = '_f2.rds'
+  for(i in seq_len(nrow(popcomb))) {
+    pop1 = popcomb$pops[i]
+    pop2 = popcomb$pops2[i]
     if(verbose) alert_info(paste0('reading ', ifelse(afprod, 'afprod', 'f2'),
-                                  ' data for pop ', i, ' out of ', length(pops),'...\r'))
-    for(pop2 in pops) {
-      if(pop1 <= pop2) {
-        pref = paste0(f2_dir, '/', pop1, '/', pop2)
-        if(afprod) dat = readRDS(paste0(pref, '_ap.rds'))[,1]
-        else dat = readRDS(paste0(pref, '_f2.rds'))[,1]
-        f2_blocks[pop1, pop2, ] = f2_blocks[pop2, pop1, ] = dat
-        #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
-      }
-    }
+                                  ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
+    pref = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i])
+    dat = readRDS(paste0(pref, suffix))[,1]
+    f2_blocks[pop1, pop2, ] = dat
+    if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
+    #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
   if(verbose) alert_info(paste0('\n'))
   if(remove_na) {
     keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
     if(!all(keep)) warning(paste0('Discarding ', sum(!keep), ' blocks due to missing values!'))
-    f2_blocks = f2_blocks[,, keep]
+    f2_blocks = f2_blocks[,, keep, drop = FALSE]
   }
   f2_blocks
 }
+
+
 
 write_indiv = function(data, ind, outdir, overwrite = FALSE) {
   fl = paste0(outdir, '/indivs/', ind, '.rds')
@@ -1331,8 +1339,6 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
   indpairs = dir.exists(paste0(dir, '/indivs'))
-  if(!is.null(pops2)) return(f2_from_precomp_nonsquare(dir, pops, pops2, afprod = afprod,
-                                                       remove_na = remove_na, verbose = verbose))
 
   if(indpairs) {
     if(is.null(inds)) {
@@ -1349,10 +1355,11 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
   } else {
     if(!is.null(inds)) stop('Individual IDs supplied, but no "indivs" directory found!')
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
-    if(verbose) alert_info(paste0('Reading precomputed data for ', length(pops), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops, afprod = FALSE, remove_na = remove_na, verbose = verbose)
+    if(is.null(pops2)) pops2 = pops
+    if(verbose) alert_info(paste0('Reading precomputed data for ', length(union(pops, pops2)), ' populations...\n'))
+    f2_blocks = read_f2(dir, pops, pops2, afprod = FALSE, remove_na = remove_na, verbose = verbose)
     if(afprod) {
-      ap_blocks = read_f2(dir, pops, afprod = TRUE, remove_na = remove_na, verbose = verbose)
+      ap_blocks = read_f2(dir, pops, pops2, afprod = TRUE, remove_na = remove_na, verbose = verbose)
       f2_blocks = scale_ap_blocks(ap_blocks, from = min(f2_blocks, na.rm=T), to = max(f2_blocks, na.rm=T))
     }
   }
@@ -1381,37 +1388,6 @@ f2_from_precomp_indivs = function(dir, poplist = NULL, return_array = TRUE, appl
   }
   namedList(f2_blocks, indivs, pairs, poplist)
 }
-
-
-f2_from_precomp_nonsquare = function(dir, pops1, pops2, afprod = FALSE, remove_na = TRUE, verbose = TRUE) {
-
-  if(afprod) block_lengths = readRDS(paste0(dir, '/block_lengths_a.rds'))
-  else block_lengths = readRDS(paste0(dir, '/block_lengths.rds'))
-  arr = array(NA, c(length(pops1), length(pops2), length(block_lengths)),
-              list(pops1, pops2, paste0('l', block_lengths)))
-
-  pops = expand_grid(pops1, pops2) %>%
-    mutate(p1 = pmin(pops1, pops2), p2 = pmax(pops1, pops2))
-  # putting the if statment inside the for loop makes it slower
-  # check if there is an efficient tidyverse solution for assigning values to external objects (arr columns)
-  if(afprod) {
-    for(i in 1:nrow(pops)) {
-      mat = readRDS(paste0(dir, '/', pops$p1[i], '/', pops$p2[i], '_ap.rds'))
-      arr[pops$pops1[i], pops$pops2[i], ] = -2*mat[,1]
-    }
-  } else {
-    for(i in 1:nrow(pops)) {
-      mat = readRDS(paste0(dir, '/', pops$p1[i], '/', pops$p2[i], '_f2.rds'))
-      arr[pops$pops1[i], pops$pops2[i], ] = mat[,1]
-    }
-  }
-  if(remove_na) {
-    keep = apply(arr, 3, function(x) sum(is.na(x)) == 0)
-    arr = arr[,,keep, drop = FALSE]
-  }
-  arr
-}
-
 
 
 read_indivs = function(dir, inds, block_lengths) {
