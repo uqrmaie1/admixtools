@@ -322,7 +322,7 @@ est_to_boo = function(arr, nboot = dim(arr)[3], block_lengths = NULL) {
     `/`(c(tapply(lengths, grp, sum))) %>%
     t %>%
     array(c(dim(arr)[1:2], nboot),
-          dimnames = list(dimnames(arr)[1], dimnames(arr)[2], rep('l1', nboot))) %>%
+          dimnames = list(dimnames(arr)[[1]], dimnames(arr)[[2]], rep('l1', nboot))) %>%
     `[`(,,)
 }
 

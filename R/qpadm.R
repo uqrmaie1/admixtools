@@ -363,7 +363,11 @@ lazadm = function(f2_data, left, right, target,
   if(constrained) fun = function(rhs, lhs) qpsolve(rhs, lhs, diag(nleft), rep(0, nleft))
   else fun = function(rhs, lhs) solve(rhs, lhs)[,1]
 
-  wmat = sapply(1:numblocks, function(i) {w = fun(rhs[,,i], lhs[,i,drop = FALSE]); w/sum(w)})
+  wmat = sapply(1:numblocks, function(i) {
+    w = fun(rhs[,,i], lhs[,i,drop = FALSE])
+    if(sum(w) > 0) w = w/sum(w)
+    w
+  })
   weight = rowMeans(wmat)
   se = sqrt(diag(cov(t(wmat))))
   if(!boot) se = se * (numblocks-1) / sqrt(numblocks)

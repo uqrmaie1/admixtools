@@ -48,7 +48,6 @@ List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, doub
 
   block_lengths = block_lengths[!is_na(loo_vec)];
   loo_vec = loo_vec[!is_na(loo_vec)];
-  Rcout << "test";
   double n = sum(block_lengths);
   NumericVector w = 1-block_lengths/n;
   if(!is_finite(tot)) tot = sum(loo_vec*w)/sum(w); // only valid when estimates are additive
