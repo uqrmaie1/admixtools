@@ -326,18 +326,18 @@ lazadm = function(f2_data, left, right, target,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
   f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
-  f2_blocks[f2_blocks < 0] = 0
+  #f2_blocks[f2_blocks < 0] = 0
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
   numblocks = length(block_lengths)
 
-  r = 1:length(right)
+  r = match(right, pops)
   og_indices = expand.grid(r, r, r) %>%
     filter(Var1 != Var2, Var1 != Var3, Var2 < Var3)
   ncomb = nrow(og_indices)
   nleft = length(left)
   blocknums = rep(1:numblocks, each = ncomb)
 
-  pos1 = 1
+  pos1 = match(target, pops)
   pos2 = og_indices[,1]
   pos3 = og_indices[,2]
   pos4 = og_indices[,3]
@@ -365,7 +365,7 @@ lazadm = function(f2_data, left, right, target,
 
   wmat = sapply(1:numblocks, function(i) {
     w = fun(rhs[,,i], lhs[,i,drop = FALSE])
-    if(sum(w) > 0) w = w/sum(w)
+    if(sum(w) > 1e-10) w = w/sum(w)
     w
   })
   weight = rowMeans(wmat)
