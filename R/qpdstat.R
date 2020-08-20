@@ -265,12 +265,12 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
       outmat = t(combn(pop1, fnum))
       nr = nrow(outmat)
       if(fnum == 2) {
-        out = outmat %>% as_tibble %>% set_colnames(nam)
+        out = outmat %>% set_colnames(nam) %>% as_tibble
       } else if(fnum == 3) {
         out = rbind(outmat[,1:3], outmat[,c(2,3,1)], outmat[,c(3,1,2)]) %>%
-          as_tibble %>% set_colnames(nam)
+          set_colnames(nam) %>% as_tibble
       } else if(fnum == 4) out = rbind(outmat[,1:4], outmat[,c(1,3,2,4)], outmat[,c(1,4,2,3)]) %>%
-        as_tibble() %>% set_colnames(nam) %>% slice(rep(1:nr, each=3) + (0:2)*nr)
+        set_colnames(nam) %>% as_tibble() %>% slice(rep(1:nr, each=3) + (0:2)*nr)
       else {
         stop('fnum should be 2, 3, or 4!')
       }
@@ -281,7 +281,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
       # }
       if(fnum == 2) out = expand_grid(pop1 = pop1, pop2 = pop1)
       else if(fnum == 3) out = expand_grid(pop1 = pop1, pop2 = pop1, pop3 = pop1)
-      else if(fnum == 4) out = as_tibble(t(combn(pop1, 2))) %>%
+      else if(fnum == 4) out = as.data.frame(t(combn(pop1, 2)), stringsAsFactors = FALSE) %>%
           expand_grid(x1=., x2=.) %>%
           {quietly(flatten_dfc)(.)$result} %>%
           set_colnames(paste0('pop', 1:4))

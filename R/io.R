@@ -904,7 +904,18 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
 
 
 scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
+  # does the following things to ap_blocks:
+  # 1. multiply by -2
+  # 2. set diag to 0
+  # 3. shift and scale so that all values are between from and to
+
   ap_blocks = -2*ap_blocks
+  if(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]])) {
+    d1 = dim(ap_blocks)[1]
+    d3 = dim(ap_blocks)[3]
+    dg = rep(seq_len(d1) + d1*(seq_len(d1)-1),d3) + rep(d1*d1*(seq_len(d3)-1), each = d1)
+    ap_blocks[dg] = 0
+  }
   if(!is.null(from) && !is.null(to)) ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
   ap_blocks
 }

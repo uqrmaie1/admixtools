@@ -326,6 +326,7 @@ lazadm = function(f2_data, left, right, target,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
   f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
+  f2_blocks[f2_blocks < 0] = 0
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
   numblocks = length(block_lengths)
 
