@@ -657,7 +657,7 @@ parse_qpgraph_output_edges = function(outfile) {
 parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE, igraph = FALSE) {
   # reads graph in qpGraph format
   # returns edge matrix (adjacency list)
-  lines = read_lines(graph) %>% enframe %>% transmute(V1 = value)
+  lines = read_lines(graphfile) %>% enframe %>% transmute(V1 = value)
   namemap = lines %>% filter(grepl('^label', V1)) %>%
     separate('V1', c('type', 'label', 'name'), sep = '\\s+', extra = 'drop') %>%
     select(-type) %>% deframe

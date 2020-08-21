@@ -820,7 +820,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \item `last`: Return all graphs from the last generation
 #' }
 #' @param initgraphs Optional graph or list of igraphs to start with. If `NULL`, optimization will start with random graphs.
-#' @param mutfuns The names of functions used to modify graphs.
+#' @param mutfuns Functions used to modify graphs. Defaults to the following:
 #' \itemize{
 #' \item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
 #' to a random other edge in the graph.
@@ -831,14 +831,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
 #' \item \code{\link{mutate_n}}: Apply `n` of the mutation functions in this list to a graph (defaults to 2).
 #' }
-#' It is possible to define and use your own mutation functions. A mutation function should return
-#' a new graph and take three arguments:
-#' \enumerate{
-#' \item `graph`: An admixture graph in `igraph` format
-#' \item `desimplify`: Logical; currently not used, the function should return
-#' a regular (de-simplified) admixture graph.
-#' \item `fix_outgroup`: Logical; should specify whether an edge root -> outgroup will be kept in place.
-#' }
+#' See examples for how to make new mutation functions.
 #' @param mutprobs Relative frequencies of each mutation function.
 #' \itemize{
 #' \item `NULL` (default) means each mutation function is picked with equal probability
@@ -856,6 +849,12 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \dontrun{
 #' find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,
 #'             numgen = 20, numsel = 5, numadmix = 3)
+#' }
+#' \dontrun{
+#' # Making new mutation functions by modifying or combining existing ones:
+#' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
+#' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
+#' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
 find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
