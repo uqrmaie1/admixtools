@@ -910,7 +910,7 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
   # 3. shift and scale so that all values are between from and to
 
   ap_blocks = -2*ap_blocks
-  if(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]])) {
+  if(isTRUE(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]]))) {
     d1 = dim(ap_blocks)[1]
     d3 = dim(ap_blocks)[3]
     dg = rep(seq_len(d1) + d1*(seq_len(d1)-1),d3) + rep(d1*d1*(seq_len(d3)-1), each = d1)

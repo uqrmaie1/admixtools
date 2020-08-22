@@ -2,14 +2,15 @@
 % Please edit documentation in R/qpdstat.R
 \name{f4_from_f2_pops}
 \alias{f4_from_f2_pops}
-\title{Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)}
+\title{Get per-block f4-statistics}
 \usage{
-f4_from_f2_pops(f2_blocks, pop1, pop2, pop3, pop4)
+f4_from_f2_pops(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL)
 }
 \arguments{
-\item{f2_blocks}{3d array of f2-statistics}
+\item{f2_data}{A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
+Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
 
-\item{pop1}{Population 1}
+\item{pop1}{Either the name(s) of the first population(s), or a four column matrix with the names of all four populations.}
 
 \item{pop2}{Population 2}
 
@@ -18,8 +19,8 @@ f4_from_f2_pops(f2_blocks, pop1, pop2, pop3, pop4)
 \item{pop4}{Population 4}
 }
 \value{
-A matrix of per-block f4-statistics (block x popcomb)
+A matrix of per-block f4-statistics (\verb{popcomb x block})
 }
 \description{
-Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)
+This function turns per-block f2-statistics into per-block f4-statistics of the form \verb{f4(pop1, pop2; pop3, pop4)}
 }

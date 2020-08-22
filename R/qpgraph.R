@@ -377,7 +377,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, lambdascale = 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
-  f2_blocks = get_f2(f2_data, pops, lambdascale) %>% samplefun
+  f2_blocks = (get_f2(f2_data, pops) * lambdascale) %>% samplefun
   #f2_blocks = array(pmax(0, f2_blocks), dim(f2_blocks), dimnames(f2_blocks))
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 

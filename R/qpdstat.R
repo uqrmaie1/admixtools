@@ -8,8 +8,8 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
+#' @param f2_data A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
+#' Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pop1 One of the following four:
 #' \enumerate{
 #' \item `NULL`: all possible pairs of the populations in `f2_blocks` will be returned
@@ -402,23 +402,32 @@ f4_from_geno = function(pref, popcombs, pops, blgsize = 0.05, block_lengths = NU
 }
 
 
-#' Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)
+#' Get per-block f4-statistics
 #'
+#' This function turns per-block f2-statistics into per-block f4-statistics of the form `f4(pop1, pop2; pop3, pop4)`
 #' @export
-#' @param f2_blocks 3d array of f2-statistics
-#' @param pop1 Population 1
+#' @param f2_data A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
+#' Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.
+#' @param pop1 Either the name(s) of the first population(s), or a four column matrix with the names of all four populations.
 #' @param pop2 Population 2
 #' @param pop3 Population 3
 #' @param pop4 Population 4
-#' @return A matrix of per-block f4-statistics (block x popcomb)
-f4_from_f2_pops = function(f2_blocks, pop1, pop2, pop3, pop4) {
-  stopifnot(length(unique(c(length(pop1), length(pop2), length(pop3), length(pop4)))) == 1)
+#' @return A matrix of per-block f4-statistics (`popcomb x block`)
+f4_from_f2_pops = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
+  if(is.matrix(pop1)) {
+    stopifnot(is.null(c(pop2, pop3, pop4)))
+    pop2 = pop1[,2]
+    pop3 = pop1[,3]
+    pop4 = pop1[,4]
+    pop1 = pop1[,1]
+  } else stopifnot(length(unique(c(length(pop1), length(pop2), length(pop3), length(pop4)))) == 1)
+  f2_blocks = get_f2(f2_data, union(pop1, pop2), union(pop3, pop4), afprod = TRUE)
   map(seq_along(pop1), ~{
     f4_from_f2(f2_blocks[pop1[.], pop4[.],],
                f2_blocks[pop2[.], pop3[.],],
                f2_blocks[pop1[.], pop3[.],],
                f2_blocks[pop2[.], pop4[.],]) %>% unname
-  }) %>% do.call(cbind, .)
+  }) %>% do.call(rbind, .)
 }
 
 
@@ -443,8 +452,8 @@ qpf4ratio = function(f2_blocks, pops, boot = FALSE, verbose = FALSE) {
   statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
 
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
-  f4_num = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4]) %>% t
-  f4_den = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4]) %>% t
+  f4_num = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4])
+  f4_den = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4])
 
   thresh = 1e-6
   setmiss = abs(f4_den) < thresh
