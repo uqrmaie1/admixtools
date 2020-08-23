@@ -146,7 +146,7 @@ run_shiny_admixtools()
 
 ## Documentation
 
-One of the design goals behind *ADMIXTOOLS 2* is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.
+One of the design goals behind *ADMIXTOOLS 2* is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow. 
 
 To this end, all *ADMIXTOOLS 2* functions are [documented](https://uqrmaie1.github.io/admixtools/reference/index.html). You can also take a look at the [tutorial](articles/admixtools.html), read more about how *ADMIXTOOLS 2* computes [f-statistics](https://uqrmaie1.github.io/admixtools/articles/fstats.html) and [standard errors](https://uqrmaie1.github.io/admixtools/articles/resampling.html), and what you can do with [admixture graphs](https://uqrmaie1.github.io/admixtools/articles/graphs.html).
 

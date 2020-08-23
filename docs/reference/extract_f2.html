@@ -50,7 +50,7 @@
 <meta property="og:title" content="Compute and store blocked f2 statistics — extract_f2" />
 
 <meta property="og:description" content="This function prepares data for various other ADMIXTOOLS 2 functions. It reads data from packedancestrymap or PLINK files,
-computes allele frequencies and blocked f2-statistics for selected populations, and optionally writes the results to outdir." />
+computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to outdir." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -118,7 +118,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -168,13 +168,13 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     <div class="ref-description">
     
     <p>This function prepares data for various other <em>ADMIXTOOLS 2</em> functions. It reads data from packedancestrymap or PLINK files,
-computes allele frequencies and blocked f2-statistics for selected populations, and optionally writes the results to <code>outdir</code>.</p>
+computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to <code>outdir</code>.</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>extract_f2</span>(
   <span class='no'>pref</span>,
-  <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='no'>outdir</span>,
   <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
@@ -188,10 +188,10 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
   <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>cols_per_chunk</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
     
@@ -205,7 +205,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>Directory where data will be stored. If <code>NULL</code>, data will be returned instead of written to disk.</p></td>
+      <td><p>Directory where data will be stored.</p></td>
     </tr>
     <tr>
       <th>inds</th>
@@ -260,11 +260,6 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>SNP IDs of SNPs to keep. Overrides other SNP filtering options</p></td>
     </tr>
     <tr>
-      <th>afprod</th>
-      <td><p>Return negative average allele frequency products instead of f2-statistics. This option is only used when <code>outdir</code> is not specified and data is returned directly. If <code>outdir</code> is specified, <code>afprod</code> can be set in <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>. Setting <code>afprod = TRUE</code> will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for <code><a href='qpdstat.html'>qpdstat</a></code> and <code><a href='qpadm.html'>qpadm</a></code>. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for <code><a href='qpgraph.html'>qpgraph</a></code>); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
-This option is currently ineffective when reading data extracted with <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
-    </tr>
-    <tr>
       <th>overwrite</th>
       <td><p>Overwrite existing files in <code>outdir</code></p></td>
     </tr>
@@ -278,6 +273,10 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
       <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
+      <th>cols_per_chunk</th>
+      <td><p>Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for <code>cols_per_chunk</code> in <code><a href='extract_afs.html'>extract_afs</a></code> is 10. Lower numbers will lower the memory requirement but increase the time it takes.</p></td>
+    </tr>
+    <tr>
       <th>verbose</th>
       <td><p>Print progress updates</p></td>
     </tr>
@@ -285,17 +284,11 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    
-<ul>
-<li><p>If <code>outdir = NULL</code> and <code>afprod = FALSE</code>: A 3d array of f2-statistics</p></li>
-<li><p>If <code>outdir = NULL</code> and <code>afprod = TRUE</code>: A 3d array of scaled allele frequency products</p></li>
-<li><p>If <code>outdir != NULL</code>: SNP metadata (invisibly)</p></li>
-</ul>
-
+    <p>SNP metadata (invisibly)</p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> for reading the stored f2-statistics back into R, and <code><a href='extract_f2_large.html'>extract_f2_large</a></code> in case you run out of memory</p></div>
+    <div class='dont-index'><p><code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> for reading the stored f2-statistics back into R, <code><a href='f2_from_geno.html'>f2_from_geno</a></code> to skip writting f2-statistics to disk and return them directly</p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>

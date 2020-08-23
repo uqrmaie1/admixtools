@@ -71,7 +71,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -113,7 +113,7 @@
       <h1>Genotype data</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-17</h4>
+            <h4 class="date">2020-08-23</h4>
       
       
       <div class="hidden name"><code>io.Rmd</code></div>
@@ -123,8 +123,9 @@
     
     
 <p><strong>Under construction</strong></p>
-<p><em>ADMIXTOOLS 2</em> includes functions for reading genotype data that may be useful outside the scope of demographic inference.</p>
-<p>While there are other R packages for reading and writing binary <em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary <em>EIGENSTRAT</em>/<em>PACKEDANCESTRYMAP</em> format files. Some of the functions shown here can also read only a subset of all samples or SNPs (as long as they are consecutive).</p>
+<p><em>ADMIXTOOLS 2</em> can read genotype data in binary <em>PLINK</em> format which is described <a href="https://www.cog-genomics.org/plink2/input">here</a>, and in <em>EIGENSTRAT</em>/<em>ANCESTRYMAP</em>/<em>PACKEDANCESTRYMAP</em> format, described <a href="https://reich.hms.harvard.edu/software/InputFileFormats">here</a>.</p>
+<p>While there are other R packages for reading and writing binary <em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages exist to date for binary <em>EIGENSTRAT</em>/<em>PACKEDANCESTRYMAP</em> format files, so some of the functions shown here may be useful outside of the <em>ADMIXTOOLS</em> framework.</p>
+<p>Note that the functions below impose the restriction than individual IDs may not be duplicated across populations or families.</p>
 <div id="reading-genotype-files" class="section level3">
 <h3 class="hasAnchor">
 <a href="#reading-genotype-files" class="anchor"></a>Reading genotype files</h3>
@@ -140,8 +141,8 @@
 <div id="computing-allele-frequencies" class="section level3">
 <h3 class="hasAnchor">
 <a href="#computing-allele-frequencies" class="anchor"></a>Computing allele frequencies</h3>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">afs =<span class="st"> </span><span class="kw"><a href="../reference/plink_to_aftable.html">plink_to_aftable</a></span>(<span class="st">"plink/prefix"</span>)</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">afs =<span class="st"> </span><span class="kw"><a href="../reference/packedancestrymap_to_aftable.html">packedancestrymap_to_aftable</a></span>(<span class="st">"packedancestrymap/prefix"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">afs =<span class="st"> </span><span class="kw"><a href="../reference/plink_to_afs.html">plink_to_afs</a></span>(<span class="st">"plink/prefix"</span>)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">afs =<span class="st"> </span><span class="kw"><a href="../reference/packedancestrymap_to_afs.html">packedancestrymap_to_afs</a></span>(<span class="st">"packedancestrymap/prefix"</span>)</a></code></pre></div>
 </div>
 <div id="converting-packedancestrymap-to-plink" class="section level3">
 <h3 class="hasAnchor">

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Get per-block f4-statistics f4(pop1, pop2; pop3, pop4) — f4_from_f2_pops • admixtools</title>
+<title>Get per-block f4-statistics — f4_from_f2_pops • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,9 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Get per-block f4-statistics f4(pop1, pop2; pop3, pop4) — f4_from_f2_pops" />
+<meta property="og:title" content="Get per-block f4-statistics — f4_from_f2_pops" />
 
-<meta property="og:description" content="Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)" />
+<meta property="og:description" content="This function turns per-block f2-statistics into per-block f4-statistics of the form f4(pop1, pop2; pop3, pop4)" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -117,7 +117,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -159,29 +159,30 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)</h1>
+    <h1>Get per-block f4-statistics</h1>
     
     <div class="hidden name"><code>f4_from_f2_pops.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Get per-block f4-statistics f4(pop1, pop2; pop3, pop4)</p>
+    <p>This function turns per-block f2-statistics into per-block f4-statistics of the form <code>f4(pop1, pop2; pop3, pop4)</code></p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>f4_from_f2_pops</span>(<span class='no'>f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)</pre>
+    <pre class="usage"><span class='fu'>f4_from_f2_pops</span>(<span class='no'>f2_data</span>, <span class='no'>pop1</span>, <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_blocks</th>
-      <td><p>3d array of f2-statistics</p></td>
+      <th>f2_data</th>
+      <td><p>A 3d array with blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='f2_from_geno.html'>f2_from_geno</a></code>
+Alternatively, a directory with precomputed data. See <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
     </tr>
     <tr>
       <th>pop1</th>
-      <td><p>Population 1</p></td>
+      <td><p>Either the name(s) of the first population(s), or a four column matrix with the names of all four populations.</p></td>
     </tr>
     <tr>
       <th>pop2</th>
@@ -199,7 +200,7 @@
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A vector of per-block f4-statistics</p>
+    <p>A matrix of per-block f4-statistics (<code>popcomb x block</code>)</p>
     
 
   </div>

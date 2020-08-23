@@ -122,7 +122,7 @@ for admixture graphs with many admixture nodes." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -191,9 +191,9 @@ for admixture graphs with many admixture nodes.</p>
   <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>numstart</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>keep</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span>),
-  <span class='kw'>initgraph</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>mutfuns</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"spr_leaves"</span>, <span class='st'>"spr_all"</span>, <span class='st'>"swap_leaves"</span>, <span class='st'>"move_admixedge_once"</span>,
-    <span class='st'>"flipadmix_random"</span>, <span class='st'>"mutate_n"</span>),
+  <span class='kw'>initgraphs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>mutfuns</span> <span class='kw'>=</span> <span class='fu'>namedList</span>(<span class='no'>spr_leaves</span>, <span class='no'>spr_all</span>, <span class='no'>swap_leaves</span>, <span class='no'>move_admixedge_once</span>,
+    <span class='no'>flipadmix_random</span>, <span class='no'>mutate_n</span>),
   <span class='kw'>mutprobs</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>store_intermediate</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>parallel</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
@@ -250,27 +250,21 @@ for admixture graphs with many admixture nodes.</p>
 </ul></td>
     </tr>
     <tr>
-      <th>initgraph</th>
-      <td><p>Optional graph to start with. If <code>NULL</code>, optimization will start with random graphs.</p></td>
+      <th>initgraphs</th>
+      <td><p>Optional graph or list of igraphs to start with. If <code>NULL</code>, optimization will start with random graphs.</p></td>
     </tr>
     <tr>
       <th>mutfuns</th>
-      <td><p>The names of functions used to modify graphs.</p><ul>
-<li><p><code>spr_leaves</code>: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+      <td><p>Functions used to modify graphs. Defaults to the following:</p><ul>
+<li><p><code><a href='spr_leaves.html'>spr_leaves</a></code>: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
 to a random other edge in the graph.</p></li>
-<li><p><code>spr_all</code>: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+<li><p><code><a href='spr_all.html'>spr_all</a></code>: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
 to a random other edge in the graph, keeping the number of admixture nodes constant.</p></li>
-<li><p><code>swap_leaves</code>: Swaps two leaf nodes.</p></li>
-<li><p><code>move_admixedge_once</code>: Moves an admixture edge to a nearby location.</p></li>
-<li><p><code>flipadmix_random</code>: Flips the direction of an admixture edge (if possible).</p></li>
-<li><p><code>mutate_n</code>: Apply <code>n</code> of the above mutation functions to a graph (defaults to 2).</p></li>
-</ul><p>It is possible to define and use your own mutation functions. A mutation function should return
-a new graph and take three arguments:</p><ol>
-<li><p><code>graph</code>: An admixture graph in <code>igraph</code> format</p></li>
-<li><p><code>desimplify</code>: Logical; currently not used, the function should return
-a regular (de-simplified) admixture graph.</p></li>
-<li><p><code>fix_outgroup</code>: Logical; should specify whether an edge root -&gt; outgroup will be kept in place.</p></li>
-</ol></td>
+<li><p><code><a href='swap_leaves.html'>swap_leaves</a></code>: Swaps two leaf nodes.</p></li>
+<li><p><code><a href='move_admixedge_once.html'>move_admixedge_once</a></code>: Moves an admixture edge to a nearby location.</p></li>
+<li><p><code><a href='flipadmix_random.html'>flipadmix_random</a></code>: Flips the direction of an admixture edge (if possible).</p></li>
+<li><p><code><a href='mutate_n.html'>mutate_n</a></code>: Apply <code>n</code> of the mutation functions in this list to a graph (defaults to 2).</p></li>
+</ul><p>See examples for how to make new mutation functions.</p></td>
     </tr>
     <tr>
       <th>mutprobs</th>
@@ -315,6 +309,12 @@ a regular (de-simplified) admixture graph.</p></li>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='fu'>find_graphs</span>(<span class='no'>example_f2_blocks</span>, <span class='kw'>numrep</span> <span class='kw'>=</span> <span class='fl'>200</span>, <span class='kw'>numgraphs</span> <span class='kw'>=</span> <span class='fl'>100</span>,
             <span class='kw'>numgen</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>numsel</span> <span class='kw'>=</span> <span class='fl'>5</span>, <span class='kw'>numadmix</span> <span class='kw'>=</span> <span class='fl'>3</span>)
+}
+<span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='co'># Making new mutation functions by modifying or combining existing ones:</span>
+<span class='no'>newfun1</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>graph</span>, <span class='no'>...</span>) <span class='fu'><a href='mutate_n.html'>mutate_n</a></span>(<span class='no'>graph</span>, <span class='fl'>3</span>, <span class='no'>...</span>)
+<span class='no'>newfun2</span> <span class='kw'>=</span> <span class='kw'>function</span>(<span class='no'>graph</span>, <span class='no'>...</span>) <span class='fu'><a href='flipadmix_random.html'>flipadmix_random</a></span>(<span class='fu'><a href='spr_leaves.html'>spr_leaves</a></span>(<span class='no'>graph</span>, <span class='no'>...</span>), <span class='no'>...</span>)
+<span class='fu'>find_graphs</span>(<span class='no'>f2_blocks</span>, <span class='kw'>mutfuns</span> <span class='kw'>=</span> <span class='fu'>namedList</span>(<span class='no'>spr_leaves</span>, <span class='no'>newfun1</span>, <span class='no'>newfun2</span>), <span class='kw'>mutprobs</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0.2</span>, <span class='fl'>0.3</span>, <span class='fl'>0.5</span>))
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

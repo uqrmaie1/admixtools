@@ -13,35 +13,44 @@ vignette: >
 ---
 
 
-This tutorial gives an overview of the basic workflow for computing *f*-statistics, and using *qpWave*, *qpAdm*, and *qpGraph*.
+This tutorial gives an overview of the basic workflow for computing *f*-statistics, and for using *qpWave*, *qpAdm*, and *qpGraph*.
 Documentation for each *ADMIXTOOLS 2* function can be found under *Reference*, and more detailed information about specific topics under *Articles*.
 
-
-
-## Introduction
-
-*ADMIXTOOLS* is a set of programs used to infer population histories from f-statistics computed from genetic data. *ADMIXTOOLS 2* divides the computation into two steps:
-
-1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
-2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
-
-
-*ADMIXTOOLS 2* can either be run through the `R` command line, or through a browser application that can be launched like this:
-
-```{r, eval = FALSE}
-library(admixtools)
-run_shiny_admixtools()
-```
-
-The documentation of the browser application can be accessed through the `?` in the upper right corner of the application window. This website documents the `R` command line interface.
-
-For the examples below the following R packages need to be loaded.
+For the examples here and on the other pages, the following R packages need to be loaded.
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 library(admixtools)
 library(magrittr)
 library(tidyverse)
 ```
+
+
+## Introduction
+
+*ADMIXTOOLS* is a set of programs used to infer population histories from *f*-statistics computed from genetic data. *ADMIXTOOLS 2* is a new implementation of these programs which can either be run through the `R` command line, or through a browser application.
+
+The main use cases of the *ADMIXTOOLS* programs are:
+
+* Finding out if a population is admixed between other populations ([$f_3$](admixtools.html#f3-and-qp3pop), [*qpAdm*](admixtools.html#qpwave-and-qpadm))
+* Finding out if a set of populations forms a clade relative to another set, and if not, how many admixture waves separate the two sets ([$f_4$](admixtools.html#f3-and-qp3pop), [*qpWave*](admixtools.html#qpwave-and-qpadm))
+* Fitting an admixture graph to a set of populations ([*qpGraph*](admixtools.html#qpgraph))
+
+
+The browser application can be launched from R with the following command:
+```{r, eval = FALSE}
+library(admixtools)
+run_shiny_admixtools()
+```
+
+This website focuses on the R command line interface.
+
+
+*ADMIXTOOLS 2* divides the computations into two steps:
+
+1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
+2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
+
+Because *f*-statistics form the basis for everything that follows, they will be covered first.
 
 
 <br>
@@ -75,12 +84,12 @@ f_3(A; B, C) &= f_4(A, B; A, C) \\ &= \frac{1}{2} (f_2(A, B) + f_2(A, C) - f_2(B
 \end{aligned}
 $$
 
-If $f_3(A; B, C)$ is negative, this means that the more similar allele frequencies are between $A$ and $B$, the more different they are between $A$ and $C$, which suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
+If $f_3(A; B, C)$ is negative, it means that the more similar allele frequencies are between $A$ and $B$, the more different they are between $A$ and $C$, which suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
 
 
 In practice, the estimation of *f*-statistics can be more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
 
-## *f*~2~
+## *f*~2~ in *ADMIXTOOLS 2*
 
 In *ADMIXTOOLS 2*, $f_2$-statistics are the foundation for all further analyses. They can be computed from genotype data and saved to disk with this command: 
 

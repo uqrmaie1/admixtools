@@ -118,7 +118,7 @@ and returns them as a 3d array." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -172,7 +172,14 @@ and returns them as a 3d array.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>read_f2</span>(<span class='no'>f2_dir</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>read_f2</span>(
+  <span class='no'>f2_dir</span>,
+  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -185,6 +192,10 @@ and returns them as a 3d array.</p>
       <th>pops</th>
       <td><p>Populations for which f2 statistics should be read. Defaults to all populations,
 which may require a lot of memory.</p></td>
+    </tr>
+    <tr>
+      <th>pops2</th>
+      <td><p>Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.</p></td>
     </tr>
     <tr>
       <th>afprod</th>

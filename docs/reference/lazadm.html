@@ -118,7 +118,7 @@ based non-negative least squares of f4 matrix." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -228,14 +228,14 @@ languages in Europe.</em> Nature (SI 9)</p>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
 <span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                 weight    se     z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG    </span><span style='color: #BB0000;'>NaN</span><span>    </span><span style='color: #BB0000;'>NA</span><span>   </span><span style='color: #BB0000;'>NaN</span><span>
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG              </span><span style='color: #BB0000;'>NaN</span><span>    </span><span style='color: #BB0000;'>NA</span><span>   </span><span style='color: #BB0000;'>NaN</span><span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                 weight    se     z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG  -</span><span style='color: #BB0000;'>2.58</span><span> 0.526 -</span><span style='color: #BB0000;'>4.90</span><span>
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG             3.58 0.526  6.80</div></span></pre>
+#&gt;   target      left                   weight       se        z
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG 1.00</span><span style='color: #555555;'>e</span><span>+ 0 1.10</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-15</span><span> 9.11</span><span style='color: #555555;'>e</span><span>+14
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG           2.21</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-18</span><span> 1.10</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-15</span><span> 2.00</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>- 3</span><span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
+#&gt;   target      left                 weight    se      z
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   5.70  6.67  0.855
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>4.70</span><span>  6.67 -</span><span style='color: #BB0000;'>0.705</span><span></div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

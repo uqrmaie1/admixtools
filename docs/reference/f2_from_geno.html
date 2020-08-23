@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read f2 jackknife blocks from genotype data — f2_from_geno • admixtools</title>
+<title>Compute blocked f2 statistics — f2_from_geno • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,9 +47,10 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Read f2 jackknife blocks from genotype data — f2_from_geno" />
+<meta property="og:title" content="Compute blocked f2 statistics — f2_from_geno" />
 
-<meta property="og:description" content="This function is currently out of date. The idea is to read a 3d array of f2-statistics directly from genotype data without the intermediate step of writing files to disk. It should combine extract_f2 and f2_from_precomp and could be useful when f2-statistics don't need to be stored on disk. Might be easier to add an option to extract_f2 to not write to disk." />
+<meta property="og:description" content="This function prepares data for various other ADMIXTOOLS 2 functions. It reads data from packedancestrymap or PLINK files,
+computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -117,7 +118,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -159,14 +160,15 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read f2 jackknife blocks from genotype data</h1>
+    <h1>Compute blocked f2 statistics</h1>
     
     <div class="hidden name"><code>f2_from_geno.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function is currently out of date. The idea is to read a 3d array of f2-statistics directly from genotype data without the intermediate step of writing files to disk. It should combine <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> and could be useful when f2-statistics don't need to be stored on disk. Might be easier to add an option to <code><a href='extract_f2.html'>extract_f2</a></code> to not write to disk.</p>
+    <p>This function prepares data for various other <em>ADMIXTOOLS 2</em> functions. It reads data from packedancestrymap or PLINK files,
+computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array.</p>
     
     </div>
 
@@ -174,9 +176,20 @@
   <span class='no'>pref</span>,
   <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
   <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
+  <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
+  <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>outpop_scale</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>adjust_pseudohaploid</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
     
@@ -197,12 +210,52 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>Populations for which data should be extracted. If both <code>pops</code> and <code>inds</code> are provided, they should have the same length and will be matched by position. If only <code>pops</code> is provided, all individuals from the <code>.ind</code> or <code>.fam</code> file in those populations will be extracted. If only <code>inds</code> is provided, each indivdual will be assigned to its own population of the same name. If neither <code>pops</code> nor <code>inds</code> is provided, all individuals and populations in the <code>.ind</code> or <code>.fam</code> file will be extracted.</p></td>
     </tr>
     <tr>
+      <th>blgsize</th>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
+    </tr>
+    <tr>
       <th>maxmem</th>
       <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.</p></td>
     </tr>
     <tr>
-      <th>blgsize</th>
-      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
+      <th>maxmiss</th>
+      <td><p>Discard SNPs which are missing in a fraction of populations higher than <code>maxmiss</code></p></td>
+    </tr>
+    <tr>
+      <th>minmaf</th>
+      <td><p>Discard SNPs with minor allele frequency less than <code>minmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>maxmaf</th>
+      <td><p>Discard SNPs with minor allele frequency greater than than <code>maxmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>outpop</th>
+      <td><p>Keep only SNPs which are heterozygous in this population</p></td>
+    </tr>
+    <tr>
+      <th>outpop_scale</th>
+      <td><p>Scale f2-statistics by the inverse <code>outpop</code> heteroygosity (<code>1/(p*(1-p))</code>). Providing <code>outpop</code> and setting <code>outpop_scale</code> to <code>TRUE</code> will give the same results as the original <em>qpGraph</em> when the <code>outpop</code> parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.</p></td>
+    </tr>
+    <tr>
+      <th>transitions</th>
+      <td><p>Set this to <code>FALSE</code> to exclude transition SNPs</p></td>
+    </tr>
+    <tr>
+      <th>transversions</th>
+      <td><p>Set this to <code>FALSE</code> to exclude transversion SNPs</p></td>
+    </tr>
+    <tr>
+      <th>auto_only</th>
+      <td><p>Keep only SNPs on chromosomes 1 to 22</p></td>
+    </tr>
+    <tr>
+      <th>keepsnps</th>
+      <td><p>SNP IDs of SNPs to keep. Overrides other SNP filtering options</p></td>
+    </tr>
+    <tr>
+      <th>afprod</th>
+      <td><p>Return negative average allele frequency products instead of f2-statistics. Setting <code>afprod = TRUE</code> will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for <code><a href='qpdstat.html'>qpdstat</a></code> and <code><a href='qpadm.html'>qpadm</a></code>. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for <code><a href='qpgraph.html'>qpgraph</a></code>); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.</p></td>
     </tr>
     <tr>
       <th>format</th>
@@ -210,25 +263,34 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
 and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>ancestrymap</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
     </tr>
     <tr>
+      <th>adjust_pseudohaploid</th>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+    </tr>
+    <tr>
       <th>verbose</th>
       <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>pref</span> <span class='kw'>=</span> <span class='st'>'my/genofiles/prefix'</span>
-<span class='no'>f2_blocks</span> <span class='kw'>=</span> <span class='fu'>f2_from_geno</span>(<span class='no'>pref</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>))
-}</div></pre>
+    <p>A 3d array of f2-statistics (or scaled allele frequency products if <code>afprod = TRUE</code>)</p>
+    
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> for reading previously stored f2-statistics into R, <code><a href='extract_f2.html'>extract_f2</a></code> for storing f2-statistics on disk</p></div>
+    
+
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-            
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+      
+      <li><a href="#value">Value</a></li>
+
+      <li><a href="#see-also">See also</a></li>
+          </ul>
 
   </div>
 </div>

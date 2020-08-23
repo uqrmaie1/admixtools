@@ -119,7 +119,7 @@ to the weighted mean of the statistics across the N blocks." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -174,7 +174,7 @@ to the weighted mean of the statistics across the <code>N</code> blocks.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>loo_to_est</span>(<span class='no'>arr</span>)</pre>
+    <pre class="usage"><span class='fu'>loo_to_est</span>(<span class='no'>arr</span>, <span class='kw'>block_lengths</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -182,6 +182,10 @@ to the weighted mean of the statistics across the <code>N</code> blocks.</p>
     <tr>
       <th>arr</th>
       <td><p>3d array with blocked estimates, with blocks in the 3rd dimension.</p></td>
+    </tr>
+    <tr>
+      <th>block_lengths</th>
+      <td><p>Optional block lengths. If <code>NULL</code>, will be parsed from 3rd dimnames in blocks</p></td>
     </tr>
     </table>
     

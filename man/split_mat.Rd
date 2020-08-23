@@ -23,10 +23,10 @@ and saves them as \code{.rds} files with prefix \code{prefix}
 }
 \examples{
 \dontrun{
-afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
+afdat = packedancestrymap_to_afs('path/to/packedancestrymap_prefix', allpopulations)
 split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
 }
 }
 \seealso{
-\code{\link{packedancestrymap_to_aftable}}, \code{\link{write_split_f2_block}}
+\code{\link{packedancestrymap_to_afs}}, \code{\link{afs_to_f2}}
 }

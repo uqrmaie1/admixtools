@@ -37,8 +37,8 @@ geno = read_packedancestrymap("packedancestrymap/prefix",
 ### Computing allele frequencies
 
 ```{r, eval = FALSE}
-afs = plink_to_aftable("plink/prefix")
-afs = packedancestrymap_to_aftable("packedancestrymap/prefix")
+afs = plink_to_afs("plink/prefix")
+afs = packedancestrymap_to_afs("packedancestrymap/prefix")
 ```
 
 

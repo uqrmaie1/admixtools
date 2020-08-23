@@ -118,7 +118,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -187,7 +187,7 @@
   <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/character.html'>is.character</a></span>(<span class='no'>f2_data</span>)
 )</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -293,11 +293,7 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of g
 <span class='no'>pop2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>pop3</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>)
 <span class='no'>pop4</span> <span class='kw'>=</span> <span class='st'>'Switzerland_Bichon.SG'</span>
-<span class='fu'>qpdstat</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)</div><div class='output co'>#&gt; <span style='color: #00BBBB;'>ℹ Getting population combinations...
-#&gt; ℹ 6 population combinations found
-#&gt; ℹ Loading f2 data for 12 population pairs...
-#&gt; ℹ Computing f4-statistics
-#&gt; </span><span></div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 6 x 8</span><span>
+<span class='fu'>qpdstat</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 6 x 8</span><span>
 #&gt;   pop1     pop2        pop3        pop4             est      se      z         p
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>          </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span> Denisov… Altai_Nean… Chimp.REF   Switzerlan…  1.50</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-2</span><span> 4.64</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 32.3   6.06</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-229</span><span>

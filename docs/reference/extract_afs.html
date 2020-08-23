@@ -118,7 +118,7 @@ and computes allele frequencies for selected populations and stores it as .rds f
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -203,7 +203,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>Directory where data will be stored. If <code>NULL</code>, data will be returned instead of written to disk.</p></td>
+      <td><p>Directory where data will be stored.</p></td>
     </tr>
     <tr>
       <th>inds</th>
@@ -215,7 +215,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>cols_per_chunk</th>
-      <td><p>Number of populations per chunk. Lowering this number will lower the memory requirements when running <code><a href='write_split_f2_block.html'>write_split_f2_block</a></code>, but more chunk pairs will have to be computed.</p></td>
+      <td><p>Number of populations per chunk. Lowering this number will lower the memory requirements when running <code><a href='afs_to_f2.html'>afs_to_f2</a></code>, but more chunk pairs will have to be computed.</p></td>
     </tr>
     <tr>
       <th>numparts</th>

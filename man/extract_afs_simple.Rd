@@ -36,7 +36,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
 
-\item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.}
+\item{cols_per_chunk}{Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{afs_to_f2}}, but more chunk pairs will have to be computed.}
 
 \item{maxmiss}{Discard SNPs which are missing in a fraction of populations higher than \code{maxmiss}}
 

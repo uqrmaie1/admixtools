@@ -42,8 +42,8 @@ reference:
       - f2_from_precomp
       - read_packedancestrymap
       - read_plink
-      - packedancestrymap_to_aftable
-      - plink_to_aftable
+      - packedancestrymap_to_afs
+      - plink_to_afs
       - packedancestrymap_to_plink
   - title: "Many models"
     contents:

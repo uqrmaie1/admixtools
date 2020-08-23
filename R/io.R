@@ -10,11 +10,11 @@
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
-#' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
+#' afdat = packedancestrymap_to_afs(prefix, pops = pops)
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
 
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
@@ -45,7 +45,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 
   if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
-  afdat = cpp_packedancestrymap_to_aftable(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
+  afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
                                            last = nsnpall, ploidy = ploidy,
                                            transpose = FALSE, verbose = verbose)
 
@@ -66,7 +66,7 @@ packedancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_p
 #'
 #' @export
 #' @param pref Prefix of ancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
-#' @inheritParams packedancestrymap_to_aftable
+#' @inheritParams packedancestrymap_to_afs
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
@@ -147,7 +147,7 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, ou
 }
 
 
-discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = TRUE,
+discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = FALSE,
                              minmaf = 0, maxmaf = 0.5,
                              transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # geno is list with 'snpfile', 'afs', 'counts'
@@ -310,7 +310,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #'
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
-#' @inheritParams packedancestrymap_to_aftable
+#' @inheritParams packedancestrymap_to_afs
 #' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
@@ -360,15 +360,15 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #'
 #' @export
 #' @param pref prefix of `PLINK` files (files have to end in `.bed`, `.bim`, `.fam`).
-#' @inheritParams packedancestrymap_to_aftable
+#' @inheritParams packedancestrymap_to_afs
 #' @return a list with two items: allele frequency data and individual counts.
 #' @examples
 #' \dontrun{
-#' afdat = plink_to_aftable(prefix, pops)
+#' afdat = plink_to_afs(prefix, pops)
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -481,7 +481,7 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' reading and writing `PLINK` files.
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
-#' @inheritParams packedancestrymap_to_aftable
+#' @inheritParams packedancestrymap_to_afs
 #' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
@@ -596,7 +596,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na 
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
-    if(verbose) alert_info(paste0('reading ', ifelse(afprod, 'afprod', 'f2'),
+    if(verbose) alert_info(paste0('Reading ', ifelse(afprod, 'afprod', 'f2'),
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
     pref = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i])
     dat = readRDS(paste0(pref, suffix))[,1]
@@ -661,10 +661,10 @@ write_pairdat = function(aa_arr, nn_arr, outdir, overwrite = FALSE) {
 #' @param prefix Prefix of output files
 #' @param overwrite Overwrite existing files (default `TRUE`)
 #' @param verbose Print progress updates
-#' @seealso \code{\link{packedancestrymap_to_aftable}}, \code{\link{write_split_f2_block}}
+#' @seealso \code{\link{packedancestrymap_to_afs}}, \code{\link{afs_to_f2}}
 #' @examples
 #' \dontrun{
-#' afdat = packedancestrymap_to_aftable('path/to/packedancestrymap_prefix', allpopulations)
+#' afdat = packedancestrymap_to_afs('path/to/packedancestrymap_prefix', allpopulations)
 #' split_mat(afdat$afs, cols_per_chunk = 20, prefix = 'afdat_split_v42.1/afs')
 #' }
 split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TRUE) {
@@ -710,7 +710,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' # numchunks should be the number of split allele frequency files
 #' for(i in 1:numchunks) {
 #'   for(j in i:numchunks) {
-#'     write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = j)
+#'     afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = j)
 #'   }
 #' }
 #' }
@@ -718,10 +718,10 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' # (if \code{\link[future]{plan}} has been set up appropriately)
 #' \dontrun{
 #' furrr::future_map(1:numchunks, ~{i=.; map(i:numchunks, ~{
-#'   write_split_f2_block(afdir, f2dir, chunk1 = i, chunk2 = .)
+#'   afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = .)
 #'   })})
 #'   }
-write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE, verbose = TRUE) {
+afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
   snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = 'ccnncc??', progress = FALSE)
@@ -767,28 +767,54 @@ write_split_f2_block = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, s
 write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000, verbose = TRUE) {
   # reads split genotype matrices, computes a and n, and writes output to outdir
 
-  files = list.files(genodir, '\\.rds$', full.names = TRUE)
+  files = list.files(genodir, '^afs.\\.rds$', full.names = TRUE)
   nfiles = length(files)
   block_lengths = readRDS(paste0(outdir, '/block_lengths.rds'))
   dir.create(paste0(outdir, '/indivs'), showWarnings = FALSE)
 
-  if(verbose) alert_info(paste0('Writing data for ', length(files), ' files\n'))
+  if(verbose) alert_info(paste0('Writing individual data from ', length(files), ' chunks\n'))
   for(i in seq_len(nfiles)) {
-    if(verbose) alert_info(paste0('file ', i, ' out of ', nfiles, '\r'))
-    xmat = readRDS(files[i])
+    if(verbose) alert_info(paste0('Chunk ', i, ' out of ', nfiles, '\r'))
+    xmat = 2*readRDS(files[i])
     xmat_to_inddat(xmat, block_lengths, outdir = outdir, overwrite = overwrite,
                    maxmem = maxmem, verbose = FALSE)
   }
   if(verbose) alert_info(paste0('\n'))
 }
 
-
-write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE) {
+#' Compute count blocks and write them to disk
+#'
+#' This is intended for computing allele count data for a large number of individuals,
+#' too many to do everything in working memory.
+#' It assumes that the allele frequencies have already been computed and are stored in `.rds` files,
+#' split into consecutive blocks for a set of individuals.
+#' @export
+#' @param genodir Directory with genotype files split in chunks created by \code{\link{extract_afs}} (with each individual its own population).
+#' @param outdir Directory where allele count data will be stored
+#' @param chunk1 Index of the first chunk of individuals
+#' @param chunk2 Index of the second chunk of individuals
+#' @param overwrite Overwrite existing files (default `FALSE`)
+#' @param verbose Print progress updates
+#' @seealso \code{\link{extract_counts}} Does the same thing in one step for smaller data.
+#' @examples
+#' \dontrun{
+#' afdir = 'tmp_af_dir/'
+#' f2dir = 'f2_dir'
+#' extract_afs('path/to/packedancestrymap_prefix', afdir)
+#' numchunks = length(list.files(afdir, 'afs.+rds'))
+#' # numchunks should be the number of split allele frequency files
+#' for(i in 1:numchunks) {
+#'   for(j in i:numchunks) {
+#'     afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = j)
+#'   }
+#' }
+#' }
+afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, verbose = TRUE) {
   # reads two (possibly split) genotype matrices, computes aa and nn, and writes output to outdir
 
   block_lengths = readRDS(paste0(outdir, '/block_lengths.rds'))
-  xmat1 = readRDS(paste0(genodir, '/part_', chunk1, '.rds'))
-  xmat2 = readRDS(paste0(genodir, '/part_', chunk2, '.rds'))
+  xmat1 = 2*readRDS(paste0(genodir, '/afs', chunk1, '.rds'))
+  xmat2 = 2*readRDS(paste0(genodir, '/afs', chunk2, '.rds'))
   nam1 = colnames(xmat1)
   nam2 = colnames(xmat2)
 
@@ -797,9 +823,10 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
   if(all(file.exists(pairnames))) return()
 
   arrs = xmats_to_pairarrs(xmat1, xmat2)
+  arrs2 = xmats_to_pairarrs(2-xmat1, 2-xmat2)
+  aa_subblock = (block_arr_mean(arrs$aa, block_lengths) + block_arr_mean(arrs2$aa, block_lengths))/2
+  nn_subblock = (block_arr_mean(arrs$nn, block_lengths) + block_arr_mean(arrs2$nn, block_lengths))/2
 
-  aa_subblock = block_arr_mean(arrs$aa, block_lengths)
-  nn_subblock = block_arr_mean(arrs$nn, block_lengths)
   write_pairdat(aa_subblock, nn_subblock, outdir = outdir, overwrite = overwrite)
 }
 
@@ -830,9 +857,10 @@ write_split_pairdat = function(genodir, outdir, chunk1, chunk2, overwrite = FALS
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `ancestrymap`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` treats all samples as diploid and is equivalent to the *ADMIXTOOLS* `inbreed: NO` option.
+#' @param cols_per_chunk Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
 #' @param verbose Print progress updates
 #' @return SNP metadata (invisibly)
-#' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{extract_f2_large}} in case you run out of memory, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
+#' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
@@ -843,13 +871,22 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
-                      adjust_pseudohaploid = TRUE, verbose = TRUE) {
+                      adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
 
+  if(!is.null(cols_per_chunk)) {
+    snpfile = extract_f2_large(pref, outdir, inds = inds, pops = pops, blgsize = blgsize,
+                               cols_per_chunk = cols_per_chunk, maxmiss = maxmiss,
+                               minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
+                               transitions = transitions, transversions = transversions,
+                               keepsnps = keepsnps, snpblocks = snpblocks, overwrite = overwrite,
+                               format = format, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+    return(invisible(snpfile))
+  }
   if(!is.null(outdir)) {
     outdir = normalizePath(outdir, mustWork = FALSE)
     if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
   }
-  if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "write_split_f2_block".')
+  if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".')
 
 
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
@@ -894,7 +931,8 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
 
   if(afprod) {
     if(verbose) alert_info(paste0('Returning allele frequency products/\n'))
-    blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
+    #blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
+    blocks = scale_ap_blocks(arrs$ap_blocks, from = 0)
   } else {
     if(verbose) alert_info(paste0('Returning f2-statistics/\n'))
     blocks = arrs$f2_blocks
@@ -916,7 +954,13 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
     dg = rep(seq_len(d1) + d1*(seq_len(d1)-1),d3) + rep(d1*d1*(seq_len(d3)-1), each = d1)
     ap_blocks[dg] = 0
   }
-  if(!is.null(from) && !is.null(to)) ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
+  if(!is.null(from)) {
+    if(!is.null(to)) {
+      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
+    } else {
+      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
+    }
+  }
   ap_blocks
 }
 
@@ -925,10 +969,9 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
 #' Compute and store blocked f2 statistics
 #'
 #' `extract_f2_large` does the same as \code{\link{extract_f2}}, but it requires less memory and is slower. `outdir` has to be set in `extract_f2_large`.
-#' @export
 #' @inheritParams extract_f2
 #' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running
-#' @details `extract_f2_large` requires less memory because it writes allele frequency data to disk, and doesn't store the allele frequency matrix for all populations and SNPs in memory. If you still run out of memory, reduce `cols_per_chunk`. This function is a wrapper around \code{\link{extract_afs}} and \code{\link{write_split_f2_block}}, and is slower than \code{\link{extract_f2}}. It may be faster to call \code{\link{extract_afs}} and \code{\link{write_split_f2_block}} directly, parallelizing over the different calls to \code{\link{write_split_f2_block}}.
+#' @details `extract_f2_large` requires less memory because it writes allele frequency data to disk, and doesn't store the allele frequency matrix for all populations and SNPs in memory. If you still run out of memory, reduce `cols_per_chunk`. This function is a wrapper around \code{\link{extract_afs}} and \code{\link{afs_to_f2}}, and is slower than \code{\link{extract_f2}}. It may be faster to call \code{\link{extract_afs}} and \code{\link{afs_to_f2}} directly, parallelizing over the different calls to \code{\link{afs_to_f2}}.
 #' @return SNP metadata (invisibly)
 #' @seealso \code{\link{extract_f2}}
 #' @examples
@@ -957,11 +1000,11 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
   } else snpwt = NULL
 
   if(verbose) alert_warning(paste0('Computing ', choose(numchunks, 2), ' chunk pairs. If this takes too long,
-  consider running "extract_afs" and then paralellizing over "write_split_f2_block".\n'))
+  consider running "extract_afs" and then paralellizing over "afs_to_f2".\n'))
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
       if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
-      write_split_f2_block(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize,
+      afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize,
                            snpwt = snpwt, overwrite = overwrite)
     }
   }
@@ -976,11 +1019,11 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
       format = 'plink'
-      geno_to_aftable = plink_to_aftable
+      geno_to_aftable = plink_to_afs
     } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
       if(is_binfile(paste0(pref, '.geno'))) {
         format = 'packedancestrymap'
-        geno_to_aftable = packedancestrymap_to_aftable
+        geno_to_aftable = packedancestrymap_to_afs
       } else {
         format = 'ancestrymap'
         geno_to_aftable = ancestrymap_to_aftable
@@ -988,8 +1031,8 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
     } else stop('Genotype files not found!')
   }
   geno_to_aftable = switch(format,
-                           'plink' = plink_to_aftable,
-                           'packedancestrymap' = packedancestrymap_to_aftable,
+                           'plink' = plink_to_afs,
+                           'packedancestrymap' = packedancestrymap_to_afs,
                            'ancestrymap' = ancestrymap_to_aftable)
   if(is.null(geno_to_aftable)) stop('Invalid format!')
 
@@ -1025,32 +1068,42 @@ read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
 #' and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 #' `.rds` files with total and alternative allele counts for each individual, and products of total
 #' and alternative allele counts for each pair.
-#' The function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
+#' The function calls \code{\link{packedancestrymap_to_afs}} or \code{\link{plink_to_afs}}
 #' and \code{\link{afs_to_f2_blocks}}.
 #'
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
+#' @param cols_per_chunk Number of genotype chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
 #' @inheritParams extract_f2
 extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
-                          transitions = TRUE, transversions = TRUE, keepsnps = NULL,
-                          maxmem = 8000, overwrite = FALSE, format = NULL, verbose = TRUE) {
+                          transitions = TRUE, transversions = TRUE, auto_only = TRUE, keepsnps = NULL,
+                          maxmem = 8000, overwrite = FALSE, format = NULL, cols_per_chunk = NULL, verbose = TRUE) {
+
+  if(!is.null(cols_per_chunk)) {
+    snpfile = extract_counts_large(pref, outdir, inds = inds, blgsize = blgsize,
+                               cols_per_chunk = cols_per_chunk, maxmiss = maxmiss,
+                               minmaf = minmaf, maxmaf = maxmaf,
+                               transitions = transitions, transversions = transversions, auto_only = auto_only,
+                               keepsnps = keepsnps, overwrite = overwrite,
+                               format = format, verbose = verbose)
+    return(invisible(snpfile))
+  }
+
   dir.create(outdir, showWarnings = FALSE)
   if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
   bfile = paste0(outdir, '/block_lengths.rds')
-  if(file.exists(bfile)) {
-    # todo: snp filters
-    extract_more_counts(pref, outdir, inds = inds, maxmem = maxmem,
-                        overwrite = overwrite, format = format, verbose = verbose)
-    return()
-  }
+  # if(file.exists(bfile)) {
+  #   todo: snp filters
+  #   extract_more_counts(pref, outdir, inds = inds, maxmem = maxmem,
+  #                      overwrite = overwrite, format = format, verbose = verbose)
+  #   return()
+  # }
 
   g = read_anygeno(pref, inds, format = format, verbose = verbose)
   g %<>% discard_from_geno(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions,
-                           keepsnps = keepsnps, auto_only = TRUE, poly_only = TRUE)
-  randsnps = sample(1:nrow(g$bed), floor(nrow(g$bed)/2))
-  g$bed[randsnps, ] = 2 - g$bed[randsnps, ]
+                           keepsnps = keepsnps, auto_only = TRUE, poly_only = FALSE)
 
   if(verbose) alert_info(paste0(nrow(g$bed), ' SNPs remain.\nDetermining SNP blocks...\n'))
   block_lengths = get_block_lengths(g$bim, blgsize = blgsize)
@@ -1062,6 +1115,41 @@ extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 
                   outdir = outdir, overwrite = overwrite,
                   maxmem = maxmem, verbose = verbose)
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
+}
+
+extract_counts_large = function(pref, outdir, inds = NULL, blgsize = 0.05, cols_per_chunk = 10,
+                                maxmiss = 1, minmaf = 0, maxmaf = 0.5,
+                                transitions = TRUE, transversions = TRUE, auto_only = TRUE, keepsnps = NULL,
+                                overwrite = FALSE, format = NULL, verbose = TRUE) {
+
+  # same as extract_counts, but split across chunks of individuals
+  pref %<>% normalizePath(mustWork = FALSE)
+  l = format_info(pref, format)
+  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  if(!is.null(inds)) indfile %<>% filter(ind %in% inds)
+
+  snpdat = extract_afs(pref, outdir, inds = indfile$ind, pops = indfile$ind, cols_per_chunk = cols_per_chunk, numparts = 100,
+                       maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+                       transitions = transitions, transversions = transversions, auto_only = auto_only,
+                       keepsnps = keepsnps, format = format, verbose = verbose)
+  numchunks = length(list.files(outdir, 'afs.+rds'))
+
+  block_lengths = get_block_lengths(snpdat, blgsize = blgsize)
+  saveRDS(block_lengths, file = paste0(outdir, '/block_lengths.rds'))
+
+  write_split_inddat(outdir, outdir, overwrite = overwrite, verbose = verbose)
+
+  if(verbose) alert_warning(paste0('Computing ', choose(numchunks, 2), ' chunk pairs. If this takes too long,
+  consider running "extract_afs" (with each individual its own population) and then paralellizing over "afs_to_counts".\n'))
+  for(i in 1:numchunks) {
+    for(j in i:numchunks) {
+      if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
+      afs_to_counts(outdir, outdir, chunk1 = i, chunk2 = j, overwrite = overwrite)
+    }
+  }
+  if(verbose) alert_info('\n')
+  if(verbose) alert_info(paste0('Deleting allele frequency files...\n'))
+  unlink(paste0(outdir, c('/afs*.rds', '/counts*.rds')))
 }
 
 extract_more_counts = function(pref, outdir, inds = NULL,
@@ -1113,7 +1201,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
-#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.
+#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{afs_to_f2}}, but more chunk pairs will have to be computed.
 #' @return SNP metadata (invisibly)
 #' @examples
 #' \dontrun{
@@ -1155,7 +1243,7 @@ extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 
 #' and computes allele frequencies for selected populations and stores it as `.rds` files in outdir.
 #' @export
 #' @inheritParams extract_f2
-#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{write_split_f2_block}}, but more chunk pairs will have to be computed.
+#' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running \code{\link{afs_to_f2}}, but more chunk pairs will have to be computed.
 #' @param numparts Number of parts in which genotype data will be read for computing allele frequencies
 #' @return SNP metadata (invisibly)
 #' @examples
@@ -1170,31 +1258,11 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
                        poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   pref %<>% normalizePath(mustWork = FALSE)
-  if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
-    format = 'packedancestrymap'
-    nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-    indnam = c('ind', 'sex', 'pop')
-    indtype = 'ccc'
-    snpend = '.snp'
-    indend = '.ind'
-    genoend = '.geno'
-    cpp_geno_ploidy = cpp_packedancestrymap_ploidy
-    cpp_geno_to_aftable = cpp_packedancestrymap_to_aftable
-  } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
-    format = 'plink'
-    nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-    indnam = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
-    indtype = 'cccccc'
-    snpend = '.bim'
-    indend = '.fam'
-    genoend = '.bed'
-    cpp_geno_ploidy = cpp_plink_ploidy
-    cpp_geno_to_aftable = cpp_plink_to_aftable
-  } else stop('Genotype files not found!')
+  l = format_info(pref, format)
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
-  indfile = read_table2(paste0(pref, indend), col_names = indnam, col_types = indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccnncc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
@@ -1207,13 +1275,13 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   ends = c(lead(starts)[-numparts], nrow(snpfile))
 
   snpparts = list()
-  if(adjust_pseudohaploid) ploidy = cpp_geno_ploidy(paste0(pref, genoend), nsnpall, nindall, indvec)
+  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(paste0(pref, l$genoend), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
 
   for(i in 1:numparts) {
     if(verbose) alert_info(paste0('Reading part ', i, ' out of ', numparts, '...\r'))
     # read data and compute allele frequencies
-    afdat = cpp_geno_to_aftable(paste0(pref, genoend), nsnpall, nindall, indvec, first = starts[i],
+    afdat = l$cpp_geno_to_afs(paste0(pref, l$genoend), nsnpall, nindall, indvec, first = starts[i],
                                 last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
     afdat$snpfile = snpfile %>% slice((starts[i]+1):(ends[i]))
 
@@ -1258,6 +1326,34 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   invisible(snpparts)
 }
 
+
+format_info = function(pref, format = NULL) {
+  # returns named list with genotype format specific information
+
+  l = list()
+  if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
+    l$format = 'packedancestrymap'
+    l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+    l$indnam = c('ind', 'sex', 'pop')
+    l$indtype = 'ccc'
+    l$snpend = '.snp'
+    l$indend = '.ind'
+    l$genoend = '.geno'
+    l$cpp_geno_ploidy = cpp_packedancestrymap_ploidy
+    l$cpp_geno_to_afs = cpp_packedancestrymap_to_afs
+  } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
+    l$format = 'plink'
+    l$snpnam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
+    l$indnam = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
+    l$indtype = 'cccccc'
+    l$snpend = '.bim'
+    l$indend = '.fam'
+    l$genoend = '.bed'
+    l$cpp_geno_ploidy = cpp_plink_ploidy
+    l$cpp_geno_to_afs = cpp_plink_to_afs
+  } else stop('Genotype files not found!')
+  l
+}
 
 
 #' Copy f2-statistics
@@ -1361,24 +1457,21 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     poplist = tibble(ind = inds, pop = pops)
     if(verbose) alert_info(paste0('Reading precomputed data for ', nrow(poplist), ' individuals grouped into ',
                                   length(unique(pops)), ' populations...\n'))
-    f2_blocks = f2_from_precomp_indivs(dir, poplist = poplist, return_array = return_array,
+    f2_blocks = f2_from_precomp_indivs(dir, poplist = poplist, afprod = afprod, return_array = return_array,
                                        apply_corr = apply_corr, verbose = verbose)$f2_blocks
   } else {
     if(!is.null(inds)) stop('Individual IDs supplied, but no "indivs" directory found!')
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
     if(is.null(pops2)) pops2 = pops
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(union(pops, pops2)), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops, pops2, afprod = FALSE, remove_na = remove_na, verbose = verbose)
-    if(afprod) {
-      ap_blocks = read_f2(dir, pops, pops2, afprod = TRUE, remove_na = remove_na, verbose = verbose)
-      f2_blocks = scale_ap_blocks(ap_blocks, from = min(f2_blocks, na.rm=T), to = max(f2_blocks, na.rm=T))
-    }
+    f2_blocks = read_f2(dir, pops, pops2, afprod = afprod, remove_na = remove_na, verbose = verbose)
   }
+  if(afprod) f2_blocks = scale_ap_blocks(f2_blocks, from = 0)
   f2_blocks
 }
 
 
-f2_from_precomp_indivs = function(dir, poplist = NULL, return_array = TRUE, apply_corr = TRUE, verbose = TRUE) {
+f2_from_precomp_indivs = function(dir, poplist = NULL, afprod = FALSE, return_array = TRUE, apply_corr = TRUE, verbose = TRUE) {
 
   remove_na = is.null(poplist)
   if(is.null(poplist)) {
@@ -1391,7 +1484,7 @@ f2_from_precomp_indivs = function(dir, poplist = NULL, return_array = TRUE, appl
   pairs = read_pairs(dir, inds, block_lengths = block_lengths)
 
   if(verbose) alert_info('Data read. Computing f2...\n')
-  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths,
+  f2_blocks = indpairs_to_f2blocks(indivs, pairs, poplist, block_lengths, afprod = afprod,
                                    apply_corr = apply_corr, return_array = return_array)
   if(remove_na) {
     keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
@@ -1497,7 +1590,10 @@ xmat_to_inddat = function(xmat, block_lengths, maxmem = 8000,
     pivot_longer(-SNP, names_to = 'ind', values_to = 'a') %>%
     mutate(n = 1-is.na(a), n = n*ploidy[ind], a = replace_na(a, 0)) %>%
     add_column(bl = rep(bids, each=nc), .before = 'ind') %>%
-    group_by(bl, ind) %>% summarize(a = mean(a), n = mean(n)) %>% ungroup
+    group_by(bl, ind) %>%
+    #summarize(a = mean(a), n = mean(n)) %>%
+    summarize(a = (mean(a)+mean(n-a))/2, n = mean(n)) %>%
+    ungroup
 
   if(!is.null(outdir)) {
     inddir = paste0(outdir, '/indivs')
@@ -1533,7 +1629,7 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
     if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2,
                                          ' blocks of ', width, ' samples and up to ', maxmem,
                                          ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
-    else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
+    else alert_info(paste0('Computing without splitting (', reqmem, ' < maxmem)...\n'))
   }
 
   bids = rep(seq_along(block_lengths), block_lengths)
@@ -1556,10 +1652,9 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
       if(all(file.exists(files))) next
     }
     arrs = xmats_to_pairarrs(a1, a2)
-    arrs$pp = arrs$aa/arrs$nn
-    arrs$pp[!is.finite(arrs$pp)] = NA
-    aa_subblock = block_arr_mean(arrs$aa, block_lengths)
-    nn_subblock = block_arr_mean(arrs$nn, block_lengths)
+    arrs2 = xmats_to_pairarrs(2-a1, 2-a2)
+    aa_subblock = (block_arr_mean(arrs$aa, block_lengths) + block_arr_mean(arrs2$aa, block_lengths))/2
+    nn_subblock = (block_arr_mean(arrs$nn, block_lengths) + block_arr_mean(arrs2$nn, block_lengths))/2
     if(!is.null(outdir)) {
       write_pairdat(aa_subblock, nn_subblock, outdir = outdir, overwrite = overwrite)
     } else {

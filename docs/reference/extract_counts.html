@@ -53,7 +53,7 @@
 and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 .rds files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
-The function calls packedancestrymap_to_aftable or plink_to_aftable
+The function calls packedancestrymap_to_afs or plink_to_afs
 and afs_to_f2_blocks." />
 <meta name="twitter:card" content="summary" />
 
@@ -122,7 +122,7 @@ and afs_to_f2_blocks." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -175,7 +175,7 @@ and afs_to_f2_blocks." />
 and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 <code>.rds</code> files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
-The function calls <code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code> or <code><a href='plink_to_aftable.html'>plink_to_aftable</a></code>
+The function calls <code><a href='packedancestrymap_to_afs.html'>packedancestrymap_to_afs</a></code> or <code><a href='plink_to_afs.html'>plink_to_afs</a></code>
 and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
     
     </div>
@@ -190,10 +190,12 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
   <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
   <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>transversions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>auto_only</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>keepsnps</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>maxmem</span> <span class='kw'>=</span> <span class='fl'>8000</span>,
   <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>format</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>cols_per_chunk</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
 )</pre>
     
@@ -207,7 +209,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>outdir</th>
-      <td><p>Directory where data will be stored. If <code>NULL</code>, data will be returned instead of written to disk.</p></td>
+      <td><p>Directory where data will be stored.</p></td>
     </tr>
     <tr>
       <th>inds</th>
@@ -238,6 +240,10 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <td><p>Set this to <code>FALSE</code> to exclude transversion SNPs</p></td>
     </tr>
     <tr>
+      <th>auto_only</th>
+      <td><p>Keep only SNPs on chromosomes 1 to 22</p></td>
+    </tr>
+    <tr>
       <th>keepsnps</th>
       <td><p>SNP IDs of SNPs to keep. Overrides other SNP filtering options</p></td>
     </tr>
@@ -253,6 +259,10 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
       <th>format</th>
       <td><p>Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>ancestrymap</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
+    </tr>
+    <tr>
+      <th>cols_per_chunk</th>
+      <td><p>Number of genotype chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for <code>cols_per_chunk</code> in <code><a href='extract_afs.html'>extract_afs</a></code> is 10. Lower numbers will lower the memory requirement but increase the time it takes.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

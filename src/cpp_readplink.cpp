@@ -340,7 +340,7 @@ NumericVector cpp_plink_ploidy(String genofile, int nsnp, int nind, IntegerVecto
 }
 
 // [[Rcpp::export]]
-List cpp_plink_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec,
+List cpp_plink_to_afs(String genofile, int nsnp, int nind, IntegerVector indvec,
                           int first, int last, IntegerVector ploidy,
                           bool transpose, bool verbose) {
 

@@ -14,10 +14,12 @@ extract_counts(
   maxmaf = 0.5,
   transitions = TRUE,
   transversions = TRUE,
+  auto_only = TRUE,
   keepsnps = NULL,
   maxmem = 8000,
   overwrite = FALSE,
   format = NULL,
+  cols_per_chunk = NULL,
   verbose = TRUE
 )
 }
@@ -41,6 +43,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{transversions}{Set this to \code{FALSE} to exclude transversion SNPs}
 
+\item{auto_only}{Keep only SNPs on chromosomes 1 to 22}
+
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
 \item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
@@ -50,6 +54,8 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
+\item{cols_per_chunk}{Number of genotype chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for \code{cols_per_chunk} in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.}
+
 \item{verbose}{Print progress updates}
 }
 \description{
@@ -57,6 +63,6 @@ Prepare data for various \emph{ADMIXTOOLS 2} functions. This function reads data
 and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 \code{.rds} files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
-The function calls \code{\link{packedancestrymap_to_aftable}} or \code{\link{plink_to_aftable}}
+The function calls \code{\link{packedancestrymap_to_afs}} or \code{\link{plink_to_afs}}
 and \code{\link{afs_to_f2_blocks}}.
 }

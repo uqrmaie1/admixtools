@@ -180,7 +180,7 @@ NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, 
 
 
 // [[Rcpp::export]]
-List cpp_packedancestrymap_to_aftable(String genofile, int nsnp, int nind, IntegerVector indvec,
+List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVector indvec,
                                       int first, int last, IntegerVector ploidy,
                                       bool transpose, bool verbose) {
   //same arguments as cpp_read_packedancestrymap, except indvec assigns populations. indiv not used: -1

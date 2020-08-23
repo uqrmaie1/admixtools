@@ -23,6 +23,7 @@ extract_f2(
   overwrite = FALSE,
   format = NULL,
   adjust_pseudohaploid = TRUE,
+  cols_per_chunk = NULL,
   verbose = TRUE
 )
 }
@@ -65,6 +66,8 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
+\item{cols_per_chunk}{Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for \code{cols_per_chunk} in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.}
+
 \item{verbose}{Print progress updates}
 }
 \value{
@@ -82,5 +85,5 @@ extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 }
 }
 \seealso{
-\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{extract_f2_large}} in case you run out of memory, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
+\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
 }

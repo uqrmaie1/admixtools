@@ -118,7 +118,7 @@ and saves them as .rds files with prefix prefix" />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/fstats.html">f-statistics</a>
+      <a href="../articles/fstats.html">*f*-statistics</a>
     </li>
     <li>
       <a href="../articles/graphs.html">Admixture graphs</a>
@@ -201,12 +201,12 @@ and saves them as <code>.rds</code> files with prefix <code>prefix</code></p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></code>, <code><a href='write_split_f2_block.html'>write_split_f2_block</a></code></p></div>
+    <div class='dont-index'><p><code><a href='packedancestrymap_to_afs.html'>packedancestrymap_to_afs</a></code>, <code><a href='afs_to_f2.html'>afs_to_f2</a></code></p></div>
     
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_aftable.html'>packedancestrymap_to_aftable</a></span>(<span class='st'>'path/to/packedancestrymap_prefix'</span>, <span class='no'>allpopulations</span>)
+<span class='no'>afdat</span> <span class='kw'>=</span> <span class='fu'><a href='packedancestrymap_to_afs.html'>packedancestrymap_to_afs</a></span>(<span class='st'>'path/to/packedancestrymap_prefix'</span>, <span class='no'>allpopulations</span>)
 <span class='fu'>split_mat</span>(<span class='no'>afdat</span>$<span class='no'>afs</span>, <span class='kw'>cols_per_chunk</span> <span class='kw'>=</span> <span class='fl'>20</span>, <span class='kw'>prefix</span> <span class='kw'>=</span> <span class='st'>'afdat_split_v42.1/afs'</span>)
 }</div></pre>
   </div>

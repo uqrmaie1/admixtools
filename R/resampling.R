@@ -176,7 +176,7 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' \dontrun{
 #' prefix = 'path/to/packedancestrymap_prefix'
 #' pops = c('pop1', 'pop2', 'pop3')
-#' afdat = packedancestrymap_to_aftable(prefix, pops = pops)
+#' afdat = packedancestrymap_to_afs(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
 get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
