@@ -605,10 +605,17 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na 
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
   if(verbose) alert_info(paste0('\n'))
-  if(remove_na) {
+  if(remove_na || verbose) {
     keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
-    if(!all(keep)) warning(paste0('Discarding ', sum(!keep), ' blocks due to missing values!'))
-    f2_blocks = f2_blocks[,, keep, drop = FALSE]
+    if(!all(keep)) {
+      if(remove_na) {
+        warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
+                       'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
+        f2_blocks = f2_blocks[,, keep, drop = FALSE]
+      } else {
+        warning(paste0('The following block(s) have missing values: ', paste0(which(!keep), collapse = ', ')))
+      }
+    }
   }
   f2_blocks
 }
@@ -796,19 +803,6 @@ write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000,
 #' @param overwrite Overwrite existing files (default `FALSE`)
 #' @param verbose Print progress updates
 #' @seealso \code{\link{extract_counts}} Does the same thing in one step for smaller data.
-#' @examples
-#' \dontrun{
-#' afdir = 'tmp_af_dir/'
-#' f2dir = 'f2_dir'
-#' extract_afs('path/to/packedancestrymap_prefix', afdir)
-#' numchunks = length(list.files(afdir, 'afs.+rds'))
-#' # numchunks should be the number of split allele frequency files
-#' for(i in 1:numchunks) {
-#'   for(j in i:numchunks) {
-#'     afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = j)
-#'   }
-#' }
-#' }
 afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, verbose = TRUE) {
   # reads two (possibly split) genotype matrices, computes aa and nn, and writes output to outdir
 
@@ -1442,7 +1436,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod = FALSE, return_array = TRUE,
-                           apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
+                           apply_corr = TRUE, remove_na = FALSE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
   indpairs = dir.exists(paste0(dir, '/indivs'))

@@ -4,7 +4,7 @@
 # ADMIXTOOLS 2
 
 A new, lightning fast implementation of
-[ADMIXTOOLS](https://github.com/DReichLab/AdmixTools).
+[*ADMIXTOOLS*](https://github.com/DReichLab/AdmixTools).
 
 ## Overview
 

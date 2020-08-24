@@ -14,7 +14,7 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' \enumerate{
 #' \item `NULL`: all possible pairs of the populations in `f2_blocks` will be returned
 #' \item A vector of population labels
-#' \item A data frame with population combinations to be tested, with one population per column and one
+#' \item A matrix with population combinations to be tested, with one population per column and one
 #' combination per row. Other `pop` arguments will be ignored.
 #' \item the location of a file (`poplistname` or `popfilename`) which specifies the populations or
 #' population combinations to be tested. Other `pop` arguments will be ignored.
@@ -242,15 +242,16 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   } else if(is.null(pop1)) {
     if(is.character(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
     else pop1 = dimnames(f2_data)[[1]]
-  } else if(!'data.frame' %in% class(pop1) && file.exists(pop1)) {
+  } else if(is.character(pop1) && file.exists(pop1)) {
     pop1 = read_table2(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
       pop1 = pop1[[1]]
     } else {
       out = pop1 %>% set_colnames(nam)
     }
-  } else if('data.frame' %in% class(pop1)) {
-    out = pop1 %>% set_colnames(nam)
+  } else if('data.frame' %in% class(pop1) || is.matrix(pop1)) {
+    if(ncol(pop1) != fnum) stop(paste0("Wrong number of columns in 'pop1'! (Is ",ncol(pop1)," should be ",fnum,")"))
+    out = pop1 %>% set_colnames(nam) %>% as_tibble
   }
 
   if(is.null(out)) {

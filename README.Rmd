@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 # ADMIXTOOLS 2
 
-A new, lightning fast implementation of [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools).
+A new, lightning fast implementation of [*ADMIXTOOLS*](https://github.com/DReichLab/AdmixTools).
 
 
 ## Overview

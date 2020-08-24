@@ -1,5 +1,5 @@
 ---
-title: "*f*-statistics"
+title: "f-statistics"
 author: "Robert Maier"
 date: "`r Sys.Date()`"
 output:

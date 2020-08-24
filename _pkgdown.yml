@@ -4,6 +4,7 @@ template:
     bootswatch: cosmo
     docsearch:
       index_name: admixtools
+      api_key: c30b6be96312414d83a0ba52b94b558b
     ganalytics: UA-155330476-1
 
 url: https://uqrmaie1.github.io/admixtools/index.html
@@ -14,7 +15,7 @@ articles:
     - starts_with("authoring")
 
 reference:
-  - title: "ADMIXTOOLS programs"
+  - title: "*ADMIXTOOLS* programs"
     contents:
       - qp3pop
       - qpdstat

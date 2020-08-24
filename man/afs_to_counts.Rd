@@ -32,20 +32,6 @@ too many to do everything in working memory.
 It assumes that the allele frequencies have already been computed and are stored in \code{.rds} files,
 split into consecutive blocks for a set of individuals.
 }
-\examples{
-\dontrun{
-afdir = 'tmp_af_dir/'
-f2dir = 'f2_dir'
-extract_afs('path/to/packedancestrymap_prefix', afdir)
-numchunks = length(list.files(afdir, 'afs.+rds'))
-# numchunks should be the number of split allele frequency files
-for(i in 1:numchunks) {
-  for(j in i:numchunks) {
-    afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = j)
-  }
-}
-}
-}
 \seealso{
 \code{\link{extract_counts}} Does the same thing in one step for smaller data.
 }

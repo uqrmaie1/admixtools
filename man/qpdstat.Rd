@@ -36,7 +36,7 @@ output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
 \enumerate{
 \item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
 \item A vector of population labels
-\item A data frame with population combinations to be tested, with one population per column and one
+\item A matrix with population combinations to be tested, with one population per column and one
 combination per row. Other \code{pop} arguments will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
 population combinations to be tested. Other \code{pop} arguments will be ignored.

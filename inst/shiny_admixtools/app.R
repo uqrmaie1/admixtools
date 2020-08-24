@@ -206,7 +206,9 @@ ui = function(request) {
                                                   menuItem('Resample', tabName = 'qpadm_resample'),
                                                   menuItem('Options', tabName = 'qpadm_options',
                                                            numericInput('qpadm_diag', 'diag', value = 0.001, step = 0.001),
-                                                           checkboxInput('qpadm_constrained', 'Constrain weights'))),
+                                                           checkboxInput('qpadm_constrained', 'Constrain weights'),
+                                                           checkboxInput('qpadm_results', 'Show results', value = TRUE),
+                                                           checkboxInput('qpadm_rotate', 'Rotate left', value = FALSE))),
                                          menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
                                                   actionLink('qpgraph_fit', 'Fit'),
                                                   menuItem('Load graph', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
@@ -324,8 +326,8 @@ server = function(input, output, session) {
   shinyFileChoose(input, 'qpgraphbin', roots = volumes)
   shinyFileChoose(input, 'qpadmbin', roots = volumes)
 
-  global$show_qpadm_rotate = FALSE
-  global$show_qpadm_results = TRUE
+  #global$show_qpadm_rotate = FALSE
+  #global$show_qpadm_results = TRUE
 
   output$dirout = renderText({global$countdir})
   output$dirout = renderText({str_replace(global$countdir, '/Users/robert', '')})
@@ -375,6 +377,10 @@ server = function(input, output, session) {
 
   observeEvent(input$textdir, {
 
+    if(!dir.exists(input$textdirinput)) {
+      shinyalert('Could not find directory!', "Please write the path of a directory into the box. This should be an empty directory if you haven't extracted f2-statistics/counts yet, or otherwise the directory with extracted data.")
+      return()
+    }
     global$countdir = normalizePath(input$textdirinput)
     global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
     global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
@@ -495,11 +501,11 @@ server = function(input, output, session) {
 
         if(is.null(global$graph)) {
           #shinyalert('Generating random graph', '')
-          global$graph = random_admixturegraph(names(global$poplist), 2)
+          global$graph = random_admixturegraph(names(global$poplist), 2, outpop = input$outpop)
         } else if(!all(get_leafnames(global$graph) %in% names(global$poplist))) {
           shinyalert('Generating random graph because populations don\'t match',
                      setdiff(get_leafnames(global$graph), names(global$poplist)))
-          global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)))
+          global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)), outpop = input$outpop)
         }
 
         global$qpg_right = qpg_right_fit()
@@ -526,15 +532,15 @@ server = function(input, output, session) {
     global$graph
   })
 
-  # observeEvent(global$qpg_right, {
-  #   print('global$qpg_right change detected!')
-  #   global$qpgraphbod = fluidRow(
-  #     column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
-  #     column(4, global$qpg_right))
-  # })
+  observeEvent(global$qpg_right, {
+    print('global$qpg_right change detected!')
+    global$qpgraphbod = fluidRow(
+      column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
+      column(4, global$qpg_right))
+  })
   # observeEvent(global$databod, {global$bod = global$databod})
   # observeEvent(global$qpadmbod, {global$bod = global$qpadmbod})
-  # observeEvent(global$qpgraphbod, {global$bod = global$qpgraphbod})
+  observeEvent(global$qpgraphbod, {global$bod = global$qpgraphbod})
 
   observeEvent(input$navbar, {
     print('navbar selected')
@@ -659,7 +665,7 @@ server = function(input, output, session) {
     numgen = input$optim_ngen
     numsel = input$optim_nsel
     numrep = input$optim_nrep
-    fudge = input$qpgraph_diag
+    diag = input$qpgraph_diag
     lambdascale = as.numeric(input$lambdascale)
     f2blocks = get_f2blocks()
     pops = dimnames(f2blocks)[[1]]
@@ -673,14 +679,13 @@ server = function(input, output, session) {
     print(pops)
     print(dim(f2blocks))
     print(paste(numgraphs, numgen, numsel, nadmix))
-    mutfuns = input$mutfuns
+    mutfuns = sapply(input$mutfuns, get)
     print(mutfuns)
 
     withProgress(message = paste('Evaluating ', numsel+(numgraphs-numsel)*numgen*numrep,' graphs...'), {
       opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
                                 numgraphs = numgraphs, numgen = numgen, numsel = numsel,
-                                numadmix = nadmix, initgraph = g, mutfuns = mutfuns, debug = FALSE,
-                                fudge = fudge)
+                                numadmix = nadmix, initgraph = g, mutfuns = mutfuns, diag = diag)
     })
     print(opt_results)
     opt_results %<>% filter(!is.na(score))
@@ -730,13 +735,13 @@ server = function(input, output, session) {
       numstart = as.numeric(input$numstart)
       lambdascale = as.numeric(input$lambdascale)
       if(is.null(lambdascale) || length(lambdascale) == 0) lambdascale = 1
-      fudge = input$qpgraph_diag
+      diag = input$qpgraph_diag
       lsqmode = input$lsqmode
-      print(paste('qpgraphfun:', numstart, seed, fudge, lsqmode, lambdascale))
+      print(paste('qpgraphfun:', numstart, seed, diag, lsqmode, lambdascale))
       function(x, y, ...) {
         args = list(...)
         if(!'numstart' %in% names(args)) args[['numstart']] = numstart
-        args = c(list(x, y), args, fudge = fudge, lambdascale = lambdascale, lsqmode = lsqmode,
+        args = c(list(x, y), args, diag = diag, lambdascale = lambdascale, lsqmode = lsqmode,
                  seed = seed, f3precomp = list(f3precomp))
         do.call(quietly(qpgraph), args)$result
       }
@@ -974,8 +979,8 @@ server = function(input, output, session) {
     row = input$qpadm_rot_rows_selected
     req(row)
     sel = get_qpadm_rotate() %>% slice(row)
-    global$qpadmpops2remain = sel$left[[1]]
-    global$qpadmpops3add = sel$right[[1]]
+    global$qpadmpops_left_remain = sel$left[[1]]
+    global$qpadmpops_right_add = sel$right[[1]]
   })
 
 
@@ -1391,17 +1396,17 @@ server = function(input, output, session) {
                            selected = choices[[.]], choices = nam)})
   })
   observeEvent(input$qpadm_rotate, {
+    #global$show_qpadm_rotate = input$qpadm_rotate
     global$qpadmpops1 = input$qpadmpops1
     global$qpadmpops2 = input$qpadmpops2
     global$qpadmpops3 = input$qpadmpops3
-    global$show_qpadm_rotate = input$qpadm_rotate
   })
 
   observeEvent(input$qpadm_results, {
     global$qpadmpops1 = input$qpadmpops1
     global$qpadmpops2 = input$qpadmpops2
     global$qpadmpops3 = input$qpadmpops3
-    global$show_qpadm_results = input$qpadm_results
+    #global$show_qpadm_results = input$qpadm_results
   })
 
   get_qpadm_rotate = reactive({
@@ -1412,10 +1417,10 @@ server = function(input, output, session) {
     req(f2blocks, p1, p2, p3)
 
     withProgress(message = paste0('Generating qpadm models...'), {
-      lr = admixtools:::all_lr2(p2, length(p3))
+      lr = admixtools:::all_lr2(p1, length(p2))
     })
     withProgress(message = paste0('Evaluating ', length(lr[[1]]), ' qpadm models...'), {
-      out = admixtools:::qpadm_eval_rotate(f2blocks, p1, lr, p3, verbose = F) %>%
+      out = admixtools:::qpadm_eval_rotate(f2blocks, p3, lr, p2, verbose = F) %>%
         select(chisq, p, feasible, left, right)
     })
     out
@@ -1533,10 +1538,7 @@ server = function(input, output, session) {
       selectizeInput('qpadmpops1', 'Left', choices = choices1, multiple = TRUE, selected = global$qpadmpops1),
       selectizeInput('qpadmpops2', 'Right', choices = choices2, multiple = TRUE, selected = global$qpadmpops2),
       selectizeInput('qpadmpops3', 'Target', choices = choices3, multiple = FALSE, selected = global$qpadmpops3),
-      splitLayout(actionButton('qpadm_randomize', 'Randomize')),
-      checkboxInput('qpadm_results', 'Show results', value = global$show_qpadm_results),
-      checkboxInput('qpadm_rotate', 'Rotate left', value = global$show_qpadm_rotate)
-    )
+      splitLayout(actionButton('qpadm_randomize', 'Randomize')))
   })
 
   qpadm_rightpanel_fit = reactive({
@@ -1551,8 +1553,10 @@ server = function(input, output, session) {
   })
 
   qpadm_rightpanel = reactive({
-    res = global$show_qpadm_results
-    rot = global$show_qpadm_rotate
+    #res = global$show_qpadm_results
+    #rot = global$show_qpadm_rotate
+    res = if(is.null(input$qpadm_results)) TRUE else input$qpadm_results
+    rot = if(is.null(input$qpadm_rotate)) FALSE else input$qpadm_rotate
     if(rot && res) splitLayout(cellWidths = c('50%', '50%'), qpadm_rightpanel_rotate(), qpadm_rightpanel_fit())
     else if(rot) qpadm_rightpanel_rotate()
     else if(res) qpadm_rightpanel_fit()
@@ -1784,9 +1788,10 @@ server = function(input, output, session) {
     p2 = input$qpadmpops2
     p3 = input$qpadmpops3
     req(f2blocks, p1, p2, p3)
-    if(global$show_qpadm_rotate) {
-      p2 = global$qpadmpops2remain
-      p3 = union(p3, global$qpadmpops3add)
+    #if(global$show_qpadm_rotate) {
+    if(input$qpadm_rotate) {
+      p1 = if(is.null(global$qpadmpops_left_remain)) p1 else global$qpadmpops_left_remain
+      p2 = union(p2, global$qpadmpops_right_add)
     }
     qpadm(f2blocks, p1, p2, p3)
   })
