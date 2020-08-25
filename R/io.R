@@ -731,7 +731,9 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
-  snpdat = read_table2(paste0(afdir, '/snpdat.tsv.gz'), col_types = 'ccnncc??', progress = FALSE)
+  fl = paste0(afdir, '/snpdat.tsv.gz')
+  nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
+  snpdat = read_table2(fl, col_types = paste0('ccnncc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
   poly = snpdat$poly
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
   am2 = readRDS(paste0(afdir, '/afs', chunk2, '.rds'))
