@@ -12,8 +12,8 @@ f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24
 #' Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pop1 One of the following four:
 #' \enumerate{
-#' \item `NULL`: all possible pairs of the populations in `f2_blocks` will be returned
-#' \item A vector of population labels
+#' \item `NULL`: all possible population combinations will be returned
+#' \item A vector of population labels. All combinations with the other `pop` arguments will be returned
 #' \item A matrix with population combinations to be tested, with one population per column and one
 #' combination per row. Other `pop` arguments will be ignored.
 #' \item the location of a file (`poplistname` or `popfilename`) which specifies the populations or

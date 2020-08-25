@@ -59,21 +59,60 @@ jack_vec_stats = function(loo_vec, block_lengths, tot = NULL, na.rm = TRUE) {
   namedList(est, var)
 }
 
+jack_vec_stats2 = function(loo_vec, block_lengths, na.rm = TRUE) {
+  # input is a vector of leave-one-out estimates
+  # output is list with jackknife mean and covariance
+
+  # est == tot; only valid when estimates are additive
+
+  if(na.rm) {
+    fin = is.finite(loo_vec)
+    block_lengths = block_lengths[fin]
+    loo_vec = loo_vec[fin]
+  }
+  n = sum(block_lengths)
+  est = weighted.mean(loo_vec, 1-block_lengths/n, na.rm=na.rm)
+  h = n/block_lengths
+  var = mean((est - loo_vec)^2*(h-1))
+
+  namedList(est, var)
+}
+
+jack_vec_stats3 = function(est_vec, block_lengths, na.rm = TRUE) {
+  # input is a vector of blocked estimates
+  # output is list with jackknife mean and covariance
+  # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
+
+  # est == tot; only valid when estimates are additive
+
+  if(na.rm) {
+    fin = is.finite(est_vec)
+    block_lengths = block_lengths[fin]
+    est_vec = est_vec[fin]
+  }
+  est = weighted.mean(est_vec, block_lengths, na.rm=na.rm) # only valid when estimates are additive
+  var = mean((est - est_vec)^2/(sum(block_lengths)/block_lengths-1))
+
+  namedList(est, var)
+}
+
 
 jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
   # should give same results as 'jack_arr_stats'
+  # handles NA correctly
 
-  n = sum(block_lengths)
-  if(is.null(tot)) tot = weighted_row_means(loo_mat, 1-block_lengths/n, na.rm=na.rm) # only valid when estimates are additive
+  blmat = matrix(block_lengths, nrow(loo_mat), ncol(loo_mat), byrow = TRUE)
+  blmat[is.na(loo_mat)] = NA
+  hmat = rowSums(blmat,na.rm=TRUE)/blmat
+  if(is.null(tot)) tot = weighted_row_means(loo_mat, 1-1/hmat, na.rm=na.rm) # only valid when estimates are additive
   numblocks = length(block_lengths)
-  est = rowMeans(tot - loo_mat, na.rm=na.rm)*numblocks + weighted_row_means(loo_mat, block_lengths, na.rm=na.rm)
+  est = rowSums(tot - loo_mat, na.rm=na.rm) + weighted_row_means(loo_mat, block_lengths, na.rm=na.rm)
   estmat = matrix(est, nrow(loo_mat), numblocks)
   totmat = matrix(tot, nrow(loo_mat), numblocks)
-  h = rep(n/block_lengths, each = nrow(loo_mat))
-  taumat = h*totmat - (h-1)*loo_mat
-  xtau = (taumat - estmat) / sqrt(h-1)
+  taumat = hmat*totmat - (hmat-1)*loo_mat
+  xtau = (taumat - estmat) / sqrt(hmat-1)
   var = tcrossprod(replace_na(xtau, 0))/tcrossprod(!is.na(xtau))
 
   namedList(est, var)
@@ -85,6 +124,11 @@ jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
   # output is list with jackknife means and jackknife variances
   # should give same results as 'jack_mat_stats'
 
+  if(na.rm) {
+    fin = apply(loo_arr, 3, function(x) sum(!is.finite(x))==0)
+    block_lengths = block_lengths[fin]
+    loo_arr = loo_arr[,,fin]
+  }
   n = sum(block_lengths)
   if(is.null(tot)) tot = apply(loo_arr, 1:2, weighted.mean, 1-block_lengths/n, na.rm=na.rm)
   # above line only valid when estimates are additive
@@ -109,6 +153,7 @@ jack_dat_stats = function(dat, na.rm = TRUE) {
 
   if(!'tot' %in% names(dat)) dat %<>% mutate(tot = weighted.mean(loo, 1-length/sum(length), na.rm=na.rm))
   dat %>%
+    filter(is.finite(loo)) %>%
     mutate(h = sum(length)/length,
            est = mean(tot - loo, na.rm = na.rm)*n() + weighted.mean(loo, length, na.rm = na.rm),
            xtau = (h*tot - (h-1)*loo - est)^2/(h-1)) %>%
@@ -126,6 +171,11 @@ jack_pairarr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) 
   # input is 3d array (m x n x p)
   # output is list with jackknife means and jackknife covariances
 
+  if(na.rm) {
+    fin = apply(loo_arr, 3, function(x) sum(!is.finite(x))==0)
+    block_lengths = block_lengths[fin]
+    loo_arr = loo_arr[,,fin]
+  }
   n = sum(block_lengths)
   numblocks = length(block_lengths)
   if(is.null(tot)) tot = c(t(apply(loo_arr, 1:2, weighted.mean, 1-block_lengths/n, na.rm=na.rm)))

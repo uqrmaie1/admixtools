@@ -226,13 +226,7 @@ ui = function(request) {
                                                            #splitLayout(checkboxInput('fixoutgroup', 'Fix outgroup', value = TRUE),
                                                            actionButton('randgraph', 'Randomize'),
                                                            hr()),
-                                                  menuItem('Similar graphs', tabName = 'qpgraph_similar', expandedName = 'qpgraph_similar',
-                                                           actionLink('qpgraph_similar_minus1', 'Less admixture'),
-                                                           actionLink('qpgraph_similar_minusplus', 'Same admixture'),
-                                                           actionLink('qpgraph_similar_plus1', 'More admixture'),
-                                                           actionLink('qpgraph_similar_decomposed', 'Component trees'),
-                                                           actionLink('qpgraph_similar_treeneighbors', 'Tree neighbors'),
-                                                           actionLink('qpgraph_similar_flipadmix', 'Flip admixture'),
+                                                  menuItem('Similar graphs', tabName = 'qpgraph_sim', expandedName = 'qpgraph_sim',
                                                            menuItem('Add population', tabName = 'qpgraph_add',
                                                                     uiOutput('qpgraph_add'),
                                                                     actionBttn('qpgraph_add_run', 'Run')),
@@ -447,7 +441,7 @@ server = function(input, output, session) {
         global$bod = fluidRow(
           tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
                       tabPanel('Ind pairs', plotlyOutput(outputId = 'f2heatmap_indiv', height = '800', width='auto')),
-                      tabPanel('Pop table', div(DT::DTOutput('f2stats'), style = dtstyle))))
+                      tabPanel('Pop table', dto('f2stats'))))
 
       } else if(exp == 'f4') {
 
@@ -474,7 +468,7 @@ server = function(input, output, session) {
           column(3, global$f4_left),
           column(9, tabsetPanel(tabPanel('Plot', plotlyOutput(outputId = 'f4plot', height = '800', width='auto')),
                                 tabPanel('Plot2', plotlyOutput(outputId = 'f4plot2', height = '800', width='auto')),
-                                tabPanel('Table', div(DT::DTOutput('f4stats'), style = dtstyle)))))
+                                tabPanel('Table', dto('f4stats')))))
 
       } else if(exp == 'qpadm') {
 
@@ -508,10 +502,12 @@ server = function(input, output, session) {
           global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)), outpop = input$outpop)
         }
 
-        global$qpg_right = qpg_right_fit()
+        #global$qpg_right = qpg_right_fit()
+        global$qpg_right_show = 'fit'
+        #global$qpg_right = qpg_right()
         global$bod = fluidRow(
           column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
-          column(4, global$qpg_right))
+          column(4, qpg_right()))
       } else {
         shinyalert('Error', 'implement tab')
       }
@@ -540,7 +536,8 @@ server = function(input, output, session) {
   })
   # observeEvent(global$databod, {global$bod = global$databod})
   # observeEvent(global$qpadmbod, {global$bod = global$qpadmbod})
-  observeEvent(global$qpgraphbod, {global$bod = global$qpgraphbod})
+  observeEvent(global$qpgraphbod, {print('global$qpgraphbod change detected!'); global$bod = global$qpgraphbod})
+  observeEvent(global$bod, {print('global$bod change detected!'); b = global$bod; global$bod = b})
 
   observeEvent(input$navbar, {
     print('navbar selected')
@@ -905,33 +902,6 @@ server = function(input, output, session) {
     global$score = sel$score[[1]]
     global$tempgraph = TRUE
   })
-  observeEvent(input$minusplus_cell_clicked, {
-    row = input$minusplus_rows_selected
-    req(row)
-    sel = get_minusplus() %>% slice(row)
-    global$selgraph = sel$graph[[1]]
-    global$edges = sel$edges[[1]]
-    global$score = sel$score[[1]]
-    global$tempgraph = TRUE
-  })
-  observeEvent(input$decomposed_cell_clicked, {
-    row = input$decomposed_rows_selected
-    req(row)
-    sel = get_decomposed() %>% slice(row)
-    global$selgraph = sel$graph[[1]]
-    global$edges = sel$edges[[1]]
-    global$score = sel$score[[1]]
-    global$tempgraph = TRUE
-  })
-  observeEvent(input$treeneighbors_cell_clicked, {
-    row = input$treeneighbors_rows_selected
-    req(row)
-    sel = get_treeneighbors() %>% slice(row)
-    global$selgraph = sel$graph[[1]]
-    global$edges = sel$edges[[1]]
-    global$score = sel$score[[1]]
-    global$tempgraph = TRUE
-  })
   observeEvent(input$flipadmix_cell_clicked, {
     row = input$flipadmix_rows_selected
     req(row)
@@ -998,8 +968,6 @@ server = function(input, output, session) {
       print('graph neighbors2')
       #g = global$graph
       g = get_graph()
-      print(g)
-      print(graphfun)
       withProgress(message = 'Finding graphs...', {
         out = g %>% graphfun
       })
@@ -1020,9 +988,6 @@ server = function(input, output, session) {
 
   get_minus1 = make_reactive_graphtabs(graph_minusone, input$qpgraph_similar_minus1)
   get_plus1 = make_reactive_graphtabs(graph_plusone, input$qpgraph_similar_plus1)
-  get_minusplus = make_reactive_graphtabs(graph_minusplus, input$qpgraph_similar_minusplus)
-  get_decomposed = make_reactive_graphtabs(admixtools::graph_splittrees, input$qpgraph_similar_decomposed)
-  get_treeneighbors = make_reactive_graphtabs(decomposed_tree_neighbors, input$qpgraph_similar_treeneighbors)
   get_flipadmix = make_reactive_graphtabs(admixtools::graph_flipadmix, input$qpgraph_similar_flipadmix)
 
   get_addleaf = eventReactive(input$qpgraph_add_run, {
@@ -1483,44 +1448,18 @@ server = function(input, output, session) {
     out
   })
 
-  observeEvent(input$econstraints_update, {
-    global$useconstraints = TRUE
-  })
-  observeEvent(input$aconstraints_update, {
-    global$useconstraints = TRUE
-  })
+  observeEvent(input$econstraints_update,  {global$useconstraints = TRUE})
+  observeEvent(input$aconstraints_update,  {global$useconstraints = TRUE})
 
   dto = function(x) div(DT::DTOutput(x), style = dtstyle)
 
-  observeEvent(input$qpgraph_similar_minus1, { global$qpg_right = dto('minus1') })
-  observeEvent(input$qpgraph_similar_plus1, { global$qpg_right = dto('plus1') })
-  observeEvent(input$qpgraph_similar_minusplus, { global$qpg_right = dto('minusplus') })
-  observeEvent(input$qpgraph_similar_decomposed, { global$qpg_right = dto('decomposed') })
-  observeEvent(input$qpgraph_similar_treeneighbors, { global$qpg_right = dto('treeneighbors') })
-  observeEvent(input$qpgraph_similar_flipadmix, { global$qpg_right = dto('flipadmix') })
-  #observeEvent(input$addleaf, { global$qpg_right = dto('addleaf') })
+  observeEvent(input$qpgraph_add_run, {global$qpg_right = dto('addleaf')})
+  observeEvent(input$init_resample, {global$qpg_right = dto('initresample')})
+  observeEvent(input$ind_resample, {global$qpg_right = dto('indresample')})
+  observeEvent(input$snp_resample, {global$qpg_right = dto('snpresample')})
 
-  observeEvent(input$qpgraph_add_run, {global$qpg_right = dto('addleaf') })
+  observeEvent(input$qpadm_fit, {global$qpadm_rightpanel = qpadm_rightpanel_fit()})
 
-  observeEvent(input$init_resample, {
-    print('initresample!')
-    global$qpg_right = div(DT::DTOutput('initresample'), style = dtstyle)
-  })
-
-  observeEvent(input$ind_resample, {
-    print('indresample!')
-    global$qpg_right = div(DT::DTOutput('indresample'), style = dtstyle)
-  })
-
-  observeEvent(input$snp_resample, {
-    print('snp_resample!')
-    global$qpg_right = div(DT::DTOutput('snpresample'), style = dtstyle)
-  })
-
-  observeEvent(input$qpadm_fit, {
-    print('fit qpadm!')
-    global$qpadm_rightpanel = qpadm_rightpanel_fit()
-  })
   observeEvent(input$qpgraph_fit, {
     print('fit!')
     global$qpgraph_ranges = NULL
@@ -1543,14 +1482,12 @@ server = function(input, output, session) {
 
   qpadm_rightpanel_fit = reactive({
     tabsetPanel(id = 'qpadm_tabset',
-                tabPanel('Weights', div(DT::DTOutput('qpadm_weights'), style = dtstyle)),
-                tabPanel('f4', div(DT::DTOutput('qpadm_f4'), style = dtstyle)),
-                tabPanel('Rank drop', div(DT::DTOutput('qpadm_rankdrop'), style = dtstyle)),
-                tabPanel('Pop drop', div(DT::DTOutput('qpadm_popdrop'), style = dtstyle)))
+                tabPanel('Weights', dto('qpadm_weights')),
+                tabPanel('f4', dto('qpadm_f4')),
+                tabPanel('Rank drop', dto('qpadm_rankdrop')),
+                tabPanel('Pop drop', dto('qpadm_popdrop')))
   })
-  qpadm_rightpanel_rotate = reactive({
-    div(div(DT::DTOutput('qpadm_rot'), style = dtstyle), style='padding-right:50px;')
-  })
+  qpadm_rightpanel_rotate = reactive(div(dto('qpadm_rot'), style='padding-right:50px;'))
 
   qpadm_rightpanel = reactive({
     #res = global$show_qpadm_results
@@ -1564,10 +1501,24 @@ server = function(input, output, session) {
     })
 
   qpg_right_fit = reactive({
-    tabsetPanel(tabPanel('f2', id = 'f2', div(DT::DTOutput('f2'), style = dtstyle)),
-                tabPanel('f3', div(DT::DTOutput('f3'), style = dtstyle)),
-                tabPanel('opt', div(DT::DTOutput('opt'), style = dtstyle)),
+    tabsetPanel(tabPanel('f2', dto('f2')),
+                tabPanel('f3', dto('f3')),
+                tabPanel('opt', dto('opt')),
+                tabPanel('similar', tabsetPanel(tabPanel('-1', dto('minus1')),
+                                                tabPanel('+1', dto('plus1')),
+                                                tabPanel('flip', dto('flipadmix')))),
                 id = 'qpgraph_tabset')
+  })
+
+  qpg_right = reactive({
+    print('qpg_right!')
+    print(global$qpg_right_show)
+    if(global$qpg_right_show == 'fit') return(qpg_right_fit())
+    else if(global$qpg_right_show == 'minus1') {
+      global$qpg_right = plotlyOutput('graphcomparison')
+      return(plotlyOutput('graphcomparison'))
+    }
+    else shinyalert('Error!')
   })
 
 
@@ -1983,8 +1934,6 @@ server = function(input, output, session) {
     else stop()
   })
 
-  #dtfun = function(x) DT::renderDataTable({format_table(x)}, extensions = 'Buttons', options = do)
-  #dtfun2 = function(x) reactive({DT::renderDataTable({format_table(x)}, extensions = 'Buttons', options = do)})
   ex = c('Buttons', 'Scroller')
   dtfun = function(...) DT::renderDataTable(..., extensions = ex, options = do, selection = 'single')
 
@@ -1992,10 +1941,7 @@ server = function(input, output, session) {
   output$f3 = dtfun({format_table(get_fit()$f3)})
   output$opt = dtfun({format_table(get_fit()$opt)})
   output$minus1 = dtfun({format_table(get_minus1())})
-  output$minusplus = dtfun({format_table(get_minusplus())})
   output$plus1 = dtfun(format_table(get_plus1()))
-  output$decomposed = dtfun({format_table(get_decomposed())})
-  output$treeneighbors = dtfun({format_table(get_treeneighbors())})
   output$flipadmix = dtfun({format_table(get_flipadmix())})
   output$addleaf = dtfun({format_table(get_addleaf())})
 

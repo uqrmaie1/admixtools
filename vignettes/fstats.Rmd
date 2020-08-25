@@ -58,8 +58,8 @@ $$
 This shows that $f_4$ is at the same time
 
 * the covariance of allele frequency differences (line 1),
-* a sum of $f_2$ statistics (line 4), and
-* a sum of allele frequency products (line 2).
+* a sum of allele frequency products (line 2), and
+* a sum of $f_2$ statistics (line 4).
 
 By comparing the definitions of $f_4$ and $f_2$, we also see that $f_4$ is a generalization of $f_2$: $f_4(A, B; A, B) = f_2(A, B)$
 

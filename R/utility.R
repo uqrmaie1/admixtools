@@ -139,9 +139,10 @@ diag_3d = function(arr) {
 }
 
 weighted_row_means = function(mat, weights, na.rm = TRUE) {
-  rowMeans(mat * rep(weights, each = nrow(mat)), na.rm = na.rm) / mean(weights, na.rm = na.rm)
-}
 
+  if(!is.matrix(weights)) weights = matrix(weights, nrow(mat), ncol(mat), byrow = TRUE)
+  rowSums(mat * weights, na.rm = na.rm) / rowSums((!is.na(mat)) * weights, na.rm = na.rm)
+}
 
 
 power_set = function(l, nmax=length(l)) flatten(map(seq_along(l[seq_len(nmax)]), ~combn(l, ., simplify=F)))
