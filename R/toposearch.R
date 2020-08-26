@@ -682,6 +682,8 @@ get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
   # outer list is for each generation, inner list is for each graph, and is named
   # probs is a matrix numgen x numgraphs with probabilities
 
+  if(is.null(names(mutfuns))) names(mutfuns) = paste0('fun', seq_along(mutfuns))
+  if(length(unique(names(mutfuns))) < length(mutfuns)) stop("Names in 'mutfuns' are not unique!")
   map(seq_len(nrow(probs)), ~{
     nam = sample(names(mutfuns), ncol(probs), replace = TRUE, prob = probs[.,])
     map(mutfuns, ~function(graph) .(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
@@ -886,6 +888,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
 
   precomp = qpgraph_precompute_f3(f2_data, pops, f3basepop = outpop, ...)
 
+  if(class(mutfuns[[1]]) == 'character') mutfuns %<>% rlang::set_names() %>% map(get)
   if(is.null(mutprobs)) {
     if(numadmix == 0 && is.null(initgraphs)) mutfuns[c('move_admixedge_once', 'flipadmix_random')] = NULL
     mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(names(mutfuns))
@@ -944,57 +947,60 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
     mutate(topo = case_when(iap13 == iap23 ~ 0, iap12 == iap23 ~ 1, iap12 == iap13 ~ 2),
            top = case_when(topo == 0 ~ iap13, topo == 1 ~ iap12, topo == 2 ~ iap12)) %>%
     group_by(name1, name2, name3, top) %>%
-    summarize(x13 = any(topo == 1) & !any(topo == 0),
-              x23 = any(topo == 2) & !any(topo == 0),
+    summarize(x12 = any(topo == 0) & !any(topo == 1),
+              x21 = any(topo == 0) & any(topo == 1),
+              x13 = any(topo == 1) & !any(topo == 0),
               x31 = any(topo == 1) & any(topo == 0),
-              x32 = any(topo == 2) & any(topo == 0),
-              x12 = any(topo == 0) & !any(topo == 1),
-              x21 = any(topo == 0) & any(topo == 1)) %>%
+              x23 = any(topo == 2) & !any(topo == 0),
+              x32 = any(topo == 2) & any(topo == 0)) %>%
     group_by(name1, name2, name3) %>%
-    summarize(x13 = any(x13), x23 = any(x23), x31 = any(x31), x32 = any(x32), x12 = any(x12), x21 = any(x21),
-              toposet = paste0(x13+0, x23+0, x31+0, x32+0, x12+0, x21+0, collapse='')) %>%
+    #summarize(x13 = any(x13), x23 = any(x23), x31 = any(x31), x32 = any(x32), x12 = any(x12), x21 = any(x21),
+    summarize(across(starts_with('x'), any),
+              toposet = paste0(x12+0, x21+0, x13+0, x31+0, x23+0, x32+0, collapse='')) %>%
     ungroup %>%
     mutate(tlr = !x13 & !x31 & (x23 | x32) & (x12 | x21))
 
   tripletopo
 }
 
+
 #' Summarize triples across graphs
 #'
-#' This summarizes topologies of population triples across graphs
+#' This function summarizes topologies of population triples across graphs. If the list of graphs comes from \code{\link{find_graphs}}, only one graph from each run should be included, as graphs within the same run are not independent of each other.
 #'
 #' @export
-#' @param results the output of \code{\link{find_graphs}}
-#' @param maxscore restrict summary to graphs with score not larger than `maxscore`
-#' @examples
-#' \dontrun{
-#' summarize_triples(opt_results)
+#' @param graphs A list of graphs
+#' @return A data frame with one line for each population triple and columns summarizing the relationship of each triple across graphs.
+#' \itemize{
+#' \item `clade12`: Fraction of graphs in which `pop1` and `pop2` form a clade
+#' \item `x12`: Fraction of graphs in which `pop1` admixes into `pop2` at the exclusion of `pop3`
+#' \item `toptopo`: A binary string representation of the most common topology. Digits represent `x12`, `x21`, `x13`, `x31`, `x23`, `x32`
+#' \item `toptopocnt`: The number of graphs in which `toptopo` was observed
+#' \item `topos`: The counts of all topologies
 #' }
-summarize_triples = function(results, maxscore = NA) {
+summarize_triples = function(graphs) {
   # results is output from 'find_graphs'
   # takes at most one graph from each independent run
 
-  sel = results %>% group_by(run) %>% top_n(1, -jitter(score, amount = 1e-9)) %>% ungroup
-  if(!is.na(maxscore)) sel %<>% filter(score <= maxscore)
-
-  sel %>% mutate(topo = map(igraph, summarize_graph)) %>%
-    select(run, generation, index, igraph, score, topo) %>%
+  tibble(graph = graphs) %>%
+    rowwise %>%
+    mutate(topo = list(summarize_graph(graph))) %>%
     unnest(topo) %>%
     group_by(name1, name2, name3, toposet) %>%
     mutate(cnt = n()) %>%
     group_by(name1, name2, name3) %>%
-    summarize(numgraphs = n(),
-              x13 = mean(x13),
-              x23 = mean(x23),
-              x31 = mean(x31),
-              x32 = mean(x32),
-              clade = mean(substr(toposet, 1, 4) == '0000'),
-              x12 = mean(x12),
-              x21 = mean(x21),
+    mutate(clade12 = !(x13|x31|x23|x32),
+           clade13 = !(x12|x21|x23|x32),
+           clade23 = !(x12|x21|x13|x31)) %>%
+    summarize(across(starts_with(c('x','clade')), mean),
+              #clade = mean(substr(toposet, 1, 4) == '0000'),
               toptopo = toposet[cnt = max(cnt)][1],
               toptopocnt = max(cnt),
-              topos = list(setNames(cnt, toposet))) %>% ungroup
+              topos = list(setNames(cnt, toposet))) %>%
+    ungroup %>%
+    rename(pop1 = name1, pop2 = name2, pop3 = name3)
 }
+
 
 #' Find identical graphs
 #'

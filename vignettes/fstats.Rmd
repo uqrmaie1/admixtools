@@ -16,6 +16,7 @@ vignette: >
 
 *f*-statistics are the foundation of *ADMIXTOOLS*. In *ADMIXTOOLS 2*, $f_2$-statistics are of particular importance as $f_3$- and $f_4$-statistics are computed from $f_2$-statistics. They are conceptually very simple, but estimating them without bias can be complicated.
 
+Here, I give a summary of the basic theory behind *f*-statistics, and practical considerations for estimating them. [The paper which originally introduced *ADMIXTOOLS*](https://www.genetics.org/content/192/3/1065) goes into more detail.
 
 ## *f*~2~
 
@@ -28,15 +29,15 @@ $f_2$ is closely related to the more widely used $F_{ST}$. $f_2$ is the genetic 
 
 $$F_{ST}(A, B) = \frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}} = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}$$
 
-One reason why *ADMIXTOOLS* uses *f*-statistics and not $F_{ST}$ is that *f*-statistics are additive: If the true phylogeny is $R \rightarrow A \rightarrow B$ then $f_2(R, B) = f_2(R, A) + f_2(A, B)$. The same is not necessarily true for $F_{ST}$. On the other hand, $f_2$ has the disadvantage that its expectation depends on the allele frequency spectrum.
+One reason why *ADMIXTOOLS* uses *f*-statistics and not $F_{ST}$ is that *f*-statistics are additive: $f_2(A, C) = f_2(A, B) + f_2(B, C)$. This holds under the assumptions that there is a large number of sites, genetic drift is neutral, and there are no backmutations or recurrent mutations.
 
+In contrast, $F_{ST}$ is not additive. In fact, it doesn't even satisfy the triangle inequality, which means that $F_{ST}(A, C)$ can be greater than $F_{ST}(A, B) + F_{ST}(B, C)$.
 
-The estimator of $f_2$ shown above will only be unbiased if:
+On the other hand, $f_2$ has the disadvantage that its expectation depends on the allele frequency spectrum. This can be a problem when combining *f*-statistics from different populations pairs using different SNPs.
 
-1. Genetic drift is neutral, and there are no backmutations or recurrent mutations
-2. We have very accurate estimates of allele frequencies
+<br>
 
-The second assumption is often not met because allele frequencies are estimated using only few samples in some populations. For this reason, we don't estimate $f_2$ with the simple estimator shown above, but with the following estimator which is robust to changes in sample size:
+The estimator of $f_2$ shown above will only be unbiased only if have very accurate estimates of allele frequencies. This is often not the case because allele frequencies are estimated using only few samples in some populations. For this reason, we don't estimate $f_2$ with the simple estimator shown above, but with the following estimator which is robust to changes in sample size:
 
 $$f_2(A, B) = \frac{1}{M} \sum_{j=1}^M (a_j-b_j)^2 - \frac{a_j(1-a_j)}{n_{A,j}-1} - \frac{b_j(1-b_j)}{n_{B,j}-1}$$
 $n_{A,j}$ and $n_{B,j}$ are the counts of independently sampled alleles in popoulations $A$ and $B$ at SNP $j$. See [Biases] for more information.

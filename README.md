@@ -61,12 +61,6 @@ devtools::install_github("uqrmaie1/admixtools")
 library("admixtools")
 ```
 
-    #> 
-    #> Attaching package: 'admixtools'
-    #> The following object is masked _by_ '.GlobalEnv':
-    #> 
-    #>     namedList
-
 The above commands will install all R package dependencies which are
 required to run *ADMIXTOOLS 2* on the command line. For the interactive
 app, additional packages are required, which can be installed like this:

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Summarize triples across graphs — summarize_triples • admixtools</title>
+<title>Summarize triples across graphs — summarize_triples_old • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,9 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Summarize triples across graphs — summarize_triples" />
+<meta property="og:title" content="Summarize triples across graphs — summarize_triples_old" />
 
-<meta property="og:description" content="This function summarizes topologies of population triples across graphs. If the list of graphs comes from find_graphs, only one graph from each run should be included, as graphs within the same run are not independent of each other." />
+<meta property="og:description" content="This summarizes topologies of population triples across graphs" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -161,46 +161,43 @@
     <div class="page-header">
     <h1>Summarize triples across graphs</h1>
     
-    <div class="hidden name"><code>summarize_triples.Rd</code></div>
+    <div class="hidden name"><code>summarize_triples_old.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function summarizes topologies of population triples across graphs. If the list of graphs comes from <code><a href='find_graphs.html'>find_graphs</a></code>, only one graph from each run should be included, as graphs within the same run are not independent of each other.</p>
+    <p>This summarizes topologies of population triples across graphs</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>summarize_triples</span>(<span class='no'>graphs</span>)</pre>
+    <pre class="usage"><span class='fu'>summarize_triples_old</span>(<span class='no'>results</span>, <span class='kw'>maxscore</span> <span class='kw'>=</span> <span class='fl'>NA</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>graphs</th>
-      <td><p>A list of graphs</p></td>
+      <th>results</th>
+      <td><p>the output of <code><a href='find_graphs.html'>find_graphs</a></code></p></td>
+    </tr>
+    <tr>
+      <th>maxscore</th>
+      <td><p>restrict summary to graphs with score not larger than <code>maxscore</code></p></td>
     </tr>
     </table>
     
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data frame with one line for each population triple and columns summarizing the relationship of each triple across graphs.</p><ul>
-<li><p><code>clade12</code>: Fraction of graphs in which <code>pop1</code> and <code>pop2</code> form a clade</p></li>
-<li><p><code>x12</code>: Fraction of graphs in which <code>pop1</code> admixes into <code>pop2</code> at the exclusion of <code>pop3</code></p></li>
-<li><p><code>toptopo</code>: A binary string representation of the most common topology. Digits represent <code>x12</code>, <code>x21</code>, <code>x13</code>, <code>x31</code>, <code>x23</code>, <code>x32</code></p></li>
-<li><p><code>toptopocnt</code>: The number of graphs in which <code>toptopo</code> was observed</p></li>
-<li><p><code>topos</code>: The counts of all topologies</p></li>
-</ul>
-
-    
-
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='fu'><a href='summarize_triples.html'>summarize_triples</a></span>(<span class='no'>opt_results</span>)
+}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-          </ul>
+            
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

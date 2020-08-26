@@ -907,12 +907,15 @@ graph_to_lineages = function(graph, node = V(graph)[1], num = 1) {
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' msprime_sim(results$edges)
 #' }
-msprime_sim = function(edges) {
+msprime_sim = function(edges, outfilename = 'msprime_sim.py',
+                       vcffilename = 'msprimesim.vcf', nind = 1, popsize = 1000, len = 1e9,
+                       recombination_rate = 1e-9, mutation_rate = 1e-9, time = 100) {
 
   edges %<>% mutate(from = str_replace_all(from, '\\.', ''), to = str_replace_all(to, '\\.', ''))
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 1)
   graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
   leaves = get_leafnames(graph)
+  nodes = names(V(graph))[-1]
   lineages = vertex_attr(graph_to_lineages(graph), 'lineage')
   edges2 = edges %>%
     mutate(nfrom = match(from, names(V(graph))),
@@ -925,22 +928,45 @@ msprime_sim = function(edges) {
     mutate(weight2 = ifelse(n() == 2 & time == max(time), weight, 1)) %>%
     ungroup
 
-  out = paste0('\n#eff. pop. sizes\n', paste0(leaves, ' = \n', collapse = ''))
+  out = "import math
+import msprime
+import argparse
+
+parser = argparse.ArgumentParser(description = 'Simulating pseudo sequences by chromosomes')
+parser.add_argument('-c', '--CHR', type = int, default = 1, help = 'Chromosomes number')
+parser.add_argument('-m', '--migration_percent', type = int, default = 5, help = 'Gene flow percent')
+parser.add_argument('-i', '--iteration', type = int, default = 1, help ='Iteration and seed')
+args = parser.parse_args()
+"
+
+  out = paste0(out, '\n#eff. pop. sizes\n', paste0(nodes, ' = ',popsize,'\n', collapse = ''))
   out = paste0(out, '\ngen = 29\n')
-  out = paste0(out, 'pops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', leaves,
-                                        ')', c(rep(',', length(leaves)-1), ''),
-                                        ' #',(1:length(leaves))-1,'\n', collapse = '') ,']\n')
-  out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(leaves))-1,
+  out = paste0(out, 'pops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', nodes,
+                                        ')', c(rep(',', length(nodes)-1), ''),
+                                        ' #',(1:length(nodes))-1,'\n', collapse = '') ,']\n')
+  out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(nodes))-1,
                                                            ', 0/gen)',
-                                                           c(rep(',', length(leaves)-1), ' '),
-                                                           ' #', leaves, '\n', collapse = ''), ']\n')
-  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$to, ' = \n', collapse = ''))
+                                                           c(rep(',', length(nodes)-1), ' '),
+                                                           ' #', nodes, '\n', collapse = ''), ']\n')
+  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$from, ' = ',seq_len(nrow(edges2))*time,'\n', collapse = ''))
   out = paste0(out, '\nevents = [\n',
                paste0('\tmsprime.MassMigration(time = T_',
                       edges2$from, '/gen, source = ', edges2$lto-1,', destination = ', edges2$lfrom-1,
                       ', proportion = ', ifelse(edges2$type == 'admix', edges2$weight2, 1),')',
                       collapse = ',\n'), '\n]\n')
-  out
+
+  out = paste0(out, paste0("\ntree_sequence = msprime.simulate(population_configurations = pops,
+                                 length = ",len,",
+                                 samples = samples,
+                                 demographic_events = events,
+                                 recombination_rate = ", recombination_rate,",
+                                 mutation_rate = ", mutation_rate,",
+                                 random_seed = args.iteration)
+
+with open('",vcffilename,"', 'w') as f:
+  tree_sequence.write_vcf(f, ploidy = 2)"))
+
+  writeLines(out, outfilename)
 }
 
 

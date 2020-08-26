@@ -194,9 +194,9 @@ Alternatively, a directory with precomputed data. See <code><a href='extract_f2.
     <tr>
       <th>pop1</th>
       <td><p>One of the following four:</p><ol>
-<li><p><code>NULL</code>: all possible pairs of the populations in <code>f2_blocks</code> will be returned</p></li>
-<li><p>A vector of population labels</p></li>
-<li><p>A data frame with population combinations to be tested, with one population per column and one
+<li><p><code>NULL</code>: all possible population combinations will be returned</p></li>
+<li><p>A vector of population labels. All combinations with the other <code>pop</code> arguments will be returned</p></li>
+<li><p>A matrix with population combinations to be tested, with one population per column and one
 combination per row. Other <code>pop</code> arguments will be ignored.</p></li>
 <li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or
 population combinations to be tested. Other <code>pop</code> arguments will be ignored.</p></li>

@@ -4,7 +4,17 @@
 \alias{msprime_sim}
 \title{Generate msprime simulation code from admixture graph}
 \usage{
-msprime_sim(edges)
+msprime_sim(
+  edges,
+  outfilename = "msprime_sim.py",
+  vcffilename = "msprimesim.vcf",
+  nind = 1,
+  popsize = 1000,
+  len = 1e+09,
+  recombination_rate = 1e-09,
+  mutation_rate = 1e-09,
+  time = 100
+)
 }
 \arguments{
 \item{edges}{Graph as edge list with columns 'from' and 'to' (optionally 'weight')}

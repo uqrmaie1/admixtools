@@ -39,6 +39,16 @@ IntegerVector cpp_get_block_lengths(IntegerVector chr, DoubleVector pos, double 
   return bsize[Rcpp::Range(0, n-1)];
 }
 
+List cpp_jack_vec_stats2(NumericVector loo_vec, NumericVector block_lengths) {
+
+  double n = sum(block_lengths);
+  NumericVector h = n/block_lengths;
+  double est = sum(loo_vec * (1-1/h))/sum(1-1/h);
+  double var = mean(pow(est - loo_vec, 2)*(h-1));
+
+  return Rcpp::List::create(_["est"] = est, _["var"] = var);
+}
+
 
 // [[Rcpp::export]]
 List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, double tot = NA_REAL) {
@@ -48,9 +58,10 @@ List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, doub
 
   block_lengths = block_lengths[!is_na(loo_vec)];
   loo_vec = loo_vec[!is_na(loo_vec)];
+  if(!is_finite(tot)) return(cpp_jack_vec_stats2(loo_vec, block_lengths));
   double n = sum(block_lengths);
   NumericVector w = 1-block_lengths/n;
-  if(!is_finite(tot)) tot = sum(loo_vec*w)/sum(w); // only valid when estimates are additive
+  //if(!is_finite(tot)) tot = sum(loo_vec*w)/sum(w); // only valid when estimates are additive
   double est = sum(tot - loo_vec) + sum(loo_vec*block_lengths)/n;
   NumericVector h = n/block_lengths;
   NumericVector tau = h*tot - (h-1)*loo_vec;
@@ -59,6 +70,7 @@ List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, doub
   //return List::create(est, var);
   return Rcpp::List::create(_["est"] = est, _["var"] = var);
 }
+
 
 // [[Rcpp::export]]
 arma::cube cpp_outer_array_mul(arma::mat& m1, arma::mat& m2) {

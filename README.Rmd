@@ -54,7 +54,7 @@ devtools::install_github("uqrmaie1/admixtools")
 library("admixtools")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, comment=FALSE}
 library('admixtools')
 ```
 

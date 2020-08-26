@@ -24,48 +24,49 @@ library(magrittr)
 library(tidyverse)
 ```
 
-
-## Introduction
-
-*ADMIXTOOLS* is a set of programs used to infer population histories from *f*-statistics computed from genetic data. *ADMIXTOOLS 2* is a new implementation of these programs which can either be run through the `R` command line, or through a browser application.
-
-The main use cases of the *ADMIXTOOLS* programs are:
-
-* Finding out if a population is admixed between other populations ([$f_3$](admixtools.html#f3-and-qp3pop), [*qpAdm*](admixtools.html#qpwave-and-qpadm))
-* Finding out if a set of populations forms a clade relative to another set, and if not, how many admixture waves separate the two sets ([$f_4$](admixtools.html#f3-and-qp3pop), [*qpWave*](admixtools.html#qpwave-and-qpadm))
-* Fitting an admixture graph to a set of populations ([*qpGraph*](admixtools.html#qpgraph))
-
-
-The browser application can be launched from R with the following command:
+While this website focuses on the R command line interface of *ADMIXTOOLS 2*, there is also a browser application that can be launched from R with the following command:
 ```{r, eval = FALSE}
-library(admixtools)
 run_shiny_admixtools()
 ```
 
-This website focuses on the R command line interface.
 
 
-*ADMIXTOOLS 2* divides the computations into two steps:
+## Introduction
+
+*ADMIXTOOLS* is a set of programs used to infer population histories from genetic data. The main use cases are:
+
+* Finding out if a population is admixed between other populations ([$f_3$](admixtools.html#f3-and-qp3pop), [*qpAdm*](admixtools.html#qpwave-and-qpadm))
+* Estimating admixture weights (*qpF4ratio*, [*qpAdm*](admixtools.html#qpwave-and-qpadm))
+* Finding out if a set of populations forms a clade relative to another set ([$f_4$](admixtools.html#f3-and-qp3pop), [*qpWave*](admixtools.html#qpwave-and-qpadm))
+* Estimating the number of admixture waves separating two sets of populations ([*qpWave*](admixtools.html#qpwave-and-qpadm))
+* Fitting an admixture graph to a set of populations ([*qpGraph*](admixtools.html#qpgraph))
+
+All of this is based on *f*-statistics ($f_2$, $f_3$, and $f_4$), and all *f*-statistics can be derived from $f_2$ statistics.
+
+Because of this, *ADMIXTOOLS 2* divides the computations into two steps:
 
 1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
 2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
-
-Because *f*-statistics form the basis for everything that follows, they will be covered first.
-
 
 <br>
 
 
 ## *f*-statistics basics
 
-$f_2$, $f_3$, and $f_4$ describe how populations are related to one another, and they form the basis of *ADMIXTOOLS*. Here we briefly describe what they are and how to compute them. Two excellent papers on f-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
+$f_2$, $f_3$, and $f_4$ describe how populations are related to one another. All *ADMIXTOOLS* programs are based on these *f*-statistics. Here, we briefly define them and describe how to compute them. Two excellent papers on *f*-statistics can be found [here](https://www.genetics.org/content/192/3/1065) and [here](https://www.genetics.org/content/202/4/1485).
 
-$f_2$ is the average squared difference in allele frequencies between two populations. Upper case letters denote populations ($A$ and $B$) and lower case letters denote their allele frequencies ($a$ and $b$).
+$f_2$ measures the amount of genetic drift that separates two populations. It is the expected squared difference in allele frequencies and can be estimated across $M$ SNPs as:
 
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
+$A$ and $B$ are populations, and $a$ and $b$ are their allele frequencies.
 
+In practice, the estimation of $f_2$ is more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
 
-$f_4$ is the covariance of allele frequency differences between two pairs of populations, and at the same time the sum of four f2-statistics:
+<br>
+
+The real strength of *f*-statistics based methods comes from combining $f_2$-statistics into $f_3$-statistics and $f_4$-statistics.
+
+$f_4$ measures the amount of drift that is shared between two population pairs. It is the covariance of allele frequency differences in each pair, and at the same time the sum of four $f_2$-statistics:
 $$
 \begin{equation}
 \begin{aligned}
@@ -76,7 +77,7 @@ f_4(A, B; C, D) &= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &= \
 $$
 If $A$ and $B$ form a clade relative to $C$ and $D$, there should not be any correlation in the allele frequency differences $A$ - $B$ and $C$ - $D$, so $f_4(A, B; C, D)$ should be zero. If $f_4(A, B; C, D)$ is significantly different from zero, it suggests that $A$ and $B$ are not a clade relative to $C$ and $D$.
 
-$f_3$ is the covariance of allele frequency differences between two pairs of populations where one population is the same on both sides. $f_3$ is thus a special case of $f_4$, and can also be written as a sum of $f_2$.
+Like $f_4$, $f_3$ is the covariance of allele frequency differences between two pairs of populations. The difference is that in $f_3$, one population is the same on both sides. $f_3$ is thus a special case of $f_4$.
 
 $$
 \begin{aligned}
@@ -86,8 +87,11 @@ $$
 
 If $f_3(A; B, C)$ is negative, it means that the more similar allele frequencies are between $A$ and $B$, the more different they are between $A$ and $C$, which suggests that $A$ is admixed between $B$ and $C$, or populations close to them.
 
+<br>
 
-In practice, the estimation of *f*-statistics can be more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
+$f_3$ and $f_4$ partition genetic drift into a component that is specific to single populations and a component that is shared between two pairs of populations. By measuring only the *shared* drift between pairs of populations, we can make conclusive statements about their relationships. Methods such as PCA and *ADMIXTURE* do not exclude non-shared drift, and therefore don't produce results that can be interpreted as unambiguously. For example, if $f_3(A; B, C)$ is negative, this is conclusive evidence that $A$ is admixed between $B$ and $C$. In that case we would expect $A$ to fall in between $B$ and $C$ in PC space. However, the same PCA pattern could also be the results of other demographic histories ($A$ could be ancestral to $B$ and $C$). 
+
+
 
 ## *f*~2~ in *ADMIXTOOLS 2*
 
@@ -100,7 +104,7 @@ my_f2_dir = '/store/f2data/here/'
 extract_f2(prefix, my_f2_dir)
 ```
 
-This will look for genotype files in *packedancestrymap* or *PLINK* format, compute allele frequencies and blocked $f_4$-statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2()`. To get a description of the arguemnts and to see examples of how to use it, type
+This will look for genotype files in *packedancestrymap* or *PLINK* format, compute allele frequencies and blocked $f_4$-statistics for all pairs of populations defined in the `.ind` or `.fam` file, and write them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2()`. To get a description of the arguments and to see examples of how to use it, type
 
 ```{r, eval = FALSE}
 ?extract_f2
@@ -134,7 +138,7 @@ f2_blocks = f2_from_geno(my_f2_dir, pops = mypops)
 dim(f2_blocks)
 ```
 
-The purpose of having separate estimates for each SNP block is to compute [jackknife or bootstrap standard errors](resampling.html) for any *f*-statistic, and for any other estimated parameter.
+The purpose of having separate estimates for each SNP block is to compute [jackknife or bootstrap standard errors](resampling.html) for *f*-statistics, and for any statistics derived from them.
 
 `f2_blocks` can be used like this:
 ```{r, eval = FALSE}
@@ -179,7 +183,7 @@ f3(f2_blocks, pop1, pop2, pop3)
 f3(example_f2_blocks, pop1, pop2, pop3)
 ```
 
-This will compute f3-statistics for all combinations of `pop1`, `pop2`, and `pop3`.
+This will compute $f_3$-statistics for all combinations of `pop1`, `pop2`, and `pop3`.
 `f3(f2_blocks)` will compute all possible combinations (which can be a large number). If only `pop1` is supplied, all combinations of populations in `pop1` will be computed.
 
 <br>
@@ -215,13 +219,13 @@ Computing $f_4$- or *D*-statistics from genotype data directly is slower, but it
 
 ## *qpWave* and *qpAdm*
 
-*qpWave* and *qpAdm* are two programs with diffent goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In *ADMIXTOOLS 2*, both `qpadm()` and `qpwave()`require at least three arguments:
+*qpWave* and *qpAdm* are two programs with different goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In *ADMIXTOOLS 2*, both `qpadm()` and `qpwave()`require at least three arguments:
 
 1. $f_2$-statistics
 2. A set of left populations
 3. A set of right populations
 
-`qpadm()` additionally requires a `target` population as the 4th argument, which will be modelled as a mixture of `left` populations.
+`qpadm()` additionally requires a `target` population as the 4th argument, which will be modeled as a mixture of `left` populations.
 
 
 ```{r}
@@ -295,7 +299,7 @@ qpadm_rotate(example_f2_blocks, left = pops[3:7], right = pops[1:2], target = po
 
 ## *qpGraph*
 
-Single $f_3$- and $f_4$-statistics can tell us how three or four populations are related to each other. *qpGraph* generalizes this concept to any number of populations. It takes estimated $f_3$-statistics and the topology of an admixtgure graph, finds the edges weights that minimize the difference between fitted and estimated $f_3$-statistics, and summarizes that difference in a likelihood score.
+Single $f_3$- and $f_4$-statistics can tell us how three or four populations are related to each other. *qpGraph* generalizes this concept to any number of populations. It takes estimated $f_3$-statistics and the topology of an admixture graph, finds the edges weights that minimize the difference between fitted and estimated $f_3$-statistics, and summarizes that difference in a likelihood score. A good model should fit all $f_3$-statistics, and have a score close to zero.
 
 
 ```{r, eval = FALSE}
@@ -353,9 +357,26 @@ To get a better theoretical understanding of *f*-statistics and admixture graphs
 <br>
 
 
-## Comparing results to *ADMIXTOOLS*
+## Comparing results between *ADMIXTOOLS* and *ADMIXTOOLS 2*
 
-There are wrapper function which call the origial *ADMIXTOOLS* programs and read the results. This can be used to check if the results of `qpgraph()` are correct.
+The results of *ADMIXTOOLS 2* should generally match those of *ADMIXTOOLS*. However, there are a few parameters where the default behavior in *ADMIXTOOLS 2* differs in subtle ways from that in *ADMIXTOOLS*:
+
+* Selection of SNPs
+
+  The default behavior in *ADMIXTOOLS* is to only use SNPs which are non-missing and polymorphic across all populations. The parameter `allsnps` can be used to instead compute each *f*-statistic from a potentially different set of SNPs; those that are non-missing in the populations described by each *f*-statistic.
+
+  *ADMIXTOOLS 2* doesn't have an `allsnps` option. Instead, there is a parameter called `maxmiss`. SNPs which are missing in a fraction of populations greater than `maxmiss` will be excluded. The default value `maxmiss = 1` ensures that *f*-statistics can be extracted for a large number of populations without discarding most SNPs. `maxmiss = 1` is equivalent to `allsnps: YES`. To imitate the default behavior `allsnps: NO`, set `maxmiss = 0`, or provide the list of SNPs to use with `keepsnps`.
+
+* Pseudohaploid data
+
+  In *ADMIXTOOLS*, it is recommended to use the option `inbreed: YES` when dealing with pseudohaploid data. This will ensure that when the low-sample-size correction factor for $f_2$-statistics is computed, each pseudohaploid sample contributes only one haplotype. However, this will not work for populations of only a single pseudohaploid sample. Which is not a big problem, because the default option `inbreed: NO` usually gives very similar results.
+
+  *ADMIXTOOLS 2* automatically detects which samples are diploid and which samples are pseudohaploid based on the first 1000 SNPs, and computes the correction factor appropriately. The exact default behavior of *ADMIXTOOLS* (`inbreed: NO`) can be recovered by setting `adjust_pseudohaploid = FALSE` in `extract_f2()`.
+
+<br>
+
+To make it easier to compare *ADMIXTOOLS* to *ADMIXTOOLS 2*, there are wrapper function which call the original *ADMIXTOOLS* programs and read the results.
+
 
 ```{r, eval = FALSE}
 binpath = '/home/np29/o2bin/'

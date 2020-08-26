@@ -4,18 +4,21 @@
 \alias{summarize_triples}
 \title{Summarize triples across graphs}
 \usage{
-summarize_triples(results, maxscore = NA)
+summarize_triples(graphs)
 }
 \arguments{
-\item{results}{the output of \code{\link{find_graphs}}}
-
-\item{maxscore}{restrict summary to graphs with score not larger than \code{maxscore}}
+\item{graphs}{A list of graphs}
+}
+\value{
+A data frame with one line for each population triple and columns summarizing the relationship of each triple across graphs.
+\itemize{
+\item \code{clade12}: Fraction of graphs in which \code{pop1} and \code{pop2} form a clade
+\item \code{x12}: Fraction of graphs in which \code{pop1} admixes into \code{pop2} at the exclusion of \code{pop3}
+\item \code{toptopo}: A binary string representation of the most common topology. Digits represent \code{x12}, \code{x21}, \code{x13}, \code{x31}, \code{x23}, \code{x32}
+\item \code{toptopocnt}: The number of graphs in which \code{toptopo} was observed
+\item \code{topos}: The counts of all topologies
+}
 }
 \description{
-This summarizes topologies of population triples across graphs
-}
-\examples{
-\dontrun{
-summarize_triples(opt_results)
-}
+This function summarizes topologies of population triples across graphs. If the list of graphs comes from \code{\link{find_graphs}}, only one graph from each run should be included, as graphs within the same run are not independent of each other.
 }

@@ -15,7 +15,7 @@ articles:
     - starts_with("authoring")
 
 reference:
-  - title: "*ADMIXTOOLS* programs"
+  - title: "ADMIXTOOLS programs"
     contents:
       - qp3pop
       - qpdstat

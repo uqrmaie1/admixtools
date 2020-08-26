@@ -22,8 +22,8 @@ Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} a
 
 \item{pop1}{One of the following four:
 \enumerate{
-\item \code{NULL}: all possible pairs of the populations in \code{f2_blocks} will be returned
-\item A vector of population labels
+\item \code{NULL}: all possible population combinations will be returned
+\item A vector of population labels. All combinations with the other \code{pop} arguments will be returned
 \item A matrix with population combinations to be tested, with one population per column and one
 combination per row. Other \code{pop} arguments will be ignored.
 \item the location of a file (\code{poplistname} or \code{popfilename}) which specifies the populations or
