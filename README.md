@@ -29,8 +29,7 @@ rendering the plot takes much longer than computing the fit of a new
   - Simple R command line interface
   - Even simpler point-and-click interface
   - Several new features and methodological innovations that make it
-    easier to find robust
-        models:
+    easier to find robust models:
       - [Automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#automatic-graph-optimization)
         and
         [semi-automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#semi-automated-graph-exploration)
@@ -52,8 +51,12 @@ rendering the plot takes much longer than computing the fit of a new
 
 ## Installation
 
-To install and load *ADMIXTOOLS 2*, start R (version 3.5 or higher) and
-follow these steps:
+*ADMIXTOOLS 2* is currently still under active development. Most of it
+has already been tested extensively, but functionality is still added
+and may change here and there. *ADMIXTOOLS 2* is not yet on the CRAN
+servers (so you can’t install it with `install.packages()`), but you can
+install it from github with the following commands (provided you have R
+version 3.5 or higher):
 
 ``` r
 install.packages("devtools") # if "devtools" is not installed already
@@ -80,6 +83,20 @@ install.packages("tidyverse")
 install.packages("igraph")
 install.packages("plotly")
 ```
+
+Running `devtools::install_github("uqrmaie1/admixtools")` will compile
+C++ from the source code (this isn’t necessary when installing packages
+from CRAN with `install.packages()`).
+
+If you get the following error:
+
+> Error: Failed to install ‘admixtools’ from GitHub: Could not find
+> tools necessary to compile a package.
+
+you might be able to solve the problem by installing
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/) for your
+version of R if you use Windows, or [Xcode Command Line
+Tools](https://developer.apple.com/download/more/) if you use macOS.
 
 If this doesn’t help, please [contact
 me](mailto:rmaier@broadinstitute.org).
@@ -215,8 +232,7 @@ Maier under <rmaier@broadinstitute.org>.
   - [MixMapper](http://cb.csail.mit.edu/cb/mixmapper/) Another method to
     infer admixture graphs
   - [TreeMix](https://bitbucket.org/nygcresearch/treemix/wiki/Home)
-    Another method to infer admixture
-    graphs
+    Another method to infer admixture graphs
   - [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
     A program to estimate the history of population size, subdivision,
     and gene flow

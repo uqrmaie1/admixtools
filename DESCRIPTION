@@ -14,6 +14,8 @@ Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
+URL: https://github.com/uqrmaie1/admixtools
+BugReports: https://github.com/uqrmaie1/admixtools/issues
 LinkingTo: Rcpp, RcppArmadillo
 Imports:
     abind,
@@ -21,7 +23,7 @@ Imports:
     crayon,
     cubelyr,
     digest,
-    dplyr,
+    dplyr (>= 1.0.0),
     furrr,
     future,
     ggplot2,
@@ -38,7 +40,7 @@ Imports:
     stats,
     stringr,
     tibble,
-    tidyr,
+    tidyr  (>= 1.0.0),
     utils
 Suggests:
     genio,

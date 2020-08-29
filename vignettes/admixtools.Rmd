@@ -20,7 +20,6 @@ For the examples here and on the other pages, the following R packages need to b
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
 library(admixtools)
-library(magrittr)
 library(tidyverse)
 ```
 

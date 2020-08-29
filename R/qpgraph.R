@@ -599,6 +599,19 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
     select(-out, -fun2) %>% unnest_wider(result)
 }
 
+# qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
+#
+#   fun = function(f2dat, f2dat_test, g) function() safely(qpgraph)(f2_blocks = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+#
+#   tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
+#     mutate(fun2 = pmap(list(f2_blocks, f2_blocks_test, graph), fun)) %>%
+#     mutate(out = furrr::future_invoke_map(fun2, .progress = verbose),
+#            result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
+#     select(-out, -fun2) %>% unnest_wider(result)
+# }
+
+
+
 #' Evaluate a qpgraph models many times
 #'
 #' This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.

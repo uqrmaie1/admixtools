@@ -1157,6 +1157,7 @@ graph_splittrees = function(graph) {
   }
   edges = graph %>% simplify_graph %>% as_edgelist %>%
     as_tibble(.name_repair = ~c('from', 'to'))
+  leaves = get_leafnames(graph)
 
   admixmat = edges %>% mutate(i = 1:n()) %>% group_by(to) %>% mutate(cnt = n(), j = 1:n()) %>% ungroup %>%
     filter(cnt == 2) %>% select(to, i, j) %>% spread(to, i) %>% select(-j) %>% as.matrix
@@ -1164,10 +1165,20 @@ graph_splittrees = function(graph) {
   if(nadmix == 0) return(list(graph))
   #mutate(itree = map(itree, ~delete_vertices(., setdiff(get_leafnames(.), get_leafnames(tree)))))
   indices = expand.grid(replicate(ncol(admixmat), 1:2, simplify = FALSE)) %>% as.matrix
-  trees = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)]))
-  trees %>% map(as.matrix) %>% map(graph_from_edgelist) %>%
-    map(~igraph::delete_vertices(., setdiff(get_leafnames(.), get_leafnames(graph)))) %>%
-    map(simplify_graph) %>% enframe(value = 'graph')
+  trees = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)])) %>%
+    map(as.matrix) %>% map(graph_from_edgelist)
+
+  trees %>%
+    map(~{
+      tr = .
+      lf = get_leafnames(tr)
+      while(length(setdiff(lf, leaves)) > 0) {
+        tr = igraph::delete_vertices(tr, setdiff(lf, leaves)) %>% simplify_graph
+        lf = get_leafnames(tr)
+      }
+      tr
+      }) %>%
+    enframe(value = 'graph')
 }
 
 #' Find all trees within SPR distance of 1 of all graph component trees
@@ -1799,5 +1810,85 @@ reconstruct_from_leafdist = function(leafdist) {
 
 
 
+triples_to_tree = function() {
+  # takes choose(npop, 3) population triples, and assembles a tree
+
+}
 
 
+
+f4_to_triples = function(f2_blocks, outgroup) {
+  # infers possible 3 population trees (rooted; 4 pops with outpop) from fstats
+
+  pops = dimnames(f2_blocks)[[1]]
+  pp = setdiff(pops, outgroup)
+  f4stats = f4(example_f2_blocks, pop1 = outgroup, pop2 = pp, pop3 = pp, pop4 = pp) %>%
+    filter(pop2 != pop3, pop2 != pop4, pop3 < pop4)
+  outprobs = f4stats %>% rowwise %>% mutate(pp = list(sort(c(pop2, pop3, pop4))), p1 = pp[[1]], p2 = pp[[2]], p3 = pp[[3]], out = ifelse(z < 0, pop4, pop3), oz = abs(z)) %>% group_by(p1, p2, p3, out) %>% summarize(oz = mean(oz))
+
+  tripletrees = outprobs %>% top_n(1, oz)
+
+}
+
+tripletrees_to_pairlists = function() {
+  # takes one tree for each triple and uses them to characterize each pop pair
+
+  dat = expand_grid(pop1 = pp, pop2 = pp) %>% filter(pop1 < pop2) %>% rowwise %>% mutate(left = list(NULL), right = list(NULL), out = list(NULL))
+
+  t1 = tripletrees %>% rename(l = p1, r = p2, x = p3) %>% group_by(l, r) %>%
+    summarize(o = list(x[out == x]), left = list(x[out == l]), right = list(x[out == r]))
+  t2 = tripletrees %>% rename(l = p1, r = p3, x = p2) %>% group_by(l, r) %>%
+    summarize(o = list(x[out == x]), left = list(x[out == l]), right = list(x[out == r]))
+  t3 = tripletrees %>% rename(l = p2, r = p3, x = p1) %>% group_by(l, r) %>%
+    summarize(o = list(x[out == x]), left = list(x[out == l]), right = list(x[out == r]))
+
+  t1 = tripletrees %>% rename(l = p1, r = p2, x = p3)
+  t2 = tripletrees %>% rename(l = p1, r = p3, x = p2)
+  t3 = tripletrees %>% rename(l = p2, r = p3, x = p1)
+  tt = bind_rows(t1, t2, t3) %>% group_by(l, r) %>%
+    summarize(o = list(x[out == x]), left = list(x[out == l]), right = list(x[out == r])) %>%
+    rowwise %>% mutate(lo = length(o), lleft = length(left), lright = length(right))
+
+}
+
+
+tree_to_triplesig = function(tree) {
+  # takes an igraph tree and returns a data frame with columns lr, o, present
+  # output sorted by lr, o
+
+  leaves = sort(get_leafnames(tree))
+  internal = setdiff(names(igraph::V(tree)), leaves)
+  mat = map(internal, ~leaves %in% names(igraph::subcomponent(tree, ., mode = 'out'))) %>%
+    do.call(rbind, .) %>% set_colnames(leaves) %>% set_rownames(internal)
+  cmb = combn(leaves,2)
+  (mat[,cmb[1,]] & mat[,cmb[2,]]) %>%
+    set_colnames(paste(cmb[1,], cmb[2,], sep = ' ')) %>%
+    as_tibble(rownames = 'internal') %>%
+    mutate(num = 1:n()) %>%
+    pivot_longer(-c(internal, num), names_to = 'lr', values_to = 'reach') %>%
+    filter(reach) %>%
+    group_by(lr) %>%
+    slice_max(num) %>%
+    ungroup %>%
+    expand_grid(o = leaves) %>%
+    separate(lr, c('l', 'r'), sep = ' ', remove = F) %>%
+    filter(o != l, o != r) %>%
+    rowwise %>%
+    mutate(inside = is.finite(igraph::distances(tree, internal, o, mode = 'out')[,1])) %>%
+    ungroup %>%
+    transmute(lr, o, inside) %>%
+    arrange(lr, o)
+}
+
+graph_to_triplesig = function(graph) {
+
+  graph %>%
+    simplify_graph %>%
+    graph_splittrees %>% pluck(2) %>%
+    map(tree_to_triplesig) %>%
+    bind_rows(.id = 'tree') %>%
+    group_by(lr, o) %>%
+    summarize(inside = any(inside)) %>%
+    ungroup
+}
+# triples don't uniquely identify graphs

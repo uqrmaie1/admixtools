@@ -54,7 +54,7 @@ plotly_graph(simplify_graph(example_graph))
 
 ## Creating admixture graphs
 
-To get started, you can either read an existing graph (using `parse_qpgraph_graphfile()` if it's in the orginial *ADMIXTOOLS* format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`), or you can make a new one.
+To get started, you can either read an existing graph (using `parse_qpgraph_graphfile()` if it's in the original *ADMIXTOOLS* format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`), or you can make a new one.
 
 ```{r, warning = FALSE}
 newgraph = tibble(from = c('R', 'R', 'p1', 'p1'), to = c('p1', 'p2', 'p3', 'p4'))
@@ -147,7 +147,7 @@ Here, the optimization depends a bit more on the initial weights:
 example_qpgraph_ref_results$opt
 ```
 
-The range of estimated weights for each admixture edge is also stored in the `low` and `high` columns of the `edges` data frame returned by `qpgraph()`. The `plot_comparison()` function visualizes that information with grey error bars.
+The range of estimated weights for each admixture edge is also stored in the `low` and `high` columns of the `edges` data frame returned by `qpgraph()`. The `plot_comparison()` function visualizes that information with gray error bars.
 
 ```{r}
 plot_comparison(example_qpgraph_ref_results, example_qpgraph_ref_results)
@@ -258,8 +258,8 @@ The following example shows how to test whether `graph1` gives a significantly b
 
 ```{r, eval = FALSE}
 pops = dimnames(example_f2_blocks)[[1]]
-graph1 = example_winners %>% arrange(score) %$% igraph[[1]]
-graph2 = example_winners %>% arrange(score) %$% igraph[[100]]
+graph1 = example_winners %>% arrange(score) %>% pluck('igraph', 1)
+graph2 = example_winners %>% arrange(score) %>% pluck('igraph', 100)
 fits = qpgraph_resample_multi(example_f2_blocks, list(graph1, graph2), nboot = 100)
 compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
 ```
@@ -313,7 +313,7 @@ The output for this population triple (1: `Rus`, 2: `Swi`, 3: `Den`) can be read
 Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
 
 ```{r, fig.width = 9, fig.align="center"}
-mygraph = winners %>% slice(6) %$% igraph %>% pluck(1)
+mygraph = winners %>% pluck('igraph', 6)
 plot_graph(mygraph)
 qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3)
 ```

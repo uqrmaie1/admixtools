@@ -46,7 +46,7 @@ reference:
       - packedancestrymap_to_afs
       - plink_to_afs
       - packedancestrymap_to_plink
-  - title: "Many models"
+  - title: "Model exploration"
     contents:
       - find_graphs
       - qpwave_pairs
