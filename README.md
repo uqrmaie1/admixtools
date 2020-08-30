@@ -95,8 +95,10 @@ If you get the following error:
 
 you might be able to solve the problem by installing
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/) for your
-version of R if you use Windows, or [Xcode Command Line
-Tools](https://developer.apple.com/download/more/) if you use macOS.
+version of R if you use Windows, or [Xcode command line
+tools](https://developer.apple.com/download/more/) if you use macOS.
+This is also described
+[here](https://r-pkgs.org/setup.html#setup-tools).
 
 If this doesn’t help, please [contact
 me](mailto:rmaier@broadinstitute.org).

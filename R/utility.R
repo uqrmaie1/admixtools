@@ -179,7 +179,7 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
   }
   if(verbose) cat('\n')
   if(all(is.na(ansret[,1]))) stop("Optimization unsuccessful (constraints inconsistent). Try increasing 'diag'.")
-  as_tibble(ansret) %>% set_colnames(c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
+  as_tibble(ansret, .name_repair = ~c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
 }
 
 # on OSX, multiprocess multistart is only slightly faster than sequential in qpGraph. Need to test on Linux.

@@ -686,7 +686,7 @@ parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE, igraph = FALSE
   if(all(is.na(out$lower)) && all(is.na(out$upper))) out %<>% select(-lower, -upper)
   out %<>% as.matrix
   if(split_multi) out %<>% split_multifurcations
-  if(igraph) out %<>% graph_from_edgelist(as.matrix(out[,1:2]))
+  if(igraph) out = graph_from_edgelist(as.matrix(out[,1:2]))
   out
 }
 
