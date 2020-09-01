@@ -85,8 +85,8 @@ install.packages("plotly")
 ```
 
 Running `devtools::install_github("uqrmaie1/admixtools")` will compile
-C++ from the source code (this isn’t necessary when installing packages
-from CRAN with `install.packages()`).
+C++ from source code (this isn’t necessary when installing packages from
+CRAN with `install.packages()`).
 
 If you get the following error:
 

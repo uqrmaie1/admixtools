@@ -272,6 +272,7 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' @param dat Data frame with columns 'CHR' and either 'POS' or 'cm'
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
 #' @param distcol Column to use as distance column
+#' @param cpp Should the faster C++ version be used?
 #' @return A numeric vector where the ith element lists the number of SNPs in the ith block.
 #' @examples
 #' \dontrun{
@@ -280,7 +281,7 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' afdat = packedancestrymap_to_afs(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
-get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
+get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm', cpp = F) {
 
   if(distcol == 'cm' && length(unique(dat[[distcol]])) < 2) {
     distcol = 'POS'
@@ -293,33 +294,36 @@ get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm') {
     }
   }
 
-  cpp_get_block_lengths(as.integer(as.factor(dat$CHR)), dat[[distcol]], blgsize)
+  numchr = parse_number(dat$CHR)
+  if(any(is.na(numchr))) numchr = as.integer(as.factor(dat$CHR))
+  if(cpp) return(cpp_get_block_lengths(numchr, dat[[distcol]], blgsize))
 
-  # fpos = -1e20
-  # lchrom = -1
-  # xsize = 0
-  # n = 0
-  # bsize = c()
-  # for(i in 1:nrow(dat)) {
-  #   chrom = dat$CHR[i]
-  #   gpos = dat[[distcol]][i]
-  #   dis = gpos - fpos
-  #   if ((chrom != lchrom) || (dis >= blgsize)) {
-  #     if (xsize > 0) {
-  #       bsize[n+1] = xsize
-  #       n = n+1
-  #     }
-  #     lchrom = chrom
-  #     fpos = gpos
-  #     xsize = 0
-  #   }
-  #   xsize = xsize + 1
-  # }
-  # if (xsize > 0) {
-  #   bsize[n+1] = xsize
-  # }
-  # bsize
+  fpos = -1e20
+  lchrom = -1
+  xsize = 0
+  n = 0
+  bsize = c()
+  for(i in 1:nrow(dat)) {
+    chrom = numchr[i]
+    gpos = dat[[distcol]][i]
+    dis = gpos - fpos
+    if ((chrom != lchrom) || (dis >= blgsize)) {
+      if (xsize > 0) {
+        bsize[n+1] = xsize
+        n = n+1
+      }
+      lchrom = chrom
+      fpos = gpos
+      xsize = 0
+    }
+    xsize = xsize + 1
+  }
+  if (xsize > 0) {
+    bsize[n+1] = xsize
+  }
+  bsize
 }
+
 
 
 #' Turn per-block estimates into leave-one-out estimates
@@ -361,9 +365,10 @@ est_to_loo = function(arr, block_lengths = NULL) {
 #' @return A 3d array with leave-one-out estimates for jackknife. Dimensions are equal to those of `arr`.
 #' @seealso \code{\link{est_to_loo}}
 loo_to_est = function(arr, block_lengths = NULL) {
-  # inverse of est_to_res
+  # inverse of est_to_loo
 
   if(is.null(block_lengths)) block_lengths = parse_number(dimnames(arr)[[3]])
+  nam = dimnames(arr)
   dm = length(dim(arr))
   if(dm == 0) arr = array(arr, c(1,1,length(arr)))
   else if(dm == 2) arr = array(c(arr), c(nrow(arr),1,ncol(arr)))
@@ -371,8 +376,10 @@ loo_to_est = function(arr, block_lengths = NULL) {
   tot = apply(arr, 1:2, weighted.mean, 1-rel_bl, na.rm=T)
   rel_bl = rep(rel_bl, each = length(tot))
   out = (replicate(dim(arr)[3], tot) - arr * (1-rel_bl))/rel_bl
-  dimnames(out) = dimnames(arr)
-  out[,,]
+  if(dm == 0) out %<>% c
+  else if(dm == 2) out = matrix(c(out), dim(arr)[1])
+  dimnames(out) = nam
+  out
 }
 
 
@@ -446,6 +453,14 @@ boo_list = function(arr, nboot = dim(arr)[3]) {
   # returns list of bootstrap resampled arrays
   # arr is k x k x n; output is length nboot, output arrs are k x k x n
   sel = rerun(nboot, sample(1:dim(arr)[3], replace = TRUE))
+  list(boo = map(sel, ~arr[,,.]), sel = sel, test = map(sel, ~arr[,,-.]))
+}
+
+boo_list_cons = function(arr, nboot = dim(arr)[3]) {
+  # returns list of bootstrap resampled arrays
+  # arr is k x k x n; output is length nboot, output arrs are k x k x n
+  len = dim(arr)[3]
+  sel = rerun(nboot, ((1:round(len/2))+sample(1:len, 1)) %% len + 1)
   list(boo = map(sel, ~arr[,,.]), sel = sel, test = map(sel, ~arr[,,-.]))
 }
 

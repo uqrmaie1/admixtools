@@ -134,9 +134,11 @@ arma::cube cpp_mats_to_f2_arr(arma::mat& afmat1, arma::mat& afmat2, arma::mat& c
   mat denom2 = ones<mat>(nsnp, nc2);
   denom1 = arma::max(denom1, countmat1 - 1);
   denom2 = arma::max(denom2, countmat2 - 1);
-  mat pq1 = afmat1 % (1 - afmat1)/denom1;
-  mat pq2 = afmat2 % (1 - afmat2)/denom2;
-  cube out = pow(cpp_outer_array_minus(afmat1, afmat2), 2) - cpp_outer_array_plus(pq1, pq2);
+  // mat denom1 = countmat1-1;
+  // mat denom2 = countmat2-1;
+  mat corr1 = afmat1 % (1 - afmat1)/denom1;
+  mat corr2 = afmat2 % (1 - afmat2)/denom2;
+  cube out = pow(cpp_outer_array_minus(afmat1, afmat2), 2) - cpp_outer_array_plus(corr1, corr2);
   return out;
 }
 

@@ -255,7 +255,7 @@ qpgraph = function(f2_blocks, graph, lambdascale = 1, boot = FALSE, diag = 1e-4,
   }
 
   f3_est = precomp$f3_est
-  f3_est = pmax(0, f3_est)
+  #f3_est = pmax(0, f3_est)
   ppinv = precomp$ppinv
 
   weight = low = high = rep(NA, nedges)

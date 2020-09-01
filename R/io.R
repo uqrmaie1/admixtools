@@ -28,7 +28,7 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
 
@@ -85,7 +85,7 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -102,9 +102,9 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   colnames(geno) = inds
   rownames(geno) = snpfile$SNP
 
-  ploidy = apply(geno, 1, function(x) max(1, length(unique(na.omit(x)))-1))
-  if(adjust_pseudohaploid) counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
-  else counts = t(rowsum((!is.na(t(geno)))*2, pops))
+  if(adjust_pseudohaploid) ploidy = apply(geno, 2, function(x) max(1, length(unique(na.omit(x)))-1))
+  else ploidy = rep(2, ncol(geno))
+  counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
   afs = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))/counts
 
   if(verbose) {
@@ -253,7 +253,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
   pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', skip = first-1,
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
 
   indfile$.keep = indfile$X1
@@ -325,7 +325,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   indfile$X3 = indfile$X1
   if(!is.null(inds)) {
     stopifnot(all(inds %in% indfile$X1))
@@ -378,7 +378,7 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = 'ccnncc')
+  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = 'ccddcc')
   fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
   nsnpall = nrow(bim)
   nindall = nrow(fam)
@@ -496,7 +496,7 @@ read_plink = function(pref, inds = NULL, verbose = FALSE) {
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, col_types = 'ccnncc', progress = FALSE)
+  bim = read_table2(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
   fam = read_table2(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
   if(is.null(inds)) inds = fam[[2]]
   indvec = pop_indices(fam, pops = NULL, inds = inds)
@@ -733,7 +733,7 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
 
   fl = paste0(afdir, '/snpdat.tsv.gz')
   nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
-  snpdat = read_table2(fl, col_types = paste0('ccnncc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
+  snpdat = read_table2(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
   poly = snpdat$poly
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
   am2 = readRDS(paste0(afdir, '/afs', chunk2, '.rds'))
@@ -917,21 +917,26 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
                         maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                         transitions = TRUE, transversions = TRUE,
                         auto_only = TRUE, keepsnps = NULL, afprod = FALSE, format = NULL,
-                        adjust_pseudohaploid = TRUE, verbose = TRUE) {
+                        adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
              transitions = transitions, transversions = transversions,
              auto_only = auto_only, keepsnps = keepsnps, format = format,
              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-
   if(afprod) {
-    if(verbose) alert_info(paste0('Returning allele frequency products/\n'))
+    if(verbose) alert_info(paste0('Returning allele frequency products\n'))
     #blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
     blocks = scale_ap_blocks(arrs$ap_blocks, from = 0)
   } else {
-    if(verbose) alert_info(paste0('Returning f2-statistics/\n'))
+    if(verbose) alert_info(paste0('Returning f2-statistics\n'))
     blocks = arrs$f2_blocks
+  }
+  if(remove_na) {
+    keep = apply(blocks, 3, function(x) sum(!is.finite(x))==0)
+    blocks = blocks[,,keep, drop = FALSE]
+    if(sum(!keep) > 0) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
+                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
   }
   blocks
 }
@@ -940,22 +945,22 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
 scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
   # does the following things to ap_blocks:
   # 1. multiply by -2
-  # 2. set diag to 0
-  # 3. shift and scale so that all values are between from and to
+  # 2. shift and scale so that all values are between from and to
+  # 3. set diag to 0
 
   ap_blocks = -2*ap_blocks
-  if(isTRUE(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]]))) {
-    d1 = dim(ap_blocks)[1]
-    d3 = dim(ap_blocks)[3]
-    dg = rep(seq_len(d1) + d1*(seq_len(d1)-1),d3) + rep(d1*d1*(seq_len(d3)-1), each = d1)
-    ap_blocks[dg] = 0
-  }
   if(!is.null(from)) {
     if(!is.null(to)) {
       ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
     } else {
       ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
     }
+  }
+  if(isTRUE(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]]))) {
+    d1 = dim(ap_blocks)[1]
+    d3 = dim(ap_blocks)[3]
+    dg = rep(seq_len(d1) + d1*(seq_len(d1)-1),d3) + rep(d1*d1*(seq_len(d3)-1), each = d1)
+    ap_blocks[dg] = 0
   }
   ap_blocks
 }
@@ -1037,7 +1042,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
 }
 
 
-read_anygeno = function(pref, inds = NULL, format = format, verbose = TRUE) {
+read_anygeno = function(pref, inds = NULL, format = NULL, verbose = TRUE) {
 
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
@@ -1258,7 +1263,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
   indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccnncc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
@@ -1438,7 +1443,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod = FALSE, return_array = TRUE,
-                           apply_corr = TRUE, remove_na = FALSE, verbose = TRUE) {
+                           apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
   indpairs = dir.exists(paste0(dir, '/indivs'))
@@ -1463,6 +1468,10 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     f2_blocks = read_f2(dir, pops, pops2, afprod = afprod, remove_na = remove_na, verbose = verbose)
   }
   if(afprod) f2_blocks = scale_ap_blocks(f2_blocks, from = 0)
+  else if(any(apply(f2_blocks,1:2,mean,na.rm=T)<0)) warning(paste('Some f2-statistic estimates are',
+         'negative across blocks. This is probably caused by too many missing or rare SNPs in',
+         'populations with low sample size, which makes the f2 bias correction unreliable.',
+         "Consider running 'f2_from_precomp' with 'afprod = TRUE'."))
   f2_blocks
 }
 

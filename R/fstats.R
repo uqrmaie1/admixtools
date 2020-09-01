@@ -133,9 +133,11 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
   } else {
     denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
     denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
-    pq1 = afmat1*(1-afmat1)/denom1
-    pq2 = afmat2*(1-afmat2)/denom2
-    out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(pq1, pq2, `+`))
+    #denom1 = countmat1-1
+    #denom2 = countmat2-1
+    corr1 = afmat1*(1-afmat1)/denom1
+    corr2 = afmat2*(1-afmat2)/denom2
+    out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(corr1, corr2, `+`))
   }
   if(!is.null(snpwt)) {
     stopifnot(length(snpwt) == nr)

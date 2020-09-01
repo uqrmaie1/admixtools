@@ -12,7 +12,7 @@ f2_from_precomp(
   afprod = FALSE,
   return_array = TRUE,
   apply_corr = TRUE,
-  remove_na = FALSE,
+  remove_na = TRUE,
   verbose = TRUE
 )
 }

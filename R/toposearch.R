@@ -1494,7 +1494,13 @@ insert_leaf = function(graph, leaf, from, to) {
     delete_edges(paste(from, to, sep = '|'))
 }
 
-
+#' Generate all trees
+#'
+#' This functions generates all possible trees with for a given set of leaf nodes.
+#'
+#' @export
+#' @param leaves The leaf nodes
+#' @return A list of trees in `igraph` format
 generate_all_trees = function(leaves) {
 
   stopifnot(!'R' %in% leaves)
@@ -1503,10 +1509,20 @@ generate_all_trees = function(leaves) {
   add_leaves_rec(init, leaves[-1])
 }
 
+#' Generate all graphs
+#'
+#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes.
+#'
+#' @export
+#' @param leaves The leaf nodes
+#' @param nadmix The number of admixture nodes
+#' @param sure Confirm large number of graphs
+#' @param verbose Print progress updates
+#' @return A list of graphs in `igraph` format
 generate_all_graphs = function(leaves, nadmix = 0, sure = FALSE, verbose = TRUE) {
   #if(numtot > 1000 && !sure) stop(paste0('If you really want to generate ', numtot, ' graphs, set sure to TRUE'))
   nleaves = length(leaves)
-  if(nleaves > 5 | nadmix > 2) stop('If you really want to generate that many graphs, set sure to TRUE')
+  if(nleaves > 5 || nadmix > 2 && !sure) stop("If you really want to generate that many graphs, set 'sure' to TRUE")
   if(verbose) alert_info(paste0('Generating ', numtrees(nleaves),' trees...\n'))
   trees = generate_all_trees(leaves)
   if(verbose) alert_info(paste0('Adding all possible admixutre edges...\n'))
