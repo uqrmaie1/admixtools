@@ -1,5 +1,6 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
+#define ARMA_DONT_PRINT_ERRORS // disables near singular warning in 'solve'
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 using namespace arma;

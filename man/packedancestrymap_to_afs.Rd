@@ -9,6 +9,8 @@ packedancestrymap_to_afs(
   inds = NULL,
   pops = NULL,
   adjust_pseudohaploid = TRUE,
+  first = 1,
+  last = NULL,
   verbose = TRUE
 )
 }

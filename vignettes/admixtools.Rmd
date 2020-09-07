@@ -390,30 +390,34 @@ qpgraph_bin = paste0(env, binpath, 'qpGraph')
 prefix = '/n/groups/reich/robert/projects/admixprograms/v42.1_small'
 outdir = 'write/files/here/'
 
-qp3pop_wrapper(source1 = pop2, source2 = pop3, target = pop1,
-               qp3pop_bin, prefix, outdir)
-qpdstat_wrapper(pop1, pop2, pop3, pop4,
-                qpdstat_bin, prefix, outdir)
-qpadm_wrapper(left, right, target,
-              qpadm_bin, prefix, outdir)
-qpgraph_wrapper(example_graph,
-                qpgraph_bin, prefix, outdir)
+qp3pop_wrapper(prefix, source1 = pop2, source2 = pop3, target = pop1,
+               qp3pop_bin, outdir)
+qpdstat_wrapper(prefix, pop1, pop2, pop3, pop4,
+                qpdstat_bin, outdir)
+qpadm_wrapper(prefix, left, right, target,
+              qpadm_bin, outdir)
+qpgraph_wrapper(prefix, example_graph,
+                qpgraph_bin, outdir)
 ```
 **Unless `outdir` is specified, calling these wrapper functions may overwrite files in the working directory!**
 
-If you already have existing parameter files and population or graph files, you can run the wrapper functions like this (though the different programs will require different parfiles and popfiles):
+If you already have existing population, graph, or parameter files, you can run the wrapper functions like this (though the different programs will require different parfiles and popfiles):
 
 ```{r, eval = FALSE}
-qp3pop_wrapper (parfile = 'parfile.txt', bin = qp3pop_bin)
-qpdstat_wrapper(parfile = 'parfile.txt', bin = qpdstat_bin)
-qpadm_wrapper  (parfile = 'parfile.txt', bin = qpadm_bin)
+# using population or graph files
+qp3pop_wrapper (prefix, 'popfile.txt', bin = qp3pop_bin)
+qpdstat_wrapper(prefix, 'popfile.txt', bin = qpdstat_bin)
+qpadm_wrapper(prefix, left = 'left.txt', right = 'right.txt', bin = qpadm_bin)
+qpgraph_wrapper(prefix, 'graphfile.txt', bin = qpgraph_bin)
 
-qp3pop_wrapper ('popfile.txt', bin = qp3pop_bin,  pref = prefix)
-qpdstat_wrapper('popfile.txt', bin = qpdstat_bin, pref = prefix)
+# using parameter files
+qp3pop_wrapper (NULL, parfile = 'parfile.txt', bin = qp3pop_bin)
+qpdstat_wrapper(NULL, parfile = 'parfile.txt', bin = qpdstat_bin)
+qpadm_wrapper  (NULL, parfile = 'parfile.txt', bin = qpadm_bin)
+qpgraph_wrapper(NULL, 'graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
 
-qpadm_wrapper(left = 'left.txt', right = 'right.txt', bin = qpadm_bin, pref = prefix)
 
-qpgraph_wrapper('graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
+
 ```
 
 
@@ -422,7 +426,7 @@ qpgraph_wrapper('graphfile.txt', parfile = 'parfile.txt', bin = qpgraph_bin)
 The following function makes it easy to compare *qpGraph* or *qpAdm* results.
 
 ```{r, eval = FALSE}
-qpgraph_ref_results = qpgraph_wrapper(example_graph, qpgraph_bin, prefix)
+qpgraph_ref_results = qpgraph_wrapper(prefix, example_graph, qpgraph_bin)
 ```
 ```{r, echo = FALSE}
 qpgraph_ref_results = example_qpgraph_ref_results

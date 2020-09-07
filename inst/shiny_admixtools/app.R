@@ -288,7 +288,8 @@ ui = function(request) {
                                                                downloadButton('downloadgraph', 'Save graph')))),
                                          menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
                                                   checkboxInput('multiprocess', 'multiprocess', value = FALSE),
-                                                  checkboxInput('f2corr', 'f2 bias correction', value = TRUE)))),
+                                                  checkboxInput('f2corr', 'f2 bias correction', value = TRUE),
+                                                  checkboxInput('afprod', 'allele frequency products', value = FALSE)))),
             dashboardBody(uiOutput('dashboardbody'), tags$head(tags$style(HTML('.skin-black .sidebar .shiny-download-link a { color: #444; } .content {background-color: white } .main-header .logo {font-family: "GillSans", "Skia", "Avenir-Medium", "Herculanum", "Hiragino Maru Gothic Pro", "Maru Gothic Pro", "Hiragino", "Comic Sans MS"; font-weight: normal;};')))),
             skin = 'black'
           ))
@@ -799,7 +800,7 @@ server = function(input, output, session) {
     if(global$iscountdata) inds = unlist(poplist)
     withProgress(message = 'Reading data and computing f2...', {
       f2blocks = f2_from_precomp(global$countdir, inds = inds, pops = pops,
-                                 apply_corr = input$f2corr)
+                                 apply_corr = input$f2corr, afprod = input$afprod)
     })
     print('get f2 done')
     f2blocks
@@ -811,7 +812,8 @@ server = function(input, output, session) {
     req(poplist, global$countdir)
     if(length(poplist) == 0) return()
     withProgress(message = 'Reading data and computing f2...', {
-      f2dat = f2_from_precomp(global$countdir, inds = unlist(poplist), pops = unlist(poplist), return_array = FALSE)
+      f2dat = f2_from_precomp(global$countdir, inds = unlist(poplist), pops = unlist(poplist),
+                              return_array = FALSE, afprod = input$afprod)
     })
     print('get f2 indiv done')
     f2dat

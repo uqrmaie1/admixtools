@@ -89,7 +89,12 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Can be used to estimate admixture proportions, and to estimate the number of independent
 #' admixture events.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}. Alternatively, a directory with f2 statistics.
+#' @param data The input data in the form of:
+#' \itemize{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+#' \item A directory with f2 statistics
+#' \item The prefix of a genotype file
+#' }
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
@@ -103,6 +108,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
+#' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
 #' @return A list with output describing the model fit:
 #' \enumerate{
 #' \item `weights` A data frame with estimated admixture proportions where each row is a left population.
@@ -119,27 +125,48 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' target = 'Denisova.DG'
 #' qpadm(example_f2_blocks, left, right, target)
-qpadm = function(f2_data, left, right, target,
+#' \dontrun{
+#' qpadm("/my/geno/prefix", left, right, target)
+#' }
+qpadm = function(data, left, right, target, f4blocks = NULL,
                  fudge = 0.0001, boot = FALSE, getcov = TRUE,
-                 constrained = FALSE, cpp = TRUE, verbose = TRUE) {
-
-  if(all(file.exists(left, right))) {
-    left %<>% readLines
-    right %<>% readLines
-  }
-  if(!is.null(target)) left = c(target, setdiff(left, target))
-  pops = c(left, right)
-  if(any(duplicated(pops))) stop(paste0('Duplicated pops: ', paste0(unique(pops[duplicated(pops)]),collapse=', ')))
+                 constrained = FALSE, cpp = TRUE, verbose = TRUE, ...) {
 
   #----------------- prepare f4 stats -----------------
-  if(verbose) alert_info('Computing f4 stats...\n')
-  f2_blocks = get_f2(f2_data, pops = pops, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
+  f2_blocks = NULL
+  if(is.null(f4blocks)) {
+    if(all(file.exists(left, right))) {
+      left %<>% readLines
+      right %<>% readLines
+    }
+    if(!is.null(target)) left = c(target, setdiff(left, target))
+    if(is_geno_prefix(data)) {
+      f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
+      f4blocks = f4blockdat %>% f4blockdat_to_f4blocks()
+    } else {
+      if(verbose) alert_info('Computing f4 stats...\n')
+      f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE)
+      f4blocks = f2blocks_to_f4blocks(f2_blocks, left, right)
+    }
+  } else {
+    if(!all(map_lgl(list(data, left, right), is.null)))
+      stop("Can't provide 'f4blocks' and data/left/right at the same time!")
+    naml = dimnames(f4blocks)[1]
+    namr = dimnames(f4blocks)[2]
+    left = c(names(naml), naml[[1]])
+    right = c(names(namr), namr[[1]])
+    if(!is.null(target)) target = left[1]
+  }
+  pops = c(left, right)
+  if(any(duplicated(pops)))
+    stop(paste0('Duplicated pops: ', paste0(unique(pops[duplicated(pops)]), collapse=', ')))
 
-  f4_est = f4dat$est
-  f4_var = f4dat$var
-  f4_lo = f4dat$f4_lo
-  block_lengths = f4dat$block_lengths
+  f4stats = f4blocks %>% f4blocks_to_f4stats(boot = boot)
+
+  f4_est = f4stats$est
+  f4_var = f4stats$var
+  f4_lo = f4stats$f4_lo
+  block_lengths = f4stats$block_lengths
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
   out = list()
@@ -161,11 +188,13 @@ qpadm = function(f2_data, left, right, target,
     out$weights = tibble(target, left = left[-1], weight, se) %>% mutate(z = weight/se)
 
     wvec = out$weights %>% select(left, weight) %>% deframe
-    #if(isTRUE(all.equal(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]]))) {
-    out$f4 = fitted_f4(f2_blocks, wvec, target, left[-1], right)
-    #}
+    if(!is.null(f2_blocks)) out$f4 = fitted_f4(f2_blocks, wvec, target, left[-1], right)
+    #else out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
+    else out$f4 = NULL
   } else {
-    out$f4 = f4(f2_blocks, left[1], left[-1], right[1], right[-1], verbose = FALSE)
+    if(!is.null(f2_blocks)) out$f4 = f4(f2_blocks, left[1], left[-1], right[1], right[-1], verbose = FALSE)
+    #else out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
+    else out$f4 = NULL
   }
 
   #----------------- compute number of admixture waves -----------------
@@ -203,24 +232,34 @@ qpwave = function(f2_data, left, right,
         constrained = constrained, cpp = cpp, verbose = verbose)
 
 
-f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
+
+f2blocks_to_f4stats = function(f2_blocks, left, right, boot = FALSE) {
+
+  f2blocks_to_f4blocks(f2_blocks, left, right) %>%
+    f4blocks_to_f4stats(boot = boot)
+}
+
+f2blocks_to_f4blocks = function(f2_blocks, left, right) {
 
   if(length(right) < 2) stop('Not enough right populations!')
   if(length(left) < 2) stop('Not enough left populations!')
-  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
-
-  # f4_blocks = (f2_blocks[left, right[1], ] +
-  #              f2_blocks[target, right[-1], ] -
-  #              f2_blocks[target, right[1], ] -
-  #              f2_blocks[left, right[-1], ])/2
 
   nr = length(right) - 1
   nl = length(left) - 1
   f4_blocks = (f2_blocks[left[-1], rep(right[1], nr), , drop = FALSE] +
-               f2_blocks[rep(left[1], nl), right[-1], , drop = FALSE] -
-               f2_blocks[rep(left[1], nl), rep(right[1], nr), , drop = FALSE] -
-               f2_blocks[left[-1], right[-1], , drop = FALSE])/2
+                 f2_blocks[rep(left[1], nl), right[-1], , drop = FALSE] -
+                 f2_blocks[rep(left[1], nl), rep(right[1], nr), , drop = FALSE] -
+                 f2_blocks[left[-1], right[-1], , drop = FALSE])/2
+  dimnames(f4_blocks)[[2]] = right[-1]
+  names(dimnames(f4_blocks))[1:2] = c(left[1], right[1])
+  f4_blocks
+}
+
+
+f4blocks_to_f4stats = function(f4_blocks, boot = FALSE) {
+
+  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
+  statfun = ifelse(boot, boot_pairarr_stats, jack_pairarr_stats)
 
   f4_lo = f4_blocks %>% samplefun
   block_lengths = parse_number(dimnames(f4_lo)[[3]])
@@ -231,6 +270,55 @@ f2_to_f4 = function(f2_blocks, left, right, boot = FALSE) {
   out$block_lengths = block_lengths
   out
 }
+
+#' Turn f4 block data to 3d array
+#'
+#' @param f4blockdat f4 block data frame generated by \code{\link{f4blockdat_from_geno}}
+#' @param remove_na Remove blocks with missing values
+#' @export
+f4blockdat_to_f4blocks = function(f4blockdat, remove_na = TRUE) {
+  # assumes pop1 = left[1], pop2 = left[-1], pop3 = right[1], pop4 = right[-1]
+  stopifnot(length(unique(f4blockdat$pop1)) == 1 && length(unique(f4blockdat$pop3)) == 1)
+  stopifnot(all(c('block', 'n', paste0('pop', 1:4)) %in% names(f4blockdat)))
+
+  f4blockdat %<>% arrange(block, pop4, pop2)
+  p1 = f4blockdat$pop1[1]
+  p3 = f4blockdat$pop3[1]
+  p2 = unique(f4blockdat$pop2)
+  p4 = unique(f4blockdat$pop4)
+  bl = f4blockdat %>% select(block, n) %>%
+    group_by(block) %>% slice_max(n, with_ties = F) %$% n %>% paste0('l', .)
+
+  stopifnot(nrow(f4blockdat) == length(p2)*length(p4)*length(bl))
+
+  arr = array(f4blockdat$est, c(length(p2), length(p4), length(bl)), list(p2, p4, bl) %>% purrr::set_names(c(p1, p3, 'bl')))
+  if(remove_na) {
+    keep = apply(arr, 3, function(x) sum(is.na(x)) == 0)
+    arr = arr[,,keep, drop = FALSE]
+    if(sum(!keep) > 0) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
+                                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
+  }
+  arr
+}
+
+f4blockdat_to_f4out = function(f4blockdat, boot) {
+
+  samplefun = ifelse(boot, function(...) est_to_boo_dat(...), est_to_loo_dat)
+  datstatfun = ifelse(boot, boot_dat_stats, jack_dat_stats)
+  totn = f4blockdat %>%
+    group_by(pop1, pop2, pop3, pop4) %>%
+    summarize(n = sum(n, na.rm=T))
+
+  f4blockdat %>%
+    group_by(pop1, pop2, pop3, pop4) %>%
+    samplefun() %>%
+    datstatfun() %>%
+    ungroup %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    transmute(pop1, pop2, pop3, pop4, est, se, z, p) %>%
+    left_join(totn, by = c('pop1', 'pop2', 'pop3', 'pop4'))
+}
+
 
 
 lazadm_old = function(f2_data, left, right, target = NULL,
@@ -512,7 +600,7 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
   #force(rnk)
   if(!is.null(target)) left = c(target, setdiff(left, target))
   f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
-  f4dat = f2_to_f4(f2_blocks, left, right, boot = boot)
+  f4dat = f2blocks_to_f4stats(f2_blocks, left, right, boot = boot)
   f4_est = f4dat$est
   f4_var = f4dat$var
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
@@ -641,6 +729,71 @@ qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, verbose
     unnest_wider(res) #%>%
   #mutate(chisq = map(rankdrop, 'chisq') %>% map_dbl(1)) %>%
   #arrange(chisq)
+}
+
+
+
+qpadmmodels_to_popcombs = function(models) {
+  # takes data frame of left, right, target populations
+  # returns all f4 popcombs numbered by model
+
+  if('target' %in% names(models)) models$left = map2(models$left, models$target, ~union(.y, .x))
+  models %>% as_tibble %>% mutate(model = 1:n()) %>% rowwise %>%
+    transmute(model, pop1 = left[1], pop2 = list(left[-1]), pop3 = right[1], pop4 = list(right[-1])) %>%
+    unnest_longer(pop2) %>% unnest_longer(pop4)
+}
+
+
+#' Run multiple qpadm models
+#'
+#' This function runs multiple qpadm models, re-using f4-statistics where possible.
+#' @export
+#' @param data The input data in the form of:
+#' \itemize{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+#' \item A directory with f2 statistics
+#' \item The prefix of a genotype file
+#' }
+#' @param models A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing `left`, `right`, (and `target`) populations.
+#' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results.
+#' @param verbose Print progress updates
+#' @param ... Further arguments passed to \code{\link{qpadm}}
+#' @return A list where each element is the output of one qpadm model.
+#' @examples
+#' \dontrun{
+#' pops = paste0('pop', 1:10)
+#' models = tibble(
+#'            left = list(c('pop1', 'pop2'), c('pop3', 'pop4')),
+#'            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8', 'pop9')),
+#'            target = c('pop10', 'pop10'))
+#' results = qpadm_multi('/my/geno/prefix', models)
+#' }
+qpadm_multi = function(data, models, allsnps = FALSE, verbose = TRUE, ...) {
+
+  if(!'left' %in% names(models) || !'right' %in% names(models))
+    stop("'models' should have elements 'left' and 'right'!")
+  if(length(unique(map_dbl(models, length))) != 1)
+    stop("'left', 'right' (and 'target') should be of equal length!")
+
+  if('target' %in% names(models)) models$left = map2(models$left, models$target, ~union(.y, .x))
+  if(!'tibble' %in% class(models)) models %<>% as_tibble
+
+  if(is_geno_prefix(data)) {
+    popcombs = qpadmmodels_to_popcombs(models)
+    f4blockdat = data %>% f4blockdat_from_geno(popcombs, allsnps = allsnps, verbose = verbose)
+    f4blocks = f4blockdat %>% split(.$model) %>% furrr::future_map(quietly(f4blockdat_to_f4blocks)) %>% map('result')
+  } else {
+    if(verbose && !allsnps) alert_warning('allsnps = FALSE is not effective when using precomputed f2 statistics\n')
+    pops = models %>% unlist %>% unique
+    f2blocks = data %>% get_f2(pops, afprod = TRUE)
+    f4blocks = models %>% rowwise %>% mutate(f4blocks = list(f2blocks_to_f4blocks(f2blocks, left, right))) %>% pull
+  }
+
+  if(verbose) alert_info('Running models...\n')
+  f4blocks %>%
+    furrr::future_map(function(.x, ...)
+      qpadm(NULL, NULL, NULL, target = TRUE, f4blocks = .x, verbose = FALSE, ...),
+      .progress = verbose, ...)
 }
 
 

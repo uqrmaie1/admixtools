@@ -5,20 +5,27 @@
 \title{Estimate admixture weights}
 \usage{
 qpadm(
-  f2_data,
+  data,
   left,
   right,
   target,
+  f4blocks = NULL,
   fudge = 1e-04,
   boot = FALSE,
   getcov = TRUE,
   constrained = FALSE,
   cpp = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}. Alternatively, a directory with f2 statistics.}
+\item{data}{The input data in the form of:
+\itemize{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+\item A directory with f2 statistics
+\item The prefix of a genotype file
+}}
 
 \item{left}{Left populations (sources)}
 
@@ -41,6 +48,8 @@ as well as the weight standard errors, will be computed using bootstrapping.}
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
 \item{verbose}{Print progress updates}
+
+\item{...}{If \code{data} is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}}
 }
 \value{
 A list with output describing the model fit:
@@ -62,6 +71,9 @@ left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 target = 'Denisova.DG'
 qpadm(example_f2_blocks, left, right, target)
+\dontrun{
+qpadm("/my/geno/prefix", left, right, target)
+}
 }
 \references{
 Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European

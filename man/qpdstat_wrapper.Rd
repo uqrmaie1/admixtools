@@ -5,12 +5,12 @@
 \title{Wrapper function around the original qpDstat program}
 \usage{
 qpdstat_wrapper(
-  pop1 = NULL,
+  pref,
+  pop1,
   pop2 = NULL,
   pop3 = NULL,
   pop4 = NULL,
   bin = "~np29/o2bin/qpDstat",
-  pref = NULL,
   outdir = ".",
   parfile = NULL,
   f4mode = "YES",
@@ -21,6 +21,8 @@ qpdstat_wrapper(
 )
 }
 \arguments{
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
+
 \item{pop1}{One of the following four:
 \enumerate{
 \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
@@ -38,8 +40,6 @@ the populations or population combinations to be tested. \code{pop2}, \code{pop3
 \item{pop4}{A vector of population labels}
 
 \item{bin}{Path to the qpDstat binary file}
-
-\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
 \item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 \code{popfilename} may be overwritten}
@@ -69,10 +69,7 @@ pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 pop4 = 'Switzerland_Bichon.SG'
-qpdstat_wrapper(pop1, pop2, pop3, pop4,
-  bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix',
-  env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
-
-qpdstat_wrapper(bin = 'path/to/qpDstat', parfile = 'path/to/parfile')
+qpdstat_wrapper('genotype_prefix', pop1, pop2, pop3, pop4,
+  bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix')
 }
 }

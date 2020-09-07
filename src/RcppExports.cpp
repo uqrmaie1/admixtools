@@ -6,9 +6,9 @@
 
 using namespace Rcpp;
 
-// cpp_aftable_to_dstatnum
-List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
+// cpp_aftable_to_dstatnum_old
+List cpp_aftable_to_dstatnum_old(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum_old(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,13 +17,31 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type p2(p2SEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type p3(p3SEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type p4(p4SEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum(aftable, p1, p2, p3, p4));
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum_old(aftable, p1, p2, p3, p4));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_aftable_to_dstatnum
+List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat& >::type aftable(aftableSEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type p1(p1SEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type p2(p2SEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type p3(p3SEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type p4(p4SEXP);
+    Rcpp::traits::input_parameter< arma::vec& >::type modelvec(modelvecSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
+    Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_aftable_to_dstatden
-arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
+arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -32,7 +50,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type p2(p2SEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type p3(p3SEXP);
     Rcpp::traits::input_parameter< arma::vec& >::type p4(p4SEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4));
+    Rcpp::traits::input_parameter< arma::vec& >::type modelvec(modelvecSEXP);
+    Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
+    Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -363,8 +384,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 5},
-    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 5},
+    {"_admixtools_cpp_aftable_to_dstatnum_old", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_old, 5},
+    {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 8},
+    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 8},
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
     {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 7},

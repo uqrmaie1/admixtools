@@ -11,7 +11,7 @@ extract_afs(
   pops = NULL,
   cols_per_chunk = 10,
   numparts = 100,
-  maxmiss = 1,
+  maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
   outpop = NULL,

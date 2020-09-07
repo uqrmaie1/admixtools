@@ -16,8 +16,6 @@ qpwave(
 )
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}. Alternatively, a directory with f2 statistics.}
-
 \item{left}{Left populations (sources)}
 
 \item{right}{Right populations (outgroups)}

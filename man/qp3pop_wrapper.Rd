@@ -5,11 +5,11 @@
 \title{Wrapper function around the original qp3Pop program}
 \usage{
 qp3pop_wrapper(
+  pref,
   source1,
   source2 = NULL,
   target = NULL,
   bin = "~np29/o2bin/qp3Pop",
-  pref = NULL,
   outdir = ".",
   parfile = NULL,
   inbreed = "NO",
@@ -22,6 +22,8 @@ qp3pop_wrapper(
 )
 }
 \arguments{
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
+
 \item{source1}{One of the following four:
 \enumerate{
 \item \code{NULL}: Populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
@@ -37,8 +39,6 @@ population combinations to be tested. \code{source2} and \code{target} will be i
 \item{target}{A vector of population labels}
 
 \item{bin}{Path to the qp3Pop binary file}
-
-\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
 \item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 \code{popfilename} may be overwritten}
@@ -70,13 +70,10 @@ using \code{\link{system}}
 }
 \examples{
 \dontrun{
-target = 'Denisova.DG'
 source1 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 source2 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
-qp3pop_wrapper(source1, source2, target,
-  bin = 'path/to/qp3Pop', pref = 'path/to/packedancestrymap_prefix',
-  env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
-
-qp3pop_wrapper(bin = 'path/to/qp3Pop', parfile = 'path/to/parfile')
+target = 'Denisova.DG'
+qp3pop_wrapper('genotype_prefix', source1, source2, target,
+  bin = 'path/to/qp3Pop')
 }
 }

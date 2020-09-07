@@ -5,9 +5,9 @@
 \title{Wrapper function around the original qpF4ratio program}
 \usage{
 qpf4ratio_wrapper(
+  pref,
   pops,
   bin = "~np29/o2bin/qpF4ratio",
-  pref = NULL,
   outdir = ".",
   parfile = NULL,
   blgsize = 0.05,
@@ -18,11 +18,11 @@ qpf4ratio_wrapper(
 )
 }
 \arguments{
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
+
 \item{pops}{A vector of five populations, or a 5 x n matrix with population names. For each line \code{alpha} will be computed as \verb{f4(1,2; 3,4)/f4(1,2; 5,4)}}
 
 \item{bin}{Path to the qpF4ratio binary file}
-
-\item{pref}{Path to and prefix of the packedancestrymap genotype files}
 
 \item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 \code{popfilename} may be overwritten}
@@ -48,6 +48,6 @@ This requires a working installation of qpF4ratio, which will be called using \c
 \examples{
 \dontrun{
 pops = c('Denisova.DG', 'Altai_Neanderthal.DG', 'Vindija.DG', 'Chimp.REF', 'Mbuti.DG')
-qpf4ratio_wrapper(pops, bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix')
+qpf4ratio_wrapper('genotype_prefix', pops, bin = 'path/to/qpDstat')
 }
 }

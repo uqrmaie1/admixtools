@@ -9,7 +9,7 @@ extract_counts(
   outdir,
   inds = NULL,
   blgsize = 0.05,
-  maxmiss = 1,
+  maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
   transitions = TRUE,

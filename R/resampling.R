@@ -285,7 +285,7 @@ get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm', cpp = F) {
 
   if(distcol == 'cm' && length(unique(dat[[distcol]])) < 2) {
     distcol = 'POS'
-    blgsize = 50000
+    blgsize = 2e6
     if(!distcol %in% names(dat) || length(unique(dat[[distcol]])) < 2) {
       warning(paste0("No genetic linkage map or base positions found!",
       "Each chromosome will be its own block, which can make standard error estimates inaccurate."))

@@ -11,7 +11,7 @@ extract_f2(
   pops = NULL,
   blgsize = 0.05,
   maxmem = 8000,
-  maxmiss = 1,
+  maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
   outpop = NULL,

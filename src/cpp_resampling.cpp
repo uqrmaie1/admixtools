@@ -72,6 +72,7 @@ List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, doub
 }
 
 
+
 // [[Rcpp::export]]
 arma::cube cpp_outer_array_mul(arma::mat& m1, arma::mat& m2) {
 

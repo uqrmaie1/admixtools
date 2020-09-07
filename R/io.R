@@ -14,7 +14,8 @@
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
+                                    first = 1, last = NULL, verbose = TRUE) {
 
 
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
@@ -31,6 +32,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
+  first = max(1, first)
+  last = if(is.null(last)) nsnpall else min(last, nsnpall)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec - 1
@@ -45,8 +48,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 
   if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
-  afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = 0,
-                                           last = nsnpall, ploidy = ploidy,
+  afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1,
+                                           last = last, ploidy = ploidy,
                                            transpose = FALSE, verbose = verbose)
 
   if(verbose) {
@@ -54,7 +57,7 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
   }
 
   colnames(afdat$afs) = colnames(afdat$counts) = upops
-  rownames(afdat$afs) = rownames(afdat$counts) = snpfile$SNP
+  rownames(afdat$afs) = rownames(afdat$counts) = snpfile$SNP[first:last]
 
   afdat$snpfile = snpfile
   afdat
@@ -117,13 +120,11 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
 }
 
 
-discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
+discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
   # keepsnps overrides maxmiss and auto_only
-  # maxmiss = 1 is equivalent to na.action = 'none'
-  # maxmiss = 0 is equivalent to na.action = 'remove'
 
   snpdat = afdat$snpfile
   if(maxmiss < 1) snpdat$miss = rowMeans(afdat$counts == 0)
@@ -147,7 +148,7 @@ discard_from_aftable = function(afdat, maxmiss = 1, minmaf = 0, maxmaf = 0.5, ou
 }
 
 
-discard_from_geno = function(geno, maxmiss = 1, auto_only = TRUE, poly_only = FALSE,
+discard_from_geno = function(geno, maxmiss = 0, auto_only = TRUE, poly_only = FALSE,
                              minmaf = 0, maxmaf = 0.5,
                              transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # geno is list with 'snpfile', 'afs', 'counts'
@@ -368,7 +369,8 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
+                        first = 1, last = NULL, verbose = TRUE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -382,19 +384,12 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
   nsnpall = nrow(bim)
   nindall = nrow(fam)
+  first = max(0, first)
+  last = if(is.null(last)) nsnpall else min(last, nsnpall)
 
   ip = match_samples(fam$X2, fam$X1, inds, pops)
   indvec = ip$indvec
   upops = ip$upops
-
-  # if(!is.null(inds) && !is.null(pops)) {
-  #   stopifnot(nrow(fam) == length(inds)) # note: fix this, so that this condition is not necessary
-  #   fam$X1 = pops
-  #   fam$X2 = inds
-  # }
-  # if(is.null(inds)) inds = fam$X2
-  # if(is.null(pops)) pops = fam$X1
-  # indvec = pop_indices(fam, pops = pops, inds = inds)
 
   indvec2 = which(indvec > 0)
   #keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
@@ -402,11 +397,13 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   if(verbose) {
     alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
     alert_info(paste0('Calculating allele frequencies from ', sum(indvec != 0), ' samples in ', length(upops), ' populations\n'))
-    alert_info(paste0('Expected size of allele frequency data: ', round((nsnpall*length(upops)*8+nsnpall*112)/1e6), ' MB\n'))
+    alert_info(paste0('Expected size of allele frequency data: ', 2*round((nsnpall*length(upops)*8+nsnpall*112)/1e6), ' MB\n'))
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+  # todo: first and last option
+  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid,
+                           verbose = verbose)
 
   afmatrix = afs[[1]]
   countmatrix = afs[[2]]
@@ -864,7 +861,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                      maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                      maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
@@ -914,7 +911,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' @return A 3d array of f2-statistics (or scaled allele frequency products if `afprod = TRUE`)
 #' @seealso \code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                        maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                        maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                         transitions = TRUE, transversions = TRUE,
                         auto_only = TRUE, keepsnps = NULL, afprod = FALSE, format = NULL,
                         adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
@@ -949,13 +946,13 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
   # 3. set diag to 0
 
   ap_blocks = -2*ap_blocks
-  if(!is.null(from)) {
-    if(!is.null(to)) {
-      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
-    } else {
-      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
-    }
-  }
+  # if(!is.null(from)) {
+  #   if(!is.null(to)) {
+  #     ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
+  #   } else {
+  #     ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
+  #   }
+  # }
   if(isTRUE(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]]))) {
     d1 = dim(ap_blocks)[1]
     d3 = dim(ap_blocks)[3]
@@ -982,7 +979,7 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
 #' extract_f2_large(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                            maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                            maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                             transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL,
                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
@@ -1077,7 +1074,7 @@ read_anygeno = function(pref, inds = NULL, format = NULL, verbose = TRUE) {
 #' @param maxmiss Discard SNPs which are missing in a fraction of individuals greater than `maxmiss`
 #' @param cols_per_chunk Number of genotype chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
 #' @inheritParams extract_f2
-extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 1, minmaf = 0, maxmaf = 0.5,
+extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 0, minmaf = 0, maxmaf = 0.5,
                           transitions = TRUE, transversions = TRUE, auto_only = TRUE, keepsnps = NULL,
                           maxmem = 8000, overwrite = FALSE, format = NULL, cols_per_chunk = NULL, verbose = TRUE) {
 
@@ -1119,7 +1116,7 @@ extract_counts = function(pref, outdir, inds = NULL, blgsize = 0.05,  maxmiss = 
 }
 
 extract_counts_large = function(pref, outdir, inds = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                                maxmiss = 1, minmaf = 0, maxmaf = 0.5,
+                                maxmiss = 0, minmaf = 0, maxmaf = 0.5,
                                 transitions = TRUE, transversions = TRUE, auto_only = TRUE, keepsnps = NULL,
                                 overwrite = FALSE, format = NULL, verbose = TRUE) {
 
@@ -1211,7 +1208,7 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' extract_afs(pref, outdir)
 #' }
 extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, transitions = TRUE, transversions = TRUE,
+                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   # read data and compute allele frequencies
@@ -1254,7 +1251,7 @@ extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 
 #' extract_afs(pref, outdir)
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10, numparts = 100,
-                       maxmiss = 1, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
+                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
                        transitions = TRUE, transversions = TRUE, keepsnps = NULL, format = NULL,
                        poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
@@ -1342,6 +1339,7 @@ format_info = function(pref, format = NULL) {
     l$genoend = '.geno'
     l$cpp_geno_ploidy = cpp_packedancestrymap_ploidy
     l$cpp_geno_to_afs = cpp_packedancestrymap_to_afs
+    l$cpp_read_geno = cpp_read_packedancestrymap
   } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
     l$format = 'plink'
     l$snpnam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
@@ -1352,6 +1350,7 @@ format_info = function(pref, format = NULL) {
     l$genoend = '.bed'
     l$cpp_geno_ploidy = cpp_plink_ploidy
     l$cpp_geno_to_afs = cpp_plink_to_afs
+    l$cpp_read_geno = cpp_read_plink
   } else stop('Genotype files not found!')
   l
 }
@@ -1861,6 +1860,124 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL)
   bim = snpdat %>% set_colnames(nam)
   fam = inddat %>%
     transmute(fam = X3, id = X1, pat = 0, mat = 0, sex = X2, pheno = -9)
-  genio::write_plink(normalizePath(outpref, mustWork = F), genodat, bim = bim, fam = fam)
+  genio::write_plink(normalizePath(outpref, mustWork = F), genodat[,inddat$X1], bim = bim, fam = fam)
 }
+
+#' f4 from genotype data
+#'
+#' Compute per-block f4-statistics directly from genotype data
+#' @export
+#' @param pref Prefix of genotype files
+#' @param popcombs A data frame with one population combination per row, and columns `pop1`, `pop2`, `pop3`, `pop4`. If there is an additional integer column named `model` and `allsnps = FALSE`, only SNPs present in every population in any given model will be used to compute f4-statistics for that model.
+#' @param left Populations on the left side of f4 (`pop1` and `pop2`). Can be provided together with `right` in place of `popcombs`.
+#' @param right Populations on the right side of f4 (`pop3` and `pop4`). Can be provided together with `left` in place of `popcombs`.
+#' @param auto_only Use only chromosomes 1 to 22.
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
+#' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
+#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`.
+#' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
+#' @param verbose Print progress updates
+#' @return A data frame with per-block f4-statistics for each population quadruple.
+f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
+                                blgsize = 0.05,
+                                block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE) {
+
+  stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
+  stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
+
+  if(is.null(popcombs)) popcombs = tibble(pop1 = left[1], pop2 = left[-1]) %>%
+    expand_grid(tibble(pop3 = right[1], pop4 = right[-1]))
+  if(is.matrix(popcombs)) {
+    if(ncol(popcombs) != 4) stop("'popcombs' is a matrix but doens't have four columns!")
+    popcombs %<>% as_tibble(.name_repair = ~paste0('pop', 1:4))
+  }
+  if('model' %in% names(popcombs)) {
+    hasmodels = TRUE
+  } else {
+    hasmodels = FALSE
+    popcombs %<>% mutate(model = 1)
+  }
+  if(allsnps) {
+    modelvec = 0
+    pc = popcombs %>% select(pop1:pop4) %>% distinct
+  } else {
+    modelvec = popcombs$model
+    pc = popcombs
+  }
+
+  if(verbose) alert_info('Reading metadata...\n')
+  pref = normalizePath(pref, mustWork = FALSE)
+  l = format_info(pref)
+
+  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  cpp_read_geno = l$cpp_read_geno
+  fl = paste0(pref, l$genoend)
+
+  nsnpall = nrow(snpfile)
+  nindall = nrow(indfile)
+  if(auto_only) snpfile %<>% filter(as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
+  nsnpaut = nrow(snpfile)
+  pops = unique(c(popcombs$pop1, popcombs$pop2, popcombs$pop3, popcombs$pop4))
+
+  if(!all(pops %in% indfile$pop))
+    stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
+  if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
+    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
+  if(any(duplicated(indfile$ind)))
+    stop('Duplicate individual IDs are not allowed!')
+
+  allinds = indfile$ind
+  allpops = indfile$pop
+  indfile %<>% filter(pop %in% pops)
+  indvec = (allinds %in% indfile$ind)+0
+  popvec = match(indfile$pop, pops)
+  p1 = match(pc$pop1, pops)
+  p2 = match(pc$pop2, pops)
+  p3 = match(pc$pop3, pops)
+  p4 = match(pc$pop4, pops)
+
+  if(verbose) alert_info(paste0('Computing block lengths for ', nrow(snpfile),' SNPs...\n'))
+  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, blgsize = blgsize)
+  numblocks = length(block_lengths)
+  start = lag(cumsum(block_lengths), default = 0)
+  end = cumsum(block_lengths)
+
+  popind = popcombs %>%
+    group_by(model) %>%
+    summarize(pp = list(unique(c(pop1, pop2, pop3, pop4)))) %>%
+    mutate(popind = map(pp, ~match(., pops))) %$% popind
+  usesnps = matrix(0)
+
+  numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
+  for(i in 1:numblocks) {
+    if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
+                                  i, ' out of ', numblocks, '...\r'))
+    # replace following two lines with cpp_geno_to_afs?
+    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
+    at = gmat_to_aftable(gmat, popvec)
+    if(!allsnps) {
+      usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
+    }
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+    numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
+    cnt[i,] = c(num$cnt)
+    if(!f4mode) {
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+      denom[i,] = unname(rowMeans(den, na.rm = TRUE))
+    }
+  }
+  if(verbose) cat('\n')
+  out = pc %>%
+    expand_grid(block = 1:numblocks) %>%
+    mutate(est = c(numer), n = c(cnt))
+  if(!f4mode) out %<>% mutate(est = est/c(denom))
+  if(allsnps) out = popcombs %>% left_join(out, by = paste0('pop', 1:4))
+  if(!hasmodels) out$model = NULL
+
+  out %>%
+    mutate(length = block_lengths[block], est = if_else(is.finite(est) & n > 0, est, NA_real_))
+}
+
+
 

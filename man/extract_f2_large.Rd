@@ -11,7 +11,7 @@ extract_f2_large(
   pops = NULL,
   blgsize = 0.05,
   cols_per_chunk = 10,
-  maxmiss = 1,
+  maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
   outpop = NULL,

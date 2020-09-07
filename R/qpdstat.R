@@ -1,7 +1,7 @@
 
 
-f3_from_f2 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
-f4_from_f2 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
+f2_f3 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
+f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 
 
 #' Estimate f2 statistics
@@ -104,9 +104,9 @@ qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
   if(verbose) alert_info('Computing f3-statistics\n')
 
   out %<>% group_by(pop1, pop2, pop3) %>%
-    summarize(f3dat = list(f3_from_f2(f2_blocks[pop1, pop2, ],
-                                     f2_blocks[pop1, pop3, ],
-                                     f2_blocks[pop2, pop3, ]))) %>% ungroup %>%
+    summarize(f3dat = list(f2_f3(f2_blocks[pop1, pop2, ],
+                                 f2_blocks[pop1, pop3, ],
+                                 f2_blocks[pop2, pop3, ]))) %>% ungroup %>%
     mutate(sts = map(f3dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
     select(-f3dat, -var, -sts)
@@ -178,7 +178,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 
   if(is_geno_prefix(f2_data)) {
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
-    return(f4_from_geno(f2_data, out, pops, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
+    return(qpdstat_geno(f2_data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
                         f4mode = f4mode, block_lengths = block_lengths, boot = boot, verbose = verbose))
   }
 
@@ -198,10 +198,10 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   if(verbose) alert_info('Computing f4-statistics\n')
 
   out %<>% rowwise %>%
-    mutate(f4dat = list(f4_from_f2(f2_blocks[pop1, pop4, ],
-                                   f2_blocks[pop2, pop3, ],
-                                   f2_blocks[pop1, pop3, ],
-                                   f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
+    mutate(f4dat = list(f2_f4(f2_blocks[pop1, pop4, ],
+                              f2_blocks[pop2, pop3, ],
+                              f2_blocks[pop1, pop3, ],
+                              f2_blocks[pop2, pop4, ]))) %>% ungroup %>%
     mutate(sts = map(f4dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
     select(-f4dat, -var, -sts)
@@ -319,87 +319,16 @@ gmat_to_aftable = function(gmat, popvec) {
 }
 
 
-f4_from_geno = function(pref, popcombs, pops, blgsize = 0.05, block_lengths = NULL,
-                        f4mode = TRUE, summarize = TRUE, boot = FALSE, verbose = TRUE) {
+qpdstat_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
+                        f4mode = TRUE, boot = FALSE, allsnps = FALSE, verbose = TRUE) {
 
   pref = normalizePath(pref, mustWork = FALSE)
+  f4blockdat = f4blockdat_from_geno(pref, popcombs, blgsize = blgsize, block_lengths = block_lengths,
+                                    f4mode = f4mode, allsnps = allsnps, verbose = verbose)
 
-  if(verbose) alert_info('Reading metadata...\n')
-  if(is_packedancestrymap_prefix(pref)) {
-    indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = cols(), progress = FALSE) %>%
-      mutate(ind = X1, pop = X3)
-    nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-    snpend = '.snp'
-    cpp_read_geno = cpp_read_packedancestrymap
-    fl = paste0(pref, '.geno')
-  } else if(is_plink_prefix(pref)) {
-    indfile = read_table2(paste0(pref, '.fam'), col_names = FALSE, col_types = cols(), progress = FALSE) %>%
-      mutate(ind = X2, pop = X1)
-    nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-    snpend = '.bim'
-    cpp_read_geno = cpp_read_plink
-    fl = paste0(pref, '.bed')
-  } else stop('Files not found!')
-
-  snpfile = read_table2(paste0(pref, snpend), col_names = nam, col_types = cols(), progress = FALSE)
-  nsnpall = nrow(snpfile)
-  nindall = nrow(indfile)
-  snpfile %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR))) %>% filter(CHR <= 22)
-  nsnpaut = nrow(snpfile)
-
-  if(!all(pops %in% indfile$pop)) stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
-  if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut) stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  if(any(duplicated(indfile$ind))) stop('Duplicate individual IDs are not allowed!')
-
-  allinds = indfile$ind
-  allpops = indfile$pop
-  indfile %<>% filter(pop %in% pops)
-  indvec = (allinds %in% indfile$ind)+0
-  popvec = match(indfile$pop, pops)
-  p1 = match(popcombs$pop1, pops)
-  p2 = match(popcombs$pop2, pops)
-  p3 = match(popcombs$pop3, pops)
-  p4 = match(popcombs$pop4, pops)
-
-  if(verbose) alert_info('Computing block lengths...\n')
-  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, blgsize = blgsize)
-  numblocks = length(block_lengths)
-  start = lag(cumsum(block_lengths), default = 0)
-  end = cumsum(block_lengths)
-
-  out = tibble()
-  numer = matrix(NA, numblocks, nrow(popcombs))
-  cnt = rep(0, nrow(popcombs))
-  if(!f4mode) denom = numer
-  for(i in 1:numblocks) {
-    if(verbose) alert_info(paste0('Computing ', nrow(popcombs),' f4-statistics for block ', i, ' out of ', numblocks, '...\r'))
-    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
-    at = gmat_to_aftable(gmat, popvec)
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4)
-    cnt = cnt + c(num$cnt)
-    numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
-    if(!f4mode) denom[i,] = unname(rowMeans(cpp_aftable_to_dstatden(at, p1, p2, p3, p4), na.rm = TRUE))
-  }
-  if(verbose) cat('\n')
-  popcombs %<>% mutate(n = cnt)
-  out = popcombs %>%
-    expand_grid(block = 1:numblocks) %>%
-    mutate(est = c(numer))
-  if(!f4mode) out %<>% mutate(est = est/c(denom))
-
-  if(!summarize) return(out)
   if(verbose) alert_info('Summarize across blocks...\n')
-  samplefun = ifelse(boot, function(...) est_to_boo_dat(...), est_to_loo_dat)
-  datstatfun = ifelse(boot, boot_dat_stats, jack_dat_stats)
-  out %>%
-    mutate(length = block_lengths[block]) %>%
-    group_by(pop1, pop2, pop3, pop4) %>%
-    samplefun() %>%
-    datstatfun() %>%
-    ungroup %>%
-    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    transmute(pop1, pop2, pop3, pop4, est, se, z, p) %>%
-    left_join(popcombs, by = c('pop1', 'pop2', 'pop3', 'pop4'))
+  out = f4blockdat %>% f4blockdat_to_f4out(boot)
+  popcombs %>% left_join(out, by = c('pop1', 'pop2', 'pop3', 'pop4'))
 }
 
 
@@ -410,11 +339,11 @@ f4_from_geno = function(pref, popcombs, pops, blgsize = 0.05, block_lengths = NU
 #' @param f2_data A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
 #' Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.
 #' @param pop1 Either the name(s) of the first population(s), or a four column matrix with the names of all four populations.
-#' @param pop2 Population 2
-#' @param pop3 Population 3
-#' @param pop4 Population 4
+#' @param pop2 Population 2 (same length as `pop1`)
+#' @param pop3 Population 3 (same length as `pop1`)
+#' @param pop4 Population 4 (same length as `pop1`)
 #' @return A matrix of per-block f4-statistics (`popcomb x block`)
-f4_from_f2_pops = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
+f4_from_f2 = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
   if(is.matrix(pop1)) {
     stopifnot(is.null(c(pop2, pop3, pop4)))
     pop2 = pop1[,2]
@@ -424,10 +353,10 @@ f4_from_f2_pops = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL)
   } else stopifnot(length(unique(c(length(pop1), length(pop2), length(pop3), length(pop4)))) == 1)
   f2_blocks = get_f2(f2_data, union(pop1, pop2), union(pop3, pop4), afprod = TRUE)
   map(seq_along(pop1), ~{
-    f4_from_f2(f2_blocks[pop1[.], pop4[.],],
-               f2_blocks[pop2[.], pop3[.],],
-               f2_blocks[pop1[.], pop3[.],],
-               f2_blocks[pop2[.], pop4[.],]) %>% unname
+    f2_f4(f2_blocks[pop1[.], pop4[.],],
+          f2_blocks[pop2[.], pop3[.],],
+          f2_blocks[pop1[.], pop3[.],],
+          f2_blocks[pop2[.], pop4[.],]) %>% unname
   }) %>% do.call(rbind, .)
 }
 
@@ -453,8 +382,8 @@ qpf4ratio = function(f2_blocks, pops, boot = FALSE, verbose = FALSE) {
   statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
 
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
-  f4_num = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4])
-  f4_den = f4_from_f2_pops(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4])
+  f4_num = f4_from_f2(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4])
+  f4_den = f4_from_f2(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4])
 
   thresh = 1e-6
   setmiss = abs(f4_den) < thresh

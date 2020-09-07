@@ -5,6 +5,7 @@
 #' and to \eqn{f4(A, B; A, C)}. Requires a working installation of qp3Pop, which will be called
 #' using \code{\link{system}}
 #' @export
+#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param source1 One of the following four:
 #' \enumerate{
 #' \item \code{NULL}: Populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
@@ -17,7 +18,6 @@
 #' @param source2 A vector of population labels
 #' @param target A vector of population labels
 #' @param bin Path to the qp3Pop binary file
-#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param outdir Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 #' \code{popfilename} may be overwritten
 #' @param parfile qp3Pop parameter file. If this is specified, \code{source1}, \code{source2},
@@ -32,17 +32,14 @@
 #' @return If \code{printonly}, the \code{qp3Pop} command, otherwise a data frame with parsed \code{qp3Pop} output
 #' @examples
 #' \dontrun{
-#' target = 'Denisova.DG'
 #' source1 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' source2 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
-#' qp3pop_wrapper(source1, source2, target,
-#'   bin = 'path/to/qp3Pop', pref = 'path/to/packedancestrymap_prefix',
-#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
-#'
-#' qp3pop_wrapper(bin = 'path/to/qp3Pop', parfile = 'path/to/parfile')
+#' target = 'Denisova.DG'
+#' qp3pop_wrapper('genotype_prefix', source1, source2, target,
+#'   bin = 'path/to/qp3Pop')
 #' }
-qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o2bin/qp3Pop',
-                          pref = NULL, outdir = '.', parfile = NULL,
+qp3pop_wrapper = function(pref, source1, source2 = NULL, target = NULL, bin = '~np29/o2bin/qp3Pop',
+                          outdir = '.', parfile = NULL,
                           inbreed = 'NO', outgroupmode = 'YES', f4mode = 'YES', useallsnps = 'NO',
                           printonly = FALSE, env = '', verbose = TRUE) {
 
@@ -91,6 +88,7 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o
 #'
 #' This requires a working installation of qpDstat, which will be called using \code{\link{system}}
 #' @export
+#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param pop1 One of the following four:
 #' \enumerate{
 #' \item \code{NULL}: populations will be read from \code{poplistname} or \code{popfilename} specified in \code{parfile}
@@ -104,7 +102,6 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o
 #' @param pop3 A vector of population labels
 #' @param pop4 A vector of population labels
 #' @param bin Path to the qpDstat binary file
-#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param outdir Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 #' \code{popfilename} may be overwritten
 #' @param parfile qpDstat parameter file. If this is specified, \code{pop}, \code{pop2}, \code{pop3},
@@ -121,14 +118,11 @@ qp3pop_wrapper = function(source1, source2 = NULL, target = NULL, bin = '~np29/o
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' pop4 = 'Switzerland_Bichon.SG'
-#' qpdstat_wrapper(pop1, pop2, pop3, pop4,
-#'   bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix',
-#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
-#'
-#' qpdstat_wrapper(bin = 'path/to/qpDstat', parfile = 'path/to/parfile')
+#' qpdstat_wrapper('genotype_prefix', pop1, pop2, pop3, pop4,
+#'   bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix')
 #' }
-qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
-                           bin = '~np29/o2bin/qpDstat', pref = NULL, outdir='.', parfile = NULL,
+qpdstat_wrapper = function(pref, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+                           bin = '~np29/o2bin/qpDstat', outdir='.', parfile = NULL,
                            f4mode = 'YES', inbreed = 'NO',
                            printonly=FALSE, env='', verbose = TRUE) {
 
@@ -183,9 +177,9 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 #'
 #' This requires a working installation of qpF4ratio, which will be called using \code{\link{system}}
 #' @export
+#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param pops A vector of five populations, or a 5 x n matrix with population names. For each line `alpha` will be computed as `f4(1,2; 3,4)/f4(1,2; 5,4)`
 #' @param bin Path to the qpF4ratio binary file
-#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param outdir Output directory. files \code{out}, \code{parfile}, \code{poplistname},
 #' \code{popfilename} may be overwritten
 #' @param parfile qpF4ratio parameter file. If this is specified, `pops` will be ignored.
@@ -198,9 +192,9 @@ qpdstat_wrapper = function(pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
 #' @examples
 #' \dontrun{
 #' pops = c('Denisova.DG', 'Altai_Neanderthal.DG', 'Vindija.DG', 'Chimp.REF', 'Mbuti.DG')
-#' qpf4ratio_wrapper(pops, bin = 'path/to/qpDstat', pref = 'path/to/packedancestrymap_prefix')
+#' qpf4ratio_wrapper('genotype_prefix', pops, bin = 'path/to/qpDstat')
 #' }
-qpf4ratio_wrapper = function(pops, bin = '~np29/o2bin/qpF4ratio', pref = NULL, outdir='.', parfile = NULL,
+qpf4ratio_wrapper = function(pref, pops, bin = '~np29/o2bin/qpF4ratio', outdir='.', parfile = NULL,
                              blgsize = 0.05, fancyf4 = 'YES', printonly = FALSE, env='', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) || !is.null(pref))
@@ -240,15 +234,16 @@ qpf4ratio_wrapper = function(pops, bin = '~np29/o2bin/qpF4ratio', pref = NULL, o
 #'
 #' This requires a working installation of qpAdm, which will be called using \code{\link{system}}
 #'
+#' @export
+#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param target Target population
 #' @param left Left populations (or leftlist file)
 #' @param right Right populations (or rightlist file)
 #' @param bin Path to the qpAdm binary file
-#' @param pref Path to and prefix of the packedancestrymap genotype files
 #' @param outdir Output directory. files \code{out}, \code{parfile}, \code{leftlist},
 #' \code{rightlist} will be overwritten
 #' @param parfile qpAdm parameter file
-#' @param useallsnps useallsnps
+#' @param allsnps allsnps
 #' @param blgsize blgsize
 #' @param fancyf4 fancyf4
 #' @param f4mode f4mode
@@ -257,18 +252,16 @@ qpf4ratio_wrapper = function(pops, bin = '~np29/o2bin/qpF4ratio', pref = NULL, o
 #' @param env Export environmental variables. See examples.
 #' @param verbose Print progress updates
 #' @return If not printonly, a data frame with parsed qpAdm output
-#' @export
 #' @examples
 #' \dontrun{
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' target = 'Denisova.DG'
-#' qpadm_wrapper(left, right, target,
-#'   bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
-#'   env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
+#' qpadm_wrapper('genotype_prefix', left, right, target,
+#'   bin = 'path/to/qpAdm')
 #' }
-qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', pref = NULL,
-                         outdir = './', parfile = NULL, useallsnps = 'NO', blgsize = 0.05, fancyf4 = 'YES',
+qpadm_wrapper = function(pref, left, right, target = NULL, bin = '~np29/o2bin/qpAdm',
+                         outdir = './', parfile = NULL, allsnps = 'NO', blgsize = 0.05, fancyf4 = 'NO',
                          f4mode = 'YES', inbreed = 'NO', printonly = FALSE, env = '', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) & is.null(c(target, left, right)) |
@@ -296,7 +289,7 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
                      'indivname: ', pref, '.ind\n',
                      'popleft: ', leftfile, '\n',
                      'popright: ', rightfile, '\n',
-                     'useallsnps: ', useallsnps, '\n',
+                     'allsnps: ', allsnps, '\n',
                      'blgsize: ', blgsize, '\n',
                      'fancyf4: ', fancyf4, '\n',
                      'f4mode: ', f4mode, '\n',
@@ -319,9 +312,9 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
 
 #' Wrapper function around the original qpGraph program
 #' @export
+#' @param pref Prefix of the packedancestrymap format genotype files.
 #' @param graph An admixture graph or qpGraph graph file
 #' @param bin Location of the qpGraph binary
-#' @param pref Prefix of the packedancestrymap format genotype files.
 #' @param parfile qpGraph parameter file
 #' @param outdir Output directory
 #' @param printonly Should output be executed or the command just be printed?
@@ -352,14 +345,10 @@ qpadm_wrapper = function(left, right, target = NULL, bin = '~np29/o2bin/qpAdm', 
 #' }
 #' @examples
 #' \dontrun{
-#' qpgraph_wrapper(example_graph,
-#'                  bin = 'path/to/qpGraph',
-#'                  pref = 'path/to/packedancestrymap_prefix')
-#' qpgraph_wrapper('path/to/graphfile',
-#'                 bin = 'path/to/qpGraph',
-#'                 parfile = 'path/to/parfile')
+#' qpgraph_wrapper('genotype_prefix', example_graph,
+#'                  bin = 'path/to/qpGraph')
 #' }
-qpgraph_wrapper = function(graph, bin = '~np29/o2bin/qpGraph', pref = NULL, parfile = NULL, outdir = '.',
+qpgraph_wrapper = function(pref, graph, bin = '~np29/o2bin/qpGraph', parfile = NULL, outdir = '.',
                            printonly = FALSE, badsnps = NULL, lambdascale = NULL, inbreed = 'NO',
                            diag = 0.0001, blgsize = 0.05, outpop = 'NULL', loadf3 = NULL,
                            lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 0,

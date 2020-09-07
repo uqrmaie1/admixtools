@@ -5,16 +5,16 @@
 \title{Wrapper function around the original qpAdm program}
 \usage{
 qpadm_wrapper(
+  pref,
   left,
   right,
   target = NULL,
   bin = "~np29/o2bin/qpAdm",
-  pref = NULL,
   outdir = "./",
   parfile = NULL,
-  useallsnps = "NO",
+  allsnps = "NO",
   blgsize = 0.05,
-  fancyf4 = "YES",
+  fancyf4 = "NO",
   f4mode = "YES",
   inbreed = "NO",
   printonly = FALSE,
@@ -23,6 +23,8 @@ qpadm_wrapper(
 )
 }
 \arguments{
+\item{pref}{Path to and prefix of the packedancestrymap genotype files}
+
 \item{left}{Left populations (or leftlist file)}
 
 \item{right}{Right populations (or rightlist file)}
@@ -31,14 +33,12 @@ qpadm_wrapper(
 
 \item{bin}{Path to the qpAdm binary file}
 
-\item{pref}{Path to and prefix of the packedancestrymap genotype files}
-
 \item{outdir}{Output directory. files \code{out}, \code{parfile}, \code{leftlist},
 \code{rightlist} will be overwritten}
 
 \item{parfile}{qpAdm parameter file}
 
-\item{useallsnps}{useallsnps}
+\item{allsnps}{allsnps}
 
 \item{blgsize}{blgsize}
 
@@ -65,8 +65,7 @@ This requires a working installation of qpAdm, which will be called using \code{
 left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 target = 'Denisova.DG'
-qpadm_wrapper(left, right, target,
-  bin = 'path/to/qpAdm', pref = 'path/to/packedancestrymap_prefix',
-  env = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/')
+qpadm_wrapper('genotype_prefix', left, right, target,
+  bin = 'path/to/qpAdm')
 }
 }

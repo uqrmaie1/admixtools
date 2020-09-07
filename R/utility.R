@@ -23,6 +23,7 @@ qpsolve = function(...) quadprog::solve.QP(...)$solution
 #qpsolve = function(cc, q1, a3, a4) -quadprogpp::QP.Solve(cc, q1, -a3, -a4)
 #qpsolve = function(cc, q1, a3, a4) -rcppeigen_quadratic_solve(cc, q1, matrix(0, nrow(cc), 0), vector(), -a3, -a4)[,1]
 
+
 # qpsolve = function(...) tryCatch({quadprog::solve.QP(...)$solution},
 #                           error = function(e) {
 #                             if(str_detect(e$message, 'constraints are inconsistent')) {

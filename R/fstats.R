@@ -307,9 +307,7 @@ get_f2 = function(f2_data, pops, pops2 = pops, afprod = FALSE) {
   blockpops = union(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]])
   allpops = union(pops, pops2)
   if(!all(allpops %in% blockpops)) {
-    stop(paste0('requested: ', paste(allpops, collapse=', '),
-                '\navailable pops: ', paste(blockpops, collapse = ', '),
-                '\ndiff: ', paste(setdiff(allpops, blockpops), collapse = ', ')))
+    stop(paste0('Requested, but not in f2_data: ', paste(setdiff(allpops, blockpops), collapse = ', ')))
   }
   f2_blocks = f2_blocks[pops, pops2, , drop = FALSE]
   f2_blocks

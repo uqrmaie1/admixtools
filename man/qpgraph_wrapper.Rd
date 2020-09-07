@@ -5,9 +5,9 @@
 \title{Wrapper function around the original qpGraph program}
 \usage{
 qpgraph_wrapper(
+  pref,
   graph,
   bin = "~np29/o2bin/qpGraph",
-  pref = NULL,
   parfile = NULL,
   outdir = ".",
   printonly = FALSE,
@@ -33,11 +33,11 @@ qpgraph_wrapper(
 )
 }
 \arguments{
+\item{pref}{Prefix of the packedancestrymap format genotype files.}
+
 \item{graph}{An admixture graph or qpGraph graph file}
 
 \item{bin}{Location of the qpGraph binary}
-
-\item{pref}{Prefix of the packedancestrymap format genotype files.}
 
 \item{parfile}{qpGraph parameter file}
 
@@ -96,11 +96,7 @@ Wrapper function around the original qpGraph program
 }
 \examples{
 \dontrun{
-qpgraph_wrapper(example_graph,
-                 bin = 'path/to/qpGraph',
-                 pref = 'path/to/packedancestrymap_prefix')
-qpgraph_wrapper('path/to/graphfile',
-                bin = 'path/to/qpGraph',
-                parfile = 'path/to/parfile')
+qpgraph_wrapper('genotype_prefix', example_graph,
+                 bin = 'path/to/qpGraph')
 }
 }
