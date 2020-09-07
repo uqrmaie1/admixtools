@@ -1834,15 +1834,18 @@ is_geno_prefix = function(input) {
   is_packedancestrymap_prefix(input) || is_plink_prefix(input)
 }
 
-#' Convert packedancestrymap to PLINK
+#' Convert (packed)ancestrymap to PLINK
 #'
-#' This function converts *packedancestrymap* format files to *PLINK files*, using \code{\link[genio]{write_plink}}.
+#' This function converts *(packed)ancestrymap/EIGENSTRAT* format files to *PLINK* files, using \code{\link[genio]{write_plink}}.
 #' When `inds` or `pops` is provided, only a subset of samples will be extracted.
 #' @export
-#' @param inpref Prefix of the packedancestrymap input files
-#' @param outpref Prefix of the PLINK output files
+#' @param inpref Prefix of the (packed)ancestrymap input files
+#' @param outpref Prefix of the *PLINK* output files
 #' @param inds Individuals which should be extracted
 #' @param pops Populations which should be extracted. Can not be provided together with 'inds'
+#' @aliases ancestrymap_to_plink
+#' @section Alias:
+#' `ancestrymap_to_plink`
 packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL) {
   # extracts samples from geno file and writes new, smaller PLINK file using genio
 
@@ -1851,10 +1854,11 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL)
     inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
   }
-  dat = read_packedancestrymap(inpref, inds)
-  genodat = dat[[1]]
-  inddat = dat[[2]]
-  snpdat = dat[[3]]
+  read_ancestrymap = ifelse(is_binfile(inpref), read_packedancestrymap, read_ancestrymap)
+  dat = read_ancestrymap(inpref, inds)
+  genodat = dat$geno
+  inddat = dat$ind
+  snpdat = dat$snp
 
   nam = c('id', 'chr', 'posg', 'pos', 'ref', 'alt')
   bim = snpdat %>% set_colnames(nam)
@@ -1862,6 +1866,9 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL)
     transmute(fam = X3, id = X1, pat = 0, mat = 0, sex = X2, pheno = -9)
   genio::write_plink(normalizePath(outpref, mustWork = F), genodat[,inddat$X1], bim = bim, fam = fam)
 }
+#' @export
+ancestrymap_to_plink = packedancestrymap_to_plink
+
 
 #' f4 from genotype data
 #'

@@ -3,6 +3,7 @@
 export(afs_to_counts)
 export(afs_to_f2)
 export(ancestrymap_to_aftable)
+export(ancestrymap_to_plink)
 export(boo_list)
 export(compare_fits2)
 export(compare_fits3)
