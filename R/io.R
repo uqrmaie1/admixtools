@@ -1842,11 +1842,12 @@ is_geno_prefix = function(input) {
 #' @param inpref Prefix of the (packed)ancestrymap input files
 #' @param outpref Prefix of the *PLINK* output files
 #' @param inds Individuals which should be extracted
-#' @param pops Populations which should be extracted. Can not be provided together with 'inds'
+#' @param pops Populations which should be extracted. Can not be provided together with `inds`
+#' @param verbose Print progress updates
 #' @aliases ancestrymap_to_plink
 #' @section Alias:
 #' `ancestrymap_to_plink`
-packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL) {
+packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL, verbose = TRUE) {
   # extracts samples from geno file and writes new, smaller PLINK file using genio
 
   stopifnot(is.null(inds) || is.null(pops))
@@ -1855,19 +1856,45 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL)
       filter(X3 %in% pops) %$% X1
   }
   read_ancestrymap = ifelse(is_binfile(inpref), read_packedancestrymap, read_ancestrymap)
-  dat = read_ancestrymap(inpref, inds)
-  genodat = dat$geno
-  inddat = dat$ind
-  snpdat = dat$snp
+  dat = read_ancestrymap(inpref, inds, verbose = verbose)
 
-  nam = c('id', 'chr', 'posg', 'pos', 'ref', 'alt')
-  bim = snpdat %>% set_colnames(nam)
-  fam = inddat %>%
-    transmute(fam = X3, id = X1, pat = 0, mat = 0, sex = X2, pheno = -9)
-  genio::write_plink(normalizePath(outpref, mustWork = F), genodat[,inddat$X1], bim = bim, fam = fam)
+  genio::write_plink(normalizePath(outpref, mustWork = F),
+                     dat$geno[,dat$ind$X1],
+                     bim = dat$snp %>% set_colnames(c('id', 'chr', 'posg', 'pos', 'ref', 'alt')),
+                     fam = dat$ind %>% transmute(fam = X3, id = X1, pat = 0, mat = 0, sex = X2, pheno = -9),
+                     verbose = verbose)
 }
 #' @export
 ancestrymap_to_plink = packedancestrymap_to_plink
+
+#' Extract samples from PLINK files
+#'
+#' This function reads *PLINK* files, extracts a subset of samples, and writes new *PLINK* files using \code{\link[genio]{write_plink}}. It's probably slower than running the equivalent command in *PLINK* directly, but it can be useful to do this from within R.
+#' When `inds` or `pops` is provided, only a subset of samples will be extracted.
+#' @export
+#' @param inpref Prefix of the *PLINK* input files
+#' @param outpref Prefix of the *PLINK* output files
+#' @param inds Individuals which should be extracted
+#' @param pops Populations which should be extracted. Can not be provided together with `inds`
+#' @param overwrite Set this to `TRUE` if `inpref == outpref` and you really want to overwrite the input files.
+#' @param verbose Print progress updates
+extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite = FALSE, verbose = TRUE) {
+
+  stopifnot(is.null(inds) || is.null(pops))
+  if(inpref == outpref && !overwrite)
+    stop("If you really want to overwrite the input files, set 'overwrite = TRUE'")
+  if(!is.null(pops)) {
+    inds = read_table2(paste0(inpref, '.fam'), col_names = F, col_types = 'cccccc') %>%
+      filter(X1 %in% pops) %$% X2
+  }
+  dat = read_plink(inpref, inds, verbose = verbose)
+
+  genio::write_plink(normalizePath(outpref, mustWork = F),
+                     dat$bed[,dat$fam$X2],
+                     bim = dat$bim %>% set_colnames(c('id', 'chr', 'posg', 'pos', 'ref', 'alt')),
+                     fam = dat$fam %>% transmute(fam = X1, id = X2, pat = 0, mat = 0, sex = X2, pheno = -9),
+                     verbose = verbose)
+}
 
 
 #' f4 from genotype data

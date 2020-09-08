@@ -1813,6 +1813,7 @@ server = function(input, output, session) {
     f2blocks = get_f2blocks()
     p1 = input$f4pops1[1]
     p2 = input$f4pops2[1:2]
+    # f4pops2 needs at least two populations. how to check for this? otherwise, "Error: Only strings can be converted to symbols"
     f4dat = get_f4() %>% filter(pop1 == p1, pop2 %in% p2)
     req(f4dat)
     #})

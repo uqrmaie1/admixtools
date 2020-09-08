@@ -8,7 +8,7 @@ run_shiny_admixtools = function() {
     stop('Could not find example directory. Try re-installing `admixtools`.', call. = FALSE)
   }
   shiny::enableBookmarking('server')
-  shiny::runApp(appDir, display.mode = 'normal')
+  shiny::runApp(appDir, display.mode = 'normal', launch.browser = TRUE)
 }
 
 

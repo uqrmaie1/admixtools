@@ -64,7 +64,7 @@ get_weights_covariance = function(f4_lo, qinv, block_lengths, fudge = 0.0001, bo
 qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
                          constrained = FALSE, qpsolve = NULL) {
   if(rnk == 0) return(list(weights = 1))
-  nc = nrow(xmat)
+  nr = nrow(xmat)
   f4svd = svd(xmat)
   B = t(f4svd$v[, seq_len(rnk), drop=FALSE])
   A = xmat %*% t(B)
@@ -76,8 +76,11 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
   y = c(rep(0, rnk), 1)
   rhs = crossprod(x)
   lhs = crossprod(x, y)
-  if(constrained) w = qpsolve(rhs, lhs, diag(nc), rep(0, nc))
-  else w = as.matrix(solve(rhs, lhs))[,1]
+  if(constrained) {
+    Amat = cbind(1, -1, diag(nr), -diag(nr))
+    bvec = c(1, -1, rep(0, nr), -rep(1, nr))
+    w = qpsolve(rhs, lhs, Amat, bvec)
+  } else w = as.matrix(solve(rhs, lhs))[,1]
   weights = w/sum(w)
   namedList(weights, A, B)
 }
@@ -448,8 +451,11 @@ lazadm = function(f2_data, left, right, target,
     rhs[,,i] = crossprod(xarr[,,i])
   }
 
-  if(constrained) fun = function(rhs, lhs) qpsolve(rhs, lhs, diag(nleft), rep(0, nleft))
-  else fun = function(rhs, lhs) solve(rhs, lhs)[,1]
+  if(constrained) {
+    Amat = cbind(1, -1, diag(nleft), -diag(nleft))
+    bvec = c(1, -1, rep(0, nleft), -rep(1, nleft))
+    fun = function(rhs, lhs) qpsolve(rhs, lhs, Amat, bvec)
+  } else fun = function(rhs, lhs) solve(rhs, lhs)[,1]
 
   wmat = sapply(1:numblocks, function(i) {
     w = fun(rhs[,,i], lhs[,i,drop = FALSE])

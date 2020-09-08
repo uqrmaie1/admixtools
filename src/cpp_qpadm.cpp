@@ -61,14 +61,16 @@ List cpp_qpadm_weights(const arma::mat& xmat, const arma::mat& qinv,
     A = cpp_opt_A(B, xvec, qinv, nr, fudge);
     B = cpp_opt_B(A, xvec, qinv, nc, fudge);
   }
-  //vec w = solve(join_rows(A, ones(A.n_rows)).t(), join_cols(zeros(rnk), ones(1)));
-  x = join_rows(A, ones(A.n_rows)).t();
-  y = join_cols(zeros(rnk), ones(1));
+  x = join_horiz(A, ones(A.n_rows)).t();
+  y = join_vert(zeros(rnk), ones(1));
   rhs = x.t() * x;
   lhs = x.t() * y;
   vec w;
-  if(constrained) w = as<vec>(qpsolve(rhs, lhs, mat(nr, nr, fill::eye), zeros(nr)));
-  else w = solve(rhs, lhs);
+  if(constrained) {
+    mat Amat = join_horiz(ones(nr), -ones(nr), mat(nr, nr, fill::eye), -mat(nr, nr, fill::eye));
+    vec bvec = join_vert(ones(1), -ones(1), zeros(nr), -ones(nr));
+    w = as<vec>(qpsolve(rhs, lhs, Amat, bvec));
+  } else w = solve(rhs, lhs);
   vec weights = w / sum(w);
 
   return Rcpp::List::create(_["weights"] = weights, _["A"] = A, _["B"] = B);
@@ -98,8 +100,11 @@ vec cpp_qpadm_weights2(const arma::mat& xmat, const arma::mat& qinv,
   rhs = x.t() * x;
   lhs = x.t() * y;
   vec w;
-  if(constrained) w = as<vec>(qpsolve(rhs, lhs, mat(nr, nr, fill::eye), zeros(nr)));
-  else w = solve(rhs, lhs);
+  if(constrained) {
+    mat Amat = join_horiz(ones(nr), -ones(nr), mat(nr, nr, fill::eye), -mat(nr, nr, fill::eye));
+    vec bvec = join_vert(ones(1), -ones(1), zeros(nr), -ones(nr));
+    w = as<vec>(qpsolve(rhs, lhs, Amat, bvec));
+  } else w = solve(rhs, lhs);
   return w / sum(w);
 }
 
