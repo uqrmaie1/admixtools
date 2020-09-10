@@ -107,18 +107,37 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
 #' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
 #' as well as the weight standard errors, will be computed using bootstrapping.
-#' @param getcov Compute weights covariance. If not needed, turning this off will speed things up.
+#' @param getcov Compute weights covariance. Setting `getcov = FALSE` will speed up the computation.
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
 #' @return A list with output describing the model fit:
-#' \enumerate{
+#' \itemize{
 #' \item `weights` A data frame with estimated admixture proportions where each row is a left population.
 #' \item `f4` A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
-#' and for nested models (comparing two models with rank difference of one).
-#' \item `popdrop` A data frame describing model fits with different populations.
+#' and for nested models (comparing two models with rank difference of one). A model with `l` left populations and `r` right populations has an f4-matrix of dimensions `(l-1)*(r-1)`. If no two left population form a clade with respect to all right populations, this model will have rank `(l-1)*(r-1)`.
+#'   \itemize{
+#'     \item `f4rank`: Number of ranks below full rank
+#'     \item `dof`: Degrees of freedom of the chi-squared null distribution: `(l-1-f4rank)*(r-1-f4rank)`
+#'     \item `chisq`: Chi-sqaured statistic, obtained as `E'QE`, where `E` is the difference between estimated and fitted f4-statistics, and `Q` is the f4-statistic covariance matrix.
+#'     \item `p`: p-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
+#'     \item `dofdiff`: Difference in degrees of freedom between this model and the model with one less rank
+#'     \item `chisqdiff`: Difference in chi-squared statistics
+#'     \item `p_nested`: p-value testing whether the difference between two models of rank difference 1 is significant
+#'   }
+#' \item `popdrop` A data frame describing model fits with different populations. Note that all models use the same set of SNPs as the first model.
+#'   \itemize{
+#'     \item `pat`: A binary code indicating which populations are present in this model. `1` represents dropped populations.
+#'     \item `wt`:
+#'     \item `dof`: Degrees of freedom
+#'     \item `chisq`: Chi-sqaured statistic, obtained as `E'QE`, where `E` is the difference between estimated and fitted f4-statistics, and `Q` is the f4-statistic covariance matrix.
+#'     \item `p`: p-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
+#'     \item `f4rank`:
+#'     \item `feasible`: A model is feasible if all weights fall between 0 and 1
+#'     \item `<population name>`: The weights for each population in this model
+#'   }
 #' }
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
 #' languages in Europe.} Nature (SI 10)
@@ -227,10 +246,10 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 #' left = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' qpwave(example_f2_blocks, left, right)
-qpwave = function(f2_data, left, right,
+qpwave = function(data, left, right,
                   fudge = 0.0001, boot = FALSE,
                   constrained = FALSE, cpp = TRUE, verbose = TRUE)
-  qpadm(f2_data = f2_data, left = left, right = right, target = NULL,
+  qpadm(data = data, left = left, right = right, target = NULL,
         fudge = fudge, boot = boot,
         constrained = constrained, cpp = cpp, verbose = verbose)
 
@@ -752,7 +771,7 @@ qpadmmodels_to_popcombs = function(models) {
 
 #' Run multiple qpadm models
 #'
-#' This function runs multiple qpadm models, re-using f4-statistics where possible.
+#' This function runs multiple qpadm models, re-using f4-statistics where possible. Supports parallel evaluation of models, which can be turned on with `future::plan('multisession')` or similar, and turned off with `future::plan('sequential')`.
 #' @export
 #' @param data The input data in the form of:
 #' \itemize{
@@ -761,7 +780,7 @@ qpadmmodels_to_popcombs = function(models) {
 #' \item The prefix of a genotype file
 #' }
 #' @param models A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing `left`, `right`, (and `target`) populations.
-#' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results.
+#' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results. This option only has an effect if `data` is the prefix of a genotype file. If `data` are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.
 #' @param verbose Print progress updates
 #' @param ... Further arguments passed to \code{\link{qpadm}}
 #' @return A list where each element is the output of one qpadm model.
@@ -790,8 +809,9 @@ qpadm_multi = function(data, models, allsnps = FALSE, verbose = TRUE, ...) {
     f4blocks = f4blockdat %>% split(.$model) %>% furrr::future_map(quietly(f4blockdat_to_f4blocks)) %>% map('result')
   } else {
     if(verbose && !allsnps) alert_warning('allsnps = FALSE is not effective when using precomputed f2 statistics\n')
-    pops = models %>% unlist %>% unique
-    f2blocks = data %>% get_f2(pops, afprod = TRUE)
+    pops = models %>% select(any_of(c('target', 'left'))) %>% unlist %>% unique
+    pops2 = models %>% select(right) %>% unlist %>% unique
+    f2blocks = data %>% get_f2(pops, pops2, afprod = TRUE)
     f4blocks = models %>% rowwise %>% mutate(f4blocks = list(f2blocks_to_f4blocks(f2blocks, left, right))) %>% pull
   }
 

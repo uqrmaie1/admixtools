@@ -166,6 +166,9 @@ For even greater transparency, many of the core functions are implemented twice:
 
 For questions, feature requests, and bug reports, please contact Robert Maier under <rmaier@broadinstitute.org>.
 
+## Cite *ADMIXTOOLS 2*
+
+If you wish to cite *ADMIXTOOLS 2*, you can link to this website and mention that a manuscript describing *ADMIXTOOLS 2* is currently under preparation.
 
 ## See also
 

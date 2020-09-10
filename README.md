@@ -221,6 +221,12 @@ versions instead of the C++ versions by calling `qpadm(cpp = FALSE)`.
 For questions, feature requests, and bug reports, please contact Robert
 Maier under <rmaier@broadinstitute.org>.
 
+## Cite *ADMIXTOOLS 2*
+
+If you wish to cite *ADMIXTOOLS 2*, you can link to this website and
+mention that a manuscript describing *ADMIXTOOLS 2* is currently under
+preparation.
+
 ## See also
 
   - [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools) The original

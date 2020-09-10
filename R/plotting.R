@@ -105,10 +105,45 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' plot_graph(example_graph)
 plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5) {
 
+  pdat = graph_to_plotdat(graph, fix = NULL, fix_down = TRUE)
+
+  if(color) {
+    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
+                      arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+    gl = geom_label(data=pdat$nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
+  } else {
+    #gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
+    #                  arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(label)'),
+                      arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+    gl = geom_label(data=pdat$nodes, aes_string(label = 'name'), col = 'black', size = textsize)
+  }
+
+  plt = pdat$eg %>%
+    ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
+    gs +
+    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize) +
+    gl +
+    theme(panel.background = element_blank(),
+          axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          legend.position = 'none') +
+    xlab('') + ylab('') +
+    scale_linetype_manual(values = c(admix=3, normal=1)) +
+    ggtitle(title) +
+    scale_x_continuous(expand = c(0.15, 0.15))
+  plt
+}
+
+
+graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
+
   if(class(graph)[1] == 'igraph') {
     graph = graph
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
   } else {
+    if(is.null(colnames(graph))) colnames(graph) = paste0('V', 1:ncol(graph))
     edges = graph %>% as_tibble
     names(edges)[1:2] = c('V1', 'V2')
     graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
@@ -136,34 +171,9 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
   nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
     transmute(name = to, x, y, xend, yend)
 
-  if(color) {
-    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
-                      arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gl = geom_label(data=nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
-  } else {
-    #gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
-    #                  arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(label)'),
-                      arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gl = geom_label(data=nodes, aes_string(label = 'name'), col = 'black', size = textsize)
-  }
-
-  plt = eg %>%
-    ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
-    gs +
-    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize) +
-    gl +
-    theme(panel.background = element_blank(),
-          axis.line = element_blank(),
-          axis.text = element_blank(),
-          axis.ticks = element_blank(),
-          legend.position = 'none') +
-    xlab('') + ylab('') +
-    scale_linetype_manual(values = c(admix=3, normal=1)) +
-    ggtitle(title) +
-    scale_x_continuous(expand = c(0.15, 0.15))
-  plt
+  namedList(eg, nodes)
 }
+
 
 fix_layout = function(coord, graph) {
   # rearranges nodes in tree layout, so that there are fewer long branches

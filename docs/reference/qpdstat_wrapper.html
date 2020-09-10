@@ -176,12 +176,12 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpdstat_wrapper</span>(
-  <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='no'>pref</span>,
+  <span class='no'>pop1</span>,
   <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop4</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpDstat"</span>,
-  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
   <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='st'>"YES"</span>,
@@ -194,6 +194,10 @@
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>pref</th>
+      <td><p>Path to and prefix of the packedancestrymap genotype files</p></td>
+    </tr>
     <tr>
       <th>pop1</th>
       <td><p>One of the following four:</p><ol>
@@ -220,10 +224,6 @@ the populations or population combinations to be tested. <code>pop2</code>, <cod
     <tr>
       <th>bin</th>
       <td><p>Path to the qpDstat binary file</p></td>
-    </tr>
-    <tr>
-      <th>pref</th>
-      <td><p>Path to and prefix of the packedancestrymap genotype files</p></td>
     </tr>
     <tr>
       <th>outdir</th>
@@ -268,11 +268,8 @@ and <code>pop4</code> will be ignored.</p></td>
 <span class='no'>pop2</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>pop3</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>)
 <span class='no'>pop4</span> <span class='kw'>=</span> <span class='st'>'Switzerland_Bichon.SG'</span>
-<span class='fu'>qpdstat_wrapper</span>(<span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>,
-  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpDstat'</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>,
-  <span class='kw'>env</span> <span class='kw'>=</span> <span class='st'>'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/blas/'</span>)
-
-<span class='fu'>qpdstat_wrapper</span>(<span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpDstat'</span>, <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='st'>'path/to/parfile'</span>)
+<span class='fu'>qpdstat_wrapper</span>(<span class='st'>'genotype_prefix'</span>, <span class='no'>pop1</span>, <span class='no'>pop2</span>, <span class='no'>pop3</span>, <span class='no'>pop4</span>,
+  <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpDstat'</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

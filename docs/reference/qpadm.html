@@ -180,24 +180,30 @@ admixture events.</p>
     </div>
 
     <pre class="usage"><span class='fu'>qpadm</span>(
-  <span class='no'>f2_data</span>,
+  <span class='no'>data</span>,
   <span class='no'>left</span>,
   <span class='no'>right</span>,
   <span class='no'>target</span>,
+  <span class='kw'>f4blocks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>getcov</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='no'>...</span>
 )</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_data</th>
-      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code>. Alternatively, a directory with f2 statistics.</p></td>
+      <th>data</th>
+      <td><p>The input data in the form of:</p><ul>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code></p></li>
+<li><p>A directory with f2 statistics</p></li>
+<li><p>The prefix of a genotype file</p></li>
+</ul></td>
     </tr>
     <tr>
       <th>left</th>
@@ -238,6 +244,10 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     <tr>
       <th>verbose</th>
       <td><p>Print progress updates</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>If <code>data</code> is the prefix of genotype files, additional arguments will be passed to <code><a href='f4blockdat_from_geno.html'>f4blockdat_from_geno</a></code></p></td>
     </tr>
     </table>
     
@@ -296,7 +306,7 @@ languages in Europe.</em> Nature (SI 10)</p>
 #&gt; $rankdrop
 #&gt; </span><span style='color: #555555;'># A tibble: 2 x 7</span><span>
 #&gt;   f4rank   dof   chisq      p dofdiff chisqdiff p_nested
-#&gt; </span><span style='color: #555555;'>*</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt;    </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;int&gt;</span><span>     </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
 #&gt; </span><span style='color: #555555;'>1</span><span>      1     2    7.15 0.028</span><span style='text-decoration: underline;'>0</span><span>       4     </span><span style='text-decoration: underline;'>1</span><span>572.        0
 #&gt; </span><span style='color: #555555;'>2</span><span>      0     6 </span><span style='text-decoration: underline;'>1</span><span>580.   0           </span><span style='color: #BB0000;'>NA</span><span>       </span><span style='color: #BB0000;'>NA</span><span>        </span><span style='color: #BB0000;'>NA</span><span>
 #&gt; 
@@ -309,7 +319,9 @@ languages in Europe.</em> Nature (SI 10)</p>
 #&gt; </span><span style='color: #555555;'>3</span><span> 10        1     3 1.14</span><span style='color: #555555;'>e</span><span>4 0           0             </span><span style='color: #BB0000;'>NA</span><span>          1   TRUE    
 #&gt; </span><span style='color: #555555;'># … with 4 more variables: best </span><span style='color: #555555;font-style: italic;'>&lt;lgl&gt;</span><span style='color: #555555;'>, dofdiff </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span style='color: #555555;'>, chisqdiff </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span style='color: #555555;'>,
 #&gt; #   p_nested </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </div></span></pre>
+#&gt; </div><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='fu'>qpadm</span>(<span class='st'>"/my/geno/prefix"</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>)
+}</div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>

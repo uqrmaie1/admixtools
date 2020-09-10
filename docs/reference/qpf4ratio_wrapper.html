@@ -176,9 +176,9 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpf4ratio_wrapper</span>(
+  <span class='no'>pref</span>,
   <span class='no'>pops</span>,
   <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>"~np29/o2bin/qpF4ratio"</span>,
-  <span class='kw'>pref</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>outdir</span> <span class='kw'>=</span> <span class='st'>"."</span>,
   <span class='kw'>parfile</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>,
@@ -192,16 +192,16 @@
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
+      <th>pref</th>
+      <td><p>Path to and prefix of the packedancestrymap genotype files</p></td>
+    </tr>
+    <tr>
       <th>pops</th>
       <td><p>A vector of five populations, or a 5 x n matrix with population names. For each line <code>alpha</code> will be computed as <code>f4(1,2; 3,4)/f4(1,2; 5,4)</code></p></td>
     </tr>
     <tr>
       <th>bin</th>
       <td><p>Path to the qpF4ratio binary file</p></td>
-    </tr>
-    <tr>
-      <th>pref</th>
-      <td><p>Path to and prefix of the packedancestrymap genotype files</p></td>
     </tr>
     <tr>
       <th>outdir</th>
@@ -242,7 +242,7 @@
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
 <span class='no'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Denisova.DG'</span>, <span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>, <span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>)
-<span class='fu'>qpf4ratio_wrapper</span>(<span class='no'>pops</span>, <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpDstat'</span>, <span class='kw'>pref</span> <span class='kw'>=</span> <span class='st'>'path/to/packedancestrymap_prefix'</span>)
+<span class='fu'>qpf4ratio_wrapper</span>(<span class='st'>'genotype_prefix'</span>, <span class='no'>pops</span>, <span class='kw'>bin</span> <span class='kw'>=</span> <span class='st'>'path/to/qpDstat'</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

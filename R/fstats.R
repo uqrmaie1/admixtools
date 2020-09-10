@@ -53,9 +53,9 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
                       nc, ' populations is ', round(mem1/1e6), ' MB\n'))
     alert_info(paste0('Computing pairwise f2 for all SNPs and population pairs requires ',
                       reqmem, ' MB RAM without splitting\n'))
-    if(numsplits2 > 1) alert_info(paste0('splitting into ', numsplits2, ' blocks of ',
+    if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2, ' chunks of ',
                                          width, ' populations and up to ', maxmem, ' MB (',
-                                         choose(numsplits2+1,2), ' block pairs)\n'))
+                                         choose(numsplits2+1,2), ' chunk pairs)\n'))
     else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
   }
 
@@ -96,7 +96,6 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
       if(!file.exists(bl) || overwrite) saveRDS(block_lengths, file = bl)
       if(!file.exists(bla) || overwrite) saveRDS(block_lengths_a, file = bla)
     } else {
-      # todo: do the right thing when returning f2arrs
       f2list[[c1]][[c2]] = f2
       f2list[[c2]][[c1]] = aperm(f2list[[c1]][[c2]], c(2,1,3))
       aplist[[c1]][[c2]] = afprod
@@ -329,5 +328,41 @@ test_structutured_missingness = function(mat) {
   pmat
 }
 
+
+
+average_f4blockdat = function(f4blockdat) {
+  # takes a data frame generated from all popcombs by f4blockdat_from_geno and adds columns est_avg, n_avg
+  # est_avg = weighted.mean(est * sqrt(n)) for all est with two or more pops in common
+  # f4(A, B; C, D) = f4(A, X; C, Y) + f4(A, X; Y, D) + f4(X, B; C, Y) + f4(X, B, Y, D)
+  # * choose(npop-2, 2) / choose(npop-1, 2)
+  # assumes all combinations are present
+
+  t1 = table(f4blockdat$pop1)
+  t2 = table(f4blockdat$pop2)
+  t3 = table(f4blockdat$pop3)
+  t4 = table(f4blockdat$pop4)
+  nblocks = length(unique(f4blockdat$block))
+
+  if(nrow(f4blockdat) == 4*choose(length(t1),2)*choose(length(t3),2)*nblocks) {
+    denom = 2
+    if(t1 != t2 || t3 != t4) stop("Data doesn't appear to have all combinations!")
+  } else if(nrow(f4blockdat) == choose(length(t1), 4)*factorial(4)*nblocks) {
+    if(length(unique(c(t1, t2, t3, t4))) != 1) stop("Data doesn't appear to have all combinations!")
+    npop = f4blockdat$pop1 %>% unique %>% length
+    denom = choose(npop-1, 2) / choose(npop-2, 2)
+  } else {
+    stop("Data doesn't appear to have all combinations!")
+  }
+
+  f4blockdat %>%
+    group_by(block, pop1, pop3) %>% mutate(e13 = weighted.mean(est, sqrt(n), na.rm=T), n13 = mean(n)) %>%
+    group_by(block, pop2, pop4) %>% mutate(e24 = weighted.mean(est, sqrt(n), na.rm=T), n24 = mean(n)) %>%
+    group_by(block, pop2, pop3) %>% mutate(e23 = weighted.mean(est, sqrt(n), na.rm=T), n23 = mean(n)) %>%
+    group_by(block, pop1, pop4) %>% mutate(e14 = weighted.mean(est, sqrt(n), na.rm=T), n14 = mean(n)) %>%
+    ungroup %>%
+    mutate(est_avg = (e13 + e24 + e23 + e14) / denom,
+           n_avg =   (n13 + n24 + n23 + n14)/4) %>%
+    select(-e13:-n14)
+}
 
 

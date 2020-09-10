@@ -120,7 +120,7 @@
       <h1>Parallelization</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-08-26</h4>
+            <h4 class="date">2020-09-10</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/parallel.Rmd"><code>vignettes/parallel.Rmd</code></a></small>
       <div class="hidden name"><code>parallel.Rmd</code></div>
@@ -131,37 +131,37 @@
     
 <p>Some function in ADMIXTOOLS 2 can parallelize computations across multiple cores or compute nodes by making use of the packages <a href="https://github.com/HenrikBengtsson/future"><code>future</code></a> and <a href="https://github.com/DavisVaughan/furrr"><code>furrr</code></a>.</p>
 <p>To parallelize computations across cores, run</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'multiprocess'</span>)</span></code></pre></div>
 <p>To turn parallelization off, run</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'sequential'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="st">'sequential'</span>)</span></code></pre></div>
 <p>The functions which support parallel computations include <code><a href="../reference/find_graphs.html">find_graphs()</a></code> and <code>qpgraph_resample_*()</code>. If a function supports parallelization, it will be mentioned in the function documentation.</p>
 <div id="parallelization-on-a-compute-cluster" class="section level3">
 <h3 class="hasAnchor">
 <a href="#parallelization-on-a-compute-cluster" class="anchor"></a>Parallelization on a compute cluster</h3>
 <p>Sometimes it makes more sense to parallelize across compute nodes rather than across cores. This can be done either in the traditional way of writing an R script and submitting it many times in parallel as separate jobs, or interactively from within R again using the <code>furrr</code>/<code>future</code> framework. However, it is more complicated to set up than parallelization across cores.</p>
 <p>On a cluster using the <em>Slurm</em> job scheduler, the following command will set up parallelization across compute nodes.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers =</span> <span class="dv">50</span>,</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory =</span> <span class="dv">1024</span>,</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3">                                  <span class="dt">walltime =</span> <span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition =</span> <span class="st">'short'</span>)))</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers =</span> <span class="dv">50</span>,</span>
+<span id="cb3-2"><a href="#cb3-2"></a>                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory =</span> <span class="dv">1024</span>,</span>
+<span id="cb3-3"><a href="#cb3-3"></a>                                  <span class="dt">walltime =</span> <span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition =</span> <span class="st">'short'</span>)))</span></code></pre></div>
 <p>It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called <code>short</code>.</p>
 <p>This requires the R package <code>future.batchtools</code> and a batchtools template file in the working directory, such as <a href="https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl">this one</a>.</p>
 <p>With this setup, the <code>find_graphs</code> function will submit each of the 200 repeats as a separate job.</p>
 <p>As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.</p>
 <p>The R script could look like this.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(future.batchtools)</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers=</span><span class="dv">50</span>,</a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory=</span><span class="dv">1024</span>,</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">                                  <span class="dt">walltime=</span><span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition=</span><span class="st">'short'</span>)))</a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'popA'</span>, <span class="st">'popB'</span>, <span class="st">'popC'</span>, <span class="st">'popD'</span>)</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(<span class="st">'/my/f2/dir/'</span>, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">                          <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12"><span class="kw"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span>(opt_results, <span class="dt">file=</span><span class="st">'opt_results.rds'</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(admixtools)</span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span>(future.batchtools)</span>
+<span id="cb4-3"><a href="#cb4-3"></a></span>
+<span id="cb4-4"><a href="#cb4-4"></a>future<span class="op">::</span><span class="kw"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="kw">tweak</span>(batchtools_slurm, <span class="dt">workers=</span><span class="dv">50</span>,</span>
+<span id="cb4-5"><a href="#cb4-5"></a>                   <span class="dt">resources=</span><span class="kw"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="dt">ncpus =</span> <span class="dv">1</span>, <span class="dt">memory=</span><span class="dv">1024</span>,</span>
+<span id="cb4-6"><a href="#cb4-6"></a>                                  <span class="dt">walltime=</span><span class="dv">10</span><span class="op">*</span><span class="dv">60</span><span class="op">*</span><span class="dv">60</span>, <span class="dt">partition=</span><span class="st">'short'</span>)))</span>
+<span id="cb4-7"><a href="#cb4-7"></a></span>
+<span id="cb4-8"><a href="#cb4-8"></a>pops =<span class="st"> </span><span class="kw"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">'popA'</span>, <span class="st">'popB'</span>, <span class="st">'popC'</span>, <span class="st">'popD'</span>)</span>
+<span id="cb4-9"><a href="#cb4-9"></a>opt_results =<span class="st"> </span><span class="kw"><a href="../reference/find_graphs.html">find_graphs</a></span>(<span class="st">'/my/f2/dir/'</span>, pops, <span class="dt">outpop =</span> pops[<span class="dv">1</span>], <span class="dt">numrep =</span> <span class="dv">200</span>,</span>
+<span id="cb4-10"><a href="#cb4-10"></a>                          <span class="dt">numgen =</span> <span class="dv">20</span>, <span class="dt">numgraphs =</span> <span class="dv">100</span>, <span class="dt">numadmix =</span> <span class="dv">3</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span>)</span>
+<span id="cb4-11"><a href="#cb4-11"></a></span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="kw"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span>(opt_results, <span class="dt">file=</span><span class="st">'opt_results.rds'</span>)</span></code></pre></div>
 <p>It could be in a file called <code>opt_graphs.Rscript</code> and be run like this, or submitted as a job.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">Rscript opt_graphs.Rscript</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>Rscript opt_graphs.Rscript</span></code></pre></div>
 <p>It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It’s probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.</p>
 </div>
   </div>

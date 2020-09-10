@@ -268,16 +268,6 @@ compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
 
 ## Summarizing graphs
 
-<br>
-
-> *All models are wrong, but some are useful.*   --- George Box
-
-<br>
-
-> *All good models are alike; each bad model is bad in its own way.*   --- Leo Tolstoy
-
-<br>
-
 For any set of populations there may be many graphs which can explain the data about equally well, with no significant difference in likelihood scores. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs.
 
 ```{r, eval = FALSE}

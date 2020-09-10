@@ -144,6 +144,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, ou
                            minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
+  if(length(remaining) == 0) stop("No SNPs remain!")
   map(afdat, ~.[remaining,,drop = FALSE])
 }
 
@@ -1631,8 +1632,8 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
     alert_info(paste0('Computing pairwise stats for all SNPs and sample pairs requires ',
                          reqmem, ' MB RAM without splitting\n'))
     if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2,
-                                         ' blocks of ', width, ' samples and up to ', maxmem,
-                                         ' MB (', choose(numsplits2+1,2), ' block pairs)\n'))
+                                         ' chunks of ', width, ' samples and up to ', maxmem,
+                                         ' MB (', choose(numsplits2+1,2), ' chunk pairs)\n'))
     else alert_info(paste0('Computing without splitting (', reqmem, ' < maxmem)...\n'))
   }
 
@@ -1919,12 +1920,19 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
 
+  if(allsnps == 'qpfs') {
+    return(f4blockdat_from_geno_qpfs(pref, popcombs, auto_only = auto_only,
+                                     blgsize = blgsize,
+                                     block_lengths = block_lengths, f4mode = f4mode, verbose = verbose))
+  }
+
   if(is.null(popcombs)) popcombs = tibble(pop1 = left[1], pop2 = left[-1]) %>%
     expand_grid(tibble(pop3 = right[1], pop4 = right[-1]))
   if(is.matrix(popcombs)) {
     if(ncol(popcombs) != 4) stop("'popcombs' is a matrix but doens't have four columns!")
     popcombs %<>% as_tibble(.name_repair = ~paste0('pop', 1:4))
   }
+
   if('model' %in% names(popcombs)) {
     hasmodels = TRUE
   } else {
@@ -2014,4 +2022,25 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 }
 
 
+f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
+                                     blgsize = 0.05,
+                                     block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE) {
 
+  #if(is.null(popcombs)) {
+  left = unique(c(popcombs$pop1, popcombs$pop2))
+  right = unique(c(popcombs$pop3, popcombs$pop4))
+  pc = expand_grid(pop1 = left, pop2 = left) %>%
+      expand_grid(expand_grid(pop3 = right, pop4 = right)) %>%
+      filter(pop1 != pop2, pop3 != pop4)
+  # } else {
+  #   pops = popcombs %>% select(pop1:pop4) %>% unlist %>% unique
+  #   pc = expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+  #     filter(pop1 != pop2, pop1 != pop3, pop1 != pop4, pop2 != pop3, pop2 != pop4, pop3 != pop4)
+  # }
+  pc %<>% mutate(model = 1:n())
+
+  f4blockdat = f4blockdat_from_geno(pref, pc, auto_only = auto_only, blgsize = blgsize, block_lengths = block_lengths,
+                                    f4mode = f4mode, verbose = verbose) %>% average_f4blockdat %>%
+    mutate(est = est_avg, n = n_avg) %>% select(-model)
+  popcombs %>% left_join(f4blockdat, by = paste0('pop', 1:4))
+}

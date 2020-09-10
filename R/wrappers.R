@@ -1,3 +1,8 @@
+yesno = function(arg) {
+  if(isTRUE(arg) || arg == 'YES') return('YES')
+  else if(isFALSE(arg) || arg == 'NO') return('NO')
+  stop("Argument has to be 'YES', 'NO', TRUE, or FALSE!")
+}
 
 #' Wrapper function around the original qp3Pop program
 #'
@@ -25,7 +30,6 @@
 #' @param inbreed inbreed
 #' @param outgroupmode outgroupmode
 #' @param f4mode f4mode
-#' @param useallsnps useallsnps
 #' @param printonly Should the command be printed or executed?
 #' @param env Export environmental variables. See examples.
 #' @param verbose Print progress updates
@@ -40,7 +44,7 @@
 #' }
 qp3pop_wrapper = function(pref, source1, source2 = NULL, target = NULL, bin = '~np29/o2bin/qp3Pop',
                           outdir = '.', parfile = NULL,
-                          inbreed = 'NO', outgroupmode = 'YES', f4mode = 'YES', useallsnps = 'NO',
+                          inbreed = 'NO', outgroupmode = 'YES', f4mode = 'YES',
                           printonly = FALSE, env = '', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(source1))
@@ -65,10 +69,9 @@ qp3pop_wrapper = function(pref, source1, source2 = NULL, target = NULL, bin = '~
                      'snpname: ', pref, '.snp\n',
                      'indivname: ', pref, '.ind\n',
                      'popfilename: ', popfilename, '\n',
-                     'f4mode: ', f4mode, '\n',
-                     'inbreed: ', inbreed, '\n',
-                     'outgroupmode: ', outgroupmode, '\n',
-                     'useallsnps: ', useallsnps, '\n',
+                     'f4mode: ', f4mode %>% yesno, '\n',
+                     'inbreed: ', inbreed %>% yesno, '\n',
+                     'outgroupmode: ', outgroupmode %>% yesno, '\n',
                      'details: YES\n')
     parfilename = paste0(outdir, '/parfile')
     write(parfile, parfilename)
@@ -155,10 +158,8 @@ qpdstat_wrapper = function(pref, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                      'snpname: ', pref, '.snp\n',
                      'indivname: ', pref, '.ind\n',
                      popfiletype, ': ', popfilename, '\n',
-                     'f4mode: ', f4mode, '\n',
-                     'useallsnps: ', useallsnps, '\n',
-                     'inbreed: ', inbreed, '\n',
-                     'lambdascale: ', lambdascale, '\n',
+                     'f4mode: ', f4mode %>% yesno, '\n',
+                     'inbreed: ', inbreed %>% yesno, '\n',
                      'details: YES\n')
     parfilename = paste0(outdir, '/parfile')
     write(parfile, parfilename)
@@ -214,7 +215,7 @@ qpf4ratio_wrapper = function(pref, pops, bin = '~np29/o2bin/qpF4ratio', outdir='
                      'snpname: ', pref, '.snp\n',
                      'indivname: ', pref, '.ind\n',
                      'blgsize: ', blgsize, '\n',
-                     'fancyf4: ', fancyf4, '\n',
+                     'fancyf4: ', fancyf4 %>% yesno, '\n',
                      'popfilename: ', popfilename, '\n')
     parfilename = paste0(outdir, '/parfile')
     write(parfile, parfilename)
@@ -289,11 +290,11 @@ qpadm_wrapper = function(pref, left, right, target = NULL, bin = '~np29/o2bin/qp
                      'indivname: ', pref, '.ind\n',
                      'popleft: ', leftfile, '\n',
                      'popright: ', rightfile, '\n',
-                     'allsnps: ', allsnps, '\n',
+                     'allsnps: ', allsnps %>% yesno, '\n',
                      'blgsize: ', blgsize, '\n',
-                     'fancyf4: ', fancyf4, '\n',
-                     'f4mode: ', f4mode, '\n',
-                     'inbreed: ', inbreed, '\n',
+                     'fancyf4: ', fancyf4 %>% yesno, '\n',
+                     'f4mode: ', f4mode %>% yesno, '\n',
+                     'inbreed: ', inbreed %>% yesno, '\n',
                      'details: YES\n',
                      'fstdetails: YES\n')
 
@@ -349,7 +350,7 @@ qpadm_wrapper = function(pref, left, right, target = NULL, bin = '~np29/o2bin/qp
 #'                  bin = 'path/to/qpGraph')
 #' }
 qpgraph_wrapper = function(pref, graph, bin = '~np29/o2bin/qpGraph', parfile = NULL, outdir = '.',
-                           printonly = FALSE, badsnps = NULL, lambdascale = NULL, inbreed = 'NO',
+                           printonly = FALSE, badsnps = NULL, lambdascale = -1, inbreed = 'NO',
                            diag = 0.0001, blgsize = 0.05, outpop = 'NULL', loadf3 = NULL,
                            lsqmode = 'NO', fstdmode = 'NO', hires = 'NO', forcezmode = 'NO', zthresh = 0,
                            allsnps = 'NO', oldallsnps = 'NO', doanalysis = 'YES',
@@ -371,20 +372,20 @@ qpgraph_wrapper = function(pref, graph, bin = '~np29/o2bin/qpGraph', parfile = N
                      'details: YES\n',
                      'fstdetails: YES\n',
                      'diag: ', diag, '\n',
-                     'lsqmode: ', lsqmode, '\n',
-                     'fstdmode: ', fstdmode, '\n',
-                     'hires: ', hires, '\n',
-                     'forcezmode: ', forcezmode, '\n',
+                     'lsqmode: ', lsqmode %>% yesno, '\n',
+                     'fstdmode: ', fstdmode %>% yesno, '\n',
+                     'hires: ', hires %>% yesno, '\n',
+                     'forcezmode: ', forcezmode %>% yesno, '\n',
                      'zthresh: ', zthresh, '\n',
-                     # 'allsnps: ', allsnps, '\n',
-                     # 'oldallsnps: ', oldallsnps, '\n',
-                     # 'lambdascale: ', lambdascale, '\n',
+                     'allsnps: ', allsnps %>% yesno, '\n',
+                     'oldallsnps: ', oldallsnps %>% yesno, '\n',
+                     'lambdascale: ', lambdascale, '\n',
                      'fstatsoutname: ', fstatsfile, '\n',
                      'badsnpname: ', badsnpfile, '\n',
-                     'inbreed: ', inbreed, '\n',
+                     'inbreed: ', inbreed %>% yesno, '\n',
                      'bigiter: ', bigiter, '\n',
                      'initmix: ', initmix, '\n',
-                     'doanalysis: ', doanalysis, '\n')
+                     'doanalysis: ', doanalysis %>% yesno, '\n')
     if(!is.null(loadf3) && loadf3 == 'YES') parfile %<>% paste0('fstatsname: ', fstatsfile, '\n')
     if(!is.null(lambdascale)) parfile %<>% paste0('lambdascale: ', lambdascale, '\n')
     if(allsnps == 'YES') parfile %<>% paste0('allsnps: YES\nloadf3: YES\n')
@@ -774,7 +775,7 @@ parse_qpadm_output = function(outfile) {
   popdrop = do.call(rbind, str_split(dat[sigstart:sigend], ' +')) %>%
     as.data.frame(stringsAsFactors=F) %>% select(-1) %>%
     set_colnames(c('pat', 'wt', 'dof', 'chisq', 'p', left, 'feasible')) %>%
-    mutate(feasible = feasible != 'infeasible') %>% as_tibble
+    mutate(feasible = feasible != 'infeasible', across(!c('pat', 'feasible'), as.numeric)) %>% as_tibble
 
   namedList(weights, popdrop)
 }
@@ -900,7 +901,13 @@ msprime_sim = function(edges, outfilename = 'msprime_sim.py',
                        vcffilename = 'msprimesim.vcf', nind = 1, popsize = 1000, len = 1e9,
                        recombination_rate = 1e-9, mutation_rate = 1e-9, time = 100) {
 
-  edges %<>% mutate(from = str_replace_all(from, '\\.', ''), to = str_replace_all(to, '\\.', ''))
+  if(is.matrix(edges) && ncol(edges) == 2) edges %<>% as_tibble(.name_repair = ~c('from', 'to'))
+  pdat = graph_to_plotdat(edges)$eg
+  dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>% distinct %>% deframe
+
+  edges %<>% add_count(to) %>%
+    mutate(from = str_replace_all(from, '\\.', ''), to = str_replace_all(to, '\\.', ''),
+           type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 1)
   graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
   leaves = get_leafnames(graph)
@@ -934,10 +941,10 @@ args = parser.parse_args()
                                         ')', c(rep(',', length(nodes)-1), ''),
                                         ' #',(1:length(nodes))-1,'\n', collapse = '') ,']\n')
   out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(nodes))-1,
-                                                           ', 0/gen)',
+                                                           ', ',dates[nodes]*time,'/gen)',
                                                            c(rep(',', length(nodes)-1), ' '),
                                                            ' #', nodes, '\n', collapse = ''), ']\n')
-  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$from, ' = ',seq_len(nrow(edges2))*time,'\n', collapse = ''))
+  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$from, ' = ',dates[edges2$from]*time,'\n', collapse = ''))
   out = paste0(out, '\nevents = [\n',
                paste0('\tmsprime.MassMigration(time = T_',
                       edges2$from, '/gen, source = ', edges2$lto-1,', destination = ', edges2$lfrom-1,
