@@ -15,7 +15,6 @@ qp3pop_wrapper(
   inbreed = "NO",
   outgroupmode = "YES",
   f4mode = "YES",
-  useallsnps = "NO",
   printonly = FALSE,
   env = "",
   verbose = TRUE
@@ -51,8 +50,6 @@ population combinations to be tested. \code{source2} and \code{target} will be i
 \item{outgroupmode}{outgroupmode}
 
 \item{f4mode}{f4mode}
-
-\item{useallsnps}{useallsnps}
 
 \item{printonly}{Should the command be printed or executed?}
 

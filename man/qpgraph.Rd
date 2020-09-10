@@ -66,15 +66,15 @@ Both of these options do not take the covariance of f3-statistics into account. 
 \value{
 A list with data describing the model fit:
 \itemize{
-\item \code{edges} a data frame where each row is an edge in the graph. For regular edges,
+\item \code{edges} A data frame where each row is an edge in the graph. For regular edges,
 the column \code{weight} is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
-\item \code{score} the likelihood score of the fitted graph. lower values correspond to better fits.
-the score is calculated as the inner product of the residuals (difference between estimated and
-fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.
-\item \code{f2} estimated and fitted f2 statistics
-\item \code{f3} estimated and fitted f3 statistics
-\item \code{f4} estimated and fitted f4 statistics (if \code{return_f4 = TRUE})
-\item \code{opt} a data frame with details of the weight-fitting step, including the randomly sampled starting weights.
+\item \code{score} The likelihood score of the fitted graph. Lower values correspond to better fits.
+The score is calculated as the inner product of the residuals (difference between estimated and
+fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{\link{qpgraph_score}}
+\item \code{f2} Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.
+\item \code{f3} Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
+\item \code{f4} Estimated and fitted f4 statistics (if \code{return_f4 = TRUE}). p-values and z-scores test the significance of the difference.
+\item \code{opt} A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column \code{value} contains the score for each set of starting weights. Columns starting with \code{x} denote initial weights, and columns starting with \code{y} denote fitted weights.
 \item \code{worst_residual} The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_f4 = TRUE})
 }
 }

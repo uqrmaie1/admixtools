@@ -16,7 +16,7 @@ qpadm_multi(data, models, allsnps = FALSE, verbose = TRUE, ...)
 
 \item{models}{A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing \code{left}, \code{right}, (and \code{target}) populations.}
 
-\item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, \code{allsnps = TRUE} can lead to false positive results.}
+\item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, \code{allsnps = TRUE} can lead to false positive results. This option only has an effect if \code{data} is the prefix of a genotype file. If \code{data} are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.}
 
 \item{verbose}{Print progress updates}
 
@@ -26,7 +26,7 @@ qpadm_multi(data, models, allsnps = FALSE, verbose = TRUE, ...)
 A list where each element is the output of one qpadm model.
 }
 \description{
-This function runs multiple qpadm models, re-using f4-statistics where possible.
+This function runs multiple qpadm models, re-using f4-statistics where possible. Supports parallel evaluation of models, which can be turned on with \code{future::plan('multisession')} or similar, and turned off with \code{future::plan('sequential')}.
 }
 \examples{
 \dontrun{

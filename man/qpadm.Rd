@@ -41,7 +41,7 @@ Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is ei
 or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
 as well as the weight standard errors, will be computed using bootstrapping.}
 
-\item{getcov}{Compute weights covariance. If not needed, turning this off will speed things up.}
+\item{getcov}{Compute weights covariance. Setting \code{getcov = FALSE} will speed up the computation.}
 
 \item{constrained}{Constrain admixture weights to be non-negative}
 
@@ -53,12 +53,31 @@ as well as the weight standard errors, will be computed using bootstrapping.}
 }
 \value{
 A list with output describing the model fit:
-\enumerate{
+\itemize{
 \item \code{weights} A data frame with estimated admixture proportions where each row is a left population.
 \item \code{f4} A data frame with estimated and fitted f4-statistics
 \item \code{rankdrop} A data frame describing model fits with different ranks, including p-values for the overall fit
-and for nested models (comparing two models with rank difference of one).
-\item \code{popdrop} A data frame describing model fits with different populations.
+and for nested models (comparing two models with rank difference of one). A model with \code{l} left populations and \code{r} right populations has an f4-matrix of dimensions \code{(l-1)*(r-1)}. If no two left population form a clade with respect to all right populations, this model will have rank \code{(l-1)*(r-1)}.
+\itemize{
+\item \code{f4rank}: Number of ranks below full rank
+\item \code{dof}: Degrees of freedom of the chi-squared null distribution: \code{(l-1-f4rank)*(r-1-f4rank)}
+\item \code{chisq}: Chi-sqaured statistic, obtained as \verb{E'QE}, where \code{E} is the difference between estimated and fitted f4-statistics, and \code{Q} is the f4-statistic covariance matrix.
+\item \code{p}: p-value obtained from \code{chisq} as \code{pchisq(chisq, df = dof, lower.tail = FALSE)}
+\item \code{dofdiff}: Difference in degrees of freedom between this model and the model with one less rank
+\item \code{chisqdiff}: Difference in chi-squared statistics
+\item \code{p_nested}: p-value testing whether the difference between two models of rank difference 1 is significant
+}
+\item \code{popdrop} A data frame describing model fits with different populations. Note that all models use the same set of SNPs as the first model.
+\itemize{
+\item \code{pat}: A binary code indicating which populations are present in this model. \code{1} represents dropped populations.
+\item \code{wt}:
+\item \code{dof}: Degrees of freedom
+\item \code{chisq}: Chi-sqaured statistic, obtained as \verb{E'QE}, where \code{E} is the difference between estimated and fitted f4-statistics, and \code{Q} is the f4-statistic covariance matrix.
+\item \code{p}: p-value obtained from \code{chisq} as \code{pchisq(chisq, df = dof, lower.tail = FALSE)}
+\item \code{f4rank}:
+\item \code{feasible}: A model is feasible if all weights fall between 0 and 1
+\item \verb{<population name>}: The weights for each population in this model
+}
 }
 }
 \description{

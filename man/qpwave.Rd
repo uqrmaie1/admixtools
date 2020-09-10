@@ -5,7 +5,7 @@
 \title{Estimate admixture waves}
 \usage{
 qpwave(
-  f2_data,
+  data,
   left,
   right,
   fudge = 1e-04,
@@ -16,6 +16,13 @@ qpwave(
 )
 }
 \arguments{
+\item{data}{The input data in the form of:
+\itemize{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+\item A directory with f2 statistics
+\item The prefix of a genotype file
+}}
+
 \item{left}{Left populations (sources)}
 
 \item{right}{Right populations (outgroups)}

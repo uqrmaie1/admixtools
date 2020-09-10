@@ -12,7 +12,7 @@ qpgraph_wrapper(
   outdir = ".",
   printonly = FALSE,
   badsnps = NULL,
-  lambdascale = NULL,
+  lambdascale = -1,
   inbreed = "NO",
   diag = 1e-04,
   blgsize = 0.05,

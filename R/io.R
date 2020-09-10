@@ -73,11 +73,11 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
-#' afdat = ancestrymap_to_aftable(prefix, pops = pops)
+#' afdat = ancestrymap_to_afs(prefix, pops = pops)
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+ancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -102,13 +102,16 @@ ancestrymap_to_aftable = function(pref, inds = NULL, pops = NULL, adjust_pseudoh
   nsnp = nrow(geno)
   numpop = length(upops)
   geno = geno[,popind2]
+  geno[geno == 9] = NA
+
   colnames(geno) = inds
   rownames(geno) = snpfile$SNP
 
   if(adjust_pseudohaploid) ploidy = apply(geno, 2, function(x) max(1, length(unique(na.omit(x)))-1))
   else ploidy = rep(2, ncol(geno))
-  counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
-  afs = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))/counts
+  counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))[,upops]
+  afs = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))[,upops]/counts
+
 
   if(verbose) {
     alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnp, ' SNPs\n'))
@@ -341,7 +344,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
   fl = paste0(pref, '.geno')
   geno = apply(do.call(rbind, str_split(readLines(fl), '')), 2, as.numeric)
   nindall = nrow(geno)
-  geno = geno[,popind2]
+  geno = geno[,popind2,drop=FALSE]
   colnames(geno) = inds
   rownames(geno) = snpfile$SNP
 
@@ -1025,14 +1028,14 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
         geno_to_aftable = packedancestrymap_to_afs
       } else {
         format = 'ancestrymap'
-        geno_to_aftable = ancestrymap_to_aftable
+        geno_to_aftable = ancestrymap_to_afs
       }
     } else stop('Genotype files not found!')
   }
   geno_to_aftable = switch(format,
                            'plink' = plink_to_afs,
                            'packedancestrymap' = packedancestrymap_to_afs,
-                           'ancestrymap' = ancestrymap_to_aftable)
+                           'ancestrymap' = ancestrymap_to_afs)
   if(is.null(geno_to_aftable)) stop('Invalid format!')
 
   afdat = geno_to_aftable(pref, inds = inds, pops = pops, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)

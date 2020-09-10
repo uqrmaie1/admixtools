@@ -5,7 +5,13 @@
 \alias{ancestrymap_to_plink}
 \title{Convert (packed)ancestrymap to PLINK}
 \usage{
-packedancestrymap_to_plink(inpref, outpref, inds = NULL, pops = NULL)
+packedancestrymap_to_plink(
+  inpref,
+  outpref,
+  inds = NULL,
+  pops = NULL,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{inpref}{Prefix of the (packed)ancestrymap input files}
@@ -14,7 +20,9 @@ packedancestrymap_to_plink(inpref, outpref, inds = NULL, pops = NULL)
 
 \item{inds}{Individuals which should be extracted}
 
-\item{pops}{Populations which should be extracted. Can not be provided together with 'inds'}
+\item{pops}{Populations which should be extracted. Can not be provided together with \code{inds}}
+
+\item{verbose}{Print progress updates}
 }
 \description{
 This function converts \emph{(packed)ancestrymap/EIGENSTRAT} format files to \emph{PLINK} files, using \code{\link[genio]{write_plink}}.
