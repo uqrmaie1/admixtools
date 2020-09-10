@@ -270,9 +270,9 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' `dat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 #' @export
 #' @param dat Data frame with columns 'CHR' and either 'POS' or 'cm'
-#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM).
-#' @param distcol Column to use as distance column
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param cpp Should the faster C++ version be used?
+#' @param verbose Print progress updates
 #' @return A numeric vector where the ith element lists the number of SNPs in the ith block.
 #' @examples
 #' \dontrun{
@@ -281,10 +281,11 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' afdat = packedancestrymap_to_afs(prefix, pops = pops)
 #' block_lengths = get_block_lengths(afdat)
 #' }
-get_block_lengths = function(dat, blgsize = 0.05, distcol = 'cm', cpp = F) {
+get_block_lengths = function(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE) {
 
+  distcol = ifelse(blgsize < 100, 'cm', 'POS')
+  if(blgsize >= 100 && verbose) alert_warning("'blgsize' is >= 100 and interpreted as base pair distance!")
   if(distcol == 'cm' && length(unique(dat[[distcol]])) < 2) {
-    distcol = 'POS'
     blgsize = 2e6
     if(!distcol %in% names(dat) || length(unique(dat[[distcol]])) < 2) {
       warning(paste0("No genetic linkage map or base positions found!",

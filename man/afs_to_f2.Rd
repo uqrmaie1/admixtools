@@ -24,7 +24,7 @@ afs_to_f2(
 
 \item{chunk2}{Index of the second chunk of populations}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
 \item{snpwt}{A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.}
 

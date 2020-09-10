@@ -31,7 +31,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
 \item{maxmiss}{Discard SNPs which are missing in a fraction of individuals greater than \code{maxmiss}}
 

@@ -25,7 +25,7 @@ afs_to_f2_blocks(
 
 \item{maxmem}{split up allele frequency data into blocks, if memory requirements exceed \code{maxmem} MB.}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations}
 

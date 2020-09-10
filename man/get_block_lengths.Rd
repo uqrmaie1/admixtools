@@ -4,16 +4,16 @@
 \alias{get_block_lengths}
 \title{Find LD-independent blocks}
 \usage{
-get_block_lengths(dat, blgsize = 0.05, distcol = "cm", cpp = F)
+get_block_lengths(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE)
 }
 \arguments{
 \item{dat}{Data frame with columns 'CHR' and either 'POS' or 'cm'}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM).}
-
-\item{distcol}{Column to use as distance column}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
 \item{cpp}{Should the faster C++ version be used?}
+
+\item{verbose}{Print progress updates}
 }
 \value{
 A numeric vector where the ith element lists the number of SNPs in the ith block.
