@@ -16,9 +16,6 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/afs_to_f2_blocks.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/ancestrymap_to_aftable.html</loc>
-  </url>
-  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/boo_list.html</loc>
   </url>
   <url>
@@ -44,6 +41,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/desimplify_graph.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/eigenstrat_to_afs.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/est_to_boo.html</loc>
@@ -92,6 +92,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_f2_subset.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_samples.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2.html</loc>
@@ -328,7 +331,7 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_newick.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_ancestrymap.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_eigenstrat.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_f2.html</loc>

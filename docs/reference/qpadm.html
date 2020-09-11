@@ -49,9 +49,8 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Estimate admixture weights — qpadm" />
 
-<meta property="og:description" content="Models target as a mixture of left populations, given a set of outgroup right populations.
-Can be used to estimate admixture proportions, and to estimate the number of independent
-admixture events." />
+<meta property="og:description" content="qpadm models a target population as a mixture of left (source) populations, given a set of right (outgroup) populations.
+It can be used to estimate whether the left populations explain all genetic variation in the target population, relative to the right populations, and to estimate admixture proportions of the left populations to the target population." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -173,9 +172,8 @@ admixture events." />
 
     <div class="ref-description">
     
-    <p>Models target as a mixture of left populations, given a set of outgroup right populations.
-Can be used to estimate admixture proportions, and to estimate the number of independent
-admixture events.</p>
+    <p><code>qpadm</code> models a target population as a mixture of left (source) populations, given a set of right (outgroup) populations.
+It can be used to estimate whether the left populations explain all genetic variation in the target population, relative to the right populations, and to estimate admixture proportions of the left populations to the target population.</p>
     
     </div>
 
@@ -231,7 +229,7 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>getcov</th>
-      <td><p>Compute weights covariance. If not needed, turning this off will speed things up.</p></td>
+      <td><p>Compute weights covariance. Setting <code>getcov = FALSE</code> will speed up the computation.</p></td>
     </tr>
     <tr>
       <th>constrained</th>
@@ -253,12 +251,29 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list with output describing the model fit:</p><ol>
-<li><p><code>weights</code> A data frame with estimated admixture proportions where each row is a left population.</p></li>
-<li><p><code>f4</code> A data frame with estimated and fitted f4-statistics</p></li>
-<li><p><code>rankdrop</code> A data frame describing model fits with different ranks, including p-values for the overall fit
-and for nested models (comparing two models with rank difference of one).</p></li>
-<li><p><code>popdrop</code> A data frame describing model fits with different populations.</p></li>
+    <p><code>qpadm</code> returns a list with up to four data frames describing the model fit:</p><ol>
+<li><p><code>weights</code>: A data frame with estimated admixture proportions where each row is a left population.</p></li>
+<li><p><code>f4</code>: A data frame with estimated and fitted f4-statistics</p></li>
+<li><p><code>rankdrop</code>: A data frame describing model fits with different ranks, including <em>p</em>-values for the overall fit
+and for nested models (comparing two models with rank difference of one). A model with <code>L</code> left populations and <code>R</code> right populations has an f4-matrix of dimensions <code>(L-1)*(R-1)</code>. If no two left population form a clade with respect to all right populations, this model will have rank <code>(L-1)*(R-1)</code>.</p><ul>
+<li><p><code>f4rank</code>: Tested rank</p></li>
+<li><p><code>dof</code>: Degrees of freedom of the chi-squared null distribution: <code>(L-1-f4rank)*(R-1-f4rank)</code></p></li>
+<li><p><code>chisq</code>: Chi-sqaured statistic, obtained as <code>E'QE</code>, where <code>E</code> is the difference between estimated and fitted f4-statistics, and <code>Q</code> is the f4-statistic covariance matrix.</p></li>
+<li><p><code>p</code>: p-value obtained from <code>chisq</code> as <code><a href='https://rdrr.io/r/stats/Chisquare.html'>pchisq(chisq, df = dof, lower.tail = FALSE)</a></code></p></li>
+<li><p><code>dofdiff</code>: Difference in degrees of freedom between this model and the model with one less rank</p></li>
+<li><p><code>chisqdiff</code>: Difference in chi-squared statistics</p></li>
+<li><p><code>p_nested</code>: <em>p</em>-value testing whether the difference between two models of rank difference 1 is significant</p></li>
+</ul></li>
+<li><p><code>popdrop</code>: A data frame describing model fits with different populations. Note that all models with fewer populations use the same set of SNPs as the first model.</p><ul>
+<li><p><code>pat</code>: A binary code indicating which populations are present in this model. A <code>1</code> represents dropped populations. The full model is all zeros.</p></li>
+<li><p><code>wt</code>: Number of populations dropped</p></li>
+<li><p><code>dof</code>: Degrees of freedom of the chi-squared null distribution: <code>(L-1-f4rank)*(R-1-f4rank)</code></p></li>
+<li><p><code>chisq</code>: Chi-sqaured statistic, obtained as <code>E'QE</code>, where <code>E</code> is the difference between estimated and fitted f4-statistics, and <code>Q</code> is the f4-statistic covariance matrix.</p></li>
+<li><p><code>p</code>: <em>p</em>-value obtained from <code>chisq</code> as <code><a href='https://rdrr.io/r/stats/Chisquare.html'>pchisq(chisq, df = dof, lower.tail = FALSE)</a></code></p></li>
+<li><p><code>f4rank</code>: Tested rank</p></li>
+<li><p><code>feasible</code>: A model is feasible if all weights fall between 0 and 1</p></li>
+<li><p><code>&lt;population name&gt;</code>: The weights for each population in this model</p></li>
+</ul></li>
 </ol>
 
     

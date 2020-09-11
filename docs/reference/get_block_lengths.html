@@ -177,7 +177,7 @@ dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     
     </div>
 
-    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>dat</span>, <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>distcol</span> <span class='kw'>=</span> <span class='st'>"cm"</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='no'>F</span>)</pre>
+    <pre class="usage"><span class='fu'>get_block_lengths</span>(<span class='no'>dat</span>, <span class='kw'>blgsize</span> <span class='kw'>=</span> <span class='fl'>0.05</span>, <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -188,15 +188,15 @@ dat needs to be ordered first by 'CHR', then by 'POS' or 'cm'" />
     </tr>
     <tr>
       <th>blgsize</th>
-      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
-    </tr>
-    <tr>
-      <th>distcol</th>
-      <td><p>Column to use as distance column</p></td>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM). If <code>blgsize</code> is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.</p></td>
     </tr>
     <tr>
       <th>cpp</th>
       <td><p>Should the faster C++ version be used?</p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     

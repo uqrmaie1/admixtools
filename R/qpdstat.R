@@ -223,7 +223,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   nam = c('pop1', 'pop2', 'pop3', 'pop4')[1:fnum]
   maxcomb = 1e6
   if(is_geno_prefix(f2_data) && is.null(pop1)) {
-    if(is_packedancestrymap_prefix(f2_data)) {
+    if(is_ancestrymap_prefix(f2_data)) {
       indend = '.ind'
       popcol = 3
     } else {

@@ -49,7 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Run multiple qpadm models — qpadm_multi" />
 
-<meta property="og:description" content="This function runs multiple qpadm models, re-using f4-statistics where possible." />
+<meta property="og:description" content="This function runs multiple qpadm models, re-using f4-statistics where possible. Supports parallel evaluation of models, which can be turned on with future::plan('multisession') or similar, and turned off with future::plan('sequential')." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -171,7 +171,7 @@
 
     <div class="ref-description">
     
-    <p>This function runs multiple qpadm models, re-using f4-statistics where possible.</p>
+    <p>This function runs multiple qpadm models, re-using f4-statistics where possible. Supports parallel evaluation of models, which can be turned on with <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan('multisession')</a></code> or similar, and turned off with <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan('sequential')</a></code>.</p>
     
     </div>
 
@@ -194,7 +194,7 @@
     </tr>
     <tr>
       <th>allsnps</th>
-      <td><p>Use all SNPs with allele frequency estimates in every population of any given population quadruple. If <code>FALSE</code> (the default) only SNPs which are present in all populations in <code>popcombs</code> (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, <code>allsnps = TRUE</code> can lead to false positive results.</p></td>
+      <td><p>Use all SNPs with allele frequency estimates in every population of any given population quadruple. If <code>FALSE</code> (the default) only SNPs which are present in all populations in <code>popcombs</code> (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, <code>allsnps = TRUE</code> can lead to false positive results. This option only has an effect if <code>data</code> is the prefix of a genotype file. If <code>data</code> are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

@@ -241,7 +241,7 @@ In *ADMIXTOOLS 2*, you can compute out-of-sample scores by providing the `qpgrap
 ```{r}
 nblocks = dim(example_f2_blocks)[3]
 train = sample(1:nblocks, round(nblocks/2))
-res = qpgraph(f2_blocks = example_f2_blocks[,,train], example_graph,
+res = qpgraph(data = example_f2_blocks[,,train], example_graph,
               f2_blocks_test = example_f2_blocks[,,-train])
 res$score
 res$score_test

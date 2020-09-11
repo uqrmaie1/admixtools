@@ -5,7 +5,7 @@
 \title{Compute the fit of an admixture graph}
 \usage{
 qpgraph(
-  f2_blocks,
+  data,
   graph,
   lambdascale = 1,
   boot = FALSE,
@@ -24,9 +24,14 @@ qpgraph(
 )
 }
 \arguments{
-\item{f2_blocks}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.}
+\item{data}{Input data in one of three forms:
+\enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
-\item{graph}{An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled \code{lower} and \code{upper} with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.}
+\item{graph}{An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a \emph{qpGraph} graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled \code{lower} and \code{upper} with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.}
 
 \item{lambdascale}{Scales f2-statistics. This has no effect on the fit, but is used in the original \emph{qpGraph} program to display branch weights on a scale that corresponds to FST distances.}
 
@@ -53,29 +58,29 @@ Both of these options do not take the covariance of f3-statistics into account. 
 
 \item{return_f4}{Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to \code{FALSE} because this can be slow.}
 
-\item{f3precomp}{Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of \code{f2_blocks}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
+\item{f3precomp}{Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of \code{data}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
 
 \item{f3basepop}{Optional f3-statistics base population. Inference will be based on f3-statistics of the form \verb{f3(f3basepop; i, j)} for all population pairs \verb{(i, j)}. Defaults to the outgroup population if the graph has one. This option is ignored if \code{f3precomp} is provided. Changing \code{f3basepop} should make very little difference.}
 
 \item{ppinv}{Optional inverse f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
 
-\item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
+\item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. This should contain only SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
 
 \item{verbose}{Print progress updates}
 }
 \value{
-A list with data describing the model fit:
+\code{qpgraph} returns a list with data describing the model fit:
 \itemize{
-\item \code{edges} A data frame where each row is an edge in the graph. For regular edges,
+\item \code{edges}: A data frame where each row is an edge in the graph. For regular edges,
 the column \code{weight} is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
-\item \code{score} The likelihood score of the fitted graph. Lower values correspond to better fits.
+\item \code{score}: The likelihood score of the fitted graph. Lower values correspond to better fits.
 The score is calculated as the inner product of the residuals (difference between estimated and
 fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{\link{qpgraph_score}}
-\item \code{f2} Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.
-\item \code{f3} Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
-\item \code{f4} Estimated and fitted f4 statistics (if \code{return_f4 = TRUE}). p-values and z-scores test the significance of the difference.
-\item \code{opt} A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column \code{value} contains the score for each set of starting weights. Columns starting with \code{x} denote initial weights, and columns starting with \code{y} denote fitted weights.
-\item \code{worst_residual} The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_f4 = TRUE})
+\item \code{f2}: Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.
+\item \code{f3}: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
+\item \code{f4}: Estimated and fitted f4 statistics (if \code{return_f4 = TRUE}). p-values and z-scores test the significance of the difference.
+\item \code{opt}: A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column \code{value} contains the score for each set of starting weights. Columns starting with \code{x} denote initial weights, and columns starting with \code{y} denote fitted weights.
+\item \code{worst_residual}: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_f4 = TRUE})
 }
 }
 \description{

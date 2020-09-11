@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Convert (packed)ancestrymap to PLINK — packedancestrymap_to_plink • admixtools</title>
+<title>Convert <em>EIGENSTRAT</em> or <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em> — packedancestrymap_to_plink • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,9 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Convert (packed)ancestrymap to PLINK — packedancestrymap_to_plink" />
+<meta property="og:title" content="Convert <em>EIGENSTRAT</em> or <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em> — packedancestrymap_to_plink" />
 
-<meta property="og:description" content="This function converts (packed)ancestrymap/EIGENSTRAT format files to PLINK files, using write_plink.
+<meta property="og:description" content="This function converts EIGENSTRAT/PACKEDANCESTRYMAP format files to PLINK files, using write_plink.
 When inds or pops is provided, only a subset of samples will be extracted." />
 <meta name="twitter:card" content="summary" />
 
@@ -165,26 +165,32 @@ When inds or pops is provided, only a subset of samples will be extracted." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Convert (packed)ancestrymap to PLINK</h1>
+    <h1>Convert <em>EIGENSTRAT</em> or <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em></h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/io.R'><code>R/io.R</code></a></small>
     <div class="hidden name"><code>packedancestrymap_to_plink.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function converts <em>(packed)ancestrymap/EIGENSTRAT</em> format files to <em>PLINK</em> files, using <code><a href='https://rdrr.io/pkg/genio/man/write_plink.html'>write_plink</a></code>.
+    <p>This function converts <em>EIGENSTRAT/PACKEDANCESTRYMAP</em> format files to <em>PLINK</em> files, using <code><a href='https://rdrr.io/pkg/genio/man/write_plink.html'>write_plink</a></code>.
 When <code>inds</code> or <code>pops</code> is provided, only a subset of samples will be extracted.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>packedancestrymap_to_plink</span>(<span class='no'>inpref</span>, <span class='no'>outpref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>packedancestrymap_to_plink</span>(
+  <span class='no'>inpref</span>,
+  <span class='no'>outpref</span>,
+  <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>inpref</th>
-      <td><p>Prefix of the (packed)ancestrymap input files</p></td>
+      <td><p>Prefix of the input files</p></td>
     </tr>
     <tr>
       <th>outpref</th>
@@ -196,7 +202,11 @@ When <code>inds</code> or <code>pops</code> is provided, only a subset of sample
     </tr>
     <tr>
       <th>pops</th>
-      <td><p>Populations which should be extracted. Can not be provided together with 'inds'</p></td>
+      <td><p>Populations which should be extracted. Can not be provided together with <code>inds</code></p></td>
+    </tr>
+    <tr>
+      <th>verbose</th>
+      <td><p>Print progress updates</p></td>
     </tr>
     </table>
     
@@ -204,7 +214,7 @@ When <code>inds</code> or <code>pops</code> is provided, only a subset of sample
 
     
 
-<p><code>ancestrymap_to_plink</code></p>
+<p><code>eigenstrat_to_plink</code></p>
     
 
   </div>

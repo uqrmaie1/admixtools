@@ -203,8 +203,8 @@ and computes allele frequencies for selected populations and stores it as <code>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>Prefix of <em>(packed)ancestrymap</em> or <em>PLINK</em> files. <em>(packed)ancestrymap</em> has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
-PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
+      <td><p>Prefix of <em>PLINK/EIGENSTRAT/PACKEDANCESTRYMAP</em> files.
+<em>EIGENSTRAT/PACKEDANCESTRYMAP</em> have to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>, <em>PLINK</em> has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
     </tr>
     <tr>
       <th>outdir</th>
@@ -261,7 +261,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     <tr>
       <th>format</th>
       <td><p>Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>ancestrymap</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
+and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>eigenstrat</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>

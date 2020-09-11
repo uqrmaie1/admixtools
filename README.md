@@ -39,7 +39,7 @@ rendering the plot takes much longer than computing the fit of a new
         out-of-sample scores
       - Jackknife and bootstrap standard errors and confidence intervals
         for any *qpAdm*, *qpWave*, and *qpGraph* parameters
-  - Full support for genotype data in *(PACKED)ANCESTRYMAP/EIGENSTRAT*
+  - Full support for genotype data in *PACKEDANCESTRYMAP/EIGENSTRAT*
     format and *PLINK* format
   - Wrapper functions around the original *ADMIXTOOLS* software (see
     also [admixr](https://bodkan.net/admixr/index.html))

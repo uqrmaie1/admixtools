@@ -65,26 +65,26 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 
 
 
-#' Read allele frequencies from ancestrymap files
+#' Read allele frequencies from *EIGENSTRAT* files
 #'
 #' @export
-#' @param pref Prefix of ancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
+#' @param pref Prefix of *EIGENSTRAT* files (files have to end in `.geno`, `.ind`, `.snp`)
 #' @inheritParams packedancestrymap_to_afs
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
 #' \dontrun{
-#' afdat = ancestrymap_to_afs(prefix, pops = pops)
+#' afdat = eigenstrat_to_afs(prefix, pops = pops)
 #' afs = afdat$afs
 #' counts = afdat$counts
 #' }
-ancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
   # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
   # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
 
-  if(verbose) alert_info('Reading allele frequencies from ancestrymap files...\n')
+  if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
@@ -310,7 +310,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 
 
 
-#' Read genotype data from ancestrymap files
+#' Read genotype data from *EIGENSTRAT* files
 #'
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
@@ -321,7 +321,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
+read_eigenstrat = function(pref, inds = NULL, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
@@ -359,6 +359,13 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
   outlist
 }
 
+eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
+  # assumes -1 in indvec is do-not-use, to be consistent with cpp_ploidy functions
+
+  geno = apply(do.call(rbind, str_split(readLines(genofile, ntest), '')), 2, as.numeric)[,indvec != -1]
+  geno[geno == 9] = NA
+  apply(geno, 2, function(x) length(unique(na.omit(x)))-1)
+}
 
 
 #' Read allele frequencies from `PLINK` files
@@ -831,11 +838,11 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 
 #' Compute and store blocked f2 statistics
 #'
-#' This function prepares data for various other *ADMIXTOOLS 2* functions. It reads data from packedancestrymap or PLINK files,
+#' This function prepares data for various other *ADMIXTOOLS 2* functions. It reads data from genotype files,
 #' computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to `outdir`.
 #' @export
-#' @param pref Prefix of *(packed)ancestrymap* or *PLINK* files. *(packed)ancestrymap* has to end in `.geno`, `.snp`, `.ind`,
-#' PLINK has to end in `.bed`, `.bim`, `.fam`
+#' @param pref Prefix of *PLINK/EIGENSTRAT/PACKEDANCESTRYMAP* files.
+#' *EIGENSTRAT/PACKEDANCESTRYMAP* have to end in `.geno`, `.snp`, `.ind`, *PLINK* has to end in `.bed`, `.bim`, `.fam`
 #' @param outdir Directory where data will be stored.
 #' @param inds Individuals for which data should be extracted
 #' @param pops Populations for which data should be extracted. If both `pops` and `inds` are provided, they should have the same length and will be matched by position. If only `pops` is provided, all individuals from the `.ind` or `.fam` file in those populations will be extracted. If only `inds` is provided, each indivdual will be assigned to its own population of the same name. If neither `pops` nor `inds` is provided, all individuals and populations in the `.ind` or `.fam` file will be extracted.
@@ -852,7 +859,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param keepsnps SNP IDs of SNPs to keep. Overrides other SNP filtering options
 #' @param overwrite Overwrite existing files in `outdir`
 #' @param format Supply this if the prefix can refer to genotype data in different formats
-#' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `ancestrymap`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
+#' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `eigenstrat`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` treats all samples as diploid and is equivalent to the *ADMIXTOOLS* `inbreed: NO` option.
 #' @param cols_per_chunk Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
 #' @param verbose Print progress updates
@@ -907,7 +914,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 
 #' Compute blocked f2 statistics
 #'
-#' This function prepares data for various other *ADMIXTOOLS 2* functions. It reads data from packedancestrymap or PLINK files,
+#' This function prepares data for various other *ADMIXTOOLS 2* functions. It reads data from genotype files,
 #' computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array.
 #' @export
 #' @inheritParams extract_f2
@@ -1023,19 +1030,19 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
       format = 'plink'
       geno_to_aftable = plink_to_afs
     } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
-      if(is_binfile(paste0(pref, '.geno'))) {
+      if(is_packed(paste0(pref, '.geno'))) {
         format = 'packedancestrymap'
         geno_to_aftable = packedancestrymap_to_afs
       } else {
-        format = 'ancestrymap'
-        geno_to_aftable = ancestrymap_to_afs
+        format = 'eigenstrat'
+        geno_to_aftable = eigenstrat_to_afs
       }
     } else stop('Genotype files not found!')
   }
   geno_to_aftable = switch(format,
                            'plink' = plink_to_afs,
                            'packedancestrymap' = packedancestrymap_to_afs,
-                           'ancestrymap' = ancestrymap_to_afs)
+                           'eigenstrat' = eigenstrat_to_afs)
   if(is.null(geno_to_aftable)) stop('Invalid format!')
 
   afdat = geno_to_aftable(pref, inds = inds, pops = pops, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
@@ -1048,15 +1055,15 @@ read_anygeno = function(pref, inds = NULL, format = NULL, verbose = TRUE) {
   if(is.null(format)) {
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
     else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
-      if(is_binfile(paste0(pref, '.geno'))) format = 'packedancestrymap'
-      else format = 'ancestrymap'
+      if(is_packed(paste0(pref, '.geno'))) format = 'packedancestrymap'
+      else format = 'eigenstrat'
     }
     else stop('Genotype files not found!')
   }
   if(tolower(format) == 'packedancestrymap') {
     read_geno = function(...) {g = read_packedancestrymap(...); list(bed = g$geno, fam = g$ind, bim = g$snp)}
-  } else if(tolower(format) == 'ancestrymap') {
-    read_geno = function(...) {g = read_ancestrymap(...); list(bed = g$geno, fam = g$ind, bim = g$snp)}
+  } else if(tolower(format) == 'eigenstrat') {
+    read_geno = function(...) {g = read_eigenstrat(...); list(bed = g$geno, fam = g$ind, bim = g$snp)}
   } else if(tolower(format) == 'plink') {
     read_geno = read_plink
   } else stop('Genotype files not found!')
@@ -1066,7 +1073,7 @@ read_anygeno = function(pref, inds = NULL, format = NULL, verbose = TRUE) {
 
 #' Extract and store data needed to compute blocked f2
 #'
-#' Prepare data for various *ADMIXTOOLS 2* functions. This function reads data from packedancestrymap or PLINK files,
+#' Prepare data for various *ADMIXTOOLS 2* functions. This function reads data from genotype files,
 #' and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 #' `.rds` files with total and alternative allele counts for each individual, and products of total
 #' and alternative allele counts for each pair.
@@ -1333,7 +1340,7 @@ format_info = function(pref, format = NULL) {
   # returns named list with genotype format specific information
 
   l = list()
-  if(is_packedancestrymap_prefix(pref) || isTRUE(format == 'packedancestrymap')) {
+  if(is_ancestrymap_prefix(pref) && is_packed(pref) || isTRUE(format == 'packedancestrymap')) {
     l$format = 'packedancestrymap'
     l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
     l$indnam = c('ind', 'sex', 'pop')
@@ -1344,6 +1351,17 @@ format_info = function(pref, format = NULL) {
     l$cpp_geno_ploidy = cpp_packedancestrymap_ploidy
     l$cpp_geno_to_afs = cpp_packedancestrymap_to_afs
     l$cpp_read_geno = cpp_read_packedancestrymap
+  } else if(is_ancestrymap_prefix(pref) && !is_packed(pref) || isTRUE(format == 'eigenstrat')) {
+    l$format = 'eigenstrat'
+    l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+    l$indnam = c('ind', 'sex', 'pop')
+    l$indtype = 'ccc'
+    l$snpend = '.snp'
+    l$indend = '.ind'
+    l$genoend = '.geno'
+    l$cpp_geno_ploidy = eigenstrat_ploidy
+    l$cpp_geno_to_afs = eigenstrat_to_afs
+    l$cpp_read_geno = read_eigenstrat
   } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
     l$format = 'plink'
     l$snpnam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
@@ -1814,18 +1832,17 @@ delete_groups = function(dir, groups = NULL, verbose = TRUE) {
 is_group = function(dir, group) file.exists(paste0(dir, '/groups/', group, '.rds'))
 
 
-is_binfile = function(filename) {
-  # tries to infer if filename is binary packedancestrymap file or text ancestrymap file
+is_packed = function(filename) {
+  # tries to infer if filename is binary packedancestrymap file or text eigenstrat file
   conn = file(filename, 'rb')
   on.exit(close(conn))
   dat = readBin(conn, 'int', 1e3, 1, signed=F)
   max(dat) > 128 || length(unique(dat)) > 5
 }
 
-is_packedancestrymap_prefix = function(input) {
+is_ancestrymap_prefix = function(input) {
   if(!is.character(input) || length(input) > 1) return(FALSE)
-  filesexist = all(file.exists(paste0(input, c('.geno', '.ind', '.snp'))))
-  filesexist && is_binfile(paste0(input, c('.geno')))
+  all(file.exists(paste0(input, c('.geno', '.ind', '.snp'))))
 }
 
 is_plink_prefix = function(input) {
@@ -1835,32 +1852,34 @@ is_plink_prefix = function(input) {
 }
 
 is_geno_prefix = function(input) {
-  is_packedancestrymap_prefix(input) || is_plink_prefix(input)
+  is_ancestrymap_prefix(input) || is_plink_prefix(input)
 }
 
-#' Convert (packed)ancestrymap to PLINK
+#' Convert *EIGENSTRAT* or *PACKEDANCESTRYMAP* to *PLINK*
 #'
-#' This function converts *(packed)ancestrymap/EIGENSTRAT* format files to *PLINK* files, using \code{\link[genio]{write_plink}}.
+#' This function converts *EIGENSTRAT/PACKEDANCESTRYMAP* format files to *PLINK* files, using \code{\link[genio]{write_plink}}.
 #' When `inds` or `pops` is provided, only a subset of samples will be extracted.
 #' @export
-#' @param inpref Prefix of the (packed)ancestrymap input files
+#' @param inpref Prefix of the input files
 #' @param outpref Prefix of the *PLINK* output files
 #' @param inds Individuals which should be extracted
 #' @param pops Populations which should be extracted. Can not be provided together with `inds`
 #' @param verbose Print progress updates
-#' @aliases ancestrymap_to_plink
+#' @aliases eigenstrat_to_plink
 #' @section Alias:
-#' `ancestrymap_to_plink`
+#' `eigenstrat_to_plink`
 packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL, verbose = TRUE) {
   # extracts samples from geno file and writes new, smaller PLINK file using genio
 
   stopifnot(is.null(inds) || is.null(pops))
+  stopifnot(is_ancestrymap_prefix(inpref))
   if(!is.null(pops)) {
     inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
   }
-  read_ancestrymap = ifelse(is_binfile(inpref), read_packedancestrymap, read_ancestrymap)
-  dat = read_ancestrymap(inpref, inds, verbose = verbose)
+
+  read_geno = ifelse(is_packed(inpref), read_packedancestrymap, read_eigenstrat)
+  dat = read_geno(inpref, inds, verbose = verbose)
 
   genio::write_plink(normalizePath(outpref, mustWork = F),
                      dat$geno[,dat$ind$X1],
@@ -1869,7 +1888,7 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
                      verbose = verbose)
 }
 #' @export
-ancestrymap_to_plink = packedancestrymap_to_plink
+eigenstrat_to_plink = packedancestrymap_to_plink
 
 #' Extract samples from PLINK files
 #'

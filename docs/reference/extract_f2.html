@@ -49,7 +49,7 @@
   <script src="../extra.js"></script>
 <meta property="og:title" content="Compute and store blocked f2 statistics — extract_f2" />
 
-<meta property="og:description" content="This function prepares data for various other ADMIXTOOLS 2 functions. It reads data from packedancestrymap or PLINK files,
+<meta property="og:description" content="This function prepares data for various other ADMIXTOOLS 2 functions. It reads data from genotype files,
 computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to outdir." />
 <meta name="twitter:card" content="summary" />
 
@@ -172,7 +172,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
 
     <div class="ref-description">
     
-    <p>This function prepares data for various other <em>ADMIXTOOLS 2</em> functions. It reads data from packedancestrymap or PLINK files,
+    <p>This function prepares data for various other <em>ADMIXTOOLS 2</em> functions. It reads data from genotype files,
 computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to <code>outdir</code>.</p>
     
     </div>
@@ -205,8 +205,8 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>pref</th>
-      <td><p>Prefix of <em>(packed)ancestrymap</em> or <em>PLINK</em> files. <em>(packed)ancestrymap</em> has to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>,
-PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
+      <td><p>Prefix of <em>PLINK/EIGENSTRAT/PACKEDANCESTRYMAP</em> files.
+<em>EIGENSTRAT/PACKEDANCESTRYMAP</em> have to end in <code>.geno</code>, <code>.snp</code>, <code>.ind</code>, <em>PLINK</em> has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p></td>
     </tr>
     <tr>
       <th>outdir</th>
@@ -222,7 +222,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     </tr>
     <tr>
       <th>blgsize</th>
-      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM).</p></td>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM). If <code>blgsize</code> is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.</p></td>
     </tr>
     <tr>
       <th>maxmem</th>
@@ -271,7 +271,7 @@ PLINK has to end in <code>.bed</code>, <code>.bim</code>, <code>.fam</code></p><
     <tr>
       <th>format</th>
       <td><p>Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>ancestrymap</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
+and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>eigenstrat</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>

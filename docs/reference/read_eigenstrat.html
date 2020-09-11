@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Extract samples from PLINK files — extract_samples • admixtools</title>
+<title>Read genotype data from <em>EIGENSTRAT</em> files — read_eigenstrat • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,10 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Extract samples from PLINK files — extract_samples" />
+<meta property="og:title" content="Read genotype data from <em>EIGENSTRAT</em> files — read_eigenstrat" />
 
-<meta property="og:description" content="This function reads PLINK files, extracts a subset of samples, and writes new PLINK files using write_plink. It's probably slower than running the equivalent command in PLINK directly, but it can be useful to do this from within R.
-When inds or pops is provided, only a subset of samples will be extracted." />
+<meta property="og:description" content="Read genotype data from EIGENSTRAT files" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -165,49 +164,29 @@ When inds or pops is provided, only a subset of samples will be extracted." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Extract samples from PLINK files</h1>
+    <h1>Read genotype data from <em>EIGENSTRAT</em> files</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/io.R'><code>R/io.R</code></a></small>
-    <div class="hidden name"><code>extract_samples.Rd</code></div>
+    <div class="hidden name"><code>read_eigenstrat.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function reads <em>PLINK</em> files, extracts a subset of samples, and writes new <em>PLINK</em> files using <code><a href='https://rdrr.io/pkg/genio/man/write_plink.html'>write_plink</a></code>. It's probably slower than running the equivalent command in <em>PLINK</em> directly, but it can be useful to do this from within R.
-When <code>inds</code> or <code>pops</code> is provided, only a subset of samples will be extracted.</p>
+    <p>Read genotype data from <em>EIGENSTRAT</em> files</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>extract_samples</span>(
-  <span class='no'>inpref</span>,
-  <span class='no'>outpref</span>,
-  <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>overwrite</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
-)</pre>
+    <pre class="usage"><span class='fu'>read_eigenstrat</span>(<span class='no'>pref</span>, <span class='kw'>inds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>inpref</th>
-      <td><p>Prefix of the <em>PLINK</em> input files</p></td>
-    </tr>
-    <tr>
-      <th>outpref</th>
-      <td><p>Prefix of the <em>PLINK</em> output files</p></td>
+      <th>pref</th>
+      <td><p>Prefix of packedancestrymap files (files have to end in <code>.geno</code>, <code>.ind</code>, <code>.snp</code>)</p></td>
     </tr>
     <tr>
       <th>inds</th>
-      <td><p>Individuals which should be extracted</p></td>
-    </tr>
-    <tr>
-      <th>pops</th>
-      <td><p>Populations which should be extracted. Can not be provided together with <code>inds</code></p></td>
-    </tr>
-    <tr>
-      <th>overwrite</th>
-      <td><p>Set this to <code>TRUE</code> if <code>inpref == outpref</code> and you really want to overwrite the input files.</p></td>
+      <td><p>Individuals for which data should be read. Defaults to all individuals</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -215,13 +194,26 @@ When <code>inds</code> or <code>pops</code> is provided, only a subset of sample
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
+    <p>A list with the genotype data matrix, the <code>.ind</code> file, and the <code>.snp</code> file</p>
+    
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='no'>samples</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Ind1'</span>, <span class='st'>'Ind2'</span>, <span class='st'>'Ind3'</span>)
+<span class='no'>geno</span> <span class='kw'>=</span> <span class='fu'><a href='read_packedancestrymap.html'>read_packedancestrymap</a></span>(<span class='no'>prefix</span>, <span class='no'>samples</span>)
+}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-                </ul>
+      
+      <li><a href="#value">Value</a></li>
+      
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

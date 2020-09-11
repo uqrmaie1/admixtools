@@ -28,8 +28,8 @@ extract_f2(
 )
 }
 \arguments{
-\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
-PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
+\item{pref}{Prefix of \emph{PLINK/EIGENSTRAT/PACKEDANCESTRYMAP} files.
+\emph{EIGENSTRAT/PACKEDANCESTRYMAP} have to end in \code{.geno}, \code{.snp}, \code{.ind}, \emph{PLINK} has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{outdir}{Directory where data will be stored.}
 
@@ -62,7 +62,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{eigenstrat}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
@@ -74,7 +74,7 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 SNP metadata (invisibly)
 }
 \description{
-This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,
+This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from genotype files,
 computes allele frequencies and blocked f2-statistics for selected populations, and writes the results to \code{outdir}.
 }
 \examples{

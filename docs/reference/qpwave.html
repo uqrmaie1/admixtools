@@ -176,7 +176,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpwave</span>(
-  <span class='no'>f2_data</span>,
+  <span class='no'>data</span>,
   <span class='no'>left</span>,
   <span class='no'>right</span>,
   <span class='kw'>fudge</span> <span class='kw'>=</span> <span class='fl'>1e-04</span>,
@@ -189,6 +189,14 @@
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>data</th>
+      <td><p>The input data in the form of:</p><ul>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code></p></li>
+<li><p>A directory with f2 statistics</p></li>
+<li><p>The prefix of a genotype file</p></li>
+</ul></td>
+    </tr>
     <tr>
       <th>left</th>
       <td><p>Left populations (sources)</p></td>
@@ -225,10 +233,18 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list with output describing the model fit:</p><ol>
+    <p><code>qpwave</code> returns a list with up to two data frames describing the model fit:</p><ol>
 <li><p><code>f4</code> A data frame with estimated f4-statistics</p></li>
-<li><p><code>rankdrop</code> A data frame describing model fits with different ranks, including p-values for the overall fit
-and for nested models (comparing two models with rank difference of one).</p></li>
+<li><p><code>rankdrop</code>: A data frame describing model fits with different ranks, including <em>p</em>-values for the overall fit
+and for nested models (comparing two models with rank difference of one). A model with <code>L</code> left populations and <code>R</code> right populations has an f4-matrix of dimensions <code>(L-1)*(R-1)</code>. If no two left population form a clade with respect to all right populations, this model will have rank <code>(L-1)*(R-1)</code>.</p><ul>
+<li><p><code>f4rank</code>: Tested rank</p></li>
+<li><p><code>dof</code>: Degrees of freedom of the chi-squared null distribution: <code>(L-1-f4rank)*(R-1-f4rank)</code></p></li>
+<li><p><code>chisq</code>: Chi-sqaured statistic, obtained as <code>E'QE</code>, where <code>E</code> is the difference between estimated and fitted f4-statistics, and <code>Q</code> is the f4-statistic covariance matrix.</p></li>
+<li><p><code>p</code>: p-value obtained from <code>chisq</code> as <code><a href='https://rdrr.io/r/stats/Chisquare.html'>pchisq(chisq, df = dof, lower.tail = FALSE)</a></code></p></li>
+<li><p><code>dofdiff</code>: Difference in degrees of freedom between this model and the model with one less rank</p></li>
+<li><p><code>chisqdiff</code>: Difference in chi-squared statistics</p></li>
+<li><p><code>p_nested</code>: <em>p</em>-value testing whether the difference between two models of rank difference 1 is significant</p></li>
+</ul></li>
 </ol>
 
     

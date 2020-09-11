@@ -295,13 +295,15 @@ fix_ploidy = function(xmat) {
 
 # turns f2_data (f2 dir) into f2_blocks; divides by denom
 # returns f2_blocks array with block_lengths in 3rd dimension names
-get_f2 = function(f2_data, pops, pops2 = pops, afprod = FALSE) {
+get_f2 = function(f2_data, pops, pops2 = pops, afprod = FALSE, verbose = TRUE) {
 
-  stopifnot(!is.character(f2_data) || dir.exists(f2_data))
-  if(is.character(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod)
-  } else {
+  stopifnot(!is.character(f2_data) || dir.exists(f2_data) || is_geno_prefix(f2_data))
+  if(!is.character(f2_data)) {
     f2_blocks = f2_data
+  } else if(dir.exists(f2_data)) {
+    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose)
+  } else {
+    f2_blocks = f2_from_geno(f2_data, pops = union(pops, pops2), afprod = afprod, verbose = verbose)
   }
   blockpops = union(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]])
   allpops = union(pops, pops2)

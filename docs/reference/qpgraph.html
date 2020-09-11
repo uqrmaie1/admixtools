@@ -176,7 +176,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpgraph</span>(
-  <span class='no'>f2_blocks</span>,
+  <span class='no'>data</span>,
   <span class='no'>graph</span>,
   <span class='kw'>lambdascale</span> <span class='kw'>=</span> <span class='fl'>1</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
@@ -198,12 +198,16 @@
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_blocks</th>
-      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code>.</p></td>
+      <th>data</th>
+      <td><p>Input data in one of three forms:</p><ol>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code> (fastest option)</p></li>
+<li><p>A directory which contains pre-computed f2-statistics</p></li>
+<li><p>The prefix of genotype files (slowest option)</p></li>
+</ol></td>
     </tr>
     <tr>
       <th>graph</th>
-      <td><p>An admixture graph represented as a matrix of edges, an <code>igraph</code> object, or the path to a qpGraph graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled <code>lower</code> and <code>upper</code> with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.</p></td>
+      <td><p>An admixture graph represented as a matrix of edges, an <code>igraph</code> object, or the path to a <em>qpGraph</em> graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled <code>lower</code> and <code>upper</code> with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.</p></td>
     </tr>
     <tr>
       <th>lambdascale</th>
@@ -248,7 +252,7 @@ The covariance matrix of f3 statistics will be computed using bootstrap resampli
     </tr>
     <tr>
       <th>f3precomp</th>
-      <td><p>Optional precomputed f3-statistics. This should be the output of <code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code> and can be provided instead of <code>f2_blocks</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
+      <td><p>Optional precomputed f3-statistics. This should be the output of <code><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></code> and can be provided instead of <code>data</code>. This can speed things up if many graphs are evaluated using the same set of f3-statistics.</p></td>
     </tr>
     <tr>
       <th>f3basepop</th>
@@ -260,7 +264,7 @@ The covariance matrix of f3 statistics will be computed using bootstrap resampli
     </tr>
     <tr>
       <th>f2_blocks_test</th>
-      <td><p>An optional 3d array of f2-statistics used for computing an out-of-sample score. Ideally this contains SNP blocks which are not part of <code>f2_blocks</code>. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step</p></td>
+      <td><p>An optional 3d array of f2-statistics used for computing an out-of-sample score. This should contain only SNP blocks which are not part of <code>f2_blocks</code>. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -270,17 +274,17 @@ The covariance matrix of f3 statistics will be computed using bootstrap resampli
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list with data describing the model fit:</p><ul>
-<li><p><code>edges</code> a data frame where each row is an edge in the graph. For regular edges,
+    <p><code>qpgraph</code> returns a list with data describing the model fit:</p><ul>
+<li><p><code>edges</code>: A data frame where each row is an edge in the graph. For regular edges,
 the column <code>weight</code> is the estimated edge length, and for admixture edges, it is the estimated admixture weight.</p></li>
-<li><p><code>score</code> the likelihood score of the fitted graph. lower values correspond to better fits.
-the score is calculated as the inner product of the residuals (difference between estimated and
-fitted f3 statistics), weighted by the inverse of the f3 covariance matrix.</p></li>
-<li><p><code>f2</code> estimated and fitted f2 statistics</p></li>
-<li><p><code>f3</code> estimated and fitted f3 statistics</p></li>
-<li><p><code>f4</code> estimated and fitted f4 statistics (if <code>return_f4 = TRUE</code>)</p></li>
-<li><p><code>opt</code> a data frame with details of the weight-fitting step, including the randomly sampled starting weights.</p></li>
-<li><p><code>worst_residual</code> The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if <code>return_f4 = TRUE</code>)</p></li>
+<li><p><code>score</code>: The likelihood score of the fitted graph. Lower values correspond to better fits.
+The score is calculated as the inner product of the residuals (difference between estimated and
+fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See <code>qpgraph_score</code></p></li>
+<li><p><code>f2</code>: Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.</p></li>
+<li><p><code>f3</code>: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.</p></li>
+<li><p><code>f4</code>: Estimated and fitted f4 statistics (if <code>return_f4 = TRUE</code>). p-values and z-scores test the significance of the difference.</p></li>
+<li><p><code>opt</code>: A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column <code>value</code> contains the score for each set of starting weights. Columns starting with <code>x</code> denote initial weights, and columns starting with <code>y</code> denote fitted weights.</p></li>
+<li><p><code>worst_residual</code>: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if <code>return_f4 = TRUE</code>)</p></li>
 </ul>
 
     

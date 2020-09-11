@@ -27,8 +27,8 @@ f2_from_geno(
 )
 }
 \arguments{
-\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
-PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
+\item{pref}{Prefix of \emph{PLINK/EIGENSTRAT/PACKEDANCESTRYMAP} files.
+\emph{EIGENSTRAT/PACKEDANCESTRYMAP} have to end in \code{.geno}, \code{.snp}, \code{.ind}, \emph{PLINK} has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{inds}{Individuals for which data should be extracted}
 
@@ -59,7 +59,7 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{afprod}{Return negative average allele frequency products instead of f2-statistics. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{eigenstrat}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
@@ -69,7 +69,7 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 A 3d array of f2-statistics (or scaled allele frequency products if \code{afprod = TRUE})
 }
 \description{
-This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from packedancestrymap or PLINK files,
+This function prepares data for various other \emph{ADMIXTOOLS 2} functions. It reads data from genotype files,
 computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array.
 }
 \seealso{

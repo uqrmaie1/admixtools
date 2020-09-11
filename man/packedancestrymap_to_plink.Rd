@@ -2,8 +2,8 @@
 % Please edit documentation in R/io.R
 \name{packedancestrymap_to_plink}
 \alias{packedancestrymap_to_plink}
-\alias{ancestrymap_to_plink}
-\title{Convert (packed)ancestrymap to PLINK}
+\alias{eigenstrat_to_plink}
+\title{Convert \emph{EIGENSTRAT} or \emph{PACKEDANCESTRYMAP} to \emph{PLINK}}
 \usage{
 packedancestrymap_to_plink(
   inpref,
@@ -14,7 +14,7 @@ packedancestrymap_to_plink(
 )
 }
 \arguments{
-\item{inpref}{Prefix of the (packed)ancestrymap input files}
+\item{inpref}{Prefix of the input files}
 
 \item{outpref}{Prefix of the \emph{PLINK} output files}
 
@@ -25,11 +25,11 @@ packedancestrymap_to_plink(
 \item{verbose}{Print progress updates}
 }
 \description{
-This function converts \emph{(packed)ancestrymap/EIGENSTRAT} format files to \emph{PLINK} files, using \code{\link[genio]{write_plink}}.
+This function converts \emph{EIGENSTRAT/PACKEDANCESTRYMAP} format files to \emph{PLINK} files, using \code{\link[genio]{write_plink}}.
 When \code{inds} or \code{pops} is provided, only a subset of samples will be extracted.
 }
 \section{Alias}{
 
-\code{ancestrymap_to_plink}
+\code{eigenstrat_to_plink}
 }
 

@@ -24,8 +24,8 @@ extract_counts(
 )
 }
 \arguments{
-\item{pref}{Prefix of \emph{(packed)ancestrymap} or \emph{PLINK} files. \emph{(packed)ancestrymap} has to end in \code{.geno}, \code{.snp}, \code{.ind},
-PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
+\item{pref}{Prefix of \emph{PLINK/EIGENSTRAT/PACKEDANCESTRYMAP} files.
+\emph{EIGENSTRAT/PACKEDANCESTRYMAP} have to end in \code{.geno}, \code{.snp}, \code{.ind}, \emph{PLINK} has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 
 \item{outdir}{Directory where data will be stored.}
 
@@ -52,14 +52,14 @@ PLINK has to end in \code{.bed}, \code{.bim}, \code{.fam}}
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
-and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{ancestrymap}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
+and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{eigenstrat}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}
 
 \item{cols_per_chunk}{Number of genotype chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for \code{cols_per_chunk} in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.}
 
 \item{verbose}{Print progress updates}
 }
 \description{
-Prepare data for various \emph{ADMIXTOOLS 2} functions. This function reads data from packedancestrymap or PLINK files,
+Prepare data for various \emph{ADMIXTOOLS 2} functions. This function reads data from genotype files,
 and extracts data required to compute blocked f-statistics for any sets of samples. The data consists of
 \code{.rds} files with total and alternative allele counts for each individual, and products of total
 and alternative allele counts for each pair.
