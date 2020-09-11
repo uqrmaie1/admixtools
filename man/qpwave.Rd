@@ -42,11 +42,20 @@ as well as the weight standard errors, will be computed using bootstrapping.}
 \item{verbose}{Print progress updates}
 }
 \value{
-A list with output describing the model fit:
+\code{qpwave} returns a list with up to two data frames describing the model fit:
 \enumerate{
 \item \code{f4} A data frame with estimated f4-statistics
-\item \code{rankdrop} A data frame describing model fits with different ranks, including p-values for the overall fit
-and for nested models (comparing two models with rank difference of one).
+\item \code{rankdrop}: A data frame describing model fits with different ranks, including \emph{p}-values for the overall fit
+and for nested models (comparing two models with rank difference of one). A model with \code{L} left populations and \code{R} right populations has an f4-matrix of dimensions \code{(L-1)*(R-1)}. If no two left population form a clade with respect to all right populations, this model will have rank \code{(L-1)*(R-1)}.
+\itemize{
+\item \code{f4rank}: Tested rank
+\item \code{dof}: Degrees of freedom of the chi-squared null distribution: \code{(L-1-f4rank)*(R-1-f4rank)}
+\item \code{chisq}: Chi-sqaured statistic, obtained as \verb{E'QE}, where \code{E} is the difference between estimated and fitted f4-statistics, and \code{Q} is the f4-statistic covariance matrix.
+\item \code{p}: p-value obtained from \code{chisq} as \code{pchisq(chisq, df = dof, lower.tail = FALSE)}
+\item \code{dofdiff}: Difference in degrees of freedom between this model and the model with one less rank
+\item \code{chisqdiff}: Difference in chi-squared statistics
+\item \code{p_nested}: \emph{p}-value testing whether the difference between two models of rank difference 1 is significant
+}
 }
 }
 \description{

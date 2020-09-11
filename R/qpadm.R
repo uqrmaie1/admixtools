@@ -88,9 +88,8 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 
 #' Estimate admixture weights
 #'
-#' Models target as a mixture of left populations, given a set of outgroup right populations.
-#' Can be used to estimate admixture proportions, and to estimate the number of independent
-#' admixture events.
+#' `qpadm` models a target population as a mixture of left (source) populations, given a set of right (outgroup) populations.
+#' It can be used to estimate whether the left populations explain all genetic variation in the target population, relative to the right populations, and to estimate admixture proportions of the left populations to the target population.
 #' @export
 #' @param data The input data in the form of:
 #' \itemize{
@@ -112,29 +111,29 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
-#' @return A list with output describing the model fit:
-#' \itemize{
-#' \item `weights` A data frame with estimated admixture proportions where each row is a left population.
-#' \item `f4` A data frame with estimated and fitted f4-statistics
-#' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
-#' and for nested models (comparing two models with rank difference of one). A model with `l` left populations and `r` right populations has an f4-matrix of dimensions `(l-1)*(r-1)`. If no two left population form a clade with respect to all right populations, this model will have rank `(l-1)*(r-1)`.
+#' @return `qpadm` returns a list with up to four data frames describing the model fit:
+#' \enumerate{
+#' \item `weights`: A data frame with estimated admixture proportions where each row is a left population.
+#' \item `f4`: A data frame with estimated and fitted f4-statistics
+#' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
+#' and for nested models (comparing two models with rank difference of one). A model with `L` left populations and `R` right populations has an f4-matrix of dimensions `(L-1)*(R-1)`. If no two left population form a clade with respect to all right populations, this model will have rank `(L-1)*(R-1)`.
 #'   \itemize{
-#'     \item `f4rank`: Number of ranks below full rank
-#'     \item `dof`: Degrees of freedom of the chi-squared null distribution: `(l-1-f4rank)*(r-1-f4rank)`
+#'     \item `f4rank`: Tested rank
+#'     \item `dof`: Degrees of freedom of the chi-squared null distribution: `(L-1-f4rank)*(R-1-f4rank)`
 #'     \item `chisq`: Chi-sqaured statistic, obtained as `E'QE`, where `E` is the difference between estimated and fitted f4-statistics, and `Q` is the f4-statistic covariance matrix.
 #'     \item `p`: p-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
 #'     \item `dofdiff`: Difference in degrees of freedom between this model and the model with one less rank
 #'     \item `chisqdiff`: Difference in chi-squared statistics
-#'     \item `p_nested`: p-value testing whether the difference between two models of rank difference 1 is significant
+#'     \item `p_nested`: *p*-value testing whether the difference between two models of rank difference 1 is significant
 #'   }
-#' \item `popdrop` A data frame describing model fits with different populations. Note that all models use the same set of SNPs as the first model.
+#' \item `popdrop`: A data frame describing model fits with different populations. Note that all models with fewer populations use the same set of SNPs as the first model.
 #'   \itemize{
-#'     \item `pat`: A binary code indicating which populations are present in this model. `1` represents dropped populations.
-#'     \item `wt`:
-#'     \item `dof`: Degrees of freedom
+#'     \item `pat`: A binary code indicating which populations are present in this model. A `1` represents dropped populations. The full model is all zeros.
+#'     \item `wt`: Number of populations dropped
+#'     \item `dof`: Degrees of freedom of the chi-squared null distribution: `(L-1-f4rank)*(R-1-f4rank)`
 #'     \item `chisq`: Chi-sqaured statistic, obtained as `E'QE`, where `E` is the difference between estimated and fitted f4-statistics, and `Q` is the f4-statistic covariance matrix.
-#'     \item `p`: p-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
-#'     \item `f4rank`:
+#'     \item `p`: *p*-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
+#'     \item `f4rank`: Tested rank
 #'     \item `feasible`: A model is feasible if all weights fall between 0 and 1
 #'     \item `<population name>`: The weights for each population in this model
 #'   }
@@ -232,11 +231,20 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 #' `qpwave` compares two sets of populations (`left` and `right`) to each other. It estimates a lower bound on the number of admixtue waves that went from `left` into `right`, by comparing a matrix of f4-statistics to low-rank approximations. For a rank of 0 this is equivalent to testing whether `left` and `right` form clades relative to each other.
 #' @export
 #' @inheritParams qpadm
-#' @return A list with output describing the model fit:
+#' @return `qpwave` returns a list with up to two data frames describing the model fit:
 #' \enumerate{
 #' \item `f4` A data frame with estimated f4-statistics
-#' \item `rankdrop` A data frame describing model fits with different ranks, including p-values for the overall fit
-#' and for nested models (comparing two models with rank difference of one).
+#' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
+#' and for nested models (comparing two models with rank difference of one). A model with `L` left populations and `R` right populations has an f4-matrix of dimensions `(L-1)*(R-1)`. If no two left population form a clade with respect to all right populations, this model will have rank `(L-1)*(R-1)`.
+#'   \itemize{
+#'     \item `f4rank`: Tested rank
+#'     \item `dof`: Degrees of freedom of the chi-squared null distribution: `(L-1-f4rank)*(R-1-f4rank)`
+#'     \item `chisq`: Chi-sqaured statistic, obtained as `E'QE`, where `E` is the difference between estimated and fitted f4-statistics, and `Q` is the f4-statistic covariance matrix.
+#'     \item `p`: p-value obtained from `chisq` as `pchisq(chisq, df = dof, lower.tail = FALSE)`
+#'     \item `dofdiff`: Difference in degrees of freedom between this model and the model with one less rank
+#'     \item `chisqdiff`: Difference in chi-squared statistics
+#'     \item `p_nested`: *p*-value testing whether the difference between two models of rank difference 1 is significant
+#'   }
 #' }
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European

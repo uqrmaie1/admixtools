@@ -103,7 +103,6 @@ ancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaplo
   numpop = length(upops)
   geno = geno[,popind2]
   geno[geno == 9] = NA
-
   colnames(geno) = inds
   rownames(geno) = snpfile$SNP
 
@@ -345,6 +344,7 @@ read_ancestrymap = function(pref, inds = NULL, verbose = TRUE) {
   geno = apply(do.call(rbind, str_split(readLines(fl), '')), 2, as.numeric)
   nindall = nrow(geno)
   geno = geno[,popind2,drop=FALSE]
+  geno[geno == 9] = NA
   colnames(geno) = inds
   rownames(geno) = snpfile$SNP
 
