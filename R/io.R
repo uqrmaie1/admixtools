@@ -1340,7 +1340,7 @@ format_info = function(pref, format = NULL) {
   # returns named list with genotype format specific information
 
   l = list()
-  if(is_ancestrymap_prefix(pref) && is_packed(pref) || isTRUE(format == 'packedancestrymap')) {
+  if(is_ancestrymap_prefix(pref) && is_packed(paste0(pref, '.geno')) || isTRUE(format == 'packedancestrymap')) {
     l$format = 'packedancestrymap'
     l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
     l$indnam = c('ind', 'sex', 'pop')
@@ -1351,7 +1351,7 @@ format_info = function(pref, format = NULL) {
     l$cpp_geno_ploidy = cpp_packedancestrymap_ploidy
     l$cpp_geno_to_afs = cpp_packedancestrymap_to_afs
     l$cpp_read_geno = cpp_read_packedancestrymap
-  } else if(is_ancestrymap_prefix(pref) && !is_packed(pref) || isTRUE(format == 'eigenstrat')) {
+  } else if(is_ancestrymap_prefix(pref) && !is_packed(paste0(pref, '.geno')) || isTRUE(format == 'eigenstrat')) {
     l$format = 'eigenstrat'
     l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
     l$indnam = c('ind', 'sex', 'pop')
@@ -1878,7 +1878,7 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
       filter(X3 %in% pops) %$% X1
   }
 
-  read_geno = ifelse(is_packed(inpref), read_packedancestrymap, read_eigenstrat)
+  read_geno = ifelse(is_packed(paste0(inpref, '.geno')), read_packedancestrymap, read_eigenstrat)
   dat = read_geno(inpref, inds, verbose = verbose)
 
   genio::write_plink(normalizePath(outpref, mustWork = F),
