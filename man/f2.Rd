@@ -5,7 +5,7 @@
 \title{Estimate f2 statistics}
 \usage{
 f2(
-  f2_data,
+  data,
   pop1 = NULL,
   pop2 = NULL,
   boot = FALSE,
@@ -15,8 +15,11 @@ f2(
 )
 }
 \arguments{
-\item{f2_data}{A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
-Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
+\item{data}{Input data in one of three forms: \enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
 \item{pop1}{One of the following four:
 \enumerate{
@@ -43,7 +46,7 @@ from accidently computing all combinations if that number is large.}
 \item{verbose}{Print progress updates}
 }
 \value{
-A data frame with f2 statistics
+\code{f2} returns a data frame with f2 statistics
 }
 \description{
 Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}

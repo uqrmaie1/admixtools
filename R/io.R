@@ -1067,7 +1067,7 @@ read_anygeno = function(pref, inds = NULL, format = NULL, verbose = TRUE) {
   } else if(tolower(format) == 'plink') {
     read_geno = read_plink
   } else stop('Genotype files not found!')
-  if(verbose) alert_info(paste0('Reading genotypes in ', tolower(format), 'format...\n'))
+  if(verbose) alert_info(paste0('Reading genotypes in ', tolower(format), ' format...\n'))
   read_geno(pref, inds, verbose = verbose)
 }
 

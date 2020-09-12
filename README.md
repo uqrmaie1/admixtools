@@ -105,16 +105,30 @@ me](mailto:rmaier@broadinstitute.org).
 
 ## Usage
 
-The first step is to get *f*<sub>2</sub>-statistics from genotype files.
+Admixture graphs can be fitted like this:
 
 ``` r
 genotype_data = "/my/geno/prefix"
-f2_blocks = f2_from_geno(genotype_data)
+fit = qpgraph(genotype_data, example_graph)
+fit$score
 ```
 
-Now we can fit an admixture graph:
+    #> [1] 19219.98
 
 ``` r
+plot_graph(fit$edges)
+```
+
+![example graph](man/figures/graph1.png) Clearly not a historically
+accurate model, but it gets the idea across.
+
+<br>
+
+When testing more than one model, it makes sense to extract and re-use
+f2-statistics:
+
+``` r
+f2_blocks = f2_from_geno(genotype_data)
 fit = qpgraph(f2_blocks, example_graph)
 ```
 
@@ -123,17 +137,9 @@ fit$score
 #> [1] 19219.98
 ```
 
-``` r
-plot_graph(fit$edges)
-```
-
-![example graph](man/figures/graph1.png)
-
-Clearly not a historically accurate model, but it gets the idea across.
-
 <br>
 
-We can also use the *f*<sub>2</sub>-statistics to estimate admixture
+*f*<sub>2</sub>-statistics can also be used to estimate admixture
 weights:
 
 ``` r
@@ -154,7 +160,7 @@ qpadm(f2_blocks, left, right, target)$weights
 
 <br>
 
-Or we can use them to get *f*<sub>4</sub>-statistics:
+Or to get *f*<sub>4</sub>-statistics:
 
 ``` r
 f4(f2_blocks)

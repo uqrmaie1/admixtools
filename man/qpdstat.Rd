@@ -6,7 +6,7 @@
 \title{Estimate f4 statistics}
 \usage{
 qpdstat(
-  f2_data,
+  data,
   pop1 = NULL,
   pop2 = NULL,
   pop3 = NULL,
@@ -20,16 +20,14 @@ qpdstat(
   f4mode = TRUE,
   afprod = TRUE,
   cpp = TRUE,
-  verbose = is.character(f2_data)
+  verbose = is.character(data)
 )
 }
 \arguments{
-\item{f2_data}{f2 data in one of the following formats
-\enumerate{
-\item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
-\item A directory with f2 statistics
-\item Prefix of genotype files. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
+\item{data}{Input data in one of three forms: \enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
 }}
 
 \item{pop1}{One of the following four:
@@ -60,21 +58,21 @@ from accidently computing all combinations if that number is large.}
 
 \item{comb}{Generate all combinations of \code{pop1}, \code{pop2}, \code{pop3}, \code{pop4}. If \code{FALSE}, \code{pop1}, \code{pop2}, \code{pop3}, \code{pop4} should all be vectors of the same length.}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). Only used when \code{f2_data} is the prefix of genotype files}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). Only used when \code{data} is the prefix of genotype files}
 
 \item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
-match the number of SNPs. only used when \code{f2_data} is the prefix of genotype files}
+match the number of SNPs. only used when \code{data} is the prefix of genotype files}
 
-\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))}. \code{f4mode = FALSE} is only available when \code{f2_data} is the prefix of genotype files}
+\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))}. \code{f4mode = FALSE} is only available when \code{data} is the prefix of genotype files}
 
-\item{afprod}{Compute f4 from allele frequency products instead of f2. Only used if \code{f2_data} is a directory with precomputed data.}
+\item{afprod}{Compute f4 from allele frequency products instead of f2. Only used if \code{data} is a directory with precomputed data.}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
 \item{verbose}{Print progress updates}
 }
 \value{
-A data frame with f4 statistics
+\code{qpdstat} returns a data frame with f4 statistics
 }
 \description{
 Computes f4 statistics from f2 blocks of the form \eqn{f4(A, B; C, D)}. Equivalent to

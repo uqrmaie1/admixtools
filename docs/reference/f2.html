@@ -176,7 +176,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>f2</span>(
-  <span class='no'>f2_data</span>,
+  <span class='no'>data</span>,
   <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
@@ -189,9 +189,12 @@
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_data</th>
-      <td><p>A 3d array with blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='f2_from_geno.html'>f2_from_geno</a></code>
-Alternatively, a directory with precomputed data. See <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code>.</p></td>
+      <th>data</th>
+      <td><p>Input data in one of three forms:</p><ol>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code> (fastest option)</p></li>
+<li><p>A directory which contains pre-computed f2-statistics</p></li>
+<li><p>The prefix of genotype files (slowest option)</p></li>
+</ol></td>
     </tr>
     <tr>
       <th>pop1</th>
@@ -232,7 +235,7 @@ from accidently computing all combinations if that number is large.</p></td>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data frame with f2 statistics</p>
+    <p><code>f2</code> returns a data frame with f2 statistics</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 

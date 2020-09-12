@@ -8,8 +8,11 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
 #' @export
-#' @param f2_data A 3d array with blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
-#' Alternatively, a directory with precomputed data. See \code{\link{extract_f2}} and \code{\link{extract_counts}}.
+#' @param data Input data in one of three forms: \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files (slowest option)
+#' }
 #' @param pop1 One of the following four:
 #' \enumerate{
 #' \item `NULL`: all possible population combinations will be returned
@@ -28,7 +31,7 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' from accidently computing all combinations if that number is large.
 #' @param unique_only If `TRUE` (the default), redundant combinations will be excluded
 #' @param verbose Print progress updates
-#' @return A data frame with f2 statistics
+#' @return `f2` returns a data frame with f2 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @examples
@@ -38,16 +41,16 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' \dontrun{
 #' f2(f2_dir, pop1, pop2)
 #' }
-f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
+f2 = function(data, pop1 = NULL, pop2 = NULL,
               boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
-  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2,
+  out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2,
                            sure = sure, unique_only = unique_only, fnum = 2)
   pops = unique(c(out$pop1, out$pop2))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(f2_data, pops) %>% samplefun
+  f2_blocks = get_f2(data, pops) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f2 -----------------
@@ -71,7 +74,7 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 #' @export
 #' @param pop3 A vector of population labels
 #' @inheritParams f2
-#' @return A data frame with f3 statistics
+#' @return `qp3pop` returns a data frame with f3 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @aliases f3
@@ -85,19 +88,19 @@ f2 = function(f2_data, pop1 = NULL, pop2 = NULL,
 #' \dontrun{
 #' qp3pop(f2_dir, pop1, pop2, pop3)
 #' }
-qp3pop = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
+qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
                   boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
 
-  stopifnot(is.null(pop2) & is.null(pop3) |
-              !is.null(pop2) & !is.null(pop3))
+  stopifnot(is.null(pop2) & is.null(pop3) | !is.null(pop2) & !is.null(pop3))
+  stopifnot(!is_geno_prefix(data) || !is.null(pop1))
 
-  out = fstat_get_popcombs(f2_data = f2_data, pop1 = pop1, pop2 = pop2, pop3 = pop3,
+  out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2, pop3 = pop3,
                            sure = sure, unique_only = unique_only, fnum = 3)
   pops = unique(c(out$pop1, out$pop2, out$pop3))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(f2_data, pops) %>% samplefun
+  f2_blocks = get_f2(data, pops) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f3 -----------------
@@ -123,23 +126,16 @@ f3 = qp3pop
 #' \eqn{(f2(A, D) + f2(B, C) - f2(A, C) - f2(B, D)) / 2}
 #' @export
 #' @inheritParams f2
-#' @param f2_data f2 data in one of the following formats
-#' \enumerate{
-#' \item A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-#' output of \code{\link{extract_f2}} and \code{\link{extract_counts}}
-#' \item A directory with f2 statistics
-#' \item Prefix of genotype files. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.
-#' }
 #' @param pop3 A vector of population labels
 #' @param pop4 A vector of population labels
 #' @param comb Generate all combinations of `pop1`, `pop2`, `pop3`, `pop4`. If `FALSE`, `pop1`, `pop2`, `pop3`, `pop4` should all be vectors of the same length.
-#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). Only used when `f2_data` is the prefix of genotype files
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). Only used when `data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
-#' match the number of SNPs. only used when `f2_data` is the prefix of genotype files
-#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`. `f4mode = FALSE` is only available when `f2_data` is the prefix of genotype files
-#' @param afprod Compute f4 from allele frequency products instead of f2. Only used if `f2_data` is a directory with precomputed data.
+#' match the number of SNPs. only used when `data` is the prefix of genotype files
+#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`. `f4mode = FALSE` is only available when `data` is the prefix of genotype files
+#' @param afprod Compute f4 from allele frequency products instead of f2. Only used if `data` is a directory with precomputed data.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
-#' @return A data frame with f4 statistics
+#' @return `qpdstat` returns a data frame with f4 statistics
 #' @aliases f4
 #' @section Alias:
 #' `f4`
@@ -154,10 +150,10 @@ f3 = qp3pop
 #' \dontrun{
 #' qpdstat(f2_dir, pop1, pop2, pop3, pop4)
 #' }
-qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
+qpdstat = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    boot = FALSE, sure = FALSE, unique_only = TRUE,
                    comb = TRUE, blgsize = NULL, block_lengths = NULL, f4mode = TRUE,
-                   afprod = TRUE, cpp = TRUE, verbose = is.character(f2_data)) {
+                   afprod = TRUE, cpp = TRUE, verbose = is.character(data)) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
@@ -168,7 +164,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
     out = tibble(pop1, pop2, pop3, pop4)
   } else {
     if(verbose) alert_info('Getting population combinations...\n')
-    out = fstat_get_popcombs(f2_data, pop1, pop2, pop3, pop4,
+    out = fstat_get_popcombs(data, pop1, pop2, pop3, pop4,
                              sure = sure, unique_only = unique_only, fnum = 4)
     if(verbose) alert_info(paste0(nrow(out), ' population combinations found\n'))
   }
@@ -176,12 +172,11 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   pops1 = unique(c(out$pop1, out$pop2))
   pops2 = unique(c(out$pop3, out$pop4))
 
-  if(is_geno_prefix(f2_data)) {
+  if(is_geno_prefix(data)) {
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
-    return(qpdstat_geno(f2_data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
+    return(qpdstat_geno(data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
                         f4mode = f4mode, block_lengths = block_lengths, boot = boot, verbose = verbose))
   }
-
 
   if(cpp) {
     boot_vec_stats = cpp_boot_vec_stats
@@ -191,7 +186,7 @@ qpdstat = function(f2_data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   statfun = ifelse(boot, boot_vec_stats, jack_vec_stats)
 
   if(verbose) alert_info(paste0('Loading f2 data for ', length(pops1)*length(pops2), ' population pairs...\n'))
-  f2_blocks = get_f2(f2_data, pops1, pops2 = pops2, afprod = afprod) %>% samplefun
+  f2_blocks = get_f2(data, pops1, pops2 = pops2, afprod = afprod) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f4 -----------------
@@ -364,7 +359,12 @@ f4_from_f2 = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
 #' Estimate admixture proportions via f4 ratios
 #'
 #' @export
-#' @param f2_blocks 3d array of f2-statistics
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files (slowest option)
+#' }
 #' @param pops A vector of 5 populations or a five column population matrix.
 #' The following ratios will be computed: `f4(1, 2; 3, 4)/f4(1, 2; 5, 4)`
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
@@ -372,11 +372,13 @@ f4_from_f2 = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
 #' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
 #' The the covariance matrix of the f statistics will be computed using bootstrapping.
 #' @param verbose Print progress updates
-#' @return A data frame with f4 ratios
-qpf4ratio = function(f2_blocks, pops, boot = FALSE, verbose = FALSE) {
+#' @return `qpf4ratio` returns a data frame with f4 ratios
+qpf4ratio = function(data, pops, boot = FALSE, verbose = FALSE) {
 
   if(!is.matrix(pops)) pops %<>% t
   if(ncol(pops) != 5) stop("'pops' should be a vector of length 5, or a matrix with 5 columns.")
+
+  f2_blocks = get_f2(data, pops, afprod = TRUE, verbose = verbose)
 
   samplefun = ifelse(boot, function(x, ...) est_to_boo(x, boot, ...), est_to_loo)
   statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)

@@ -4,10 +4,15 @@
 \alias{lazadm}
 \title{Estimate admixture weights}
 \usage{
-lazadm(f2_data, left, right, target, boot = FALSE, constrained = TRUE)
+lazadm(data, left, right, target, boot = FALSE, constrained = TRUE)
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.}
+\item{data}{The input data in the form of:
+\itemize{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+\item A directory with f2 statistics
+\item The prefix of a genotype file
+}}
 
 \item{left}{Left populations (sources)}
 
@@ -21,11 +26,10 @@ Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is ei
 or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
 as well as the weight standard errors, will be computed using bootstrapping.}
 
-\item{constrained}{If \code{TRUE} (default), admixture weights will all be non-negative.
-If \code{FALSE}, they can be negative, as in \code{\link{qpadm}}}
+\item{constrained}{Constrain admixture weights to be non-negative}
 }
 \value{
-A data frame with weights and standard errors for each left population
+\code{lazadm} returns a data frame with weights and standard errors for each left population
 }
 \description{
 Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method

@@ -175,14 +175,18 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>qpf4ratio</span>(<span class='no'>f2_blocks</span>, <span class='no'>pops</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
+    <pre class="usage"><span class='fu'>qpf4ratio</span>(<span class='no'>data</span>, <span class='no'>pops</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_blocks</th>
-      <td><p>3d array of f2-statistics</p></td>
+      <th>data</th>
+      <td><p>Input data in one of three forms:</p><ol>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code> (fastest option)</p></li>
+<li><p>A directory which contains pre-computed f2-statistics</p></li>
+<li><p>The prefix of genotype files (slowest option)</p></li>
+</ol></td>
     </tr>
     <tr>
       <th>pops</th>
@@ -204,7 +208,7 @@ The the covariance matrix of the f statistics will be computed using bootstrappi
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data frame with f4 ratios</p>
+    <p><code>qpf4ratio</code> returns a data frame with f4 ratios</p>
     
 
   </div>

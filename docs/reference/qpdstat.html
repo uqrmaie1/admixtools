@@ -178,7 +178,7 @@
     </div>
 
     <pre class="usage"><span class='fu'>qpdstat</span>(
-  <span class='no'>f2_data</span>,
+  <span class='no'>data</span>,
   <span class='kw'>pop1</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>pop3</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
@@ -192,19 +192,18 @@
   <span class='kw'>f4mode</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>cpp</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/character.html'>is.character</a></span>(<span class='no'>f2_data</span>)
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/character.html'>is.character</a></span>(<span class='no'>data</span>)
 )</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_data</th>
-      <td><p>f2 data in one of the following formats</p><ol>
-<li><p>A 3d array of block-jackknife leave-one-block-out estimates of f2 statistics,
-output of <code><a href='extract_f2.html'>extract_f2</a></code> and <code><a href='extract_counts.html'>extract_counts</a></code></p></li>
-<li><p>A directory with f2 statistics</p></li>
-<li><p>Prefix of genotype files. This is the slowest option, but allows to compute f4-statistics based on all non-missing SNPs in each population quadruple. This can be more precise in the presence of large amounts of missing data.</p></li>
+      <th>data</th>
+      <td><p>Input data in one of three forms:</p><ol>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code> (fastest option)</p></li>
+<li><p>A directory which contains pre-computed f2-statistics</p></li>
+<li><p>The prefix of genotype files (slowest option)</p></li>
 </ol></td>
     </tr>
     <tr>
@@ -252,20 +251,20 @@ from accidently computing all combinations if that number is large.</p></td>
     </tr>
     <tr>
       <th>blgsize</th>
-      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM). Only used when <code>f2_data</code> is the prefix of genotype files</p></td>
+      <td><p>SNP block size in Morgan. Default is 0.05 (50 cM). Only used when <code>data</code> is the prefix of genotype files</p></td>
     </tr>
     <tr>
       <th>block_lengths</th>
       <td><p>Vector with lengths of each jackknife block. <code><a href='https://rdrr.io/r/base/sum.html'>sum(block_lengths)</a></code> has to
-match the number of SNPs. only used when <code>f2_data</code> is the prefix of genotype files</p></td>
+match the number of SNPs. only used when <code>data</code> is the prefix of genotype files</p></td>
     </tr>
     <tr>
       <th>f4mode</th>
-      <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>, which is the same as <code>(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))</code>. <code>f4mode = FALSE</code> is only available when <code>f2_data</code> is the prefix of genotype files</p></td>
+      <td><p>If <code>TRUE</code>: f4 is computed from allele frequencies <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code> as <code>(a-b)*(c-d)</code>. if <code>FALSE</code>, D-statistics are computed instead, defined as <code>(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))</code>, which is the same as <code>(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))</code>. <code>f4mode = FALSE</code> is only available when <code>data</code> is the prefix of genotype files</p></td>
     </tr>
     <tr>
       <th>afprod</th>
-      <td><p>Compute f4 from allele frequency products instead of f2. Only used if <code>f2_data</code> is a directory with precomputed data.</p></td>
+      <td><p>Compute f4 from allele frequency products instead of f2. Only used if <code>data</code> is a directory with precomputed data.</p></td>
     </tr>
     <tr>
       <th>cpp</th>
@@ -279,7 +278,7 @@ match the number of SNPs. only used when <code>f2_data</code> is the prefix of g
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data frame with f4 statistics</p>
+    <p><code>qpdstat</code> returns a data frame with f4 statistics</p>
     
     <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
 

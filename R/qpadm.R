@@ -407,18 +407,8 @@ lazadm_old = function(f2_data, left, right, target = NULL,
 #' Models target as a mixture of left populations, and outgroup right populations. Uses Lazaridis method
 #' based non-negative least squares of f4 matrix.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}.
-#' @param left Left populations (sources)
-#' @param right Right populations (outgroups)
-#' @param target Target population
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
-#' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
-#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
-#' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
-#' as well as the weight standard errors, will be computed using bootstrapping.
-#' @param constrained If `TRUE` (default), admixture weights will all be non-negative.
-#' If `FALSE`, they can be negative, as in \code{\link{qpadm}}
-#' @return A data frame with weights and standard errors for each left population
+#' @inheritParams qpadm
+#' @return `lazadm` returns a data frame with weights and standard errors for each left population
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @references Haak, W. et al. (2015) \emph{Massive migration from the steppe was a source for Indo-European
 #' languages in Europe.} Nature (SI 9)
@@ -429,7 +419,7 @@ lazadm_old = function(f2_data, left, right, target = NULL,
 #' right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG')
 #' lazadm(example_f2_blocks, left, right, target)
 #' lazadm(example_f2_blocks, left, right, target, constrained = FALSE)
-lazadm = function(f2_data, left, right, target,
+lazadm = function(data, left, right, target,
                   boot = FALSE, constrained = TRUE) {
 
   #----------------- prepare f4 stats -----------------
@@ -443,10 +433,13 @@ lazadm = function(f2_data, left, right, target,
   stopifnot(!any(duplicated(pops)))
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo_nafix)
-  f2_blocks = get_f2(f2_data, pops, afprod = TRUE) %>% samplefun
-  #f2_blocks[f2_blocks < 0] = 0
+  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  f2_blocks = get_f2(data, pops, afprod = TRUE)
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
-  numblocks = length(block_lengths)
+  loo_blocks = f2_blocks %>% samplefun
+  loo_blocks %<>% abind::abind(apply(f2_blocks, 1:2, weighted.mean, block_lengths))
+
+  numblocks = length(block_lengths) + 1
 
   r = match(right, pops)
   og_indices = expand.grid(r, r, r) %>%
@@ -460,15 +453,15 @@ lazadm = function(f2_data, left, right, target,
   pos3 = og_indices[,2]
   pos4 = og_indices[,3]
 
-  ymat = matrix(f2_blocks[cbind(pos1, pos4, blocknums)] +
-                f2_blocks[cbind(pos2, pos3, blocknums)] -
-                f2_blocks[cbind(pos1, pos3, blocknums)] -
-                f2_blocks[cbind(pos2, pos4, blocknums)], ncomb)
+  ymat = matrix(loo_blocks[cbind(pos1, pos4, blocknums)] +
+                loo_blocks[cbind(pos2, pos3, blocknums)] -
+                loo_blocks[cbind(pos1, pos3, blocknums)] -
+                loo_blocks[cbind(pos2, pos4, blocknums)], ncomb)
 
-  xarr = f2_blocks[pos4, left,] +
-    array(f2_blocks[cbind(pos2, pos3, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks)) -
-    f2_blocks[pos3, left,] -
-    array(f2_blocks[cbind(pos2, pos4, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks))
+  xarr = loo_blocks[pos4, left,] +
+    array(loo_blocks[cbind(pos2, pos3, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks)) -
+    loo_blocks[pos3, left,] -
+    array(loo_blocks[cbind(pos2, pos4, rep(blocknums, each = nleft))], c(ncomb, nleft, numblocks))
 
   #----------------- compute admixture weights -----------------
   lhs = matrix(NA, nleft, numblocks)
@@ -489,9 +482,9 @@ lazadm = function(f2_data, left, right, target,
     if(sum(w) > 1e-10) w = w/sum(w)
     w
   })
-  weight = rowMeans(wmat)
-  se = sqrt(diag(cov(t(wmat))))
-  if(!boot) se = se * (numblocks-1) / sqrt(numblocks)
+  stats = wmat[,-numblocks] %>% statfun(block_lengths, tot = wmat[,numblocks])
+  weight = stats$est
+  se = sqrt(diag(stats$var))
 
   tibble(target, left, weight, se) %>% mutate(z = weight/se)
 }

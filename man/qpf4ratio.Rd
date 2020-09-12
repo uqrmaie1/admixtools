@@ -4,10 +4,15 @@
 \alias{qpf4ratio}
 \title{Estimate admixture proportions via f4 ratios}
 \usage{
-qpf4ratio(f2_blocks, pops, boot = FALSE, verbose = FALSE)
+qpf4ratio(data, pops, boot = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{f2_blocks}{3d array of f2-statistics}
+\item{data}{Input data in one of three forms:
+\enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
 \item{pops}{A vector of 5 populations or a five column population matrix.
 The following ratios will be computed: \verb{f4(1, 2; 3, 4)/f4(1, 2; 5, 4)}}
@@ -20,7 +25,7 @@ The the covariance matrix of the f statistics will be computed using bootstrappi
 \item{verbose}{Print progress updates}
 }
 \value{
-A data frame with f4 ratios
+\code{qpf4ratio} returns a data frame with f4 ratios
 }
 \description{
 Estimate admixture proportions via f4 ratios

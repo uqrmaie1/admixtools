@@ -77,8 +77,8 @@ box = function (..., title = NULL, footer = NULL, status = NULL, solidHeader = F
 
 tt = c('data' = 'Load data here',
        'dir' = 'Directory where precursors for f-statistics will be stored or have been stored.',
-       'popfilediv' = 'Select a three column text file with individual labels in column 1 and population labels in column 3.',
-       'graphfilediv' = 'A graph in AdmixTools format, or as a two column edge list.',
+       'popfilediv' = 'Select a PLINK or EIGENSTRAT sample metadata textfile.',
+       'graphfilediv' = 'A graph in ADMIXTOOLS format, or as a two column edge list.',
        'genofile1' = 'Select a Packedancestrymap .geno file to extract data from. This step should only be necessary once. After that, the extracted data can be used for any further analyses.',
        'adjpopdiv' = 'Assign individuals to populations. Population names can be changed, but should match population names in the graph file, if one is provided. Data will be read from disk and f2-statistics will be computed when switching to another sidebar item.',
        'bookmarkdiv' = 'Click this to save the current session. This will write files to disk and generate a URL which can be used to restore the state of the progam.',
@@ -105,8 +105,8 @@ tt = c('data' = 'Load data here',
        'aconstraints_update_div' = 'Set limits to admixture weights',
        'qpgraphbin' = 'Choose the qpGraph executable on your computer',
        'qpadmbin' = 'Choose the qpAdm executable on your computer',
-       'qpgraph_genofile' = 'Choose the .geno file for qpGraph to use',
-       'qpadm_genofile' = 'Choose the .geno file for qpAdm to use',
+       'qpgraph_genofile' = 'Choose the .geno or .bed file for qpGraph to use',
+       'qpadm_genofile' = 'Choose the .geno or .bed file for qpAdm to use',
        'usef3precomp' = 'Differences between the original and R version of qpGraph can be due to the estimation of f-statistics, or due to the fitting step. Click this to use the f-statistics generated in the original qpGraph to use in qpGraph in R.',
        'init_resample' = 'Re-evaluate graph with different random intializations of starting weights. This is always done by default, but only the parameters for the starting weights that minimize the score are shown. Here, the table will show all estimated graph parameters (score, edge lengths, admixture weights) for all sets of random starting parameters.',
        'ind_resample' = 'Re-evaluate the graph leaving out each sample at a time. Samples are only left out if they are not the only sample in their respective population. This can take long, as data has to be read and f2 computed separately for each sample that is being left out.',
@@ -171,15 +171,15 @@ ui = function(request) {
           chooseSliderSkin('Modern', color = 'black'),
           bsTooltip('tooltips', 'Click this to turn tooltips on or off. Needs to be reactivated after switching tabs.'),
           dashboardPage(
-            dashboardHeader(title = 'AdmixTools', titleWidth = 300,
+            dashboardHeader(title = 'ADMIXTOOLS 2', titleWidth = 300,
                             tags$li(class = 'dropdown', actionLink('tooltips', label = '', icon = icon('question'))),
                             tags$li(class = 'dropdown', id = 'bookmarkdiv', actionLink('._bookmark_', label = '', icon = icon('save')))),
             dashboardSidebar(tags$head(tags$style(HTML(aa))), width = 300,
                              sidebarMenu(id = 'navbar',
                                          menuItem('Data', tabName = 'data', expandedName = 'data', id = 'datax', icon = icon('database'), startExpanded = TRUE,
                                                   menuItem('Extract settings', tabName = 'extract_settings',
-                                                           checkboxInput('fix_populations', 'Fix populations'),
-                                                           numericInput('max_miss', 'max missing', value = 0.1, step = 0.01, min = 0, max = 1),
+                                                           checkboxInput('fix_populations', 'Fix populations', TRUE),
+                                                           numericInput('max_miss', 'max missing', value = 0, step = 0.01, min = 0, max = 1),
                                                            splitLayout(
                                                              numericInput('min_maf', 'min MAF', value = 0, step = 0.01, min = 0, max = 0.5),
                                                              numericInput('max_maf', 'max MAF', value = 0.5, step = 0.01, min = 0, max = 0.5)),
@@ -370,11 +370,18 @@ server = function(input, output, session) {
     }
   })
 
+  observeEvent(input$textdirinput, {
+    nam = ifelse(!is.null(input$textdirinput) && dir.exists(input$textdirinput), 'Load', 'Create')
+    updateActionButton(session, "textdir", label = nam)
+  })
+
   observeEvent(input$textdir, {
 
     if(!dir.exists(input$textdirinput)) {
-      shinyalert('Could not find directory!', "Please write the path of a directory into the box. This should be an empty directory if you haven't extracted f2-statistics/counts yet, or otherwise the directory with extracted data.")
-      return()
+      #shinyalert('Could not find directory!', "Please write the path of a directory into the box. This should be an empty directory if you haven't extracted f2-statistics/counts yet, or otherwise the directory with extracted data.")
+      dir.create(input$textdirinput)
+      justcreated = TRUE
+      #return()
     }
     global$countdir = normalizePath(input$textdirinput)
     global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
@@ -390,7 +397,7 @@ server = function(input, output, session) {
       print('global$allinds')
       print(global$allinds)
     } else {
-
+      if(!justcreated) shinyalert("Directory does not seem to have f2 data!")
     }
   })
 
@@ -556,9 +563,13 @@ server = function(input, output, session) {
   })
 
   observeEvent(input$popfile, {
-    nam = c('ind', 'sex', 'pop')
-    global$poplist = read_table2(input$popfile$datapath, col_names = nam, col_types = cols()) %>%
-      select(-sex) %$% split(ind, factor(pop, levels = unique(pop)))
+
+    inddat = read_table2(input$popfile$datapath, col_names = FALSE, col_types = cols())
+    if(ncol(inddat) == 3) colnames(inddat) = c('ind', 'sex', 'pop')
+    else if(ncol(inddat) == 6) colnames(inddat) = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
+    else shinyalert('Error', paste0('sample file has ',ncol(inddat),' columns!'))
+    global$poplist = inddat %>%
+      select(ind, pop) %$% split(ind, factor(pop, levels = unique(pop)))
 
     if(length(global$allinds) == 0) { # f2data dir
       global$allinds = unlist(global$poplist)
@@ -1523,27 +1534,31 @@ server = function(input, output, session) {
     else shinyalert('Error!')
   })
 
-
   get_loaddata = reactive({
     print('load_data')
+    input$textdirinput
     bh = '140px'
     div(
       fluidRow(
         box(width=4, height=bh, background = cols[1], h4('Select data directory'),
             #div(splitLayout(shinyDirButton('dir', 'Browse', 'Upload'),verbatimTextOutput('dirout', placeholder = TRUE))),
-            div(splitLayout(textInput('textdirinput', NULL, placeholder = 'Data directory'), actionButton('textdir', 'Load')))),
+            div(splitLayout(textInput('textdirinput', NULL, placeholder = 'Data directory'),
+                            actionButton('textdir', 'Create')))),
         conditionalPanel('output.show_extract == "1"',
                          fluidRow(box(width=4, height=bh, background = cols[2], h4('Extract data'),
                                       splitLayout(
-                                        div(shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
-                                            verbatimTextOutput('genofile1out', placeholder = TRUE)),
-                                        actionButton('extract_counts', 'Extract counts'))))),
+                                        div(
+                                          #shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
+                                          #verbatimTextOutput('genofile1out', placeholder = TRUE)
+                                          textInput('textgenofile1', NULL, placeholder = 'genotype file')
+                                          ),
+                                        actionButton('extract_data', 'Extract data'))))),
         conditionalPanel('output.show_indselect == "1"', (
-          box(width=4, height=bh, background = cols[3], h4('Select .ind file'),
+          box(width=4, height=bh, background = cols[3], h4('Select .ind or .fam file'),
               div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')))),
         #column(3, box(width=12, height=bh, background = cols[4], h4('Select graph file'),
         #    div(fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file'), id = 'graphfilediv'))),
-        fluidRow(column(12, conditionalPanel('input.extract_counts > 0', verbatimTextOutput('console')))),
+        fluidRow(column(12, conditionalPanel('input.extract_data > 0', verbatimTextOutput('console')))),
         #box(width=6, textOutput('console')),
         div(style = 'visibility: hidden', verbatimTextOutput('show_popadjust')),
         div(style = 'visibility: hidden', verbatimTextOutput('show_extract')),
@@ -1556,13 +1571,14 @@ server = function(input, output, session) {
                                                                              fluidRow(column(11, uiOutput('popselectors')))))))))
   })
 
-  observeEvent(input$extract_counts, {
-    if(is.null(input$genofile1)) {
-      shinyalert('Error!', 'Need to select .geno file!')
+  observeEvent(input$extract_data, {
+    if(is.null(input$textgenofile1) || !file.exists(input$textgenofile1)) {
+      shinyalert('Error!', 'Please provide path and name for a .geno or .bed file!')
       return()
     }
-    volumes %<>% eval
-    pref = parseFilePaths(volumes, input$genofile1)$datapath %>% str_replace('\\.geno$', '')
+    #volumes %<>% eval
+    #pref = parseFilePaths(volumes, input$genofile1)$datapath %>% str_replace('\\.geno$|\\.bed$', '')
+    pref = input$textgenofile1 %>% str_replace('\\.geno$|\\.bed$', '')
 
     oldnam = names(global$poplist)
     nam = map(paste0('pop', seq_len(length(global$poplist))), ~input[[.]])
@@ -1575,14 +1591,11 @@ server = function(input, output, session) {
     transitions = input$trans_extract %in% c('both', 'only transitions')
     transversions = input$trans_extract %in% c('both', 'only transversions')
 
-    if(input$fix_populations) extract_data = function(...) extract_f2(pops = pops, ...)
-    else extract_data = extract_counts
+    if(input$fix_populations) extractfun = function(...) extract_f2(pops = pops, ...)
+    else extractfun = extract_counts
 
     print('inds')
     print(inds)
-
-    print('pref')
-    print(pref)
 
     print('global$countdir')
     print(global$countdir)
@@ -1593,7 +1606,7 @@ server = function(input, output, session) {
                  maxmiss = input$max_miss, minmaf = input$min_maf, maxmaf = input$max_maf,
                  transitions = transitions, transversions = transversions,
                  keepsnps = input$keepsnps, maxmem = input$maxmem*1e3))
-      extract_data(pref, global$countdir, inds = inds,
+      extractfun(pref, global$countdir, inds = inds,
                    maxmiss = input$max_miss, minmaf = input$min_maf, maxmaf = input$max_maf,
                    transitions = transitions, transversions = transversions,
                    keepsnps = input$keepsnps, maxmem = input$maxmem*1e3)
@@ -1601,6 +1614,16 @@ server = function(input, output, session) {
     message = function(m) {
       shinyjs::html(id = 'console', html = m$message, add = TRUE)
     })
+
+    global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
+    global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
+      'block_lengths.rds' %in% list.files(global$countdir)
+    if(global$iscountdata) {
+      global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
+    } else if(global$isf2data) {
+      global$allinds = list.dirs(global$countdir,F,F)
+      global$poplist = global$allinds %>% purrr::set_names(global$allinds)
+    }
 
   })
 
@@ -1717,6 +1740,14 @@ server = function(input, output, session) {
     #event_register(plt, 'plotly_hover')
     print('graphplot2')
     plt
+  })
+
+  get_f2 = reactive({
+
+    print('get f2')
+    f2blocks = get_f2blocks()
+    req(f2blocks, p1, p2, p3, p4)
+    f2(f2blocks)
   })
 
   get_f4 = reactive({
@@ -1952,6 +1983,7 @@ server = function(input, output, session) {
   output$indresample = dtfun({format_table(get_indresample())})
   output$snpresample = dtfun({format_table(get_snpresample())})
 
+  output$f2stats = dtfun({format_table(get_f2())})
   output$f4stats = dtfun({format_table(get_f4())})
 
   output$qpadm_weights = dtfun({format_table(get_qpadm()$weights)})
