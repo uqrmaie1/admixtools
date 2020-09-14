@@ -16,21 +16,25 @@ vignette: >
 
 *ADMIXTOOLS 2* can read genotype data in binary *PLINK* format which is described [here](https://www.cog-genomics.org/plink2/input), and in *EIGENSTRAT*/*PACKEDANCESTRYMAP* formats, described [here](https://reich.hms.harvard.edu/software/InputFileFormats). 
 
-While there are other R packages for reading and writing binary *PLINK* files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist to date for binary *EIGENSTRAT*/*PACKEDANCESTRYMAP* format files, so some of the functions shown here may be useful outside of the *ADMIXTOOLS* framework.
+While there are other R packages for reading and writing binary *PLINK* files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist to date for *PACKEDANCESTRYMAP* format files, so some of the functions shown here may be useful outside of the *ADMIXTOOLS* framework.
 
 Note that the functions below impose the restriction than individual IDs may not be duplicated across populations or families.
+
+
+*ADMIXTOOLS 2* currently doesn't handle many common genotype data wrangling tasks such merging different data sets. That's partly because *PLINK* already excels at this task, and partly because it requires a large amount of effort to handle all possible scenarios that can come up, without introducing potentially dangerous bugs. If converting your data to *PLINK* format, and using *PLINK* for these tasks is not a practical solution in your case, please let me know about it.
+
 
 ### Reading genotype files
 
 ```{r, eval = FALSE}
 geno = read_plink("plink/prefix")
+geno = read_eigenstrat("eigenstrat/prefix")
 geno = read_packedancestrymap("packedancestrymap/prefix")
+
 # read SNPs 1000 to 2000
-geno = read_packedancestrymap("packedancestrymap/prefix",
-                              first = 1000, last = 2000)
+geno = read_packedancestrymap("packedancestrymap/prefix", first = 1000, last = 2000)
 # read only ind1 and ind2
-geno = read_packedancestrymap("packedancestrymap/prefix",
-                              inds = c('ind1', 'ind2'))
+geno = read_packedancestrymap("packedancestrymap/prefix", inds = c('ind1', 'ind2'))
 ```
 
 
@@ -38,17 +42,19 @@ geno = read_packedancestrymap("packedancestrymap/prefix",
 
 ```{r, eval = FALSE}
 afs = plink_to_afs("plink/prefix")
+afs = eigenstrat_to_afs("eigenstrat/prefix")
 afs = packedancestrymap_to_afs("packedancestrymap/prefix")
 ```
 
 
 ### Converting *PACKEDANCESTRYMAP* to *PLINK*
 
-This function converts genotype files from *PACKEDANCESTRYMAP* to *PLINK* format. If `inds` or `pops` is specified, only those samples will be extracted.
+This function converts genotype files from *PACKEDANCESTRYMAP* or *EIGENSTRAT* to *PLINK* format. If `inds` or `pops` is specified, only those samples will be extracted.
 
 *ADMIXTOOLS 2* currently doesn't provide the option to write binary *PACKEDANCESTRYMAP* files, so the conversion only goes one way.
 
 ```{r, eval = FALSE}
+eigenstrat_to_plink("eigenstrat_input_prefix", "plink_output_prefix")
 packedancestrymap_to_plink("packedancestrymap_input_prefix", "plink_output_prefix")
 ```
 

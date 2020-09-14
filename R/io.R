@@ -314,50 +314,76 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #'
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
-#' @inheritParams packedancestrymap_to_afs
+#' @inheritParams read_packedancestrymap
 #' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_eigenstrat = function(pref, inds = NULL, verbose = TRUE) {
+read_eigenstrat = function(pref, inds = NULL, first = 1, last = Inf, transpose = FALSE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
-  # currently doesn't handle missing data
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  nsnpall = nrow(snpfile)
+  nindall = nrow(indfile)
   indfile$X3 = indfile$X1
   if(!is.null(inds)) {
     stopifnot(all(inds %in% indfile$X1))
-    indfile$X3[!indfile$X3 %in% inds] = NA
-    inds = intersect(inds, indfile$X1)
+    indfile$X3[!indfile$X1 %in% inds] = NA
   } else {
     inds = indfile$X1
   }
-  popind2 = which(!is.na(indfile$X3))
+  indvec = (!is.na(indfile$X3))+0
   indfile %<>% filter(!is.na(X3))
-  fl = paste0(pref, '.geno')
-  geno = apply(do.call(rbind, str_split(readLines(fl), '')), 2, as.numeric)
-  nindall = nrow(geno)
-  geno = geno[,popind2,drop=FALSE]
-  geno[geno == 9] = NA
-  colnames(geno) = inds
-  rownames(geno) = snpfile$SNP
-
-  nsnp = nrow(snpfile)
-  nind = length(inds)
+  nind = nrow(indfile)
+  if(!is.finite(last)) last = nsnpall
+  nsnp = last - first + 1
+  snpfile %<>% slice(first:last)
 
   if(verbose) {
-    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnp, ' SNPs.\n'))
-    alert_info(paste0('Reading data for ', nind, ' samples\n'))
+    alert_info(paste0('Reading data for ', nind, ' samples and ', nsnp, ' SNPs...\n'))
   }
+  geno = cpp_read_eigenstrat(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1, last,
+                             transpose = transpose, verbose = verbose)
+
+  colnames(geno) = if(transpose) snpfile$SNP else inds
+  rownames(geno) = if(transpose) inds else snpfile$SNP
+
   outlist = list(geno = geno, ind = indfile, snp = snpfile)
   outlist
 }
+
+# this exists just so there is an equivalent to cpp_read_plink and cpp_read_packedancestrymap
+cpp_read_eigenstrat = function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
+
+  #geno = apply(do.call(rbind, str_split(readLines(genofile, last)[(first+1):last], ''))[,indvec,drop=FALSE], 2, as.numeric)
+
+  geno = genofile %>%
+    read_lines(first, n_max = last-first, progress = FALSE) %>%
+    str_split('') %>%
+    do.call(rbind, .) %>%
+    `[`(,which(indvec==1),drop=FALSE) %>%
+    apply(2, as.numeric) %>%
+    replace(. == 9, NA)
+  if(transpose) geno %<>% t
+  geno
+}
+
+# this exists just so there is an equivalent to cpp_read_plink and cpp_read_packedancestrymap
+cpp_eigenstrat_to_afs = function(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose) {
+  geno = cpp_read_eigenstrat(genofile, nsnp = nsnp, nind = nind, indvec = (indvec > -1)+0 , first = first, last = last,
+                             transpose = FALSE, verbose = verbose)
+  pops = indvec[indvec > -1]
+  counts = t(rowsum((!is.na(t(geno)))*ploidy, pops))
+  afs = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))/counts
+  namedList(afs, counts)
+}
+
 
 eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
   # assumes -1 in indvec is do-not-use, to be consistent with cpp_ploidy functions
@@ -1360,8 +1386,8 @@ format_info = function(pref, format = NULL) {
     l$indend = '.ind'
     l$genoend = '.geno'
     l$cpp_geno_ploidy = eigenstrat_ploidy
-    l$cpp_geno_to_afs = eigenstrat_to_afs
-    l$cpp_read_geno = read_eigenstrat
+    l$cpp_geno_to_afs = cpp_eigenstrat_to_afs
+    l$cpp_read_geno = cpp_read_eigenstrat
   } else if(is_plink_prefix(pref) || isTRUE(format == 'plink')) {
     l$format = 'plink'
     l$snpnam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
@@ -2035,7 +2061,8 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   out = pc %>%
     expand_grid(block = 1:numblocks) %>%
     mutate(est = c(numer), n = c(cnt))
-  if(!f4mode) out %<>% mutate(est = est/c(denom))
+  #if(!f4mode) out %<>% mutate(est = est/c(denom))
+  if(!f4mode) out %<>% mutate(den = c(denom))
   if(allsnps) out = popcombs %>% left_join(out, by = paste0('pop', 1:4))
   if(!hasmodels) out$model = NULL
 

@@ -199,13 +199,13 @@ jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
 
 
 jack_dat_stats = function(dat, na.rm = TRUE) {
-  # input is a grouped data frame with columns 'loo', 'length', and 'block'
+  # input is a grouped data frame with columns 'loo', 'n', and 'block'
 
-  if(!'tot' %in% names(dat)) dat %<>% mutate(tot = weighted.mean(loo, 1-length/sum(length), na.rm=na.rm))
+  if(!'tot' %in% names(dat)) dat %<>% mutate(tot = weighted.mean(loo, 1-n/sum(n), na.rm=na.rm))
   dat %>%
     filter(is.finite(loo)) %>%
-    mutate(h = sum(length)/length,
-           est = mean(tot - loo, na.rm = na.rm)*n() + weighted.mean(loo, length, na.rm = na.rm),
+    mutate(h = sum(n)/n,
+           est = mean(tot - loo, na.rm = na.rm)*n() + weighted.mean(loo, n, na.rm = na.rm),
            xtau = (h*tot - (h-1)*loo - est)^2/(h-1)) %>%
     summarize(est = est[1], var = mean(xtau, na.rm = na.rm), n = sum(!is.na(xtau)))
 }
@@ -467,21 +467,21 @@ boo_list_cons = function(arr, nboot = dim(arr)[3]) {
 
 
 est_to_loo_dat = function(dat) {
-  # like est_to_loo, but for a grouped data frame with columns 'est', 'block', and 'length'
+  # like est_to_loo, but for a grouped data frame with columns 'est', 'block', and 'n'
   # adds column 'loo'
   dat %>%
-    mutate(.rel_bl = length/sum(length),
-           .tot = weighted.mean(est, length, na.rm=TRUE),
+    mutate(.rel_bl = n/sum(n),
+           .tot = weighted.mean(est, n, na.rm=TRUE),
            loo = (.tot - est*.rel_bl) / (1-.rel_bl)) %>%
     select(-.rel_bl, -.tot)
 }
 
 
 loo_to_est_dat = function(dat) {
-  # like loo_to_est, but for a grouped data frame with columns 'loo', 'block', and 'length'
+  # like loo_to_est, but for a grouped data frame with columns 'loo', 'block', and 'n'
   # adds column 'est'
   dat %>%
-    mutate(.rel_bl = length/sum(length),
+    mutate(.rel_bl = n/sum(n),
            .tot = weighted.mean(loo, 1-.rel_bl, na.rm=TRUE),
            est = (.tot - loo*(1-.rel_bl)) / .rel_bl) %>%
     select(-.rel_bl, -.tot)

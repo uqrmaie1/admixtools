@@ -14,12 +14,12 @@ countless publications to test whether populations form clades
 (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and
 to fit admixture graphs (*qpGraph*).
 
-*ADMIXTOOLS 2* provides the same functionality in a new look, and it’s
-orders of magnitude faster. This is achieved through separating the
-computation of *f*<sub>2</sub>-statistics from all other computations,
-and through a number of other optimizations. In the example below,
-rendering the plot takes much longer than computing the fit of a new
-*qpGraph* model:
+*ADMIXTOOLS 2* provides the same functionality as *ADMIXTOOLS* in a new
+look, and it’s orders of magnitude faster. This is achieved through
+separating the computation of *f*<sub>2</sub>-statistics from all other
+computations, and through a number of other optimizations. In the
+example below, rendering the plot takes much longer than computing the
+fit of a new *qpGraph* model:
 
 ![app demo](man/figures/shinyapp1.gif)
 

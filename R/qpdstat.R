@@ -175,7 +175,8 @@ qpdstat = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   if(is_geno_prefix(data)) {
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
     return(qpdstat_geno(data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
-                        f4mode = f4mode, block_lengths = block_lengths, boot = boot, verbose = verbose))
+                        f4mode = f4mode, block_lengths = block_lengths, boot = boot,
+                        allsnps = TRUE, verbose = verbose))
   }
 
   if(cpp) {

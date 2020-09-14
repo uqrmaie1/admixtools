@@ -339,10 +339,21 @@ f4blockdat_to_f4out = function(f4blockdat, boot) {
     group_by(pop1, pop2, pop3, pop4) %>%
     summarize(n = sum(n, na.rm=T))
 
-  f4blockdat %>%
-    group_by(pop1, pop2, pop3, pop4) %>%
-    samplefun() %>%
-    datstatfun() %>%
+  if(!'den' %in% names(f4blockdat)) {
+    f4out = f4blockdat %>%
+      group_by(pop1, pop2, pop3, pop4) %>%
+      samplefun()
+  } else {
+    f4out = f4blockdat %>%
+      rename(num = est) %>%
+      pivot_longer(c(num, den), names_to = 'type', values_to = 'est') %>%
+      group_by(type, pop1, pop2, pop3, pop4) %>%
+      samplefun() %>%
+      pivot_wider(names_from = type, values_from = c(est, loo)) %>%
+      mutate(loo = loo_num/loo_den)
+  }
+  f4out %>%
+    datstatfun %>%
     ungroup %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
     transmute(pop1, pop2, pop3, pop4, est, se, z, p) %>%

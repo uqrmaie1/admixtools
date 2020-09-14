@@ -177,14 +177,18 @@ based non-negative least squares of f4 matrix.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>f2_data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>lazadm</span>(<span class='no'>data</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>boot</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_data</th>
-      <td><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code>.</p></td>
+      <th>data</th>
+      <td><p>The input data in the form of:</p><ul>
+<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code></p></li>
+<li><p>A directory with f2 statistics</p></li>
+<li><p>The prefix of a genotype file</p></li>
+</ul></td>
     </tr>
     <tr>
       <th>left</th>
@@ -208,14 +212,13 @@ as well as the weight standard errors, will be computed using bootstrapping.</p>
     </tr>
     <tr>
       <th>constrained</th>
-      <td><p>If <code>TRUE</code> (default), admixture weights will all be non-negative.
-If <code>FALSE</code>, they can be negative, as in <code><a href='qpadm.html'>qpadm</a></code></p></td>
+      <td><p>Constrain admixture weights to be non-negative</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A data frame with weights and standard errors for each left population</p>
+    <p><code>lazadm</code> returns a data frame with weights and standard errors for each left population</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
@@ -233,14 +236,14 @@ languages in Europe.</em> Nature (SI 9)</p>
 <span class='no'>left</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span>)
 <span class='no'>right</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span>, <span class='st'>'Switzerland_Bichon.SG'</span>)
 <span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>)</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 5</span><span>
-#&gt;   target      left                   weight       se        z
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG 1.00</span><span style='color: #555555;'>e</span><span>+ 0 1.65</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-13</span><span> 6.05</span><span style='color: #555555;'>e</span><span>+12
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG           4.01</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-15</span><span> 1.65</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-13</span><span> 2.43</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>- 2</span><span></div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
+#&gt;   target      left                   weight       se       z
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>    </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG 1.00</span><span style='color: #555555;'>e</span><span>+ 0 1.94</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-13</span><span> 5.17</span><span style='color: #555555;'>e</span><span>12
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG           2.49</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-12</span><span> 1.93</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-13</span><span> 1.29</span><span style='color: #555555;'>e</span><span> 1</div><div class='input'><span class='fu'>lazadm</span>(<span class='no'>example_f2_blocks</span>, <span class='no'>left</span>, <span class='no'>right</span>, <span class='no'>target</span>, <span class='kw'>constrained</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</div><div class='output co'>#&gt; </span><span style='color: #555555;'># A tibble: 2 x 5</span><span>
 #&gt;   target      left                 weight    se      z
 #&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                 </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>  </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   5.70  6.67  0.855
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>4.70</span><span>  6.67 -</span><span style='color: #BB0000;'>0.705</span><span></div></span></pre>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG   4.79  6.69  0.716
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG            -</span><span style='color: #BB0000;'>3.79</span><span>  6.69 -</span><span style='color: #BB0000;'>0.567</span><span></div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
