@@ -138,9 +138,9 @@ Some of the programs in the original *ADMIXTOOLS* have an `inbreed` option which
 
 ### Bias due to missing data
 
-If everything you have read about *f*-statistics thus far gave you the impression that the theory behind *f*-statistics has a certain elegance, it is probably because no one has mentioned missing data. In practice, not all SNPs are present in all samples, and this makes things much more complicated than they otherwise would be. Consider two simple examples:
+If everything you have read about *f*-statistics thus far gave you the impression that the theory behind *f*-statistics has a certain elegance, this is probably because no one has mentioned missing data. In practice, not all SNPs are present in all samples, and this makes things much more complicated than they otherwise would be. Consider two simple examples:
 
-First, imagine that we have four populations, $A$, $B$, $C$, and $D$, and we are just interested in $f_4(A,B; C,D)$. Let's say that all populations have very low coverage, and there are no SNPs for which we have allele frequency estimates for more than two of the four populations at the same time. Since $f_4(A,B; C,D) = \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )$, it might still be possible to estimate $f_4(A,B; C,D)$.
+First, imagine there are four populations, $A$, $B$, $C$, and $D$, and we are interested in $f_4(A,B; C,D)$. Let's say that all populations have very low coverage, and there are no SNPs for which we have allele frequency estimates for more than two of the four populations at the same time. Since $f_4(A,B; C,D) = \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )$, it might still be possible to estimate $f_4(A,B; C,D)$.
 
 However, this equation is only correct if all *f*-statistics are estimated on the same SNPs. It is still correct in expectation if the missing SNPs are missing at random - if there is no relation between a SNP's presence or absence in one population, and some other property, such as its allele frequency, in another population. Unfortunately, this is often not the case.
 
@@ -184,7 +184,7 @@ These options fall along a gradient that ranges from very conservative - using f
 
 </center>
 
-**SNPs which contribute to an estimate of $f_4(A,B; C,D)$ under different settings. Missing SNPs are denoted by 0, non-missing SNPs by 1.**
+**SNPs which contribute to an estimate of $f_4(A,B; C,D)$ under different settings. Missing SNPs are denoted by 0, non-missing SNPs by 1. $f_4$-statistics are composed only of $f_2$-statistics with one out the first two populations and one out of the second two populations, which is why `1010` works, but `1100` doesn't.**
 
 
 <br>

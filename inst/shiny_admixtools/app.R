@@ -273,7 +273,8 @@ ui = function(request) {
                                                                     numericInput('numstart', '# init', value = 10, min = 1),
                                                                     numericInput('lambdascale', 'f2 scale', value = 1, step = 0.001),
                                                                     numericInput('seed', 'Random seed', value = NULL),
-                                                                    checkboxInput('lsqmode', 'lsqmode')),
+                                                                    checkboxInput('lsqmode', 'lsqmode'),
+                                                                    checkboxInput('return_f4', 'return_f4')),
                                                            menuItem('Plot', tabName = 'qpgraph_options_plot',
                                                                     checkboxGroupInput('plotopt', '',
                                                                                        choices = c(`Reorder edges`='reorder_edges',
@@ -746,12 +747,13 @@ server = function(input, output, session) {
       if(is.null(lambdascale) || length(lambdascale) == 0) lambdascale = 1
       diag = input$qpgraph_diag
       lsqmode = input$lsqmode
+      return_f4 = input$return_f4
       print(paste('qpgraphfun:', numstart, seed, diag, lsqmode, lambdascale))
       function(x, y, ...) {
         args = list(...)
         if(!'numstart' %in% names(args)) args[['numstart']] = numstart
         args = c(list(x, y), args, diag = diag, lambdascale = lambdascale, lsqmode = lsqmode,
-                 seed = seed, f3precomp = list(f3precomp))
+                 seed = seed, f3precomp = list(f3precomp), return_f4 = return_f4)
         do.call(quietly(qpgraph), args)$result
       }
     })
@@ -783,12 +785,9 @@ server = function(input, output, session) {
       }
     })
 
-    print('get_fit2')
-    print(str(edges))
     withProgress(message = 'Fitting graph...', {
       fit = qpgraphfun()(f2blocks, edges)
     })
-    print('get_fit3')
     global$edges = fit$edges
     global$score = fit$score
     fit
@@ -1516,6 +1515,7 @@ server = function(input, output, session) {
   qpg_right_fit = reactive({
     tabsetPanel(tabPanel('f2', dto('f2')),
                 tabPanel('f3', dto('f3')),
+                tabPanel('f4', dto('f4')),
                 tabPanel('opt', dto('opt')),
                 tabPanel('similar', tabsetPanel(tabPanel('-1', dto('minus1')),
                                                 tabPanel('+1', dto('plus1')),
@@ -1954,7 +1954,7 @@ server = function(input, output, session) {
     })
 
     original = global$qpgraphout
-    qpgraph_R$f3 = qpgraph_R$f3 %>% select(pop2, pop3, fit, est) # temporary; line should be removed
+    #qpgraph_R$f3 = qpgraph_R$f3 %>% select(pop2, pop3, fit, est) # temporary; line should be removed
     gg = plot_comparison(original, qpgraph_R)
     plotly::ggplotly(gg, tooltip = 'label')
   })
@@ -1973,6 +1973,7 @@ server = function(input, output, session) {
 
   output$f2 = dtfun({format_table(get_fit()$f2)})
   output$f3 = dtfun({format_table(get_fit()$f3)})
+  output$f4 = dtfun({format_table(get_fit()$f4)})
   output$opt = dtfun({format_table(get_fit()$opt)})
   output$minus1 = dtfun({format_table(get_minus1())})
   output$plus1 = dtfun(format_table(get_plus1()))

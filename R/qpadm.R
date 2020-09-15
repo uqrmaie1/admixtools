@@ -166,9 +166,10 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
       f4blocks = f4blockdat %>% f4blockdat_to_f4blocks()
     } else {
       if(verbose) alert_info('Computing f4 stats...\n')
-      f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE)
+      f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE, verbose = verbose)
       f4blocks = f2blocks_to_f4blocks(f2_blocks, left, right)
     }
+    f4blocks = f4blocks[left[-1], right[-1],,drop=FALSE]
   } else {
     if(!all(map_lgl(list(data, left, right), is.null)))
       stop("Can't provide 'f4blocks' and data/left/right at the same time!")
