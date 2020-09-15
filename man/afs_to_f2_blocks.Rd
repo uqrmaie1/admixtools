@@ -9,6 +9,8 @@ afs_to_f2_blocks(
   maxmem = 8000,
   blgsize = 0.05,
   poly_only = TRUE,
+  pops1 = NULL,
+  pops2 = NULL,
   outpop = NULL,
   outdir = NULL,
   overwrite = FALSE,
@@ -36,6 +38,10 @@ afs_to_f2_blocks(
 \item{overwrite}{Should existing files be overwritten? Only relevant if \code{outdir} is not \code{NULL}}
 
 \item{verbose}{Print progress updates}
+
+\item{pop1}{\code{pops1} and \code{pops2} can be specified if only a subset of pairs should be computed.}
+
+\item{pop2}{\code{pops1} and \code{pops2} can be specified if only a subset of pairs should be computed.}
 }
 \description{
 This function takes a allele frequency data and computes blocked f2 statistics for all population pairs,

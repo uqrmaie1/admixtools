@@ -877,6 +877,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
+#' @param pops2 If specified, only a pairs between `pops` and `pops2` will be computed
 #' @param outpop Keep only SNPs which are heterozygous in this population
 #' @param outpop_scale Scale f2-statistics by the inverse `outpop` heteroygosity (`1/(p*(1-p))`). Providing `outpop` and setting `outpop_scale` to `TRUE` will give the same results as the original *qpGraph* when the `outpop` parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.
 #' @param transitions Set this to `FALSE` to exclude transition SNPs
@@ -898,12 +899,13 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                      maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                      maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
 
   if(!is.null(cols_per_chunk)) {
+    stopifnot(!is.null(pops2))
     snpfile = extract_f2_large(pref, outdir, inds = inds, pops = pops, blgsize = blgsize,
                                cols_per_chunk = cols_per_chunk, maxmiss = maxmiss,
                                minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
@@ -919,7 +921,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".')
 
 
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = union(pops, pops2), format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
                                   transitions = transitions, transversions = transversions,
@@ -930,6 +932,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
   arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = TRUE,
+                          pops1 = pops, pops2 = pops2,
                           outpop = if(outpop_scale) outpop else NULL, blgsize = blgsize, verbose = verbose)
 
   if(is.null(outdir)) return(arrs)
@@ -948,13 +951,13 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' @return A 3d array of f2-statistics (or scaled allele frequency products if `afprod = TRUE`)
 #' @seealso \code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                        maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                        maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                         transitions = TRUE, transversions = TRUE,
                         auto_only = TRUE, keepsnps = NULL, afprod = FALSE, format = NULL,
                         adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
-             maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
+             maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, pops2 = pops2, outpop = outpop, outpop_scale = outpop_scale,
              transitions = transitions, transversions = transversions,
              auto_only = auto_only, keepsnps = keepsnps, format = format,
              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)

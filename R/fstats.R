@@ -15,6 +15,8 @@
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param poly_only Exclude sites with identical allele frequencies in all populations
+#' @param pop1 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
+#' @param pop2 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
 #' @param outpop If specified, f2-statistics will be weighted by heterozygosity in this population
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
@@ -29,53 +31,51 @@
 #' afdat = plink_to_afs('/my/geno/prefix')
 #' afs_to_f2_blocks(afdat, outdir = '/my/f2/data/')
 #' }
-afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE, outpop = NULL,
-                            outdir = NULL, overwrite = FALSE, verbose = TRUE) {
+afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE,
+                            pops1 = NULL, pops2 = NULL, outpop = NULL, outdir = NULL,
+                            overwrite = FALSE, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
 
   afmat = afdat$afs
   countmat = afdat$counts
+  mem = lobstr::obj_size(afmat)
+  pops = colnames(afmat)
+  if(is.null(pops1) || is.null(pops2) || isTRUE(all.equal(pops, pops1)) && isTRUE(all.equal(pops1, pops2))) {
+    pops1 = pops2 = pops
+    square = TRUE
+  } else square = FALSE
 
-  nc = ncol(afmat)
-  mem1 = lobstr::obj_size(afmat)
-  mem2 = mem1*nc*2
-  numsplits = ceiling(mem2/1e6/maxmem)
-  width = ceiling(nc/numsplits)
-  starts = seq(1, nc, width)
-  numsplits2 = length(starts)
-  ends = c(lead(starts)[-numsplits2]-1, nc)
+  if(verbose) alert_info(paste0('Allele frequency matrix for ', nrow(afmat), ' SNPs and ',
+                         length(pops), ' populations is ', round(mem/1e6), ' MB\n'))
 
-  if(verbose) {
-    reqmem = round(mem2/1e6)
-    alert_info(paste0('Allele frequency matrix for ', nrow(afmat), ' SNPs and ',
-                      nc, ' populations is ', round(mem1/1e6), ' MB\n'))
-    alert_info(paste0('Computing pairwise f2 for all SNPs and population pairs requires ',
-                      reqmem, ' MB RAM without splitting\n'))
-    if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2, ' chunks of ',
-                                         width, ' populations and up to ', maxmem, ' MB (',
-                                         choose(numsplits2+1,2), ' chunk pairs)\n'))
-    else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
-  }
+  chunks = make_chunks(pops, mem, maxmem, pops1, pops2, verbose = verbose)
+  popvecs1 = chunks$popvecs1
+  popvecs2 = chunks$popvecs2
 
   poly = if(poly_only) afdat$snpfile$poly else 1:nrow(afdat$snpfile)
   block_lengths_a = get_block_lengths(afdat$snpfile, blgsize = blgsize)
   block_lengths = get_block_lengths(afdat$snpfile[poly,], blgsize = blgsize)
 
-  cmb = combn(0:numsplits2, 2)+(1:0)
-  if(is.null(outdir)) f2list = aplist = replicate(numsplits2, list())
   if(!is.null(outpop)) {
     p = afmat[,outpop]
     snpwt = 1/(p*(1-p))
   } else snpwt = NULL
 
-  for(i in 1:ncol(cmb)) {
-    if(numsplits2 > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', ncol(cmb)))
-    c1 = cmb[1,i]
-    c2 = cmb[2,i]
-    s1 = starts[c1]:ends[c1]
-    s2 = starts[c2]:ends[c2]
+  if(is.null(outdir)) {
+    dim_f2 = c(length(pops1), length(pops2), length(block_lengths))
+    dim_ap = c(length(pops1), length(pops2), length(block_lengths_a))
+    nam_f2 = list(pops1, pops2, paste0('l', block_lengths))
+    nam_ap = list(pops1, pops2, paste0('l', block_lengths_a))
+    f2_blocks = array(NA, dim_f2, nam_f2)
+    ap_blocks = array(NA, dim_ap, nam_ap)
+  }
+
+  for(i in 1:length(popvecs1)) {
+    if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
+    s1 = popvecs1[[i]]
+    s2 = popvecs2[[i]]
     am1 = afmat[, s1, drop=F]
     am2 = afmat[, s2, drop=F]
     cm1 = countmat[, s1, drop=F]
@@ -87,7 +87,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
     if(!poly_only) countsap = counts
     else countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
-    if(c1 == c2) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
+    if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
 
     if(!is.null(outdir)) {
       write_f2(namedList(f2, afprod, counts, countsap), outdir = outdir, overwrite = overwrite)
@@ -96,25 +96,68 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
       if(!file.exists(bl) || overwrite) saveRDS(block_lengths, file = bl)
       if(!file.exists(bla) || overwrite) saveRDS(block_lengths_a, file = bla)
     } else {
-      f2list[[c1]][[c2]] = f2
-      f2list[[c2]][[c1]] = aperm(f2list[[c1]][[c2]], c(2,1,3))
-      aplist[[c1]][[c2]] = afprod
-      aplist[[c2]][[c1]] = aperm(aplist[[c1]][[c2]], c(2,1,3))
+      f2_blocks[s1, s2, ] = f2
+      ap_blocks[s1, s2, ] = afprod
+      if(square && isFALSE(all.equal(s1, s2))) {
+        f2_blocks[s2, s1, ] = aperm(f2, c(2,1,3))
+        ap_blocks[s2, s1, ] = aperm(afprod, c(2,1,3))
+      }
     }
   }
-  if(numsplits2 > 1 & verbose) cat('\n')
-
-  if(!is.null(outdir)) return()
-
-  f2_blocks = do.call(abind, list(lapply(f2list, function(x) do.call(abind, list(x, along=2))), along=1))
-  ap_blocks = do.call(abind, list(lapply(aplist, function(x) do.call(abind, list(x, along=2))), along=1))
-  dimnames(f2_blocks)[1:2] = dimnames(ap_blocks)[1:2] = rerun(2, colnames(afmat))
-  dimnames(f2_blocks)[[3]] = paste0('l', block_lengths)
-  dimnames(ap_blocks)[[3]] = paste0('l', block_lengths_a)
-
-  namedList(f2_blocks, ap_blocks)
+  if(length(popvecs1) > 1 & verbose) cat('\n')
+  if(is.null(outdir)) namedList(f2_blocks, ap_blocks)
 }
 
+
+make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, verbose = TRUE) {
+  # determines start and end positions of each chunk
+
+  if(isTRUE(all.equal(pops1, pops2))) {
+    stopifnot(isTRUE(all.equal(pops, pops1)))
+    npops = length(pops)
+    mem2 = mem*npops*2
+    numsplits = ceiling(mem2/1e6/maxmem)
+    width = ceiling(npops/numsplits)
+    starts = seq(1, npops, width)
+    numsplits2 = length(starts)
+    ends = c(lead(starts)[-numsplits2]-1, npops)
+    cmb = combn(0:numsplits2, 2)+(1:0)
+
+    popvecs1 = map(1:ncol(cmb), ~pops[starts[cmb[1,.]]:ends[cmb[1,.]]])
+    popvecs2 = map(1:ncol(cmb), ~pops[starts[cmb[2,.]]:ends[cmb[2,.]]])
+
+    npair = choose(numsplits2+1,2)
+
+  } else {
+
+    stopifnot(all(pops1 %in% pops) && all(pops2 %in% pops))
+    ntot = length(pops)
+    n1 = length(pops1)
+    n2 = length(pops2)
+    mem2 = mem*n1*n2*2/ntot
+    numsplits = ceiling(mem2/1e6/maxmem)
+    popind2 = match(pops2, pops)
+
+    width = ceiling(n2/numsplits)
+    starts2 = seq(1, n2, width)
+    numsplits2 = npair = length(starts2)
+    ends2 = c(lead(starts2)[-numsplits2]-1, n2)
+    cmb = rbind(1, seq_len(numsplits2))
+
+    popvecs1 = rerun(numsplits2, pops1)
+    popvecs2 = map(1:numsplits2, ~pops2[starts2[.]:ends2[.]])
+  }
+  if(verbose) {
+    reqmem = round(mem2/1e6)
+    alert_info(paste0('Computing pairwise f2 for all SNPs and population pairs requires ',
+                      reqmem, ' MB RAM without splitting\n'))
+    if(numsplits2 > 1) alert_info(paste0('Splitting into ', numsplits2, ' chunks of ',
+                                         width, ' populations and up to ', maxmem, ' MB (',
+                                         npair, ' chunk pairs)\n'))
+    else alert_info(paste0('Computing without splitting since ', reqmem, ' < ', maxmem, ' (maxmem)...\n'))
+  }
+  namedList(popvecs1, popvecs2)
+}
 
 
 mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = TRUE) {

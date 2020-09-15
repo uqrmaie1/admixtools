@@ -13,6 +13,22 @@ cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, 
     .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps)
 }
 
+cpp_outer_array_mul <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_mul', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_outer_array_plus <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_plus', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_outer_array_minus <- function(m1, m2) {
+    .Call('_admixtools_cpp_outer_array_minus', PACKAGE = 'admixtools', m1, m2)
+}
+
+cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2) {
+    .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2)
+}
+
 cpp_opt_A <- function(B, xvec, qinv, nr, fudge) {
     .Call('_admixtools_cpp_opt_A', PACKAGE = 'admixtools', B, xvec, qinv, nr, fudge)
 }
@@ -83,21 +99,5 @@ cpp_get_block_lengths <- function(chr, pos, blgsize = 0.05) {
 
 cpp_jack_vec_stats <- function(loo_vec, block_lengths, tot = NA_real_) {
     .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths, tot)
-}
-
-cpp_outer_array_mul <- function(m1, m2) {
-    .Call('_admixtools_cpp_outer_array_mul', PACKAGE = 'admixtools', m1, m2)
-}
-
-cpp_outer_array_plus <- function(m1, m2) {
-    .Call('_admixtools_cpp_outer_array_plus', PACKAGE = 'admixtools', m1, m2)
-}
-
-cpp_outer_array_minus <- function(m1, m2) {
-    .Call('_admixtools_cpp_outer_array_minus', PACKAGE = 'admixtools', m1, m2)
-}
-
-cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2) {
-    .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2)
 }
 

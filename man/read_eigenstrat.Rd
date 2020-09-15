@@ -4,12 +4,25 @@
 \alias{read_eigenstrat}
 \title{Read genotype data from \emph{EIGENSTRAT} files}
 \usage{
-read_eigenstrat(pref, inds = NULL, verbose = TRUE)
+read_eigenstrat(
+  pref,
+  inds = NULL,
+  first = 1,
+  last = Inf,
+  transpose = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
-\item{pref}{Prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp})}
+\item{pref}{Prefix of the packedancestrymap files}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
+
+\item{first}{Index of first SNP to read}
+
+\item{last}{Index of last SNP to read}
+
+\item{transpose}{Transpose genotype matrix (default is \code{snps} x \code{individuals})}
 
 \item{verbose}{Print progress updates}
 }

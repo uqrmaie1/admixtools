@@ -13,6 +13,7 @@ f2_from_geno(
   maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
+  pops2 = NULL,
   outpop = NULL,
   outpop_scale = TRUE,
   transitions = TRUE,
@@ -43,6 +44,8 @@ f2_from_geno(
 \item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
+
+\item{pops2}{If specified, only a pairs between \code{pops} and \code{pops2} will be computed}
 
 \item{outpop}{Keep only SNPs which are heterozygous in this population}
 
