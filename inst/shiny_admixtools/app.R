@@ -220,6 +220,7 @@ ui = function(request) {
                                                              actionButton('clear_edge', 'Clear'),
                                                              actionButton('delete_edge', 'Delete'),
                                                              actionButton('add_edge', 'Add')),
+                                                           uiOutput('qpgraph_add'),
                                                            hr(),
                                                            p('Randomize graph'),
                                                            uiOutput('nadmix'),
@@ -227,10 +228,10 @@ ui = function(request) {
                                                            actionButton('randgraph', 'Randomize'),
                                                            hr()),
                                                   menuItem('Similar graphs', tabName = 'qpgraph_sim', expandedName = 'qpgraph_sim',
-                                                           menuItem('Add population', tabName = 'qpgraph_add',
-                                                                    uiOutput('qpgraph_add'),
-                                                                    actionBttn('qpgraph_add_run', 'Run')),
-                                                           hr(),
+                                                           # menuItem('Add population', tabName = 'qpgraph_add',
+                                                           #          uiOutput('qpgraph_add'),
+                                                           #          actionBttn('qpgraph_add_run', 'Run')),
+                                                           # hr(),
                                                            actionLink('qpgraph_similar_update', 'Update graph'),
                                                            actionLink('qpgraph_similar_revert', 'Revert graph')),
                                                   menuItem('Optimize', tabName = 'qpgraph_optim',
@@ -652,6 +653,7 @@ server = function(input, output, session) {
     fit = get_fit()
     global$edges = fit$edges
     global$score = fit$score
+    global$worst_residual = fit$worst_residual
     global$tempgraph = FALSE
   })
   observeEvent(input$qpgraph_similar_revert, {
@@ -660,6 +662,7 @@ server = function(input, output, session) {
     fit = get_fit()
     global$edges = fit$edges
     global$score = fit$score
+    global$worst_residual = fit$worst_residual
     global$tempgraph = FALSE
     print(global$score)
   })
@@ -707,6 +710,7 @@ server = function(input, output, session) {
       oldgraph = global$graph
       oldscore = global$score
       oldedges = global$edges
+      oldwr = global$worst_residual
       withProgress(message = 'Fitting best graph...', {
         global$graph = winner
         fit = get_fit()
@@ -721,6 +725,7 @@ server = function(input, output, session) {
         global$graph = oldgraph
         global$score = oldscore
         global$edges = oldedges
+        global$worst_residual = oldwr
         fit = get_fit()
         shinyalert('No better graph found!')
       }
@@ -790,6 +795,7 @@ server = function(input, output, session) {
     })
     global$edges = fit$edges
     global$score = fit$score
+    global$worst_residual = fit$worst_residual
     fit
   })
 
@@ -901,6 +907,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
     print('newgraph set...')
     print(numadmix(global$graph))
@@ -921,6 +928,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
   })
   observeEvent(input$addleaf_cell_clicked, {
@@ -930,6 +938,7 @@ server = function(input, output, session) {
     global$selgraph = sel$graph[[1]]
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
   })
 
@@ -939,6 +948,7 @@ server = function(input, output, session) {
     sel = get_initresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
   })
   observeEvent(input$indresample_cell_clicked, {
@@ -947,6 +957,7 @@ server = function(input, output, session) {
     sel = get_indresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
   })
   observeEvent(input$snpresample_cell_clicked, {
@@ -955,6 +966,7 @@ server = function(input, output, session) {
     sel = get_snpresample0() %>% slice(row)
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
     global$tempgraph = TRUE
   })
   observeEvent(input$qpadm_rot_cell_clicked, {
@@ -1214,9 +1226,6 @@ server = function(input, output, session) {
   output$qpgraph_add = renderUI({
     print('selectInput addleaf')
     choices = setdiff(names(global$poplist), get_leafnames(global$graph))
-    print(choices)
-    print(names(global$poplist))
-    print(get_leafnames(global$graph))
     selectInput('addleaf', '', choices = choices)
   })
 
@@ -1298,29 +1307,44 @@ server = function(input, output, session) {
   observeEvent(input$add_edge, {
     print('add')
     eg = get_seledge() %>% str_split('\n') %>% `[[`(1) %>% str_split(' -> ')
-    if(length(eg) != 2) {
-      shinyalert('Error', 'Can only add edge which connects exactly two other edges!')
-      return()
-    }
-    from = eg[[1]][2]
-    to = eg[[2]][2]
-    print(paste(from, to))
     g = global$graph
     leaves = get_leafnames(g)
-    alert = function(x) shinyalert('Could not insert edge!', as.character(x))
-    tryCatch({
-      gnew = admixtools:::insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
-    }, warning = alert, error = alert)
-    if(!exists('gnew') || is.null(gnew)) return()
-    if(!igraph::is.dag(gnew)) {
-      shinyalert('Could not insert edge!', 'Edge would create a cycle!')
+
+    if(length(eg) == 1) {
+      print('input$addleaf')
+      print(input$addleaf)
+      if(is.null(input$addleaf)) {
+        shinyalert('Error', 'Can only add edge which connects exactly two other edges!')
+        return()
+      }
+      from = eg[[1]][1]
+      to = eg[[1]][2]
+      global$graph = admixtools:::insert_leaf(g, input$addleaf, from, to)
+      global$seledge = NULL
+
+    } else if(length(eg) == 2) {
+
+      from = eg[[1]][2]
+      to = eg[[2]][2]
+      print(paste(from, to))
+
+      alert = function(x) shinyalert('Could not insert edge!', as.character(x))
+      tryCatch({
+        gnew = admixtools:::insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
+      }, warning = alert, error = alert)
+      if(!exists('gnew') || is.null(gnew)) return()
+      if(!igraph::is.dag(gnew)) {
+        shinyalert('Could not insert edge!', 'Edge would create a cycle!')
+        return()
+      }
+      global$graph = gnew
+      global$seledge = NULL
+      newleaves = setdiff(get_leafnames(gnew), leaves)
+      if(length(newleaves) > 0) shinyalert('New leaves!', newleaves)
+    } else {
+      shinyalert('Error', 'Too many items selected!')
       return()
     }
-    global$graph = gnew
-    global$seledge = NULL
-    newleaves = setdiff(get_leafnames(gnew), leaves)
-    if(length(newleaves) > 0) shinyalert('New leaves!', newleaves)
-    print('add2')
   })
 
   observeEvent(input$run_qpadm, {
@@ -1699,8 +1723,9 @@ server = function(input, output, session) {
     segtext = "paste(from, to, sep = ' -> ')"
     print('plotly_graph 3')
     sr = global$qpgraph_scorerange
-    scoretext = ifelse(is.null(sr), round(global$score, 2),
-                       paste0(round(sr['mid'], 2), '\n[', round(sr['lo'], 0), ' - ', round(sr['hi'], 0), ']'))
+    scoretext = paste0('score: ', ifelse(is.null(sr), round(global$score, 2),
+                       paste0(round(sr['mid'], 2), '\n[', round(sr['lo'], 0), ' - ', round(sr['hi'], 0), ']')),
+                       ifelse(is.null(global$worst_residual), '', paste0('\nWR: ', round(global$worst_residual, 2))))
     temp = ifelse(global$tempgraph, 'PREVIEW!', '')
     temp = ''
 
@@ -1714,7 +1739,7 @@ server = function(input, output, session) {
                                          from = NA, text = 'text'), size = textsize) +
       geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
       annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0,
-               label = paste0('score: ', scoretext, '\nadmix: ', nadmix)) +
+               label = paste0(scoretext, '\nadmix: ', nadmix)) +
       annotate('text', x = mean(nodes$x), y = max(nodes$yend), hjust = 0,
                label = temp, color = 'red') +
       theme(panel.background = element_blank(),
