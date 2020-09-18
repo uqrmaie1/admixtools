@@ -333,7 +333,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   if(return_f4) {
     if(verbose) alert_info(paste0('Computing f4\n'))
     out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3, cmb)
-    out$worst_residual = out$f4$z[which.max(abs(out$f4$z))]
+    out$worst_residual = out$f4 %>% slice_max(abs(z), with_ties = F) %>% pull(z) %>% abs
   }
   out
 }

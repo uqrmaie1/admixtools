@@ -90,8 +90,8 @@ CRAN with `install.packages()`).
 
 If you get the following error:
 
-> Error: Failed to install ‘admixtools’ from GitHub: Could not find
-> tools necessary to compile a package.
+`Error: Failed to install 'admixtools' from GitHub: Could not find tools
+necessary to compile a package.`
 
 you might be able to solve the problem by installing
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/) for your

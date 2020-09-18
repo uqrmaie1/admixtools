@@ -146,7 +146,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, ou
                            minmaf = minmaf, maxmaf = maxmaf,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
-  if(length(remaining) == 0) stop("No SNPs remain!")
+  if(length(remaining) == 0) stop("No SNPs remain! Increase 'maxmiss', or select fewer populations!")
   map(afdat, ~.[remaining,,drop = FALSE])
 }
 
@@ -599,6 +599,7 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' which may require a lot of memory.
 #' @param pops2 Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.
 #' @param afprod Return allele frequency products instead of f2 estimates
+#' @param counts Return allele counts instead of f2 estimates
 #' @param remove_na Remove blocks with missing values
 #' @param verbose Print progress updates
 #' @return A 3d array of block jackknife estimates
@@ -607,7 +608,8 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' \dontrun{
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na = TRUE, verbose = FALSE) {
+read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
+                   counts = FALSE, remove_na = TRUE, verbose = FALSE) {
   # assumes f2 is in first column, afprod in second column
 
   if(is.null(pops)) pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
@@ -626,14 +628,15 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na 
     add_count(p1, p2) %>%
     filter(!duplicated(paste(p1, p2)))
 
-  if(afprod) suffix = '_ap.rds' else suffix = '_f2.rds'
+  suffix = if(afprod) '_ap.rds' else '_f2.rds'
+  col = if(counts) 2 else 1
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
     if(verbose) alert_info(paste0('Reading ', ifelse(afprod, 'afprod', 'f2'),
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
     pref = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i])
-    dat = readRDS(paste0(pref, suffix))[,1]
+    dat = readRDS(paste0(pref, suffix))[,col]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
@@ -651,6 +654,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE, remove_na 
       }
     }
   }
+  if(counts) f2_blocks = f2_blocks * rep(block_lengths, each = prod(dim(f2_blocks)[1:2]))
   f2_blocks
 }
 
@@ -1888,6 +1892,7 @@ is_geno_prefix = function(input) {
 #'
 #' This function converts *EIGENSTRAT/PACKEDANCESTRYMAP* format files to *PLINK* files, using \code{\link[genio]{write_plink}}.
 #' When `inds` or `pops` is provided, only a subset of samples will be extracted.
+#' This function can have a high memory footprint, because data for all SNPs will be read before writing the *PLINK* files.
 #' @export
 #' @param inpref Prefix of the input files
 #' @param outpref Prefix of the *PLINK* output files
@@ -2096,3 +2101,35 @@ f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right =
     mutate(est = est_avg, n = n_avg) %>% select(-model)
   popcombs %>% left_join(f4blockdat, by = paste0('pop', 1:4))
 }
+
+
+
+#' Convert graph to dot format
+#' @export
+#' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')
+#' @param outfile Output file name
+#' @examples
+#' \dontrun{
+#' results = qpgraph(example_f2_blocks, example_graph)
+#' write_dot(results$edges)
+#' }
+write_dot = function(graph, outfile = stdout()) {
+  # writes qpgraph output to a dot format file
+
+  if('igraph' %in% class(graph)) {
+    edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+  } else edges = graph
+  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
+
+  edges = mutate(edges, lab = ifelse(type == 'edge',
+                                     paste0(' [ label = "', round(weight * 1000), '" ];'),
+                                     paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
+                 from = str_replace_all(from, '[\\.-]', ''), to = str_replace_all(to, '[\\.-]', ''))
+  out = 'digraph G {\n'
+  out = paste0(out, 'size = "7.5,10";\n')
+  out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
+  out = paste0(out, '\n}')
+
+  writeLines(out, outfile)
+}
+

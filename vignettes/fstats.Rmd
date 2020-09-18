@@ -138,11 +138,13 @@ Some of the programs in the original *ADMIXTOOLS* have an `inbreed` option which
 
 ### Bias due to missing data
 
-If everything you have read about *f*-statistics thus far gave you the impression that the theory behind *f*-statistics has a certain elegance, this is probably because no one has mentioned missing data. In practice, not all SNPs are present in all samples, and this makes things much more complicated than they otherwise would be. Consider two simple examples:
+If everything you have read about *f*-statistics thus far gave you the impression that the theory behind *f*-statistics has a certain elegance, it is probably because no one has mentioned missing data. In practice, not all SNPs are present in all samples, and this makes things much more complicated than they otherwise would be.
+
+Consider two simple examples:
 
 First, imagine there are four populations, $A$, $B$, $C$, and $D$, and we are interested in $f_4(A,B; C,D)$. Let's say that all populations have very low coverage, and there are no SNPs for which we have allele frequency estimates for more than two of the four populations at the same time. Since $f_4(A,B; C,D) = \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )$, it might still be possible to estimate $f_4(A,B; C,D)$.
 
-However, this equation is only correct if all *f*-statistics are estimated on the same SNPs. It is still correct in expectation if the missing SNPs are missing at random - if there is no relation between a SNP's presence or absence in one population, and some other property, such as its allele frequency, in another population. Unfortunately, this is often not the case.
+The problem is that this equation is only correct if all *f*-statistics are estimated on the same SNPs. It is still correct in expectation if the missing SNPs are missing at random - if there is no relation between a SNP's presence or absence in one population, and some other property, such as its allele frequency, in another population. Unfortunately, this is often not the case.
 
 Next, consider a model of five populations, $A$, $B$, $C$, $D$, and $E$ in which we want to use two $f_4$-statistics, $f_4(A,B; C,D)$ and $f_4(A,B; C,E)$. Now imagine that $D$ and $E$ have very low coverage, so that no SNPs were genotyped both in $D$ and in $E$. We would have no problem computing each $f_4$-statistic individually: For each of the two we would select the SNPs that are present in all four populations. However, the two $f_4$-statistics would be computed on completely different SNPs (only those present in $D$ vs only those present in $E$), which raises the question whether it is OK to use both $f_4$-statistics in the same model.
 
@@ -152,10 +154,10 @@ The two scenarios are illustrated for SNPs with different missingness patterns i
 
 There are different solutions to these problems. Most of them involve choosing specific sets of SNPs:
 
-1. Using only SNPs present in all populations in a given analysis
-2. Using only SNPs present in all four populations of any given $f_4$-statistic
-3. Excluding SNPs or populations with high levels of missingness
-4. Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics
+1. Using only SNPs present in all populations in a given analysis (`maxmiss = 0` / `allsnps: NO`)
+2. Using only SNPs present in all four populations of any given $f_4$-statistic (`allsnps`)
+3. Excluding SNPs or populations with high levels of missingness (`maxmiss > 0`)
+4. Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics (`afprod = TRUE`)
 
 These options fall along a gradient that ranges from very conservative - using fewer SNPs and thus having less power, minimizing the chance of false positive results - to less conservative - using all SNPs that are informative, at cost increasing the chance of false positive results. They are discussed individually below. Which of this solutions is most suitable in your case depends on a few different factors:
 
@@ -230,7 +232,7 @@ The selection of SNPs can introduce bias in a way very similar to missing SNPs. 
 
 To see that a very skewed SNP ascertainment has the potential to create arbitrary results, imagine that a particular $f_4$-statistic for four populations is computed for every SNP in the genome. Let's say the true value of that statistic is zero. The per-SNP statistics will still fluctuate widely, and by selecting only the SNPs with positive $f_4$-statistics, or only the SNPs with negative $f_4$-statistics, very significant results in any direction can be obtained.
 
-In practice it is generally not the case that small violations of the strict SNP ascertainment requirements affect the results in a substantial manner. If there is doubt about this, it can help to repeat analyses under different SNP ascertainment schemes.
+In practice it is generally not the case that small violations of the strict SNP ascertainment requirements affect the results in a substantial manner. SNP ascertainment is usually not random with respect to allele frequencies in any given population, nor with respect to allele frequency differences between two populations, but it is usually more or less random with respect to covariances among allele frequency differences. If there is doubt about this, it can help to repeat analyses under different SNP ascertainment schemes.
 
 
 

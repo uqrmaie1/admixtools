@@ -88,7 +88,7 @@ If $f_3(A; B, C)$ is negative, it means that the more similar allele frequencies
 
 <br>
 
-$f_3$ and $f_4$ partition genetic drift into a component that is specific to single populations and a component that is shared between two pairs of populations. By measuring only the *shared* drift between pairs of populations, we can make conclusive statements about their relationships. Methods such as PCA and *ADMIXTURE* do not exclude non-shared drift, and therefore don't produce results that can be interpreted as unambiguously. For example, if $f_3(A; B, C)$ is negative, this is conclusive evidence that $A$ is admixed between $B$ and $C$. In that case we would expect $A$ to fall in between $B$ and $C$ in PC space. However, the same PCA pattern could also be the results of other demographic histories ($A$ could be ancestral to $B$ and $C$). 
+$f_3$ and $f_4$ partition genetic drift into a component that is specific to single populations and a component that is shared between two pairs of populations. By measuring only the *shared* drift between pairs of populations, we can make conclusive statements about their relationships. Methods such as PCA and *ADMIXTURE* do not exclude non-shared drift, and therefore don't produce results that can be interpreted as unambiguously. For example, if $f_3(A; B, C)$ is negative, this is conclusive evidence that $A$ is admixed between $B$ and $C$. In that case we would expect $A$ to fall in between $B$ and $C$ in PC space. However, the same PCA pattern could be the results of a range of other demographic histories (for example, $A$ could be ancestral to $B$ and $C$). 
 
 
 
@@ -109,8 +109,15 @@ This will look for genotype files in *packedancestrymap* or *PLINK* format, comp
 ?extract_f2
 ```
 
+By default, `extract_f2()` will be very cautious and exclude all SNPs which are missing in any population (`maxmiss = 0`). If you lose too many SNPs this way, you can either
 
-Once finished, $f_2$-statistics for the populations of interest can be loaded using `f2_from_precomp()`:
+1. limit the number of populations for which to extract $f_2$-statistics,
+2. compute $f_3$- and $f_4$-statistics directly from genotype files, or
+3. increase the `maxmiss` parameter (`maxmiss = 1` means no SNPs will be excluded).
+
+The advantages and disadvantages of the different approaches are described [here](fstats.html#bias-due-to-missing-data). Briefly, when running `qpadm()` and `qpdstat()` it can be better to choose the safer but slower options 1 and 2, while for `qpgraph()`, which is not centered around hypothesis testing, it is usually fine choose option 3. Since the absolute difference in *f*-statistics between these approaches is usually small, it can also make sense to use option 3 for exploratory analyses, and confirm key results using options 1 or 2.
+
+Once `extract_f2()` has finished, $f_2$-statistics for the populations of interest can be loaded using `f2_from_precomp()`:
 
 ```{r, echo = FALSE}
 f2_blocks = example_f2_blocks

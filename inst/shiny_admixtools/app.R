@@ -89,8 +89,8 @@ tt = c('data' = 'Load data here',
        'qpgraph_similar_decomposed' = 'Fit all trees that result from removing one edge from each admixture node',
        'qpgraph_similar_treeneighbors' = 'Fit all trees that result from removing one edge from each admixture node and then reattaching each edge to each other edge',
        'qpgraph_similar_flipadmix' = 'Fit all graphs that result from flipping the direction of each admixture edge (unless this would introduce a cycle)',
-       'qpgraph_similar_update' = 'Set the current graph to the displayed similar graph',
-       'qpgraph_similar_revert' = 'Display the original graph',
+       'qpgraph_update' = 'Set the current graph to the displayed graph',
+       'qpgraph_revert' = 'Display the original graph',
        'addleaf' = 'Choose a population which should be added to the current graph',
        'qpgraph_add' = 'Fit all graphs that result from adding this population to each edge',
        'optim_run' = 'Run optimization. The current graph is modified in a number of different ways, and each modified graph is evaluated. Can be run iteratively across several generations.',
@@ -210,16 +210,26 @@ ui = function(request) {
                                                            checkboxInput('qpadm_results', 'Show results', value = TRUE),
                                                            checkboxInput('qpadm_rotate', 'Rotate left', value = FALSE))),
                                          menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
-                                                  actionLink('qpgraph_fit', 'Fit'),
-                                                  menuItem('Load graph', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
-                                                  menuItem('Modify graph', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
+                                                  menuItem('Fit',
+                                                             splitLayout(
+                                                               shiny::actionButton('qpgraph_update', 'Update graph'),
+                                                               shiny::actionButton('qpgraph_revert', 'Revert graph')),
+                                                           checkboxInput('evaluate_graph', 'Evaluate immediately', TRUE),
+                                                           #actionButton('options_update', 'Update'),
+                                                           splitLayout(numericInput('qpgraph_diag', 'diag', value = 0.001, step = 0.001),
+                                                           numericInput('numstart', '# init', value = 10, min = 1)),
+                                                           splitLayout(numericInput('lambdascale', 'lambdascale', value = 1, step = 0.001),
+                                                           numericInput('seed', 'Random seed', value = NULL)),
+                                                           splitLayout(checkboxInput('lsqmode', 'lsqmode'),
+                                                           checkboxInput('return_f4', 'return_f4'))),
+                                                  menuItem('Modify', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
                                                            hr(),
                                                            p('Selected'),
                                                            div(verbatimTextOutput('showseledge', placeholder = TRUE), tags$head(tags$style('#showseledge{max-height: 300px; background: white}'))),
                                                            splitLayout(
-                                                             actionButton('clear_edge', 'Clear'),
-                                                             actionButton('delete_edge', 'Delete'),
-                                                             actionButton('add_edge', 'Add')),
+                                                             shiny::actionButton('clear_edge', 'Clear'),
+                                                             shiny::actionButton('delete_edge', 'Delete'),
+                                                             shiny::actionButton('add_edge', 'Add')),
                                                            uiOutput('qpgraph_add'),
                                                            hr(),
                                                            p('Randomize graph'),
@@ -227,13 +237,6 @@ ui = function(request) {
                                                            #splitLayout(checkboxInput('fixoutgroup', 'Fix outgroup', value = TRUE),
                                                            actionButton('randgraph', 'Randomize'),
                                                            hr()),
-                                                  menuItem('Similar graphs', tabName = 'qpgraph_sim', expandedName = 'qpgraph_sim',
-                                                           # menuItem('Add population', tabName = 'qpgraph_add',
-                                                           #          uiOutput('qpgraph_add'),
-                                                           #          actionBttn('qpgraph_add_run', 'Run')),
-                                                           # hr(),
-                                                           actionLink('qpgraph_similar_update', 'Update graph'),
-                                                           actionLink('qpgraph_similar_revert', 'Revert graph')),
                                                   menuItem('Optimize', tabName = 'qpgraph_optim',
                                                            actionButton('optim_run', 'Run'),
                                                            sliderInput('optim_ngraphs', '# graphs', 1, 100, 10),
@@ -267,27 +270,19 @@ ui = function(request) {
                                                                     conditionalPanel('input.boot',
                                                                                      sliderInput('bootnum', '# boot', 0, 1000, 100)),
                                                                     actionButton('snp_resample', 'Run'))),
-                                                  menuItem('Options', tabName = 'qpgraph_options',
-                                                           menuItem('Fit', tabName = 'qpgraph_options_fit',
-                                                                    actionButton('options_update', 'Update'),
-                                                                    numericInput('qpgraph_diag', 'diag', value = 0.001, step = 0.001),
-                                                                    numericInput('numstart', '# init', value = 10, min = 1),
-                                                                    numericInput('lambdascale', 'f2 scale', value = 1, step = 0.001),
-                                                                    numericInput('seed', 'Random seed', value = NULL),
-                                                                    checkboxInput('lsqmode', 'lsqmode'),
-                                                                    checkboxInput('return_f4', 'return_f4')),
-                                                           menuItem('Plot', tabName = 'qpgraph_options_plot',
-                                                                    checkboxGroupInput('plotopt', '',
-                                                                                       choices = c(`Reorder edges`='reorder_edges',
-                                                                                                   `Shift edges down`='shift_down',
-                                                                                                   `Collapse edges`='collapse_edges'),
-                                                                                       selected = c('shift_down')),
-                                                                    sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
-                                                  menuItem('Download', tabName = 'qpgraph_download', expandedName = 'qpgraph_download',
+                                                  menuItem('Load', fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file')),
+                                                  menuItem('Save', tabName = 'qpgraph_download', expandedName = 'qpgraph_download',
                                                            div(radioButtons('downloadgraph_format', 'Graph format',
-                                                                            choices = c(`ADMIXTOOLS`='admixtools', `Edge list`='edgelist'),
+                                                                            choices = c(`ADMIXTOOLS`='admixtools', `Edge list`='edgelist', `DOT`='dot'),
                                                                             selected = 'admixtools'),
-                                                               downloadButton('downloadgraph', 'Save graph')))),
+                                                               downloadButton('downloadgraph', 'Save graph'))),
+                                                  menuItem('Plot options',
+                                                           checkboxGroupInput('plotopt', '',
+                                                                              choices = c(`Reorder edges`='reorder_edges',
+                                                                                          `Shift edges down`='shift_down',
+                                                                                          `Collapse edges`='collapse_edges'),
+                                                                              selected = c('shift_down')),
+                                                           sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
                                          menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
                                                   checkboxInput('multiprocess', 'multiprocess', value = FALSE),
                                                   checkboxInput('f2corr', 'f2 bias correction', value = TRUE),
@@ -325,6 +320,9 @@ server = function(input, output, session) {
 
   #global$show_qpadm_rotate = FALSE
   #global$show_qpadm_results = TRUE
+
+  shinyjs::disable('qpgraph_update')
+  shinyjs::disable('qpgraph_revert')
 
   output$dirout = renderText({global$countdir})
   output$dirout = renderText({str_replace(global$countdir, '/Users/robert', '')})
@@ -412,15 +410,18 @@ server = function(input, output, session) {
 
   tolisten = reactive({
     list(input$sidebarItemExpanded, input$qpadm_rotate, input$qpadm_results)
+    #!is.null(input$sidebarItemExpanded) && (is.null(global$exp) || input$sidebarItemExpanded != global$exp)
   })
 
   get_bod = eventReactive(tolisten(), {
     print('expanded!')
     exp = input$sidebarItemExpanded
     print(exp)
-    if(is.null(exp)) exp = global$exp
-    else global$exp = exp
-    print(exp)
+    if(is.null(exp) || !is.null(global$exp) && exp == global$exp) return(global$bod)
+    global$exp = exp
+    # if(is.null(exp)) exp = global$exp
+    # else global$exp = exp
+    # print(exp)
 
     if(exp == 'options') {
 
@@ -513,15 +514,26 @@ server = function(input, output, session) {
         }
 
         #global$qpg_right = qpg_right_fit()
-        global$qpg_right_show = 'fit'
+        #global$qpg_right_show = 'fit'
         #global$qpg_right = qpg_right()
         global$bod = fluidRow(
           column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
-          column(4, qpg_right()))
+          column(4,     tabsetPanel(tabPanel('Fit', tabsetPanel(tabPanel('f2', dto('f2')),
+                                                                tabPanel('f3', dto('f3')),
+                                                                tabPanel('f4', dto('f4')),
+                                                                tabPanel('opt', dto('opt')))),
+                                    tabPanel('Similar', tabsetPanel(tabPanel('-1', dto('minus1')),
+                                                                    tabPanel('+1', dto('plus1')),
+                                                                    tabPanel('flip', dto('flipadmix')))),
+                                    tabPanel('History', dto('history')),
+                                    tabPanel('Compare', plotlyOutput('graphcomparison')),
+                                    tabPanel('Resample', tabsetPanel(tabPanel('Starting values', dto('initresample')),
+                                                                     tabPanel('Individuals', dto('indresample')),
+                                                                     tabPanel('SNPs', dto('snpresample')))),
+                                    id = 'qpgraph_tabset')))
       } else {
         shinyalert('Error', 'implement tab')
       }
-
     }
     global$bod
   })
@@ -538,12 +550,12 @@ server = function(input, output, session) {
     global$graph
   })
 
-  observeEvent(global$qpg_right, {
-    print('global$qpg_right change detected!')
-    global$qpgraphbod = fluidRow(
-      column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
-      column(4, global$qpg_right))
-  })
+  # observeEvent(global$qpg_right, {
+  #   print('global$qpg_right change detected!')
+  #   global$qpgraphbod = fluidRow(
+  #     column(8, plotlyOutput(outputId = 'graphplot', height = '800', width='auto')),
+  #     column(4, global$qpg_right))
+  # })
   # observeEvent(global$databod, {global$bod = global$databod})
   # observeEvent(global$qpadmbod, {global$bod = global$qpadmbod})
   observeEvent(global$qpgraphbod, {print('global$qpgraphbod change detected!'); global$bod = global$qpgraphbod})
@@ -639,7 +651,7 @@ server = function(input, output, session) {
 
   observeEvent(input$qpgraph_out, {
     global$qpgraphout = parse_qpgraph_output(input$qpgraph_out$datapath)
-    global$qpg_right = plotlyOutput('graphcomparison')
+    #global$qpg_right = plotlyOutput('graphcomparison')
   })
 
   observeEvent(input$randgraph, {
@@ -647,23 +659,29 @@ server = function(input, output, session) {
     global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, outpop = input$outpop)
   })
 
-  observeEvent(input$qpgraph_similar_update, {
-    print('qpgraph_similar_update')
+  observeEvent(input$qpgraph_update, {
+    print('qpgraph_update')
     global$graph = global$selgraph
     fit = get_fit()
     global$edges = fit$edges
     global$score = fit$score
     global$worst_residual = fit$worst_residual
+    add_graph_to_history(global)
     global$tempgraph = FALSE
+    shinyjs::disable('qpgraph_update')
+    shinyjs::disable('qpgraph_revert')
   })
-  observeEvent(input$qpgraph_similar_revert, {
-    print('qpgraph_similar_revert')
+  observeEvent(input$qpgraph_revert, {
+    print('qpgraph_revert')
     global$selgraph = global$graph
     fit = get_fit()
     global$edges = fit$edges
     global$score = fit$score
     global$worst_residual = fit$worst_residual
+    add_graph_to_history(global)
     global$tempgraph = FALSE
+    shinyjs::disable('qpgraph_update')
+    shinyjs::disable('qpgraph_revert')
     print(global$score)
   })
 
@@ -726,6 +744,7 @@ server = function(input, output, session) {
         global$score = oldscore
         global$edges = oldedges
         global$worst_residual = oldwr
+        add_graph_to_history(global)
         fit = get_fit()
         shinyalert('No better graph found!')
       }
@@ -738,7 +757,7 @@ server = function(input, output, session) {
 
   qpgraphfun = reactive({
 
-    input$options_update
+    req(input$evaluate_graph)
     print('qpgraphfun')
 
     seed = isolate(as.numeric(input$seed))
@@ -746,7 +765,7 @@ server = function(input, output, session) {
     if(input$usef3precomp && !is.null(global$precomp)) f3precomp = global$precomp
     else f3precomp = NULL
 
-    isolate({
+    #isolate({
       numstart = as.numeric(input$numstart)
       lambdascale = as.numeric(input$lambdascale)
       if(is.null(lambdascale) || length(lambdascale) == 0) lambdascale = 1
@@ -761,15 +780,17 @@ server = function(input, output, session) {
                  seed = seed, f3precomp = list(f3precomp), return_f4 = return_f4)
         do.call(quietly(qpgraph), args)$result
       }
-    })
+    #})
   })
 
   get_fit = reactive({
     print('get_fit')
+    if(!input$evaluate_graph) return(list(edges=global$edges, score=global$score, worst_residual=global$worst_residual))
+
     f2blocks = get_f2blocks()
     g = global$graph
-    input$qpgraph_similar_revert
-    input$qpgraph_similar_update
+    input$qpgraph_revert
+    input$qpgraph_update
     input$aconstraints_update
     input$econstraints_update
     global$qpgraph_ranges = NULL
@@ -796,7 +817,21 @@ server = function(input, output, session) {
     global$edges = fit$edges
     global$score = fit$score
     global$worst_residual = fit$worst_residual
+    add_graph_to_history(global)
     fit
+  })
+
+  get_history = reactive({
+    print('get_history')
+    isolate({
+    hist = global$history %>% purrr::transpose() %>% as_tibble %>%
+      transmute(graph, edges,
+                nadmix = as.numeric(nadmix),
+                score = as.numeric(score),
+                worst_residual = map_dbl(worst_residual, ~ifelse(is.null(.), NA, .))) %>%
+      mutate(n = 1:n(), .before = 1) %>% arrange(-n)
+    })
+    hist %>% mutate(x = list(get_fit())) %>% select(-x)
   })
 
   get_pdat = reactive({
@@ -838,9 +873,9 @@ server = function(input, output, session) {
   init_plotdata = reactive({
 
     print('init')
-    input$qpgraph_similar_update
-    input$qpgraph_similar_revert
-    input$options_update
+    input$qpgraph_update
+    input$qpgraph_revert
+    input$evaluate_graph
     graph = global$edges
     if('igraph' %in% class(graph)) {
       edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -908,7 +943,10 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
     print('newgraph set...')
     print(numadmix(global$graph))
   })
@@ -920,6 +958,8 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
   observeEvent(input$flipadmix_cell_clicked, {
     row = input$flipadmix_rows_selected
@@ -929,7 +969,23 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
+  })
+  observeEvent(input$history_cell_clicked, {
+    row = input$history_rows_selected
+    req(row)
+    sel = get_history() %>% slice(row)
+    global$selgraph = sel$graph[[1]]
+    global$edges = sel$edges[[1]]
+    global$score = sel$score[[1]]
+    global$worst_residual = sel$worst_residual[[1]]
+    #add_graph_to_history(global)
+    global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
   observeEvent(input$addleaf_cell_clicked, {
     row = input$addleaf_rows_selected
@@ -939,7 +995,10 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
 
   observeEvent(input$initresample_cell_clicked, {
@@ -949,7 +1008,10 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
   observeEvent(input$indresample_cell_clicked, {
     row = input$indresample_rows_selected
@@ -958,7 +1020,10 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
   observeEvent(input$snpresample_cell_clicked, {
     row = input$snpresample_rows_selected
@@ -967,7 +1032,10 @@ server = function(input, output, session) {
     global$edges = sel$edges[[1]]
     global$score = sel$score[[1]]
     global$worst_residual = sel$worst_residual[[1]]
+    add_graph_to_history(global)
     global$tempgraph = TRUE
+    shinyjs::enable('qpgraph_update')
+    shinyjs::enable('qpgraph_revert')
   })
   observeEvent(input$qpadm_rot_cell_clicked, {
     row = input$qpadm_rot_rows_selected
@@ -1050,6 +1118,18 @@ server = function(input, output, session) {
       ungroup %>%
       select(from, to, type, weight) %>%
       pivot_wider(names_from = type, values_from = weight)
+  }
+
+  add_graph_to_history = function(global) {
+    print('add_graph_to_history')
+    isolate({
+      new = list(graph = global$graph,
+                 edges = global$edges,
+                 nadmix = numadmix(global$graph),
+                 score = global$score,
+                 worst_residual = if(is.null(global$worst_residual)) NA else global$worst_residual)
+      global$history %<>% c(list(new))
+    })
   }
 
   get_initresample0 = reactive({
@@ -1275,8 +1355,8 @@ server = function(input, output, session) {
       print(eg)
       for(i in 1:length(eg)) {
         gnew = delete_admix(g, eg[[i]][1], eg[[i]][2])
-        g <<- g
-        gnew <<- gnew
+        # g <<- g
+        # gnew <<- gnew
         if(!is.dag(gnew)) shinyalert('not dag')
         if(!is.connected(gnew)) shinyalert('not connected')
         g = gnew
@@ -1288,20 +1368,28 @@ server = function(input, output, session) {
     }
     newleaves = setdiff(get_leafnames(g), leaves)
     if(length(newleaves) > 0) {
-      newleaves <<- newleaves
-      oldgraph <<- global$graph
-      newgraph <<- g
+      # newleaves <<- newleaves
+      # oldgraph <<- global$graph
+      # newgraph <<- g
       shinyalert('New leaves!', newleaves)
     }
     global$graph = g
     global$seledge = NULL
+    global$edges = g %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+    global$score = NA
+    global$worst_residual = NA
+    shinyjs::disable('clear_edge')
+    shinyjs::disable('add_edge')
+    shinyjs::disable('delete_edge')
     print('delete_edge done')
-    print(global$seledge)
   })
 
   observeEvent(input$clear_edge, {
     print('clear')
     global$seledge = NULL
+    shinyjs::disable('clear_edge')
+    shinyjs::disable('add_edge')
+    shinyjs::disable('delete_edge')
   })
 
   observeEvent(input$add_edge, {
@@ -1321,6 +1409,12 @@ server = function(input, output, session) {
       to = eg[[1]][2]
       global$graph = admixtools:::insert_leaf(g, input$addleaf, from, to)
       global$seledge = NULL
+      global$edges = gnew %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+      global$score = NA
+      global$worst_residual = NA
+      shinyjs::disable('clear_edge')
+      shinyjs::disable('add_edge')
+      shinyjs::disable('delete_edge')
 
     } else if(length(eg) == 2) {
 
@@ -1339,6 +1433,13 @@ server = function(input, output, session) {
       }
       global$graph = gnew
       global$seledge = NULL
+      global$edges = gnew %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+      global$score = NA
+      global$worst_residual = NA
+      shinyjs::disable('clear_edge')
+      shinyjs::disable('add_edge')
+      shinyjs::disable('delete_edge')
+
       newleaves = setdiff(get_leafnames(gnew), leaves)
       if(length(newleaves) > 0) shinyalert('New leaves!', newleaves)
     } else {
@@ -1355,7 +1456,7 @@ server = function(input, output, session) {
   observeEvent(input$run_qpgraph, {
     print('observe run_qpgraph')
     global$qpgraphout = get_qpgraphout()
-    global$qpg_right = plotlyOutput('graphcomparison')
+    #global$qpg_right = plotlyOutput('graphcomparison')
   })
 
   map(1:4,
@@ -1435,12 +1536,8 @@ server = function(input, output, session) {
     pref = parseFilePaths(volumes, input$qpadm_genofile)$datapath
     pref %<>% str_replace('\\.geno$', '') %>% normalizePath(mustWork = FALSE)
     bin = parseFilePaths(volumes, input$qpadmbin)$datapath %>% normalizePath(mustWork = FALSE)
-    if(length(bin) == 0) bin = '~/Downloads/admixtoools_hub_reldec19/bin/qpAdm'
-    #if(length(pref) == 0) pref = '~/Downloads/eas2'
-    #if(length(pref) == 0) pref = '~/Downloads/v42.1_small'
-    #if(length(pref) == 0) pref = '~/Documents/v42.1_pavel'
-    if(length(pref) == 0) pref = '~/Documents/v42.1_afafam'
-    g = global$graph
+    #if(length(bin) == 0) bin = '~/Downloads/admixtoools_hub_reldec19/bin/qpAdm'
+    #if(length(pref) == 0) pref = '~/Documents/v42.1_afafam'
     target = input$qpadmpops1
     left = input$qpadmpops2
     right = input$qpadmpops3
@@ -1462,11 +1559,8 @@ server = function(input, output, session) {
     bin = parseFilePaths(volumes, input$qpgraphbin)$datapath %>% normalizePath(mustWork = FALSE)
     print('bin')
     print(bin)
-    if(length(bin) == 0) bin = '~/Downloads/admixtoools_hub_reldec19/bin/qpGraph'
-    #if(length(pref) == 0) pref = '~/Downloads/eas2'
-    #if(length(pref) == 0) pref = '~/Downloads/v42.1_small'
-    #if(length(pref) == 0) pref = '~/Documents/v42.1_pavel'
-    if(length(pref) == 0) pref = '~/Documents/v42.1_afafam'
+    # if(length(bin) == 0) bin = '~/Downloads/admixtoools_hub_reldec19/bin/qpGraph'
+    # if(length(pref) == 0) pref = '~/Documents/v42.1_afafam'
     g = global$graph
 
     withProgress(message = 'running original qpGraph...', {
@@ -1488,20 +1582,16 @@ server = function(input, output, session) {
   observeEvent(input$aconstraints_update,  {global$useconstraints = TRUE})
 
   dto = function(x) div(DT::DTOutput(x), style = dtstyle)
-
-  observeEvent(input$qpgraph_add_run, {global$qpg_right = dto('addleaf')})
-  observeEvent(input$init_resample, {global$qpg_right = dto('initresample')})
-  observeEvent(input$ind_resample, {global$qpg_right = dto('indresample')})
-  observeEvent(input$snp_resample, {global$qpg_right = dto('snpresample')})
+  #dtof4 = reactive({ if(input$return_f4) dto('f4') else renderText("Activate 'return_f4' under 'Fit'!") })
 
   observeEvent(input$qpadm_fit, {global$qpadm_rightpanel = qpadm_rightpanel_fit()})
 
-  observeEvent(input$qpgraph_fit, {
-    print('fit!')
-    global$qpgraph_ranges = NULL
-    global$qpgraph_scorerange = NULL
-    global$qpg_right = qpg_right_fit()
-  })
+  # observeEvent(input$qpgraph_fit, {
+  #   print('fit!')
+  #   global$qpgraph_ranges = NULL
+  #   global$qpgraph_scorerange = NULL
+  #   global$qpg_right = qpg_right_fit()
+  # })
 
   qpadm_leftpanel = reactive({
     print('reactive qpadm_leftpanel')
@@ -1536,27 +1626,33 @@ server = function(input, output, session) {
     else div()
     })
 
-  qpg_right_fit = reactive({
-    tabsetPanel(tabPanel('f2', dto('f2')),
-                tabPanel('f3', dto('f3')),
-                tabPanel('f4', dto('f4')),
-                tabPanel('opt', dto('opt')),
-                tabPanel('similar', tabsetPanel(tabPanel('-1', dto('minus1')),
-                                                tabPanel('+1', dto('plus1')),
-                                                tabPanel('flip', dto('flipadmix')))),
-                id = 'qpgraph_tabset')
-  })
+  # qpg_right_fit = reactive({
+  #   tabsetPanel(tabPanel('f2', dto('f2')),
+  #               tabPanel('f3', dto('f3')),
+  #               tabPanel('f4', dto('f4')),
+  #               tabPanel('opt', dto('opt')),
+  #               tabPanel('similar', tabsetPanel(tabPanel('-1', dto('minus1')),
+  #                                               tabPanel('+1', dto('plus1')),
+  #                                               tabPanel('flip', dto('flipadmix')))),
+  #               tabPanel('history', dto('history')),
+  #               id = 'qpgraph_tabset')
+  # })
+  #
+  # qpg_right = reactive({
+  #   print('qpg_right!')
+  #   print(global$qpg_right_show)
+  #   if(global$qpg_right_show == 'fit') return(qpg_right_fit())
+  #   else if(global$qpg_right_show == 'minus1') {
+  #     global$qpg_right = plotlyOutput('graphcomparison')
+  #     return(plotlyOutput('graphcomparison'))
+  #   }
+  #   else shinyalert('Error!')
+  # })
 
-  qpg_right = reactive({
-    print('qpg_right!')
-    print(global$qpg_right_show)
-    if(global$qpg_right_show == 'fit') return(qpg_right_fit())
-    else if(global$qpg_right_show == 'minus1') {
-      global$qpg_right = plotlyOutput('graphcomparison')
-      return(plotlyOutput('graphcomparison'))
-    }
-    else shinyalert('Error!')
-  })
+
+  # qpg_right = reactive({
+  #
+  # })
 
   get_loaddata = reactive({
     print('load_data')
@@ -1665,6 +1761,9 @@ server = function(input, output, session) {
         oldedge = NULL
       }
       global$seledge = newe
+      shinyjs::enable('clear_edge')
+      shinyjs::enable('add_edge')
+      shinyjs::enable('delete_edge')
     })
     if(!is.null(newe) && !is.null(oldedge) && newe != oldedge) global$seledge = paste(c(oldedge, newe), collapse = '\n')
   })
@@ -1706,6 +1805,7 @@ server = function(input, output, session) {
 
     print('plotly_graph')
     poplist = global$poplist
+    global$graph
     pdat = get_pdat()
     req(pdat, poplist)
     nadmix = numadmix(graph_from_edgelist(as.matrix(global$edges)[,1:2]))
@@ -1725,9 +1825,9 @@ server = function(input, output, session) {
     sr = global$qpgraph_scorerange
     scoretext = paste0('score: ', ifelse(is.null(sr), round(global$score, 2),
                        paste0(round(sr['mid'], 2), '\n[', round(sr['lo'], 0), ' - ', round(sr['hi'], 0), ']')),
-                       ifelse(is.null(global$worst_residual), '', paste0('\nWR: ', round(global$worst_residual, 2))))
-    temp = ifelse(global$tempgraph, 'PREVIEW!', '')
-    temp = ''
+                       ifelse(is.na(global$worst_residual), '', paste0('\nWR: ', round(global$worst_residual, 2))),
+                       '\nadmix: ', nadmix,
+                       ifelse(global$tempgraph, '\n\nPREVIEW!', ''))
 
     gg = eg %>% mutate(rownum = 1:n()) %>%
       ggplot(aes(x=x, xend=xend, y=y, yend=yend, from=from, to=to)) +
@@ -1738,10 +1838,10 @@ server = function(input, output, session) {
       geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
                                          from = NA, text = 'text'), size = textsize) +
       geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
-      annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0,
-               label = paste0(scoretext, '\nadmix: ', nadmix)) +
-      annotate('text', x = mean(nodes$x), y = max(nodes$yend), hjust = 0,
-               label = temp, color = 'red') +
+      annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0, vjust = 1,
+               label = scoretext) +
+      # annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0,
+      #          label = scoretext) +
       theme(panel.background = element_blank(),
             axis.line = element_blank(),
             axis.text = element_blank(),
@@ -1753,7 +1853,7 @@ server = function(input, output, session) {
       scale_x_continuous(expand = c(0.1, 0.1))
 
     print('plotly_graph 4')
-    plt = plotly::ggplotly(gg, source = 'src', tooltip=c('text')) #%>% event_register('plotly_click')
+    plt = plotly::ggplotly(gg, source = 'src', tooltip=c('text'))
     print('plotly_graph 5')
     plt
   })
@@ -1973,14 +2073,14 @@ server = function(input, output, session) {
   output$graphcomparison = renderPlotly({
 
     print('graphcomparison')
+    req(global$qpgraphout)
 
     withProgress(message = 'running qpgraph in R...', {
       qpgraph_R = get_fit()
     })
 
-    original = global$qpgraphout
     #qpgraph_R$f3 = qpgraph_R$f3 %>% select(pop2, pop3, fit, est) # temporary; line should be removed
-    gg = plot_comparison(original, qpgraph_R)
+    gg = plot_comparison(global$qpgraphout, qpgraph_R)
     plotly::ggplotly(gg, tooltip = 'label')
   })
 
@@ -1990,6 +2090,7 @@ server = function(input, output, session) {
     edges = get_fit()$edges
     if(input$downloadgraph_format == 'admixtools') edges %>% admixtools:::fit_to_qpgraph_format %>% write(file)
     else if(input$downloadgraph_format == 'edgelist') edges %>% write_tsv(file)
+    else if(input$downloadgraph_format == 'dot') edges %>% admixtools:::write_dot(file)
     else stop()
   })
 
@@ -1998,8 +2099,9 @@ server = function(input, output, session) {
 
   output$f2 = dtfun({format_table(get_fit()$f2)})
   output$f3 = dtfun({format_table(get_fit()$f3)})
-  output$f4 = dtfun({format_table(get_fit()$f4)})
+  output$f4 = dtfun({if(is.null(get_fit()$f4)) as.data.frame("Activate 'return_f4' under 'Fit'!") %>% slice(-1) else format_table(get_fit()$f4)})
   output$opt = dtfun({format_table(get_fit()$opt)})
+  output$history = dtfun({format_table(get_history() %>% select(-graph, -edges))})
   output$minus1 = dtfun({format_table(get_minus1())})
   output$plus1 = dtfun(format_table(get_plus1()))
   output$flipadmix = dtfun({format_table(get_flipadmix())})

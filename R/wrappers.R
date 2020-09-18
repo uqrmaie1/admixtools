@@ -837,32 +837,6 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
   fst %>% left_join(f2, by = c('pop1', 'pop2'))
 }
 
-#' Convert graph to dot format
-#' @export
-#' @param edges Graph as edge list (columns labelled 'from', 'to', 'weight')
-#' @param outfile Output file name
-#' @examples
-#' \dontrun{
-#' results = qpgraph(example_f2_blocks, example_graph)
-#' write_dot(results$edges)
-#' }
-write_dot = function(edges, outfile = stdout()) {
-  # writes qpgraph output to a dot format file
-
-  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
-
-  edges = mutate(edges, lab = ifelse(type == 'edge',
-                                 paste0(' [ label = "', round(weight * 1000), '" ];'),
-                                 paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''), to = str_replace_all(to, '[\\.-]', ''))
-  out = 'digraph G {\n'
-  out = paste0(out, 'size = "7.5,10";\n')
-  out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
-  out = paste0(out, '\n}')
-
-  writeLines(out, outfile)
-}
-
 
 graph_to_lineages = function(graph, node = V(graph)[1], num = 1) {
   # adds vertex attribute 'lineage' to graph, for 'msprime_sim'

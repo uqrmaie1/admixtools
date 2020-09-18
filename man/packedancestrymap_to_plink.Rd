@@ -27,6 +27,7 @@ packedancestrymap_to_plink(
 \description{
 This function converts \emph{EIGENSTRAT/PACKEDANCESTRYMAP} format files to \emph{PLINK} files, using \code{\link[genio]{write_plink}}.
 When \code{inds} or \code{pops} is provided, only a subset of samples will be extracted.
+This function can have a high memory footprint, because data for all SNPs will be read before writing the \emph{PLINK} files.
 }
 \section{Alias}{
 
