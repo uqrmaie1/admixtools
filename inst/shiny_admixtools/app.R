@@ -417,11 +417,9 @@ server = function(input, output, session) {
     print('expanded!')
     exp = input$sidebarItemExpanded
     print(exp)
-    if(is.null(exp) || !is.null(global$exp) && exp == global$exp) return(global$bod)
+    #if(is.null(exp) || !is.null(global$exp) && exp == global$exp) return(global$bod)
+    if(is.null(exp)) exp = global$exp
     global$exp = exp
-    # if(is.null(exp)) exp = global$exp
-    # else global$exp = exp
-    # print(exp)
 
     if(exp == 'options') {
 
@@ -506,7 +504,7 @@ server = function(input, output, session) {
 
         if(is.null(global$graph)) {
           #shinyalert('Generating random graph', '')
-          global$graph = random_admixturegraph(names(global$poplist), 2, outpop = input$outpop)
+          global$graph = random_admixturegraph(names(global$poplist), 2, outpop = if(is.null(input$outpop) || is.na(input$outpop)) NULL else input$outpop)
         } else if(!all(get_leafnames(global$graph) %in% names(global$poplist))) {
           shinyalert('Generating random graph because populations don\'t match',
                      setdiff(get_leafnames(global$graph), names(global$poplist)))
@@ -1345,7 +1343,7 @@ server = function(input, output, session) {
     print('del 1')
     eg = get_seledge()
     if(is.null(eg)) return()
-    g = global$graph
+    gnew = global$graph
     leaves = get_leafnames(g)
     print('del 2')
     print(eg)
@@ -1354,28 +1352,34 @@ server = function(input, output, session) {
       eg %<>% str_split(' -> ')
       print(eg)
       for(i in 1:length(eg)) {
-        gnew = delete_admix(g, eg[[i]][1], eg[[i]][2])
+        gnew = delete_admix(gnew, eg[[i]][1], eg[[i]][2])
         # g <<- g
         # gnew <<- gnew
-        if(!is.dag(gnew)) shinyalert('not dag')
-        if(!is.connected(gnew)) shinyalert('not connected')
-        g = gnew
+        if(!is_valid(gnew)) {
+          shinyalert('Error', 'Could not delete edge!')
+          return()
+        }
       }
     } else {
       for(i in 1:length(eg)) {
-        g = delete_leaf(g, eg[i])
+        gnew = delete_leaf(gnew, eg[i])
+        if(!is_valid(gnew)) {
+          browser()
+          shinyalert('Error', 'Could not delete node!')
+          return()
+        }
       }
     }
-    newleaves = setdiff(get_leafnames(g), leaves)
+    newleaves = setdiff(get_leafnames(gnew), leaves)
     if(length(newleaves) > 0) {
       # newleaves <<- newleaves
       # oldgraph <<- global$graph
       # newgraph <<- g
       shinyalert('New leaves!', newleaves)
     }
-    global$graph = g
+    global$graph = gnew
     global$seledge = NULL
-    global$edges = g %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+    global$edges = gnew %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
     global$score = NA
     global$worst_residual = NA
     shinyjs::disable('clear_edge')
@@ -1407,7 +1411,12 @@ server = function(input, output, session) {
       }
       from = eg[[1]][1]
       to = eg[[1]][2]
-      global$graph = admixtools:::insert_leaf(g, input$addleaf, from, to)
+      gnew = admixtools:::insert_leaf(g, input$addleaf, from, to)
+      if(!is_valid(gnew)) {
+        shinyalert('Error', 'Could not add population!')
+        return()
+      }
+      global$graph = gnew
       global$seledge = NULL
       global$edges = gnew %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
       global$score = NA
@@ -1427,8 +1436,8 @@ server = function(input, output, session) {
         gnew = admixtools:::insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
       }, warning = alert, error = alert)
       if(!exists('gnew') || is.null(gnew)) return()
-      if(!igraph::is.dag(gnew)) {
-        shinyalert('Could not insert edge!', 'Edge would create a cycle!')
+      if(!is_valid(gnew)) {
+        shinyalert('Error', 'Could not insert edge!')
         return()
       }
       global$graph = gnew

@@ -29,6 +29,10 @@ numadmix = function(graph) {
   sum(degree(graph, mode='in') == 2)
 }
 
+is_valid = function(graph) {
+  is_simple(graph) && is_connected(graph) && is_dag(graph)
+}
+
 #' Get the population names of a graph
 #'
 #' @export
@@ -692,7 +696,7 @@ get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
 }
 
 
-add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel = TRUE, verbose = TRUE) {
+add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_residual = FALSE, parallel = TRUE, verbose = TRUE) {
 
   space = paste0(paste(rep(' ', 50), collapse=''), '\r')
   if(verbose) alert_info(paste0('Selecting winners...', space))
@@ -701,7 +705,8 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, parallel =
   numsel = min(nrow(oldmodels), numsel)
   numeach = ceiling(numgraphs/numsel)
   winners = oldmodels %>% mutate(prob = score_to_prob(score)) %>% sample_n(numsel-1, weight=prob) %>% select(-prob)
-  winners %<>% bind_rows(oldmodels %>% top_n(1, -jitter(score, amount = 1e-9)) %>% slice(1))
+  optvar = if(opt_worst_residual) 'worst_residual' else 'score'
+  winners %<>% bind_rows(oldmodels %>% slice_min(.data[[optvar]], with_ties = FALSE))
   sq = (numsel+1):numgraphs
   newmodels = tibble(generation = lastgen+1, index = sq,
                      igraph = rep(winners$igraph, numeach)[sq],
@@ -735,43 +740,53 @@ score_to_prob = function(score) {
 }
 
 
-evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum, parallel = TRUE,
+evolve_topology = function(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum,
+                           opt_worst_residual = FALSE, parallel = TRUE,
                            keep = 'all', store_intermediate = NULL, stop_after = NULL, verbose = TRUE) {
   out = init
   stop_at = Sys.time() + stop_after
   for(i in seq_len(numgen)) {
     if(!is.null(stop_after) && Sys.time() > stop_at) break
-    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutlist[[i]], parallel = parallel, verbose = verbose)
+    newmodels = add_generation(out, numgraphs, numsel, qpgfun, mutlist[[i]], opt_worst_residual = opt_worst_residual,
+                               parallel = parallel, verbose = verbose)
     if(!is.null(store_intermediate)) {
       fl = paste0(store_intermediate, '_rep', repnum, '_gen', i, '.rds')
       saveRDS(newmodels, fl)
     }
+    optvar = if(opt_worst_residual) 'worst_residual' else 'score'
     if(keep == 'all') out %<>% bind_rows(newmodels)
-    else if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score, amount = 1e-9)) %>%
+    else if(keep == 'best') out %<>% group_by(generation) %>% slice_min(.data[[optvar]], with_ties = FALSE) %>%
       ungroup %>% bind_rows(newmodels)
     else out = newmodels
     if(verbose) {
       #best = newmodels %>% filter(index > numsel) %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score %>% sort
-      best = newmodels %>% top_n(numsel, -jitter(score, amount = 1e-9)) %$% score %>% sort
-      alert_success(paste0('Generation ', i, '  Best scores: ', paste(round(best, 3), collapse=', '),
+      best = newmodels %>% slice_min(.data[[optvar]], n = numsel, with_ties = FALSE) %>% pull(.data[[optvar]]) %>% sort
+      alert_success(paste0('Generation ', i, '  Best ', optvar,'s: ', paste(round(best, 3), collapse=', '),
                     paste(rep(' ', 30), collapse=''), '\n'))
     }
   }
   if(verbose) cat('\n')
-  if(keep == 'best') out %<>% group_by(generation) %>% top_n(1, -jitter(score, amount = 1e-9)) %>% ungroup
+  if(keep == 'best') out %<>% group_by(generation) %>% slice_min(.data[[optvar]], with_ties = FALSE) %>% ungroup
   out
 }
 
 
 optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgraphs = 50, numgen = 5,
                                           numsel = 5, numadmix = 0, numstart = 1, outpop = NA, initgraphs = NULL,
-                                          parallel = TRUE, stop_after = NULL,
-                                          store_intermediate = NULL,
+                                          opt_worst_residual = FALSE,
+                                          parallel = TRUE, stop_after = NULL, store_intermediate = NULL,
                                           keep = 'all', verbose = TRUE, ...) {
 
   kp = c('edges', 'score', 'f3')
-  qpgfun = function(graph) qpgraph(f2_blocks = NULL, graph = graph, f3precomp = precomp,
-                                   numstart = numstart, verbose = FALSE, ...)[kp]
+  if(opt_worst_residual) {
+    kp = c(kp, 'worst_residual')
+    qpgfun = function(graph) qpgraph(data = precomp, graph = graph,
+                                     numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+  } else {
+    qpgfun = function(graph) qpgraph(data = NULL, graph = graph, f3precomp = precomp,
+                                     numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+  }
+
   # qpgfun = possibly(qpgfun, otherwise = NULL)
   space = paste0(paste(rep(' ', 50), collapse=''), '\r')
   if(verbose) alert_info(paste0('Generate new graphs...', space))
@@ -787,11 +802,13 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 
   init %<>% select(-isn) %>% unnest_wider(out) %>% mutate(oldscore = score, oldindex = index)
   if(verbose) {
-    best = init %>% filter(!is.na(score)) %>% top_n(min(numsel, n()), -jitter(score, amount = 1e-9)) %$% score
-    alert_success(paste0('Generation 0  Best scores: ', paste(round(best), collapse=', '), space, '\n'))
+    optvar = if(opt_worst_residual) 'worst_residual' else 'score'
+    best = init %>% filter(!is.na(score)) %>% slice_min(.data[[optvar]], n = min(numsel, nrow(.data)), with_ties = FALSE) %>% pull(.data[[optvar]])
+    alert_success(paste0('Generation 0  Best ', optvar, 's: ', paste(round(best), collapse=', '), space, '\n'))
   }
 
-  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum, parallel = parallel,
+  evolve_topology(init, numgraphs, numgen, numsel, qpgfun, mutlist, repnum, opt_worst_residual = opt_worst_residual,
+                  parallel = parallel,
                   keep = keep, store_intermediate = store_intermediate, stop_after = stop_after, verbose = verbose)
 }
 
@@ -806,7 +823,12 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files (slowest option)
+#' }
 #' @param pops Populations for which to fit admixture graphs (default all)
 #' @param outpop An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as `outpop` will greatly reduce the search space compared to including it and not designating it as `outpop`.
 #' @param numrep Number of independent repetitions (each repetition can be run in parallel)
@@ -840,6 +862,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \item A numeric vector of length equal to `mutfuns` defines the relative frequency of each mutation function
 #' \item A matrix of dimensions `numgen` x `length(mutfuns)` defines the relative frequency of each mutation function in each generation
 #' }
+#' @param opt_worst_residual Optimize for lowest worst residual instead of best score. `FALSE` by default, because the likelihood score is generally a better indicator of the quality of the model fit. Optimizing for the lowest worst residual is also slower (because f4-statistics need to be computed).
 #' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
 #' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.
 #' @param stop_after Stop optimization after `stop_after` seconds (and after finishing the current generation).
@@ -858,10 +881,10 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
 #' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
-find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
+find_graphs = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
-                       mutprobs = NULL, store_intermediate = NULL, parallel = TRUE, stop_after = NULL, verbose = TRUE, ...) {
+                       mutprobs = NULL, opt_worst_residual = FALSE, store_intermediate = NULL, parallel = TRUE, stop_after = NULL, verbose = TRUE, ...) {
 
   keep = rlang::arg_match(keep)
   if(numsel >= numgraphs || numsel < 1) stop("'numsel' has to be smaller than 'numgraphs' and greater than 0!")
@@ -881,12 +904,13 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
   if(is.null(pops)) {
     if(!is.null(initgraphs)) {
       pops = get_leafnames(initgraphs[[1]])
-    } else if(is.array(f2_data)) {
-      pops = dimnames(f2_data)[[1]]
+    } else if(is.array(data)) {
+      pops = dimnames(data)[[1]]
     } else stop('Please provide population names!')
   }
 
-  precomp = qpgraph_precompute_f3(f2_data, pops, f3basepop = outpop, ...)
+  if(!opt_worst_residual) precomp = qpgraph_precompute_f3(data, pops, f3basepop = outpop, ...)
+  else precomp = get_f2(data, pops, ...)
 
   if(class(mutfuns[[1]]) == 'character') mutfuns %<>% rlang::set_names() %>% map(get)
   if(is.null(mutprobs)) {
@@ -905,7 +929,7 @@ find_graphs = function(f2_data, pops = NULL, outpop = NULL, numrep = 1, numgraph
   oa = function(i) optimize_admixturegraph_single(pops, precomp, mutlist = mutlist, repnum = i,
                                                  numgen = numgen, numsel = numsel,
                                                  numgraphs = numgraphs, numadmix = numadmix, numstart = numstart,
-                                                 outpop = outpop, initgraphs = initgraphs,
+                                                 outpop = outpop, initgraphs = initgraphs, opt_worst_residual = opt_worst_residual,
                                                  parallel = parallel && numrep == 1,
                                                  stop_after = stop_after, store_intermediate = store_intermediate,
                                                  keep = keep, verbose = verbose && numrep == 1, ...)

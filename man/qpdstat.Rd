@@ -20,7 +20,8 @@ qpdstat(
   f4mode = TRUE,
   afprod = TRUE,
   cpp = TRUE,
-  verbose = is.character(data)
+  verbose = is.character(data),
+  ...
 )
 }
 \arguments{
@@ -70,6 +71,8 @@ match the number of SNPs. only used when \code{data} is the prefix of genotype f
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
 \item{verbose}{Print progress updates}
+
+\item{...}{Additional arguments passed to \code{\link{f4blockdat_from_geno}} if \code{data} is a genotype file prefix or \code{\link{f2_from_precomp}} if \code{data} is a directory with f2-statistics}
 }
 \value{
 \code{qpdstat} returns a data frame with f4 statistics

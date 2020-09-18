@@ -336,17 +336,24 @@ fix_ploidy = function(xmat) {
 }
 
 
-# turns f2_data (f2 dir) into f2_blocks; divides by denom
-# returns f2_blocks array with block_lengths in 3rd dimension names
-get_f2 = function(f2_data, pops, pops2 = pops, afprod = FALSE, verbose = TRUE) {
+#' Turns f2_data into f2_blocks
+#'
+#' @param f2_data f2 data as genotype file prefix, f2 directory, or f2 blocks
+#' @param pops Populations for which to extract f2-stats
+#' @param pops2 Optional second vector of populations. Can result in non-square array
+#' @param afprod Get allele frequency products
+#' @param verbose Print progress updates
+#' @param ... Additional arguments passed to \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
+#' @return A 3d array with f2-statistics
+get_f2 = function(f2_data, pops, pops2 = pops, afprod = FALSE, verbose = TRUE, ...) {
 
   stopifnot(!is.character(f2_data) || dir.exists(f2_data) || is_geno_prefix(f2_data))
   if(!is.character(f2_data)) {
     f2_blocks = f2_data
   } else if(dir.exists(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose)
+    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose, ...)
   } else {
-    f2_blocks = f2_from_geno(f2_data, pops = union(pops, pops2), afprod = afprod, verbose = verbose)
+    f2_blocks = f2_from_geno(f2_data, pops = union(pops, pops2), afprod = afprod, verbose = verbose, ...)
   }
   blockpops = union(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]])
   allpops = union(pops, pops2)

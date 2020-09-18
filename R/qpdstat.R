@@ -135,6 +135,7 @@ f3 = qp3pop
 #' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`. `f4mode = FALSE` is only available when `data` is the prefix of genotype files
 #' @param afprod Compute f4 from allele frequency products instead of f2. Only used if `data` is a directory with precomputed data.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param ... Additional arguments passed to \code{\link{f4blockdat_from_geno}} if `data` is a genotype file prefix or \code{\link{f2_from_precomp}} if `data` is a directory with f2-statistics
 #' @return `qpdstat` returns a data frame with f4 statistics
 #' @aliases f4
 #' @section Alias:
@@ -153,7 +154,7 @@ f3 = qp3pop
 qpdstat = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
                    boot = FALSE, sure = FALSE, unique_only = TRUE,
                    comb = TRUE, blgsize = NULL, block_lengths = NULL, f4mode = TRUE,
-                   afprod = TRUE, cpp = TRUE, verbose = is.character(data)) {
+                   afprod = TRUE, cpp = TRUE, verbose = is.character(data), ...) {
 
   stopifnot(is.null(pop2) & is.null(pop3) & is.null(pop4) |
             !is.null(pop2) & !is.null(pop3) & !is.null(pop4))
@@ -176,7 +177,7 @@ qpdstat = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
     if(verbose) alert_info('Computing from f4 from genotype data...\n')
     return(qpdstat_geno(data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
                         f4mode = f4mode, block_lengths = block_lengths, boot = boot,
-                        allsnps = TRUE, verbose = verbose))
+                        allsnps = TRUE, verbose = verbose, ...))
   }
 
   if(cpp) {
@@ -187,7 +188,7 @@ qpdstat = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL, pop4 = NULL,
   statfun = ifelse(boot, boot_vec_stats, jack_vec_stats)
 
   if(verbose) alert_info(paste0('Loading f2 data for ', length(pops1)*length(pops2), ' population pairs...\n'))
-  f2_blocks = get_f2(data, pops1, pops2 = pops2, afprod = afprod) %>% samplefun
+  f2_blocks = get_f2(data, pops1, pops2 = pops2, afprod = afprod, ...) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f4 -----------------
@@ -316,11 +317,11 @@ gmat_to_aftable = function(gmat, popvec) {
 
 
 qpdstat_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
-                        f4mode = TRUE, boot = FALSE, allsnps = FALSE, verbose = TRUE) {
+                        f4mode = TRUE, boot = FALSE, allsnps = FALSE, verbose = TRUE, ...) {
 
   pref = normalizePath(pref, mustWork = FALSE)
   f4blockdat = f4blockdat_from_geno(pref, popcombs, blgsize = blgsize, block_lengths = block_lengths,
-                                    f4mode = f4mode, allsnps = allsnps, verbose = verbose)
+                                    f4mode = f4mode, allsnps = allsnps, verbose = verbose, ...)
 
   if(verbose) alert_info('Summarize across blocks...\n')
   out = f4blockdat %>% f4blockdat_to_f4out(boot)

@@ -5,7 +5,7 @@
 \title{Find well fitting admixture graphs}
 \usage{
 find_graphs(
-  f2_data,
+  data,
   pops = NULL,
   outpop = NULL,
   numrep = 1,
@@ -19,6 +19,7 @@ find_graphs(
   mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
     flipadmix_random, mutate_n),
   mutprobs = NULL,
+  opt_worst_residual = FALSE,
   store_intermediate = NULL,
   parallel = TRUE,
   stop_after = NULL,
@@ -27,7 +28,12 @@ find_graphs(
 )
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}}
+\item{data}{Input data in one of three forms:
+\enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
 \item{pops}{Populations for which to fit admixture graphs (default all)}
 
@@ -73,6 +79,8 @@ See examples for how to make new mutation functions.}
 \item A numeric vector of length equal to \code{mutfuns} defines the relative frequency of each mutation function
 \item A matrix of dimensions \code{numgen} x \code{length(mutfuns)} defines the relative frequency of each mutation function in each generation
 }}
+
+\item{opt_worst_residual}{Optimize for lowest worst residual instead of best score. \code{FALSE} by default, because the likelihood score is generally a better indicator of the quality of the model fit. Optimizing for the lowest worst residual is also slower (because f4-statistics need to be computed).}
 
 \item{store_intermediate}{Path and prefix of files for intermediate results to \code{.rds}. Can be useful if \code{find_graphs} doesn't finish sucessfully.}
 

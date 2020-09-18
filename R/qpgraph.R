@@ -219,6 +219,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   } else stop(paste0('Cannot parse graph of class ', class(graph),'!'))
   if(lambdascale == -1) lambdascale = 1
   if(!lambdascale > 0) stop("'lambdascale' has to be > 0!")
+  if(return_f4 && is.null(data)) stop("Can't compute f4 without f2 data!")
 
   if(cpp) {
     optimweightsfun = cpp_optimweightsfun
@@ -239,7 +240,6 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   cmb = combn(0:(npop-1), 2)+(1:0)
 
   if(!is.null(data) && !is.null(f3precomp)) stop("'f2_blocks' and 'f3precomp' can't both be provided!")
-  f2_blocks = get_f2(data, pops, afprod = FALSE, verbose = verbose)
 
   if(!is.null(f3precomp)) {
     precomp = f3precomp
@@ -250,6 +250,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
   } else {
+    f2_blocks = get_f2(data, pops, afprod = FALSE, verbose = verbose)
     precomp = qpgraph_precompute_f3(f2_blocks, pops, f3basepop = f3basepop, lambdascale = lambdascale, boot = boot,
                                     seed = seed, diag_f3 = diag_f3, lsqmode = lsqmode)
     baseind = if(is.null(f3basepop)) 1 else which(pops == f3basepop)
@@ -330,9 +331,9 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
 
   out = namedList(edges, score, f2, f3, opt, ppinv)
   if(!is.null(f2_blocks_test)) out[['score_test']] = score_test
-  if(return_f4) {
+  if(return_f4 && !is.null(data)) {
     if(verbose) alert_info(paste0('Computing f4\n'))
-    out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3, cmb)
+    out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3)
     out$worst_residual = out$f4 %>% slice_max(abs(z), with_ties = F) %>% pull(z) %>% abs
   }
   out
@@ -345,8 +346,12 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
 #' Takes a 3d array of f2 block jackknife estimates and computes f3-statistics between the
 #' first population \eqn{p1} and all population pairs \eqn{i, j}: \eqn{f3(p1; p_i, p_j)}
 #' @export
-#' @param f2_data A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files (slowest option)
+#' }
 #' @param pops Populations for which to compute f3-statistics
 #' @param f3basepop f3-statistics base population. If `NULL` (the default),
 #' the first population in `pops` will be used as the basis.
@@ -371,7 +376,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
 #' \dontrun{
 #' qpgraph_precompute_f3(f2_dir, pops)
 #' }
-qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
+qpgraph_precompute_f3 = function(data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
                                  seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE) {
   # returns list of f3_est and ppinv for subset of populations.
   # f3_est and ppinv are required for qpgraph_slim; f2out and f3out are extra output
@@ -385,7 +390,7 @@ qpgraph_precompute_f3 = function(f2_data, pops, f3basepop = NULL, lambdascale = 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
   arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
-  f2_blocks = (get_f2(f2_data, pops) * lambdascale) %>% samplefun
+  f2_blocks = (get_f2(data, pops) * lambdascale) %>% samplefun
   #f2_blocks = array(pmax(0, f2_blocks), dim(f2_blocks), dimnames(f2_blocks))
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
@@ -480,9 +485,10 @@ f3out_to_fittedf2out = function(f2out, f3out) {
 
 
 
-fitf4 = function(f2_blocks, f2, f3, cmb) {
+fitf4 = function(f2_blocks, f2, f3) {
   # returns a tibble with estimated and fitted f4-statistics
 
+  cmb = combn(0:(dim(f2_blocks)[1]-1), 2)+(1:0)
   f2_out = f3 %>% filter(pop2 == pop3) %$% fit
   f2_fit = f3 %>% mutate(f21 = f2_out[cmb[1,]], f22 = f2_out[cmb[2,]], f2fit = (f21 + f22 - fit*2))
   f2_fit2 = f2 %>%

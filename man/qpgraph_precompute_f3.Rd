@@ -5,7 +5,7 @@
 \title{Compute f3-statistics from f2-statistics.}
 \usage{
 qpgraph_precompute_f3(
-  f2_data,
+  data,
   pops,
   f3basepop = NULL,
   lambdascale = 1,
@@ -16,8 +16,12 @@ qpgraph_precompute_f3(
 )
 }
 \arguments{
-\item{f2_data}{A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-alternatively, a directory with precomputed data. see \code{\link{extract_f2}} and \code{\link{extract_counts}}.}
+\item{data}{Input data in one of three forms:
+\enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
 \item{pops}{Populations for which to compute f3-statistics}
 
