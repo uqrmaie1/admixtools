@@ -2097,7 +2097,7 @@ server = function(input, output, session) {
 
   output$downloadgraph = downloadHandler('graph.tsv', function(file) {
     edges = get_fit()$edges
-    if(input$downloadgraph_format == 'admixtools') edges %>% admixtools:::fit_to_qpgraph_format %>% write(file)
+    if(input$downloadgraph_format == 'admixtools') edges %>% admixtools:::fit_to_qpgraph_format() %>% write(file)
     else if(input$downloadgraph_format == 'edgelist') edges %>% write_tsv(file)
     else if(input$downloadgraph_format == 'dot') edges %>% admixtools:::write_dot(file)
     else stop()
