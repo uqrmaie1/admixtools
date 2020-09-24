@@ -50,7 +50,8 @@
 <meta property="og:title" content="Convert <em>EIGENSTRAT</em> or <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em> — packedancestrymap_to_plink" />
 
 <meta property="og:description" content="This function converts EIGENSTRAT/PACKEDANCESTRYMAP format files to PLINK files, using write_plink.
-When inds or pops is provided, only a subset of samples will be extracted." />
+When inds or pops is provided, only a subset of samples will be extracted.
+This function can have a high memory footprint, because data for all SNPs will be read before writing the PLINK files." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -173,7 +174,8 @@ When inds or pops is provided, only a subset of samples will be extracted." />
     <div class="ref-description">
     
     <p>This function converts <em>EIGENSTRAT/PACKEDANCESTRYMAP</em> format files to <em>PLINK</em> files, using <code><a href='https://rdrr.io/pkg/genio/man/write_plink.html'>write_plink</a></code>.
-When <code>inds</code> or <code>pops</code> is provided, only a subset of samples will be extracted.</p>
+When <code>inds</code> or <code>pops</code> is provided, only a subset of samples will be extracted.
+This function can have a high memory footprint, because data for all SNPs will be read before writing the <em>PLINK</em> files.</p>
     
     </div>
 

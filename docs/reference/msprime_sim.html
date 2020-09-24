@@ -176,23 +176,24 @@
     </div>
 
     <pre class="usage"><span class='fu'>msprime_sim</span>(
-  <span class='no'>edges</span>,
+  <span class='no'>graph</span>,
   <span class='kw'>outfilename</span> <span class='kw'>=</span> <span class='st'>"msprime_sim.py"</span>,
-  <span class='kw'>vcffilename</span> <span class='kw'>=</span> <span class='st'>"msprimesim.vcf"</span>,
-  <span class='kw'>nind</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>popsize</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
-  <span class='kw'>len</span> <span class='kw'>=</span> <span class='fl'>1e+09</span>,
-  <span class='kw'>recombination_rate</span> <span class='kw'>=</span> <span class='fl'>1e-09</span>,
-  <span class='kw'>mutation_rate</span> <span class='kw'>=</span> <span class='fl'>1e-09</span>,
-  <span class='kw'>time</span> <span class='kw'>=</span> <span class='fl'>100</span>
+  <span class='kw'>outpref</span> <span class='kw'>=</span> <span class='st'>"msprime_sim"</span>,
+  <span class='kw'>nsnps</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
+  <span class='kw'>neff</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
+  <span class='kw'>ind_per_pop</span> <span class='kw'>=</span> <span class='fl'>1</span>,
+  <span class='kw'>mutation_rate</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
+  <span class='kw'>time</span> <span class='kw'>=</span> <span class='fl'>10000</span>,
+  <span class='kw'>run</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>python</span> <span class='kw'>=</span> <span class='st'>"python"</span>
 )</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>edges</th>
-      <td><p>Graph as edge list with columns 'from' and 'to' (optionally 'weight')</p></td>
+      <th>graph</th>
+      <td><p>Graph as <code>igraph</code> object or edge list with columns 'from' and 'to' (optionally 'weight')</p></td>
     </tr>
     </table>
     

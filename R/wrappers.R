@@ -387,7 +387,6 @@ qpgraph_wrapper = function(pref, graph, bin = '~np29/o2bin/qpGraph', parfile = N
                      'initmix: ', initmix, '\n',
                      'doanalysis: ', doanalysis %>% yesno, '\n')
     if(!is.null(loadf3) && loadf3 == 'YES') parfile %<>% paste0('fstatsname: ', fstatsfile, '\n')
-    if(!is.null(lambdascale)) parfile %<>% paste0('lambdascale: ', lambdascale, '\n')
     if(allsnps == 'YES') parfile %<>% paste0('allsnps: YES\nloadf3: YES\n')
     if(oldallsnps == 'YES') parfile %<>% paste0('oldallsnps: YES\nallsnps: YES\nloadf3: NO\n')
 
@@ -838,105 +837,101 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 }
 
 
-graph_to_lineages = function(graph, node = V(graph)[1], num = 1) {
-  # adds vertex attribute 'lineage' to graph, for 'msprime_sim'
 
-  lin = vertex_attr(graph, 'lineage', node)
-  if(!is.null(lin) && !is.na(lin)) return(graph)
-  graph = set_vertex_attr(graph, 'lineage', node, num)
-  children = neighbors(graph, node, mode = 'out')
-  if(length(children) == 0) {
-    return(graph)
-  } else if(length(children) == 1) {
-    if(length(neighbors(graph, children, mode = 'in')) == 1) {
-      graph = graph_to_lineages(graph, children[1], num)
-    } else {
-      maxlin = max(vertex_attr(graph, 'lineage'), na.rm = TRUE)
-      graph = graph_to_lineages(graph, children[1], maxlin + 1)
-    }
-  } else if(length(children) == 2) {
-    graph = graph_to_lineages(graph, children[1], num)
-    maxlin = max(vertex_attr(graph, 'lineage'), na.rm = TRUE)
-    graph = graph_to_lineages(graph, children[2], maxlin + 1)
-  }
-  graph
-}
 
 #' Generate msprime simulation code from admixture graph
 #' @export
-#' @param edges Graph as edge list with columns 'from' and 'to' (optionally 'weight')
+#' @param graph Graph as `igraph` object or edge list with columns 'from' and 'to' (optionally 'weight')
 #' @return msprime python code backbone
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' msprime_sim(results$edges)
 #' }
-msprime_sim = function(edges, outfilename = 'msprime_sim.py',
-                       vcffilename = 'msprimesim.vcf', nind = 1, popsize = 1000, len = 1e9,
-                       recombination_rate = 1e-9, mutation_rate = 1e-9, time = 100) {
+msprime_sim = function(graph, outfilename = 'msprime_sim.py', outpref = 'msprime_sim', nsnps = 1e3,
+                       neff = 1000, ind_per_pop = 1, mutation_rate = 1e-5, time = 1e4, run = FALSE, python = 'python') {
 
-  if(is.matrix(edges) && ncol(edges) == 2) edges %<>% as_tibble(.name_repair = ~c('from', 'to'))
+  if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
+  else if(is.matrix(graph) && ncol(graph) == 2) edges = as_tibble(graph, .name_repair = ~c('from', 'to'))
+  else edges = graph
   pdat = graph_to_plotdat(edges)$eg
-  dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>% distinct %>% deframe
+  dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
+    mutate(y = y - min(y)) %>% distinct %>% deframe
 
   edges %<>% add_count(to) %>%
-    mutate(from = str_replace_all(from, '\\.', ''), to = str_replace_all(to, '\\.', ''),
-           type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
-  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 1)
+    mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
+  nodes = names(V(graph))
   leaves = get_leafnames(graph)
-  nodes = names(V(graph))[-1]
-  lineages = vertex_attr(graph_to_lineages(graph), 'lineage')
-  edges2 = edges %>%
-    mutate(nfrom = match(from, names(V(graph))),
-           nto = match(to, names(V(graph))),
-           lfrom = lineages[nfrom],
-           lto = lineages[nto],
-           time = nfrom) %>%
-    filter(lfrom != lto) %>%
-    group_by(to) %>%
-    mutate(weight2 = ifelse(n() == 2 & time == max(time), weight, 1)) %>%
-    ungroup
+  leaves = intersect(nodes, leaves)
+  edges %<>% mutate(date = dates[edges$to], source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
+    arrange(date)
+  if(!'weight' %in% names(edges)) {
+    edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, 0.5, 1)) %>% ungroup
+  } else {
+    edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(i == 1, weight, 1)) %>% ungroup
+  }
 
-  out = "import math
-import msprime
-import argparse
+  out = "import math\nimport numpy\nimport msprime"
 
-parser = argparse.ArgumentParser(description = 'Simulating pseudo sequences by chromosomes')
-parser.add_argument('-c', '--CHR', type = int, default = 1, help = 'Chromosomes number')
-parser.add_argument('-m', '--migration_percent', type = int, default = 5, help = 'Gene flow percent')
-parser.add_argument('-i', '--iteration', type = int, default = 1, help ='Iteration and seed')
-args = parser.parse_args()
-"
-
-  out = paste0(out, '\n#eff. pop. sizes\n', paste0(nodes, ' = ',popsize,'\n', collapse = ''))
-  out = paste0(out, '\ngen = 29\n')
-  out = paste0(out, 'pops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', nodes,
+  out = paste0(out, '\ngen = 29')
+  out = paste0(out, '\npops = [\n', paste0('\tmsprime.PopulationConfiguration(initial_size = ', neff,
                                         ')', c(rep(',', length(nodes)-1), ''),
-                                        ' #',(1:length(nodes))-1,'\n', collapse = '') ,']\n')
-  out = paste0(out, '\n#ind. dates\nsamples = [\n', paste0('\tmsprime.Sample(', (1:length(nodes))-1,
-                                                           ', ',dates[nodes]*time,'/gen)',
-                                                           c(rep(',', length(nodes)-1), ' '),
-                                                           ' #', nodes, '\n', collapse = ''), ']\n')
-  out = paste0(out, '\n#pop. split dates\n', paste0('T_', edges2$from, ' = ',dates[edges2$from]*time,'\n', collapse = ''))
+                                        ' #',(1:length(nodes))-1, ' ', nodes, '\n', collapse = '') ,']\n')
+
+  indnam = paste(rep(leaves, each = ind_per_pop), seq_len(ind_per_pop), sep = '_')
+  out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
+  out = paste0(out, '\nsamples = [\n', paste0('\tmsprime.Sample(', rep(match(leaves, nodes), each = 2*ind_per_pop)-1, ', ',
+                                              #dates[rep(leaves, each=2)]*time,
+                                              0,
+                                              '/gen)', c(rep(',', length(indnam)*2-1), ' '),
+                                                           ' # ', rep(indnam, each = 2), '\n', collapse = ''), ']\n')
   out = paste0(out, '\nevents = [\n',
-               paste0('\tmsprime.MassMigration(time = T_',
-                      edges2$from, '/gen, source = ', edges2$lto-1,', destination = ', edges2$lfrom-1,
-                      ', proportion = ', ifelse(edges2$type == 'admix', edges2$weight2, 1),')',
+               paste0('\tmsprime.MassMigration(time = ',
+                      edges$date*time, '/gen, source = ', edges$source,', destination = ', edges$dest,
+                      ', proportion = ', edges$weight,')',
                       collapse = ',\n'), '\n]\n')
 
-  out = paste0(out, paste0("\ntree_sequence = msprime.simulate(population_configurations = pops,
-                                 length = ",len,",
-                                 samples = samples,
-                                 demographic_events = events,
-                                 recombination_rate = ", recombination_rate,",
-                                 mutation_rate = ", mutation_rate,",
-                                 random_seed = args.iteration)
+  out = paste0(out, "\ngt = numpy.zeros((int(",nsnps,"),len(samples)/2), 'int')")
+  out = paste0(out, "\nfor i in range(int(",nsnps,")):")
+  out = paste0(out, paste0("\n\ttree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")"))
+  out = paste0(out, "\n\tif tree_sequence.genotype_matrix().shape[0] > 0:")
+  out = paste0(out, '\n\t\tgt[i,:] = (tree_sequence.genotype_matrix()[0,range(0,len(samples),2)] + tree_sequence.genotype_matrix()[0,range(1,len(samples),2)])')
+  out = paste0(out, "\n\telse:")
+  out = paste0(out, "\n\t\tgt[i,:] = numpy.zeros((1, len(samples)/2))")
 
-with open('",vcffilename,"', 'w') as f:
-  tree_sequence.write_vcf(f, ploidy = 2)"))
+  out = paste0(out, "\n\nnumpy.savetxt('",outpref,".geno', gt, '%d', '')")
+
+  out = paste0(out, "\n\nwith open('",outpref,".snp', 'w') as f:")
+  out = paste0(out, "\n\tfor i in range(int(",nsnps,")):")
+  out = paste0(out, "\n\t\tbytes = f.write('.\t1\t' + str(i*50/float(",nsnps-1,")) + '\t' + str(i*100) + '\tA\tC\\n')")
+  out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
+  out = paste0(out, "\n\tfor i in range(len(indnam)):")
+  out = paste0(out, "\n\t\tbytes = f.write(indnam[i] + '\tU\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')")
 
   writeLines(out, outfilename)
+
+  if(run) system(paste(python, outfilename))
 }
+
+
+f2_from_graph = function(graph, outfilename = NULL, outpref = NULL, nsnps = 1e3,
+                         neff = 1000, ind_per_pop = 1, mutation_rate = 1e-5, time = 1e4, run = FALSE, python = 'python',
+                         cleanup = TRUE, blgsize = 0.05, verbose = TRUE) {
+
+  if(is.null(outfilename)) outfilename = paste0(tempfile(), '.py')
+  if(is.null(outpref)) outpref = tempfile()
+  if(verbose) alert_info('Simulating data...\n')
+  msprime_sim(graph, outfilename = outfilename, outpref = outpref, nsnps = nsnps,
+              neff = neff, ind_per_pop = ind_per_pop, mutation_rate = mutation_rate, time = time, run = TRUE,
+              python = python)
+
+  if(verbose) alert_info('Reading data...\n')
+  f2_blocks = f2_from_geno(outpref, verbose = verbose, auto_only = FALSE, blgsize = blgsize)
+  if(cleanup) file.remove(c(outfilename, paste0(outpref, c('.geno', '.ind', '.snp'))))
+  f2_blocks
+}
+
+
 
 

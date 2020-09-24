@@ -43,6 +43,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/desimplify_graph.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/edges_to_igraph.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/eigenstrat_to_afs.html</loc>
   </url>
   <url>
@@ -137,6 +140,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_block_lengths.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_f2.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_leafnames.html</loc>

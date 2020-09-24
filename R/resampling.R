@@ -287,7 +287,7 @@ get_block_lengths = function(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE) {
   if(blgsize >= 100 && verbose) alert_warning("'blgsize' is >= 100 and interpreted as base pair distance!")
   if(distcol == 'cm' && length(unique(dat[[distcol]])) < 2) {
     blgsize = 2e6
-    if(!distcol %in% names(dat) || length(unique(dat[[distcol]])) < 2) {
+    if(!distcol %in% names(dat) || length(unique(dat[[distcol]])) == 1 && dat[[distcol]][1] == 0) {
       warning(paste0("No genetic linkage map or base positions found!",
       "Each chromosome will be its own block, which can make standard error estimates inaccurate."))
     } else {

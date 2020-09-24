@@ -5,19 +5,20 @@
 \title{Generate msprime simulation code from admixture graph}
 \usage{
 msprime_sim(
-  edges,
+  graph,
   outfilename = "msprime_sim.py",
-  vcffilename = "msprimesim.vcf",
-  nind = 1,
-  popsize = 1000,
-  len = 1e+09,
-  recombination_rate = 1e-09,
-  mutation_rate = 1e-09,
-  time = 100
+  outpref = "msprime_sim",
+  nsnps = 1000,
+  neff = 1000,
+  ind_per_pop = 1,
+  mutation_rate = 1e-05,
+  time = 10000,
+  run = FALSE,
+  python = "python"
 )
 }
 \arguments{
-\item{edges}{Graph as edge list with columns 'from' and 'to' (optionally 'weight')}
+\item{graph}{Graph as \code{igraph} object or edge list with columns 'from' and 'to' (optionally 'weight')}
 }
 \value{
 msprime python code backbone

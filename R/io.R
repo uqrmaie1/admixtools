@@ -1948,7 +1948,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 
   genio::write_plink(normalizePath(outpref, mustWork = F),
                      dat$bed[,dat$fam$X2],
-                     bim = dat$bim %>% set_colnames(c('id', 'chr', 'posg', 'pos', 'ref', 'alt')),
+                     bim = dat$bim %>% set_colnames(c('chr', 'id', 'posg', 'pos', 'ref', 'alt')),
                      fam = dat$fam %>% transmute(fam = X1, id = X2, pat = 0, mat = 0, sex = X2, pheno = -9),
                      verbose = verbose)
 }

@@ -33,6 +33,19 @@ is_valid = function(graph) {
   is_simple(graph) && is_connected(graph) && is_dag(graph)
 }
 
+is_simplified = function(graph) {
+  sum(degree(graph) == 2) == 1
+}
+
+#' Convert data frame graph to igraph
+#'
+#' @export
+#' @param edges An admixture graph as an edge list data frame
+#' @return An `igraph` object
+edges_to_igraph = function(edges) {
+  edges[,1:2] %>% as.matrix %>% igraph::graph_from_edgelist()
+}
+
 #' Get the population names of a graph
 #'
 #' @export
@@ -1459,15 +1472,15 @@ find_normedges = function(graph, exclude_first = FALSE) {
 #' @param graph An admixture graph
 #' @param from Edge source node
 #' @param to Edge target node
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return Admixture graph with one deleted edge
 #' @seealso \code{\link{insert_edge}}
-delete_admix = function(graph, from, to, desimplify = TRUE) {
+delete_admix = function(graph, from, to) {
   # returns graph with admixture edge deleted
   # does not conserve internal node names
-  # assumes input graph is desimplified
+
+  desimplify = !is_simplified(graph)
   parents = neighbors(graph, from, mode = 'in')
-  if(length(parents) == 1) {
+  if(length(parents) == 1 & desimplify) {
     del = from
     if(length(neighbors(graph, parents, mode = 'in')) == 2) del = c(del, names(parents))
     graph %<>% igraph::delete_vertices(del)

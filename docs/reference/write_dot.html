@@ -165,7 +165,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Convert graph to dot format</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/io.R'><code>R/io.R</code></a></small>
     <div class="hidden name"><code>write_dot.Rd</code></div>
     </div>
 
@@ -175,14 +175,14 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>write_dot</span>(<span class='no'>edges</span>, <span class='kw'>outfile</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/showConnections.html'>stdout</a></span>())</pre>
+    <pre class="usage"><span class='fu'>write_dot</span>(<span class='no'>graph</span>, <span class='kw'>outfile</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/showConnections.html'>stdout</a></span>())</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>edges</th>
-      <td><p>Graph as edge list (columns labelled 'from', 'to', 'weight')</p></td>
+      <th>graph</th>
+      <td><p>Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')</p></td>
     </tr>
     <tr>
       <th>outfile</th>

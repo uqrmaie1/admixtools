@@ -25,3 +25,7 @@ graphfile2
 graphfile3
 poplistname
 out_a
+msprime_sim.geno
+msprime_sim.ind
+msprime_sim.py
+msprime_sim.snp

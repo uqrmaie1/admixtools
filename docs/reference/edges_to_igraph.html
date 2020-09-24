@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Read blocked f2 estimates from disk — read_f2 • admixtools</title>
+<title>Convert data frame graph to igraph — edges_to_igraph • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -47,10 +47,9 @@
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Read blocked f2 estimates from disk — read_f2" />
+<meta property="og:title" content="Convert data frame graph to igraph — edges_to_igraph" />
 
-<meta property="og:description" content="This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by write_f2
-and returns them as a 3d array." />
+<meta property="og:description" content="Convert data frame graph to igraph" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -165,75 +164,33 @@ and returns them as a 3d array." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Read blocked f2 estimates from disk</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/io.R'><code>R/io.R</code></a></small>
-    <div class="hidden name"><code>read_f2.Rd</code></div>
+    <h1>Convert data frame graph to igraph</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
+    <div class="hidden name"><code>edges_to_igraph.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function reads blocked f2 estimates (or allele frequency products) which were writtend to disk by <code><a href='write_f2.html'>write_f2</a></code>
-and returns them as a 3d array.</p>
+    <p>Convert data frame graph to igraph</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>read_f2</span>(
-  <span class='no'>f2_dir</span>,
-  <span class='kw'>pops</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>afprod</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>counts</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>remove_na</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
-)</pre>
+    <pre class="usage"><span class='fu'>edges_to_igraph</span>(<span class='no'>edges</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>f2_dir</th>
-      <td><p>Directory from which to read files</p></td>
-    </tr>
-    <tr>
-      <th>pops</th>
-      <td><p>Populations for which f2 statistics should be read. Defaults to all populations,
-which may require a lot of memory.</p></td>
-    </tr>
-    <tr>
-      <th>pops2</th>
-      <td><p>Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.</p></td>
-    </tr>
-    <tr>
-      <th>afprod</th>
-      <td><p>Return allele frequency products instead of f2 estimates</p></td>
-    </tr>
-    <tr>
-      <th>counts</th>
-      <td><p>Return allele counts instead of f2 estimates</p></td>
-    </tr>
-    <tr>
-      <th>remove_na</th>
-      <td><p>Remove blocks with missing values</p></td>
-    </tr>
-    <tr>
-      <th>verbose</th>
-      <td><p>Print progress updates</p></td>
+      <th>edges</th>
+      <td><p>An admixture graph as an edge list data frame</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A 3d array of block jackknife estimates</p>
-    
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
-
-    <div class='dont-index'><p><code><a href='write_f2.html'>write_f2</a></code></p></div>
+    <p>An <code>igraph</code> object</p>
     
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='fu'>read_f2</span>(<span class='no'>f2_dir</span>, <span class='kw'>pops</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'pop1'</span>, <span class='st'>'pop2'</span>, <span class='st'>'pop3'</span>))
-}</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
@@ -241,11 +198,7 @@ which may require a lot of memory.</p></td>
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#value">Value</a></li>
-
-      <li><a href="#see-also">See also</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+          </ul>
 
   </div>
 </div>

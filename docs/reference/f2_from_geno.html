@@ -186,6 +186,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
   <span class='kw'>maxmiss</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>minmaf</span> <span class='kw'>=</span> <span class='fl'>0</span>,
   <span class='kw'>maxmaf</span> <span class='kw'>=</span> <span class='fl'>0.5</span>,
+  <span class='kw'>pops2</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>outpop</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
   <span class='kw'>outpop_scale</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
   <span class='kw'>transitions</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
@@ -234,6 +235,10 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     <tr>
       <th>maxmaf</th>
       <td><p>Discard SNPs with minor allele frequency greater than than <code>maxmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>pops2</th>
+      <td><p>If specified, only a pairs between <code>pops</code> and <code>pops2</code> will be computed</p></td>
     </tr>
     <tr>
       <th>outpop</th>

@@ -4,7 +4,7 @@
 \alias{delete_admix}
 \title{Delete an admixture edge}
 \usage{
-delete_admix(graph, from, to, desimplify = TRUE)
+delete_admix(graph, from, to)
 }
 \arguments{
 \item{graph}{An admixture graph}
@@ -12,8 +12,6 @@ delete_admix(graph, from, to, desimplify = TRUE)
 \item{from}{Edge source node}
 
 \item{to}{Edge target node}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 }
 \value{
 Admixture graph with one deleted edge
