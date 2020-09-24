@@ -849,7 +849,7 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 #' msprime_sim(results$edges)
 #' }
 msprime_sim = function(graph, outfilename = 'msprime_sim.py', outpref = 'msprime_sim', nsnps = 1e3,
-                       neff = 1000, ind_per_pop = 1, mutation_rate = 1e-5, time = 1e4, run = FALSE, python = 'python') {
+                       neff = 1000, ind_per_pop = 1, mutation_rate = 1e-3, time = 1e4, run = FALSE, python = 'python') {
 
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
   else if(is.matrix(graph) && ncol(graph) == 2) edges = as_tibble(graph, .name_repair = ~c('from', 'to'))
@@ -892,13 +892,13 @@ msprime_sim = function(graph, outfilename = 'msprime_sim.py', outpref = 'msprime
                       ', proportion = ', edges$weight,')',
                       collapse = ',\n'), '\n]\n')
 
-  out = paste0(out, "\ngt = numpy.zeros((int(",nsnps,"),len(samples)/2), 'int')")
+  out = paste0(out, "\ngt = numpy.zeros((int(",nsnps,"),len(samples)//2), 'int')")
   out = paste0(out, "\nfor i in range(int(",nsnps,")):")
   out = paste0(out, paste0("\n\ttree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")"))
   out = paste0(out, "\n\tif tree_sequence.genotype_matrix().shape[0] > 0:")
   out = paste0(out, '\n\t\tgt[i,:] = (tree_sequence.genotype_matrix()[0,range(0,len(samples),2)] + tree_sequence.genotype_matrix()[0,range(1,len(samples),2)])')
   out = paste0(out, "\n\telse:")
-  out = paste0(out, "\n\t\tgt[i,:] = numpy.zeros((1, len(samples)/2))")
+  out = paste0(out, "\n\t\tgt[i,:] = numpy.zeros((1, len(samples)//2))")
 
   out = paste0(out, "\n\nnumpy.savetxt('",outpref,".geno', gt, '%d', '')")
 
