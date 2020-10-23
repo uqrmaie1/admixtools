@@ -6,12 +6,11 @@
 \usage{
 msprime_sim(
   graph,
-  outfilename = "msprime_sim.py",
   outpref = "msprime_sim",
   nsnps = 1000,
   neff = 1000,
   ind_per_pop = 1,
-  mutation_rate = 1e-05,
+  mutation_rate = 0.001,
   time = 10000,
   run = FALSE,
   python = "python"

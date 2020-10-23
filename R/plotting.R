@@ -748,7 +748,8 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   segtext = "ifelse(indegree == 1, to, from)"
   segtext = "paste(from, to, sep = ' -> ')"
 
-  gg = eg %>% mutate(rownum = 1:n()) %>%
+    gg = suppressWarnings({
+      eg %>% mutate(rownum = 1:n()) %>%
     ggplot(aes(x = x, xend = xend, y = y, yend = yend, from = from, to = to)) +
     geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
                  arrow=arrow(type = 'closed', angle = 10, length = unit(0.15, 'inches'))) +
@@ -766,6 +767,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle('') +
     scale_x_continuous(expand = c(0.1, 0.1))
+})
 
   plt = plotly::ggplotly(gg, tooltip=c('text'))
   plt

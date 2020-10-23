@@ -4,7 +4,7 @@
 \alias{find_newedges}
 \title{Find possible new edges}
 \usage{
-find_newedges(graph)
+find_newedges(graph, fix_outpop = TRUE, all = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

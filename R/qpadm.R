@@ -100,7 +100,8 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param left Left populations (sources)
 #' @param right Right populations (outgroups)
 #' @param target Target population
-#' @param fudge value added to diagonal matrix elements before inverting
+#' @param f4blocks Instead of f2 blocks, f4 blocks can be supplied. This is used by \code{\link{qpadm_multi}}
+#' @param fudge Value added to diagonal matrix elements before inverting
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
 #' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
 #' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
@@ -800,9 +801,10 @@ qpadmmodels_to_popcombs = function(models) {
 #' @examples
 #' \dontrun{
 #' pops = paste0('pop', 1:10)
+#' # the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
 #' models = tibble(
-#'            left = list(c('pop1', 'pop2'), c('pop3', 'pop4')),
-#'            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8', 'pop9')),
+#'            left = list(c('pop1', 'pop2'), c('pop3')),
+#'            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8')),
 #'            target = c('pop10', 'pop10'))
 #' results = qpadm_multi('/my/geno/prefix', models)
 #' }

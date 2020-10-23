@@ -4,15 +4,13 @@
 \alias{graph_minusplus}
 \title{Find all graphs which result from adding and removing one admixture edge}
 \usage{
-graph_minusplus(graph, desimplify = TRUE)
+graph_minusplus(graph)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
-
-\item{desimplify}{Separate admixture edges from drift edges (default is \code{TRUE})}
 }
 \value{
-A data frame with columns \code{from1}, \code{to1}, \code{from2}, \code{to2}, and \code{graph}
+A data frame with columns \code{source_from}, \code{source_to}, \code{dest_from}, \code{dest_to}, and \code{graph}
 }
 \description{
 Find all graphs which result from adding and removing one admixture edge

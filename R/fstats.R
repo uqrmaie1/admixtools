@@ -98,7 +98,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     } else {
       f2_blocks[s1, s2, ] = f2
       ap_blocks[s1, s2, ] = afprod
-      if(square && isFALSE(all.equal(s1, s2))) {
+      if(square && !isTRUE(all.equal(s1, s2))) {
         f2_blocks[s2, s1, ] = aperm(f2, c(2,1,3))
         ap_blocks[s2, s1, ] = aperm(afprod, c(2,1,3))
       }
@@ -382,7 +382,7 @@ test_structutured_missingness = function(mat) {
 
 
 
-average_f4blockdat = function(f4blockdat) {
+average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
   # takes a data frame generated from all popcombs by f4blockdat_from_geno and adds columns est_avg, n_avg
   # est_avg = weighted.mean(est * sqrt(n)) for all est with two or more pops in common
   # f4(A, B; C, D) = f4(A, X; C, Y) + f4(A, X; Y, D) + f4(X, B; C, Y) + f4(X, B, Y, D)
@@ -395,25 +395,32 @@ average_f4blockdat = function(f4blockdat) {
   t4 = table(f4blockdat$pop4)
   nblocks = length(unique(f4blockdat$block))
 
+  incomplete = FALSE
   if(nrow(f4blockdat) == 4*choose(length(t1),2)*choose(length(t3),2)*nblocks) {
     denom = 2
-    if(t1 != t2 || t3 != t4) stop("Data doesn't appear to have all combinations!")
+    if(t1 != t2 || t3 != t4) incomplete = TRUE
   } else if(nrow(f4blockdat) == choose(length(t1), 4)*factorial(4)*nblocks) {
-    if(length(unique(c(t1, t2, t3, t4))) != 1) stop("Data doesn't appear to have all combinations!")
+    if(length(unique(c(t1, t2, t3, t4))) != 1) incomplete = TRUE
     npop = f4blockdat$pop1 %>% unique %>% length
     denom = choose(npop-1, 2) / choose(npop-2, 2)
   } else {
-    stop("Data doesn't appear to have all combinations!")
+    denom = 2
+    incomplete = TRUE
   }
+  if(checkcomplete && incomplete) stop("Data doesn't appear to have all combinations!")
 
   f4blockdat %>%
     group_by(block, pop1, pop3) %>% mutate(e13 = weighted.mean(est, sqrt(n), na.rm=T), n13 = mean(n)) %>%
     group_by(block, pop2, pop4) %>% mutate(e24 = weighted.mean(est, sqrt(n), na.rm=T), n24 = mean(n)) %>%
     group_by(block, pop2, pop3) %>% mutate(e23 = weighted.mean(est, sqrt(n), na.rm=T), n23 = mean(n)) %>%
     group_by(block, pop1, pop4) %>% mutate(e14 = weighted.mean(est, sqrt(n), na.rm=T), n14 = mean(n)) %>%
+    # group_by(block, pop1, pop3) %>% mutate(e13 = mean(est, na.rm=T), n13 = mean(n)) %>%
+    # group_by(block, pop2, pop4) %>% mutate(e24 = mean(est, na.rm=T), n24 = mean(n)) %>%
+    # group_by(block, pop2, pop3) %>% mutate(e23 = mean(est, na.rm=T), n23 = mean(n)) %>%
+    # group_by(block, pop1, pop4) %>% mutate(e14 = mean(est, na.rm=T), n14 = mean(n)) %>%
     ungroup %>%
     mutate(est_avg = (e13 + e24 + e23 + e14) / denom,
-           n_avg =   (n13 + n24 + n23 + n14)/4) %>%
+           n_avg =   (n13 + n24 + n23 + n14) / 4) %>%
     select(-e13:-n14)
 }
 

@@ -4,12 +4,12 @@
 \alias{graph_plusone}
 \title{Find all graphs which result from adding one admixture edge}
 \usage{
-graph_plusone(graph, desimplify = TRUE)
+graph_plusone(graph, ntry = Inf)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
 
-\item{desimplify}{Separate admixture edges from drift edges (default is \code{TRUE})}
+\item{ntry}{Specify this to return only a subset of all possible graphs with one more edge}
 }
 \value{
 A data frame with columns \code{from}, \code{to}, and \code{graph}

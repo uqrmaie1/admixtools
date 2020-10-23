@@ -280,7 +280,8 @@ ui = function(request) {
                                                            checkboxGroupInput('plotopt', '',
                                                                               choices = c(`Reorder edges`='reorder_edges',
                                                                                           `Shift edges down`='shift_down',
-                                                                                          `Collapse edges`='collapse_edges'),
+                                                                                          `Collapse edges`='collapse_edges',
+                                                                                          `Simplify`='simplify_graph'),
                                                                               selected = c('shift_down')),
                                                            sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
                                          menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
@@ -502,13 +503,15 @@ server = function(input, output, session) {
 
         print('switch to qpGraph')
 
-        if(is.null(global$graph)) {
-          #shinyalert('Generating random graph', '')
-          global$graph = random_admixturegraph(names(global$poplist), 2, outpop = if(is.null(input$outpop) || is.na(input$outpop)) NULL else input$outpop)
-        } else if(!all(get_leafnames(global$graph) %in% names(global$poplist))) {
-          shinyalert('Generating random graph because populations don\'t match',
-                     setdiff(get_leafnames(global$graph), names(global$poplist)))
-          global$graph = random_admixturegraph(names(global$poplist), numadmix(isolate(global$graph)), outpop = input$outpop)
+        if(is.null(global$graph) || !all(get_leafnames(global$graph) %in% names(global$poplist))) {
+          numadm = 2
+          if(!is.null(global$graph)) {
+            shinyalert('Generating random graph because populations don\'t match',
+                       setdiff(get_leafnames(global$graph), names(global$poplist)))
+            numadm = numadmix(isolate(global$graph))
+          }
+          op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
+          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, outpop = op)
         }
 
         #global$qpg_right = qpg_right_fit()
@@ -654,7 +657,8 @@ server = function(input, output, session) {
 
   observeEvent(input$randgraph, {
     print('randg')
-    global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, outpop = input$outpop)
+    op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
+    global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, outpop = op)
   })
 
   observeEvent(input$qpgraph_update, {
@@ -908,6 +912,19 @@ server = function(input, output, session) {
         eg = admixtools:::fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
       })
     }
+    # if('simplify_graph' %in% input$plotopt) {
+    #   withProgress(message = 'simplifying...', {
+    #     isolate({
+    #       global$graph = admixtools:::edges_to_igraph(eg) %>% admixtools:::simplify_graph()
+    #       global$edges = edges = global$graph %>%
+    #         igraph::as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to'))
+    #     })
+    #     eg = edges %>%
+    #       left_join(pos, by=c('from'='node')) %>%
+    #       left_join(pos %>% transmute(to=node, xend=x, yend=y), by='to') %>%
+    #       mutate(type = ifelse(to %in% admixnodes, 'admix', 'normal'))
+    #   })
+    # }
 
     if('weight' %in% names(edges)) {
       fa = function(x) paste0(round(x*100), '%')
@@ -1298,7 +1315,7 @@ server = function(input, output, session) {
     nad = 3
     if(!is.null(global$graph)) nad = numadmix(global$graph)
     div(sliderInput('nadmix', '# admix', 0, 10, nad),
-        selectizeInput('outpop', 'Outgroup', c(names(global$poplist), NA), selected = names(global$poplist)[1]))
+        selectizeInput('outpop', 'Outgroup', c('< undefined >', names(global$poplist)), selected = names(global$poplist)[1]))
   })
 
   output$qpgraph_add = renderUI({
@@ -1344,7 +1361,7 @@ server = function(input, output, session) {
     eg = get_seledge()
     if(is.null(eg)) return()
     gnew = global$graph
-    leaves = get_leafnames(g)
+    leaves = get_leafnames(gnew)
     print('del 2')
     print(eg)
     eg %<>% str_split('\n') %>% `[[`(1)
@@ -1352,10 +1369,11 @@ server = function(input, output, session) {
       eg %<>% str_split(' -> ')
       print(eg)
       for(i in 1:length(eg)) {
+        #browser()
         gnew = delete_admix(gnew, eg[[i]][1], eg[[i]][2])
         # g <<- g
         # gnew <<- gnew
-        if(!is_valid(gnew)) {
+        if(!admixtools:::is_valid(gnew)) {
           shinyalert('Error', 'Could not delete edge!')
           return()
         }
@@ -1363,7 +1381,7 @@ server = function(input, output, session) {
     } else {
       for(i in 1:length(eg)) {
         gnew = delete_leaf(gnew, eg[i])
-        if(!is_valid(gnew)) {
+        if(!admixtools:::is_valid(gnew)) {
           browser()
           shinyalert('Error', 'Could not delete node!')
           return()
@@ -1412,7 +1430,7 @@ server = function(input, output, session) {
       from = eg[[1]][1]
       to = eg[[1]][2]
       gnew = admixtools:::insert_leaf(g, input$addleaf, from, to)
-      if(!is_valid(gnew)) {
+      if(!admixtools:::is_valid(gnew)) {
         shinyalert('Error', 'Could not add population!')
         return()
       }
@@ -1433,10 +1451,10 @@ server = function(input, output, session) {
 
       alert = function(x) shinyalert('Could not insert edge!', as.character(x))
       tryCatch({
-        gnew = admixtools:::insert_admix_igraph(g, from, to, allow_below_admix = TRUE, desimplify = TRUE)
+        gnew = admixtools:::insert_admix_old(g, from, to, allow_below_admix = TRUE)
       }, warning = alert, error = alert)
       if(!exists('gnew') || is.null(gnew)) return()
-      if(!is_valid(gnew)) {
+      if(!admixtools:::is_valid(gnew)) {
         shinyalert('Error', 'Could not insert edge!')
         return()
       }

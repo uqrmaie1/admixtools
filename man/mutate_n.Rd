@@ -9,7 +9,6 @@ mutate_n(
   n = 2,
   funs = list(spr_all, spr_leaves, swap_leaves, move_admixedge_once, flipadmix_random,
     mutate_n),
-  desimplify = TRUE,
   fix_outgroup = TRUE
 )
 }
@@ -19,8 +18,6 @@ mutate_n(
 \item{n}{Number of functions to apply}
 
 \item{funs}{List of function from which to choose}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 
 \item{fix_outgroup}{Keep outgroup in place}
 }

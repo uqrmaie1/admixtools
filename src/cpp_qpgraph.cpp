@@ -13,7 +13,7 @@ using namespace arma;
 // [[Rcpp::export]]
 arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv,
                                const arma::vec& f3_est, Function qpsolve,
-                               const arma::vec& lower, const arma::vec& upper, double fudge) {
+                               const arma::vec& lower, const arma::vec& upper, double fudge, bool constrained) {
   mat pppp = ppwts_2d.t() * ppinv;
   mat cc = pppp * ppwts_2d;
   int nc = cc.n_cols;
@@ -26,7 +26,10 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
   vec q1 = pppp * f3_est / sc;
   cc /= sc*sc.t();
   mat CI(nc, nc, fill::eye);
-  return as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)))/sc;
+  vec lengths;
+  if(constrained) lengths = as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)))/sc;
+  else lengths = solve(cc, q1)/sc;
+  return lengths;
 }
 
 
@@ -82,6 +85,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
   vec upper = args[9];
   double fudge = args[10];
   int baseind = args[11];
+  bool constrained = args[12];
   baseind--;
 
   double nr = pwts.n_rows;
@@ -102,7 +106,7 @@ double cpp_optimweightsfun(arma::vec weights, List args) {
       }
     }
   }
-  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge);
+  vec q2 = cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge, constrained);
   vec w2 = (ppwts_2d * q2) - f3_est;
   vec lik = w2.t() * ppinv * w2;
   return lik(0);

@@ -4,7 +4,7 @@
 \alias{permute_leaves}
 \title{Modify a graph by permuting leaf nodes}
 \usage{
-permute_leaves(graph, desimplify = TRUE, fix_outgroup = TRUE)
+permute_leaves(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

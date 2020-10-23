@@ -30,11 +30,15 @@ numadmix = function(graph) {
 }
 
 is_valid = function(graph) {
-  is_simple(graph) && is_connected(graph) && is_dag(graph)
+  igraph::is_simple(graph) &&
+    igraph::is_connected(graph) &&
+    igraph::is_dag(graph) &&
+    sum(igraph::degree(graph, mode = 'in') == 0) == 1
 }
 
 is_simplified = function(graph) {
-  sum(degree(graph) == 2) == 1
+  deg = degree(graph)
+  sum(deg == 2) == 1 && max(deg) == 3 && igraph::is_simple(graph)
 }
 
 #' Convert data frame graph to igraph
@@ -67,7 +71,7 @@ get_leaves2 = function(graph) {
 
 
 get_root = function(graph) {
-  root = which(igraph::degree(graph, mode = 'in') == 0)
+  root = V(graph)[igraph::degree(graph, mode = 'in') == 0]
   if(length(root) != 1) stop(paste0('Root problem ', root))
   root
 }
@@ -102,6 +106,11 @@ unify_vertex_names_rec = function(graph, node, vnamemap, sep1 = '.', sep2 = '_')
   if(length(children) == 0) {
     vnamemap[oldnam] = oldnam
     return(vnamemap)
+  } else if(length(children) == 2) {
+    leaves = get_leafnames(graph)
+    c1 = distances(graph, children[1], leaves) %>% paste(collapse='')
+    c2 = distances(graph, children[2], leaves) %>% paste(collapse='')
+    if(c1 < c2) children %<>% rev
   }
 
   newnam = rep(NA, length(children))
@@ -124,16 +133,18 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
   ormap = names(V(g))
   names(ormap) = ormap
 
-  nammap = unify_vertex_names_rec(g, V(g)[1], ormap, sep1 = sep1, sep2 = sep2)
+  root = get_root(graph)
+  nammap = unify_vertex_names_rec(g, root, ormap, sep1 = sep1, sep2 = sep2)
   nammap[lv] = names(leaves)
   names(nammap)[match(lv, names(nammap))] = names(leaves)
-  nammap['R'] = get_rootname(graph)
+  nammap['R'] = names(root)
   if(!keep_unique) {
     changed = setdiff(names(nammap), c('R', names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
   }
   nammap %<>% map_chr(digest::digest) %>% paste0('x', .)
-  set_vertex_attr(graph, 'name', names(nammap), nammap)
+  #set_vertex_attr(graph, 'name', names(nammap), nammap)
+  set_vertex_attr(graph, 'name', V(graph), nammap)
 }
 
 
@@ -141,10 +152,10 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
 #'
 #' This function randomly generates an admixture graph for a given set of leaf nodes
 #' @export
-#' @param leaves the names of the leaf nodes, or a number specifying how many leaf nodes there should be
-#' @param numadmix the number of admixture events
-#' @param simple should edges leading to admixture nodes consist of separate admix edges and normal edges
-#' @param outpop the outgroup population
+#' @param leaves Names of the leaf nodes, or a number specifying how many leaf nodes there should be
+#' @param numadmix Number of admixture events
+#' @param simple Should edges leading to admixture nodes consist of separate admix edges and normal edges
+#' @param outpop Outgroup population
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
@@ -156,9 +167,15 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
   stopifnot(class(leaves)[1] %in% c('numeric', 'character'))
   if(length(leaves) == 1) leaves = paste0('l', 1:leaves)
   #if(is.null(outpop)) outpop = sample(leaves, 1)
-  newick = random_newick(sample(setdiff(leaves, outpop)), outpop = outpop)
-  graph = graph_from_edgelist(newick_to_edges(newick))
-  graph = insert_admix_igraph_random(graph, numadmix)
+  graph = leaves %>%
+    setdiff(outpop) %>%
+    sample %>%
+    random_newick(outpop = outpop) %>%
+    newick_to_edges %>%
+    graph_from_edgelist %>%
+    insert_admix_multi(numadmix)
+  #newick = random_newick(sample(setdiff(leaves, outpop)), outpop = outpop)
+  #graph = graph_from_edgelist(newick_to_edges(newick)) %>% insert_admix_multi(numadmix)
   if(!simple) graph %<>% desimplify_graph
   graph
 }
@@ -175,13 +192,17 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
 #' plot_graph(simple)
 simplify_graph = function(graph) {
   # removes redundant nodes
+
+  if(is_simplified(graph)) return(graph)
   convmat = FALSE
   if(class(graph) == 'matrix') {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
   graph %<>% igraph::simplify()
+  i = 0
   repeat({
+    i = i+1
     redundant = which(degree(graph, mode='in') == 1 & degree(graph, mode='out') == 1)
     if(length(redundant) == 0) break
     newfrom = names((neighbors(graph, redundant[1], mode='in')))
@@ -189,8 +210,37 @@ simplify_graph = function(graph) {
     graph %<>% igraph::delete_vertices(redundant[1])
     graph %<>% igraph::add_edges(c(newfrom, newto))
     graph %<>% igraph::simplify()
+    if(i > 100) browser()
   })
+  graph %<>% X_to_H
   if(convmat) graph = igraph::as_edgelist(graph)
+  graph
+}
+
+X_to_H = function(graph) {
+
+  crosses = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 2))
+  for(i in seq_along(crosses)) {
+    nam = newnodenam(crosses[i], names(V(graph)))
+    parents = names(neighbors(graph, crosses[i], mode = 'in'))
+    graph %<>% igraph::add_vertices(1, name = nam) %>%
+      add_edges(c(parents[1], nam, parents[2], nam, nam, crosses[i])) %>%
+      delete_edges(paste0(parents, '|', crosses[i]))
+  }
+  graph
+}
+
+H_to_X = function(graph) {
+  # keeps child names
+
+  adm = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 1))
+  children = names(neighbors(graph, adm, mode = 'out'))
+  ind = which(degree(graph, children, mode = 'out') == 2)
+  for(i in seq_along(ind)) {
+    parents = names(neighbors(graph, adm[i], mode = 'in'))
+    graph %<>% delete_vertices(adm[i]) %>%
+      add_edges(c(parents[1], children[i], parents[2], children[i]))
+  }
   graph
 }
 
@@ -230,32 +280,95 @@ desimplify_graph = function(graph) {
 split_graph = function(graph) {
   # removes admixture nodes from an admixturegraph
   # returns a tree and a list of edges that can be used to reconstruct the original admixturegraph
+  if(!'igraph' %in% class(graph)) {
+    edges = graph
+    graph = edges %>% edges_to_igraph %>% simplify_graph
+    edges %<>% filter(type == 'admix') %>%
+      left_join(edges %>% transmute(fromfrom = from, from = to), by = 'from')
+    pickedges = TRUE
+  } else pickedges = FALSE
+  nodes = frommap = tomap = names(V(graph))
+  names(frommap) = names(tomap) = nodes
   fromnodes = tonodes = c()
+  deleted = kept = matrix(NA, 0, 2)
+  if(!is_valid(graph)) stop('not valid!')
+  root = get_rootname(graph)
+  leaves = get_leafnames(graph)
   repeat({
-    admix = names(which(degree(graph, mode='in') == 2))
+    admix = setdiff(names(which(degree(graph, mode='in') == 2)), root)
     if(length(admix) == 0) break
     adm = admix[1]
-    parents = sample(names(neighbors(graph, adm, mode='in')))
-    fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
+    parents = sample(setdiff(sample(names(neighbors(graph, adm, mode='in'))), root))
+    if(pickedges) {
+      p1 = edges %>% filter(to == adm, from %in% parents) %>% slice_min(weight, with_ties = FALSE) %>% pull(from)
+      if(length(p1) == 0) p1 = edges %>% filter(to == adm, fromfrom %in% parents) %>% slice_max(weight, with_ties = FALSE) %>% pull(fromfrom)
+    } else {
+      p1 = parents[1]
+    }
+    fromnode0 = names(neighbors(graph, p1, mode = 'in'))
+    i = 0
     while(length(fromnode0) > 1) {
-      adm = parents[1]
-      parents = sample(names(neighbors(graph, adm, mode='in')))
-      fromnode0 = names(neighbors(graph, parents[1], mode = 'in'))
+      i = i+1
+      adm = p1
+      parents = sample(setdiff(names(neighbors(graph, adm, mode='in')), root))
+      if(pickedges) {
+        p1 = edges %>% filter(to == adm, from %in% parents) %>% slice_min(weight, with_ties = FALSE) %>% pull(from)
+        if(length(p1) == 0) p1 = edges %>% filter(to == adm, fromfrom %in% parents) %>% slice_max(weight, with_ties = FALSE) %>% pull(fromfrom)
+      } else {
+        p1 = parents[1]
+      }
+      if(length(parents) == 0 || !p1 %in% names(V(graph)) || root %in% parents) browser()
+      fromnode0 = names(neighbors(graph, p1, mode = 'in'))
+      if(i > 100) browser()
     }
     # stopifnot(!any(c(parents[1], admix[1]) %in% unlist(admixedges)))
     # too strict; probably won't be able to always reintroduce admixedges at appropriate locations after SPR
-    fromnode = setdiff(names(neighbors(graph, parents[1], mode = 'out')), adm)
-    tonode0 = setdiff(names(neighbors(graph, adm, mode = 'in')), parents[1])
+    fromnode = setdiff(names(neighbors(graph, p1, mode = 'out')), adm)
+    tonode0 = setdiff(names(neighbors(graph, adm, mode = 'in')), p1)
     tonode = names(neighbors(graph, adm, mode = 'out'))
-    fromnodes = c(fromnodes, fromnode)
-    tonodes = c(tonodes, tonode)
-    #if(length(fromnode) != length(tonode)) browser()
-    graph = igraph::delete_vertices(graph, c(adm, parents[1]))
-    graph = igraph::add_edges(graph, c(fromnode0, fromnode, tonode0, tonode))
+    fromnodes %<>% c(fromnode)
+    tonodes %<>% c(tonode)
+    # fromnodes %<>% c(fromnode0)
+    # tonodes %<>% c(tonode0)
+    #if(adm %in% fromnodes) fromnodes[fromnodes == adm] = fromnode
+    #if(adm %in% tonodes) tonodes[tonodes == adm] = tonode
+    #if(adm == 'pPygmy3' || p1 == 'pPygmy3') browser()
+    graphnew = igraph::delete_vertices(graph, adm)
+    graphnew = igraph::add_edges(graphnew, c(tonode0, tonode))
+    if(tonode %in% admix) frommap[tonode0] = adm
+    #if(delete_nodes) {
+      graphnew = igraph::delete_vertices(graphnew, p1)
+      if(p1 %in% tonodes) tonodes[tonodes == p1] = tonode
+      if(p1 %in% fromnodes) fromnodes[fromnodes == p1] = fromnode
+      if(length(c(fromnode0, fromnode)) %% 2 != 0) browser()
+      graphnew = igraph::add_edges(graphnew, c(fromnode0, fromnode)) %>% simplify_graph()
+    #}
+    if(is_valid(graphnew) && numadmix(graphnew) < numadmix(graph)) graph = graphnew
+    else browser()
+    deleted = rbind(deleted, c(frommap[p1], adm))
+    if(frommap[p1] != p1) {
+      deleted = rbind(deleted, c(p1, frommap[p1]))
+    }
+    kept = rbind(kept, c(setdiff(parents, p1), adm))
   })
   tree = graph
-  namedList(tree, fromnodes, tonodes)
+  if(max(degree(tree, mode = 'in')) > 1) stop('Failed to make tree!')
+  namedList(tree, fromnodes, tonodes, deleted, kept)
 }
+
+shorten_admixed_leaves = function(graph) {
+
+  # keep terminal branch only for leaves which are non-admixed
+
+  leaves = get_leafnames(graph)
+  leaves %<>% intersect(names(which(degree(graph, leaves, mode = 'in') == 1)))
+  parents = map_chr(leaves, ~names(neighbors(graph, ., mode = 'in')))
+  ind = which(degree(graph, parents, mode = 'in') == 2)
+  graph %>%
+    delete_vertices(leaves[ind]) %>%
+    set_vertex_attr('name', parents[ind], leaves[ind])
+}
+
 
 newnodenam = function(newnam, current) {
   # this function takes a vector of proposed new node names (newnam), checks if they already exist,
@@ -263,10 +376,10 @@ newnodenam = function(newnam, current) {
   for(i in seq_along(newnam)) {
     mod = newnam[i]
     while(mod %in% current) {
-      mod = paste0(mod, sample(letters)[1])
+      mod %<>% paste0(sample(letters, 1))
     }
     newnam[i] = mod
-    current = c(current, mod)
+    current %<>% c(mod)
   }
   newnam
 }
@@ -300,7 +413,7 @@ random_newick = function(n, start = '', end = '', outpop = NULL) {
   return(paste0(start, '(',random_newick(n1, ''),',',random_newick(n2, ''),')', end))
 }
 
-random_newick_named = function(names, start='', end='') {
+random_newick_named = function(names, start = '', end = '') {
   # recursive function which returns a labelled random, binary tree in newick format with named leaves in order of input
   n = length(names)
   if(n == 1) return(names)
@@ -349,46 +462,6 @@ newick_to_edges = function(newick, node = 'R', edgemat = matrix(NA,0,2)) {
   rbind(c(node, nodel), edgesleft, c(node, noder), edgesright, edgemat)
 }
 
-#' Insert a single edge into graph
-#'
-#' @export
-#' @param graph An admixture graph
-#' @param from List of nodes. New edges will originate above this node
-#' @param to List of nodes. New edges will end above this node
-#' @return Adxmiture graph with inserted edge
-#' @seealso \code{\link{insert_edges}}, \code{\link{delete_admix}}
-insert_edge = function(graph, from, to) {
-  # inserts edge from edge 'from' and to edge 'to'
-  # more atomic than 'insert_admix_igraph', for better reusability
-  n1 = ifelse(is.character(from), from, as_ids(from))
-  n2 = ifelse(is.character(to), to, as_ids(to))
-  v1 = str_split(n1, '\\|')[[1]]
-  v2 = str_split(n2, '\\|')[[1]]
-  o1 = str_replace(n1, '\\|', '_')
-  o2 = str_replace(n2, '\\|', '_')
-  graph %>%
-    igraph::add_vertices(2, name = c(o1, o2)) %>%
-    igraph::add_edges(c(v1[1], o1, o1, v1[2], v2[1], o2, o2, v2[2], o1, o2)) %>%
-    igraph::delete_edges(c(n1, n2))
-}
-
-#' Insert admixture edges into graph
-#'
-#' @export
-#' @param graph An admixture graph
-#' @param from List of nodes. New edges will originate above these nodes.
-#' @param to List of nodes. New edges will end above these nodes.
-#' @return Adxmiture graph with inserted edges
-#' @seealso \code{\link{insert_edge}} \code{\link{delete_admix}}
-insert_edges = function(graph, from, to) {
-  # from and to are vectors of node names
-  # edges will be inserted above each node pair
-  stopifnot(length(from) == length(to))
-  reduce2(from, to, .init = graph, .f = function(g, x, y) {
-    e = incident_edges(g, c(x, y), mode = 'in')
-    insert_edge(g, e[[1]], e[[2]])
-  })
-}
 
 #' Insert admixture edges into graph
 #'
@@ -398,17 +471,19 @@ insert_edges = function(graph, from, to) {
 #' @param substitute_missing If `TRUE`, an attempt will be made to insert random other edges
 #'   if some of the provided edges could not be inserted.
 #' @param allow_below_admix Allow insertion of edges which begin or end directly underneath an admixture node
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return Adxmiture graph with inserted edges
-#' @seealso \code{\link{insert_edge}}
-insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = FALSE,
-                               allow_below_admix = FALSE, desimplify = FALSE) {
+insert_admix_old = function(graph, fromnodes, tonodes, substitute_missing = FALSE,
+                               allow_below_admix = FALSE) {
   # inserts edges fromnodes -> tonodes into graph
   # inverse of 'split_graph'
   # stopifnot(all(c(sapply(admixedges, `[`, c(2, 4))) %in% names(V(graph))))
   # some nodes will get lost when splitting; insert random amix edges instead
 
   stopifnot(length(fromnodes) == length(tonodes))
+  leaves = sort(get_leafnames(graph))
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
+
   miss = 0
   maxprev = max(degree(graph))
   for(i in rev(seq_len(length(fromnodes)))) {
@@ -438,7 +513,7 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
     }
     graph = igraph::delete_edges(graph, c(paste(fromnode_parent, fromnode, sep='|'),
                                           paste(tonode_parent, tonode, sep='|')))
-    newnam = newnodenam(c(paste0(fromnode_parent, 'x'), paste0('admix', i)), names(V(graph)))
+    newnam = newnodenam(c(fromnode_parent, 'admix'), names(V(graph)))
     new1 = newnam[1]
     new2 = newnam[2]
     graph = igraph::add_vertices(graph, 2, name = newnam)
@@ -447,25 +522,27 @@ insert_admix_igraph = function(graph, fromnodes, tonodes, substitute_missing = F
     stopifnot(max(degree(graph)) <= maxprev)
   }
   if (miss > 0) {
-    if(substitute_missing) graph = insert_admix_igraph_random(graph, miss)
+    if(substitute_missing) graph = insert_admix_random(graph, miss)
     else warning('did not insert or substitute admixedge')
   }
   if(desimplify) graph %<>% simplify_graph %>% desimplify_graph
+  if(!isTRUE(all.equal(leaves, sort(get_leafnames(graph))))) browser()
   graph
 }
 
 
-insert_admix_igraph_random = function(graph, nadmix) {
+insert_admix_random = function(graph, nadmix) {
   # graph should be simplified
   for(i in seq_len(nadmix)) {
-    firstgen = neighbors(graph, V(graph)[1], mode='out')
+    root = get_root(graph)
+    firstgen = neighbors(graph, root, mode='out')
     admix = V(graph)[(degree(graph, mode='in') > 1)]
     admixchildren = do.call(c, igraph::ego(graph, 1, admix, mode='out'))
     admixparents = do.call(c, igraph::ego(graph, 1, admix, mode='in'))
     admixsiblings = do.call(c, igraph::ego(graph, 1, admixparents, mode='out'))
-    exclude = c(admix, firstgen)
+    exclude = c(admix, firstgen, root)
     if(!is.null(admixchildren)) exclude = c(exclude, admixchildren)
-    cand_from = sample(igraph::difference(V(graph)[-1], exclude))
+    cand_from = sample(igraph::difference(V(graph), exclude))
     for(fromnode in names(cand_from)) {
       upstream = subcomponent(graph, fromnode, mode='in')
       downstream1 = neighbors(graph, fromnode, mode='out')
@@ -482,7 +559,7 @@ insert_admix_igraph_random = function(graph, nadmix) {
     }
     tonode = sample(names(cand_to), 1)
     stopifnot(all(c(fromnode, tonode) %in% names(V(graph))))
-    graphnew = insert_admix_igraph(graph, fromnode, tonode, substitute_missing = FALSE)
+    graphnew = insert_admix_old(graph, fromnode, tonode, substitute_missing = FALSE)
     stopifnot(numadmix(graphnew) > numadmix(graph))
     stopifnot(igraph::is_simple(graphnew))
     stopifnot(igraph::is_dag(graphnew))
@@ -492,15 +569,73 @@ insert_admix_igraph_random = function(graph, nadmix) {
 }
 
 
-insert_admix_igraph_random2 = function(graph, nadmix) {
-  leaves = get_leafnames(graph)[-1]
-  for(i in 1:nadmix) {
-    sel = sample(leaves)[1:2]
-    graph %<>% insert_edges(sel[1], sel[2])
+#' Insert a single edge into graph
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param source_from Parent node of the source edge
+#' @param source_to Child node of the source edge
+#' @param dest_from Parent node of the destination edge
+#' @param dest_to Child node of the destination edge
+#' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @return Adxmiture graph with inserted edge
+#' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_multi}}
+insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL, substitute = FALSE) {
+  # assumes graph is simplified
+
+  leaves = sort(get_leafnames(graph))
+  nodes = names(V(graph))
+  if(is.null(source_to) || is.null(dest_to) || length(setdiff(c(source_to, dest_to), nodes)) > 0 && substitute) {
+    e = graph %>% find_newedges %>% slice_sample
+    source_from = e$source_from
+    dest_from = e$dest_from
+    source_to = e$source_to
+    dest_to = e$dest_to
+  } else if(is.null(source_from) || is.null(dest_from) || length(setdiff(c(source_from, dest_from), nodes)) > 0 && substitute) {
+    getfrom = function(x) sample(names(neighbors(graph, x, mode = 'in')))[1]
+    source_from = getfrom(source_to)
+    dest_from = getfrom(dest_to)
   }
+  nam = newnodenam(c(source_from, 'admix'), names(V(graph)))
+  newgraph = graph %>% add_vertices(2, attr = list(name = nam)) %>%
+    add_edges(c(source_from, nam[1], nam[1], source_to, dest_from, nam[2], nam[2], dest_to, nam[1], nam[2])) %>%
+    delete_edges(paste(c(source_from, dest_from), c(source_to, dest_to), sep = '|'))
+  leaves2 = sort(get_leafnames(newgraph))
+  if(!is_valid(newgraph) || !isTRUE(all.equal(leaves2, leaves))) {
+    if(substitute) graph %<>% insert_admix(substitute = FALSE)
+    else stop("Inserting edge failed!")
+  } else graph = newgraph
   graph
 }
 
+
+#' Insert admixture edges into graph
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param from List of nodes. New edges will originate above these nodes.
+#' @param to List of nodes. New edges will end above these nodes.
+#' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @return Admixture graph with inserted edges
+#' @seealso \code{\link{insert_admix}} \code{\link{delete_admix}}
+insert_admix_multi = function(graph, n = 1, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL, substitute = FALSE) {
+
+  # if(all(map_lgl(list(source_from, source_to, dest_from, dest_to), is.null))) {
+  #   f = function(x, y) insert_admix(x)
+  # } else {
+  #   if(is.null(source_from) && is.null(dest_from)) {
+  #     # implement this so that insert_admix_old can be replaced
+  #     getfrom = ~sample(names(neighbors(graph, ., mode = 'in')))[1]
+  #     source_from = map_chr(source_to, getfrom)
+  #     dest_from = map_chr(dest_to, getfrom)
+  #   }
+  #   n = length(source_from)
+  #   f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y])
+  # }
+  if(!all(map_lgl(list(source_from, source_to, dest_from, dest_to), is.null))) n = length(source_to)
+  f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y], substitute = substitute)
+  seq_len(n) %>% reduce(f, .init = graph)
+}
 
 subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = TRUE) {
   # cuts of a parts of the tree and attaches it at a random location
@@ -511,16 +646,19 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
 
   if(fix_outgroup) firstgen = neighbors(graph, root, mode='out')
   else firstgen = c()
+  i = 0
   repeat({
-    excl = firstgen
+    i = i+1
+    excl = c(firstgen, root)
     if(only_leaves) excl = c(excl, V(graph)[degree(graph, mode='out') > 0])
-    cutnode = sample(igraph::difference(V(graph)[-1], excl), 1)
+    cutnode = sample(igraph::difference(V(graph), excl), 1)
     cutnodes = subcomponent(graph, cutnode, mode='out')
     cutparent = neighbors(graph, cutnode, mode='in')
     cutgrandparent = neighbors(graph, cutparent, mode='in')
     cutsibling = igraph::difference(neighbors(graph, cutparent, mode='out'), cutnode)
     hostnodes = igraph::difference(V(graph), c(root, cutnodes, cutparent, cutsibling, firstgen))
     if(length(hostnodes) > 0) break
+    if(i > 100) browser()
   })
 
   hostnode = sample(names(hostnodes), 1)
@@ -542,17 +680,20 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
 }
 
 
-admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leaves = FALSE, fix_outgroup = TRUE) {
+admixturegraph_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = TRUE) {
   # 1. remove admixture edges (one randomly selected from each admixture node)
   # 2. runs subtree_prune_and_regraft on resulting tree
   # 3. add admixture edges back on
   if(numadmix(graph) == 0) return(subtree_prune_and_regraft(graph, only_leaves = only_leaves, fix_outgroup = fix_outgroup))
-  graph = simplify_graph(graph)
+  o = graph
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
+  if(!is_valid(graph)) browser()
   spl = split_graph(graph)
   graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves, fix_outgroup = fix_outgroup)
-  graph = insert_admix_igraph(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
-  stopifnot(igraph::is_simple(graph))
-  stopifnot(igraph::is_dag(graph))
+  #graph = insert_admix_old(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
+  graph = insert_admix_multi(graph, source_to = spl$fromnodes, dest_to = spl$tonodes, substitute = TRUE)
+  stopifnot(is_valid(graph))
   if(desimplify) graph = desimplify_graph(graph)
   graph
 }
@@ -562,28 +703,29 @@ admixturegraph_prune_and_regraft = function(graph, desimplify = TRUE, only_leave
 #' @export
 #' @param graph An admixture graph
 #' @return A new admixture graph
-spr_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE)
-  admixturegraph_prune_and_regraft(graph, only_leaves = TRUE, desimplify = desimplify, fix_outgroup = fix_outgroup)
+spr_leaves = function(graph, fix_outgroup = TRUE)
+  admixturegraph_prune_and_regraft(graph, only_leaves = TRUE, fix_outgroup = fix_outgroup)
 
 #' Modify a graph by regrafting a subcomponent
 #'
 #' @export
 #' @param graph An admixture graph
 #' @return A new admixture graph
-spr_all = function(graph, desimplify = TRUE, fix_outgroup = TRUE)
-  admixturegraph_prune_and_regraft(graph, only_leaves = FALSE, desimplify = desimplify, fix_outgroup = fix_outgroup)
+spr_all = function(graph, fix_outgroup = TRUE)
+  admixturegraph_prune_and_regraft(graph, only_leaves = FALSE, fix_outgroup = fix_outgroup)
 
 #' Modify a graph by moving an admixture edge
 #'
 #' @export
 #' @param graph An admixture graph
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
+#' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
+move_admixedge_once = function(graph, fix_outgroup = TRUE) {
   # selects random admixture edge, and moves it to next closest possible spot
   # if not possible, select other admix node
   # if none possible, print warning
-  graph = simplify_graph(graph)
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
   admix = sample(names(V(graph)[(degree(graph, mode='in') > 1)]))
   nadmix = length(admix)
   root = get_rootname(graph)
@@ -593,24 +735,25 @@ move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
     parents = sample(names(neighbors(graph, admix[i], mode='in')))
     for(j in 1:2) {
       sibling = setdiff(names(neighbors(graph, parents[j], mode='out')), admix[i])
-      if(length(sibling) == 0) next
       grandparent = names(neighbors(graph, parents[j], mode='in'))
+      if(length(sibling) == 0 || length(grandparent) == 0) next
       for(n in names(subcomponent(graph, parents[j]))) {
         # subcomponent will return nodes ordered by distance to n
-        if(!n %in% root &
-           !n %in% firstgen &
-           !n %in% parents &
-           !n %in% grandparent &
-           !n %in% admix &
+        if(!n %in% root &&
+           !n %in% firstgen &&
+           !n %in% parents &&
+           !n %in% grandparent &&
+           !n %in% admix &&
            !n %in% c(names(neighbors(graph, parents[1], mode='out')),
                      names(neighbors(graph, parents[2], mode='out'))) &
            !n %in% names(subcomponent(graph, admix[i], mode='out'))) {
           newgrandparent = names(neighbors(graph, n, mode='in'))
+          if(length(c(grandparent, sibling, newgrandparent, parents[j], parents[j], n)) %% 2 != 0) browser()
           graph = igraph::add_edges(graph, c(grandparent, sibling, newgrandparent, parents[j], parents[j], n))
           graph = igraph::delete_edges(graph, c(paste(newgrandparent, n, sep='|'),
                                               paste(grandparent, parents[j], sep='|'),
                                               paste(parents[j], sibling, sep='|')))
-          stopifnot(igraph::is_simple(graph))
+          graph %<>% simplify_graph
           stopifnot(igraph::is_dag(graph))
           if(desimplify) graph = desimplify_graph(graph)
           return(graph)
@@ -629,7 +772,7 @@ move_admixedge_once = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #' @param graph An admixture graph
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-permute_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
+permute_leaves = function(graph, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -641,10 +784,9 @@ permute_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #'
 #' @export
 #' @param graph An admixture graph
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-swap_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
+swap_leaves = function(graph, fix_outgroup = TRUE) {
 
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(fix_outgroup) leaves = leaves[-1]
@@ -657,11 +799,12 @@ swap_leaves = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #'
 #' @export
 #' @param graph An admixture graph
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @param fix_outgroup Keep outgroup in place (has no effect here)
 #' @return A new admixture graph
-flipadmix_random = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
-  graph %<>% simplify_graph
+flipadmix_random = function(graph, fix_outgroup = TRUE) {
+
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
   admixedges = graph %>% find_admixedges %>% sample_frac(1)
   el = igraph::as_edgelist(graph)
   out = graph
@@ -682,19 +825,18 @@ flipadmix_random = function(graph, desimplify = TRUE, fix_outgroup = TRUE) {
 #' @param graph An admixture graph
 #' @param n Number of functions to apply
 #' @param funs List of function from which to choose
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @param fix_outgroup Keep outgroup in place
 #' @return A new admixture graph
-mutate_n = function(graph, n = 2, funs = list(spr_all, spr_leaves, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
-                    desimplify = TRUE, fix_outgroup = TRUE) {
+mutate_n = function(graph, n = 2, funs = list(spr_all, spr_leaves, swap_leaves, move_admixedge_once,
+                                              flipadmix_random, mutate_n), fix_outgroup = TRUE) {
 
   funsn = sample(funs, n, replace = TRUE) %>%
-    map(~function(x) .x(x, desimplify=desimplify, fix_outgroup=fix_outgroup))
+    map(~function(x) .x(x, fix_outgroup=fix_outgroup))
   purrr::compose(!!!funsn)(graph)
 }
 
 
-get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
+get_mutfuns = function(mutfuns, probs, fix_outgroup = TRUE) {
   # return a list of list of graph mutation functions
   # outer list is for each generation, inner list is for each graph, and is named
   # probs is a matrix numgen x numgraphs with probabilities
@@ -703,7 +845,7 @@ get_mutfuns = function(mutfuns, probs, desimplify = TRUE, fix_outgroup = TRUE) {
   if(length(unique(names(mutfuns))) < length(mutfuns)) stop("Names in 'mutfuns' are not unique!")
   map(seq_len(nrow(probs)), ~{
     nam = sample(names(mutfuns), ncol(probs), replace = TRUE, prob = probs[.,])
-    map(mutfuns, ~function(graph) .(graph, desimplify = desimplify, fix_outgroup = fix_outgroup)) %>%
+    map(mutfuns, ~function(graph) .(graph, fix_outgroup = fix_outgroup)) %>%
       set_names(nam)
   })
 }
@@ -967,7 +1109,7 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
   leaves = V(graph)[degree(graph, v = V(graph), mode = c('out')) == 0]
   if(exclude_outgroup) leaves = igraph::difference(leaves, V(graph)[2])
 
-  paths = all_simple_paths(graph, V(graph)[1], leaves, mode = 'out') %>%
+  paths = all_simple_paths(graph, get_root(graph), leaves, mode = 'out') %>%
     enframe(name = 'pathnum', value='path') %>% mutate(name1 = map_chr(path, ~(tail(names(.), 1))))
 
   get_iap = function(x, y) suppressWarnings(names(tail(which(cumsum(x != y) == 0), 1)))
@@ -1202,8 +1344,8 @@ graph_splittrees = function(graph) {
   if(nadmix == 0) return(list(graph))
   #mutate(itree = map(itree, ~delete_vertices(., setdiff(get_leafnames(.), get_leafnames(tree)))))
   indices = expand.grid(replicate(ncol(admixmat), 1:2, simplify = FALSE)) %>% as.matrix
-  trees = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)])) %>%
-    map(as.matrix) %>% map(graph_from_edgelist)
+  am = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)])) %>% map(as.matrix)
+  trees = am %>% map(graph_from_edgelist)
 
   trees %>%
     map(~{
@@ -1215,7 +1357,7 @@ graph_splittrees = function(graph) {
       }
       tr
       }) %>%
-    enframe(value = 'graph')
+    enframe(value = 'graph') #%>% mutate(edges = am) %>% rowwise %>% mutate(evec = list(sort(paste(edges[,1], ' ' , edges[,2])))) %>% ungroup
 }
 
 #' Find all trees within SPR distance of 1 of all graph component trees
@@ -1223,9 +1365,9 @@ graph_splittrees = function(graph) {
 #' Returns all trees which can be reached through one iteration of subtree-prune-and-regraft on any graph component tree
 #' @export
 #' @param graph An admixture graph
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return A data frame with all trees
-decomposed_tree_neighbors = function(graph, desimplify = TRUE) {
+decomposed_tree_neighbors = function(graph) {
+
   graph %>% simplify_graph %>% graph_splittrees %$% graph %>% map(tree_neighbors) %>%
     bind_rows %>% rename(graph = itree) %>%
     mutate(isoclass = isomorphism_classes2(graph)) %>%
@@ -1241,7 +1383,7 @@ decomposed_tree_neighbors = function(graph, desimplify = TRUE) {
 #' @return A data frame with all trees
 tree_neighbors = function(tree) {
   # returns nested data frame with all trees within edit distance 1
-  root = V(tree)[1]
+  root = get_root(tree)
   gen1 = neighbors(tree, root, mode = 'out')
   nodes = difference(V(tree), c(root, gen1))
   map(nodes, ~tree_neighbors_single(tree, .)) %>% bind_rows
@@ -1253,15 +1395,15 @@ tree_neighbors_single = function(tree, node) {
   # that are created by cutting all edges leading to node
   if(class(node) != 'character') node = names(node)
   downstream = subcomponent(tree, node, mode = 'out')
-  root = V(tree)[1]
-  outgroup = V(tree)[2]
+  root = get_root(tree)
+  outgroup = neighbors(tree, root, mode = 'out') %>% igraph::intersection(get_leaves(tree))
   parent = neighbors(tree, node, mode = 'in')
   sibling = neighbors(tree, parent, mode = 'out')
   from = names(difference(V(tree), c(downstream, root, outgroup, parent, sibling)))
-  tibble(from) %>% mutate(to = node, itree = map2(from, to, ~replace_edge(tree, .x, .y)))
+  tibble(from) %>% mutate(to = node, itree = map2(from, to, ~replace_treeedge(tree, .x, .y)))
 }
 
-replace_edge = function(tree, from, to) {
+replace_treeedge = function(tree, from, to) {
   # removes edge leading to node 'to', and adds edge beginning above node 'from'
   parent = names(neighbors(tree, to, mode = 'in'))
   grandparent = names(neighbors(tree, parent, mode = 'in'))
@@ -1275,11 +1417,22 @@ replace_edge = function(tree, from, to) {
     add_edges(c(parent, to, newgrandparent, parent, parent, from))
 }
 
+graph_plusone_old = function(graph) {
+  # returns all graphs with one more edge
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
+
+  newedges = find_newedges_cautiously(graph)
+  fn = ~insert_admix_old(graph, .x, .y)
+  if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
+  newedges %>% mutate(graph = map2(from, to, fn))
+}
+
 #' Find all graphs which result from adding one admixture edge
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
-#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
+#' @param ntry Specify this to return only a subset of all possible graphs with one more edge
 #' @return A data frame with columns `from`, `to`, and `graph`
 #' @examples
 #' \dontrun{
@@ -1290,20 +1443,21 @@ replace_edge = function(tree, from, to) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_plusone = function(graph, desimplify = TRUE) {
+graph_plusone = function(graph, ntry = Inf) {
   # returns all graphs with one more edge
-  graph %<>% simplify_graph
-  newedges = find_newedges(graph)
-  fn = ~insert_admix_igraph(graph, .x, .y)
-  if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
-  newedges %>% mutate(graph = map2(from, to, fn))
+
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
+  out = graph %>% find_newedges %>% slice_sample(n = ntry) %>% rowwise %>%
+    mutate(g = list(insert_admix(graph, source_from, source_to, dest_from, dest_to)))
+  if(desimplify) out %<>% mutate(g = list(desimplify_graph(g)))
+  out %>% ungroup %>% rename(graph = g)
 }
 
 #' Find all graphs which result from removing one admixture edge
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
-#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
 #' @return A data frame with columns `from`, `to`, and `graph`
 #' @examples
 #' \dontrun{
@@ -1314,23 +1468,23 @@ graph_plusone = function(graph, desimplify = TRUE) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_minusone = function(graph, desimplify = TRUE) {
+graph_minusone = function(graph, ntry = Inf) {
   # returns all graphs with one admixture edge removed
-  graph %<>% simplify_graph
-  admixedges = find_admixedges(graph)
-  fn = ~delete_edges(graph, paste(.x, .y, sep = '|')) %>%
-    igraph::delete_vertices(setdiff(get_leafnames(.), get_leafnames(graph))) %>%
-    simplify_graph
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
+  # fn = ~delete_edges(graph, paste(.x, .y, sep = '|')) %>%
+  #   igraph::delete_vertices(setdiff(get_leafnames(.), get_leafnames(graph))) %>%
+  #   simplify_graph
+  fn = ~delete_admix(graph, .x, .y)
   if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
-  admixedges %>% mutate(graph = map2(from, to, fn))
+  graph %>% find_admixedges %>% slice_sample(n = ntry) %>% mutate(graph = map2(from, to, fn))
 }
 
 #' Find all graphs which result from adding and removing one admixture edge
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
-#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
-#' @return A data frame with columns `from1`, `to1`, `from2`, `to2`, and `graph`
+#' @return A data frame with columns `source_from`, `source_to`, `dest_from`, `dest_to`, and `graph`
 #' @examples
 #' \dontrun{
 #' newgraphs = graph_minusplus(example_igraph)
@@ -1340,19 +1494,29 @@ graph_minusone = function(graph, desimplify = TRUE) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_minusplus = function(graph, desimplify = TRUE) {
-  graph %>% graph_minusone %>% mutate(graph2 = map(graph, ~graph_plusone(., desimplify=desimplify))) %>%
-    rename(from1 = from, to1 = to) %>% select(-graph) %>% unnest(graph2) %>%
-    rename(from2 = from, to2 = to) %>% mutate(isoclass = isomorphism_classes2(graph)) %>%
+graph_minusplus = function(graph) {
+  graph %>% graph_minusone %>% mutate(graph2 = map(graph, graph_plusone)) %>%
+    rename(source_from = from, source_to = to) %>% select(-graph) %>% unnest(graph2) %>%
+    rename(dest_from = from, dest_to = to) %>% mutate(isoclass = isomorphism_classes2(graph)) %>%
     filter(!duplicated(isoclass)) %>% select(-isoclass)
 }
 
+graph_plusn = function(graphlist, n = 1, ntry = Inf) {
+  if(n == 0) return(graphlist)
+  map(graphlist, ~graph_plusone(., ntry = ntry)$graph) %>%
+    flatten %>% graph_plusn(n-1, ntry = 1)
+}
+
+graph_minusn = function(graphlist, n = 1, ntry = Inf) {
+  if(n == 0) return(graphlist)
+  map(graphlist, ~graph_minusone(., ntry = ntry)$graph) %>%
+    flatten %>% graph_minusn(n-1, ntry = 1)
+}
 
 #' Find all valid graphs which result from flipping one admixture edge
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
-#' @param desimplify Separate admixture edges from drift edges (default is `TRUE`)
 #' @return A data frame with columns `from`, `to`, and `graph`
 #' @examples
 #' \dontrun{
@@ -1363,8 +1527,10 @@ graph_minusplus = function(graph, desimplify = TRUE) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_flipadmix = function(graph, desimplify = TRUE) {
-  graph %<>% simplify_graph
+graph_flipadmix = function(graph) {
+
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
   admixedges = graph %>% find_admixedges
   el = igraph::as_edgelist(graph)
   fn = ~flipadmix(el, .x, .y)
@@ -1376,7 +1542,10 @@ graph_flipadmix = function(graph, desimplify = TRUE) {
   out
 }
 
-flipadmix = function(edges, from, to) {
+flipadmix = function(graph, from, to) {
+
+  if('igraph' %in% class(graph)) edges = as_edgelist(graph)
+  else edges = graph
   edges %<>% as.matrix
   row = which(edges[,1] == from & edges[,2] == to)
   edges[row,] = c(to, from)
@@ -1402,6 +1571,7 @@ graph_addleaf = function(graph, pop) {
 }
 
 
+
 #' Find possible new edges
 #'
 #' @param graph An admixture graph
@@ -1409,18 +1579,37 @@ graph_addleaf = function(graph, pop) {
 #'   and end above `to` could be inserted
 #' @export
 #' @seealso \code{\link{find_normedges}} \code{\link{find_admixedges}}
-find_newedges = function(graph) {
+find_newedges = function(graph, fix_outpop = TRUE, all = TRUE) {
+  # edge pairs are defined by 4 vertex names
+  # todo: implement remove_redundant
+
+  if(!all) return(find_newedges_cautiously(graph))
+  dmat = igraph::distances(graph, mode = 'out')
+  edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('source_from', 'source_to'))
+  if(fix_outpop) {
+    root = get_rootname(graph)
+    outpop = get_outpop(graph)
+    if(!is.null(outpop)) edges %<>% filter(source_from != root | source_to != outpop)
+  }
+  edges %>%
+    expand_grid(rename(edges, dest_from=source_from, dest_to=source_to)) %>%
+    filter(source_from != dest_from, source_to != dest_to, source_to != dest_from, dest_to != source_from) %>%
+    rowwise %>% filter(!is.finite(dmat[dest_to, source_from])) %>% ungroup
+}
+
+find_newedges_cautiously = function(graph) {
   # returns a two column data frame with edges that can be inserted into the graph
 
   edges = matrix(NA, 0, 2)
-  firstgen = neighbors(graph, V(graph)[1], mode='out')
+  root = get_root(graph)
+  firstgen = neighbors(graph, root, mode='out')
   admix = V(graph)[(degree(graph, mode='in') > 1)]
   admixchildren = do.call(c, igraph::ego(graph, 1, admix, mode='out'))
   admixparents = do.call(c, igraph::ego(graph, 1, admix, mode='in'))
   admixsiblings = do.call(c, igraph::ego(graph, 1, admixparents, mode='out'))
-  exclude = c(admix, firstgen)
+  exclude = c(admix, firstgen, root)
   if(!is.null(admixchildren)) exclude = c(exclude, admixchildren)
-  cand_from = igraph::difference(V(graph)[-1], exclude)
+  cand_from = igraph::difference(V(graph), exclude)
   for(fromnode in names(cand_from)) {
     upstream = subcomponent(graph, fromnode, mode='in')
     downstream1 = neighbors(graph, fromnode, mode='out')
@@ -1433,6 +1622,7 @@ find_newedges = function(graph) {
   }
   edges %>% as_tibble(.name_repair = ~c('from', 'to'))
 }
+
 
 #' Find admixture edges
 #'
@@ -1473,22 +1663,44 @@ find_normedges = function(graph, exclude_first = FALSE) {
 #' @param from Edge source node
 #' @param to Edge target node
 #' @return Admixture graph with one deleted edge
-#' @seealso \code{\link{insert_edge}}
-delete_admix = function(graph, from, to) {
+#' @seealso \code{\link{insert_admix}}
+delete_admix = function(graph, from = NULL, to = NULL) {
   # returns graph with admixture edge deleted
   # does not conserve internal node names
 
+  leaves = sort(get_leafnames(graph))
   desimplify = !is_simplified(graph)
+  if(is.null(from)) {
+    if(desimplify) graph %<>% simplify_graph
+    if(!is_valid(graph)) browser()
+    admix = graph %>% find_admixedges %>% slice_sample
+    if(nrow(admix) == 0) stop("No admix edges found!")
+    from = admix$from
+    to = admix$to
+  }
   parents = neighbors(graph, from, mode = 'in')
-  if(length(parents) == 1 & desimplify) {
+  if(length(parents) == 1 && degree(graph, from) == 2) {
     del = from
     if(length(neighbors(graph, parents, mode = 'in')) == 2) del = c(del, names(parents))
+    browser()
     graph %<>% igraph::delete_vertices(del)
   } else {
     graph %<>% delete_edges(paste(from, to, sep = '|'))
+    if(!is_valid(graph)) browser()
   }
   graph %<>% simplify_graph
+  newleaves = setdiff(get_leafnames(graph), leaves)
+  while(length(newleaves) > 0) {
+    g = graph %>% igraph::delete_vertices(newleaves) %>% simplify_graph()
+    if(!is_valid(g)) browser()
+    newleaves = setdiff(get_leafnames(g), leaves)
+    if(length(setdiff(leaves, get_leafnames(g))) > 0) browser()
+    graph = g
+  }
   if(desimplify) graph %<>% desimplify_graph
+  if(length(setdiff(leaves, get_leafnames(graph))) > 0) browser()
+  if(!is_valid(graph)) browser()
+  if(!isTRUE(all.equal(sort(get_leafnames(graph)), leaves))) stop('xxxx')
   graph
 }
 
@@ -1497,12 +1709,12 @@ delete_admix = function(graph, from, to) {
 #' @export
 #' @param graph An admixture graph
 #' @param leaf Population to be removed
-#' @param desimplify Desimplify graph (\code{\link{desimplify_graph}})
 #' @return Admixture graph with removed population
 #' @seealso \code{\link{insert_leaf}}
-delete_leaf = function(graph, leaf, desimplify = TRUE) {
+delete_leaf = function(graph, leaf) {
   # deletes leaf and all internal nodes leading to no other leaves
-
+  desimplify = !is_simplified(graph)
+  if(desimplify) graph %<>% simplify_graph
   leaves = get_leafnames(graph)
   graph %<>%
     subcomponent(leaf, mode = 'in') %>%
@@ -1586,17 +1798,10 @@ add_leaves_rec = function(tree, leaves) {
   flatten(map(newtrees, ~add_leaves_rec(., leaves[-1])))
 }
 
-add_all_edges = function(graph) {
-  eg = E(graph)
-  nume = length(eg)
-  newe = expand_grid(from = seq_len(nume), to = seq_len(nume)) %>% filter(from != to)
-  newe %>% mutate(newg = map2(from, to, ~insert_edge(graph, eg[.x], eg[.y]))) %$%
-    newg %>% keep(~is.dag(.))
-}
 
 add_edges_rec = function(graph, nadmix) {
   if(nadmix == 0) return(list(graph))
-  newgraphs = add_all_edges(graph)
+  newgraphs = graph %>% graph_plusone %>% pull(graph)
   flatten(map(newgraphs, ~add_edges_rec(., nadmix-1)))
 }
 
@@ -1642,17 +1847,20 @@ graphmod_pavel = function(basegraph, addpops, connection_edge, source_nodes) {
       delete_edges(paste(c1, c2, sep='|'))
     })
   e = expand_grid(source_nodes, addpops)
+  # continue here: update this to work with new insert_admix
   graphs %>% map(~insert_edges(., e$source_nodes, e$addpops))
 }
 
 
 split_multifurcations = function(graph) {
-  # graph is a four column edge list matrix
-  # returns graph as tibble with ''
+  # input is graph as edge list matrix
+  # output is a four column matrix with 'lower' and 'upper'
+
+  # probably doesn't work for nodes with more than 2 or 3 incoming edges
 
   stopifnot(class(graph)[1] == 'matrix')
   multi = names(which(table(graph[,1]) > 2))
-  newedges = matrix(0, 0, 4)
+  if(ncol(graph) == 2) graph = cbind(graph, NA, NA)
 
   for(i in seq_len(length(multi))) {
     rows = which(graph[,1] == multi[i])
@@ -1660,10 +1868,29 @@ split_multifurcations = function(graph) {
     newnam = paste0(graph[rows, 1], '_multi', i, '_', seq_along(rows))
     graph[rows, 1] = newnam
     graph[torows, 2] = newnam[1]
-    newedges = rbind(newedges, cbind(newnam[-length(newnam)], newnam[-1], '0', '1e-9'))
+    graph %<>% rbind(cbind(newnam[-length(newnam)], newnam[-1], '0', '1e-9'))
   }
-  if(ncol(graph) == 2) graph = cbind(graph, NA, NA)
-  graph %>% rbind(newedges) %>%
+
+  leaves = setdiff(graph[,2], graph[,1])
+  leafadmix = intersect(leaves, names(which(table(graph[,2]) >= 2)))
+  for(i in seq_len(length(leafadmix))) {
+    rows = which(graph[,2] == leafadmix[i])
+    newnam = paste0(leafadmix[i], '_pre', i)
+    graph[rows, 2] = newnam
+    graph %<>% rbind(cbind(newnam, leafadmix[i], NA, NA))
+  }
+
+  multiin = names(which(table(graph[,2]) > 2))
+  for(i in seq_len(length(multiin))) {
+    rows = which(graph[,1] == multiin[i])
+    torows = which(graph[,2] == multiin[i])
+    newnam = paste0(graph[rows, 1], '_multi', i, '_', seq_len(length(torows)-2))
+    #graph[rows, 1] = newnam[1]
+    graph[torows[-1], 2] = rep(newnam, each=2)
+    graph %<>% rbind(cbind(newnam, graph[rows, 1], '0', '1e-9'))
+  }
+
+  graph %>%
     as_tibble(.name_repair = ~c('from', 'to', 'lower', 'upper')) %>%
     type_convert(col_types = cols())
 }
@@ -1945,3 +2172,456 @@ graph_to_triplesig = function(graph) {
     ungroup
 }
 # triples don't uniquely identify graphs
+
+
+eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+
+  newgraphs = tibble(graph = graph_plusn(list(graph), n = n, ntry = ntry))
+  num = nrow(newgraphs)
+  #newgraphs %<>% slice_sample(n = ntry)
+  if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
+  if(nrow(newgraphs) == 0) return(tibble())
+  newgraphs %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    unnest_wider(res) %>% arrange(score)
+  #%>% select(source_from, source_to, dest_from, dest_to, graph, score)
+}
+
+eval_minusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+
+  newgraphs = tibble(graph = graph_minusn(list(graph), n = n, ntry = ntry))
+  if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
+  if(nrow(newgraphs) == 0) return(tibble())
+  newgraphs %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    unnest_wider(res) %>% arrange(score)
+}
+
+eval_plusminusn = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+
+  if(verbose) alert_info(paste0('Adding ', n, ' edge(s)...\n'))
+  plus = eval_plusnadmix(graph, qpgfun, n = n, ntry = ntry, verbose = verbose)
+  if(verbose) alert_info(paste0('Best score: ', round(plus$score[[1]], 3), '\n'))
+
+  if(verbose) alert_info(paste0('Removing ', n, ' edge(s)...\n'))
+  plus %>% slice_min(score, with_ties = FALSE) %>% pull(graph) %>% pluck(1) %>%
+    eval_minusnadmix(qpgfun, n = n, ntry = Inf, verbose = verbose)
+}
+
+
+eval_plusonepop = function(graph, pop, qpgfun, ntry = Inf, verbose = TRUE) {
+
+  root = get_rootname(graph)
+  outgroup = intersect(names(neighbors(graph, root)), get_leafnames(graph))
+  newgraphs = graph %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to'))
+  if(length(outgroup) > 0) newgraphs %<>% filter(from != root | to != outgroup)
+  newgraphs %<>% mutate(graph = map2(from, to, ~insert_leaf(graph, pop, .x, .y)))
+
+  if(verbose) alert_info(paste0('Found ',nrow(newgraphs),' graphs. Evaluating ', min(nrow(newgraphs), ntry), '...\n'))
+  newgraphs %>%
+    slice_sample(n = ntry) %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    unnest_wider(res) %>% arrange(score) %>% select(from, to, graph, score)
+}
+
+evaluate_moreadmix = function(graph, qpgfun, maxadmix, ntry = Inf, verbose = TRUE) {
+# adds admixture events to graph one by one, always picking the best one out of ntry randomly chosen possible ones
+
+  nadm = numadmix(graph)
+  if(nadm >= maxadmix) stop(paste0('Graph already has ', nadm, ' admixture events!'))
+
+  for(i in seq_len(maxadmix - nadm)) {
+    if(verbose) alert_info(paste0('Testing graphs with ',nadm+i,' admixture events...\n'))
+    newgraphs = graph %>% eval_plusoneadmix(qpgfun, ntry = ntry)
+    # if(nrow(newgraphs) > 0) {
+      if(verbose) alert_info(paste0('Best score: ', round(min(newgraphs$score), 3),'\n'))
+      graph = newgraphs %>% slice_min(score) %>% pull(graph) %>% pluck(1)
+    # } else {
+    #   warning("Can't add more admixture events!")
+    #   break
+    # }
+  }
+  graph
+}
+
+
+rearrange_negdrift = function(graph, from, to) {
+  # graph is simplified, edge is regular edge
+
+  sib = graph %>% neighbors(from, mode = 'out') %>% names %>% setdiff(to)
+  children = graph %>% neighbors(to, mode = 'out') %>% names %>% sample
+  if(length(children) == 0 || length(sib) == 0) {
+    #warning('is leaf!')
+    return(graph)
+  }
+  if(length(c(to, sib, from, children[1])) %% 2 != 0) browser()
+  graph %<>%
+    add_edges(c(to, sib, from, children[1])) %>%
+    delete_edges(paste(c(from, to), c(sib, children[1]), sep = '|'))
+  if(is_valid(graph)) return(graph)
+}
+
+
+find_and_rearrange_negdrift = function(graph, qpgfun) {
+  # finds most negative drift edge and returns rearranged graph
+
+  leaves = get_leafnames(graph)
+  e = qpgfun(graph)$edges %>% filter(type == 'edge', !to %in% leaves) %>% slice_min(weight, with_ties = FALSE)
+  if(nrow(e) == 0) stop('No negative edge found!')
+  rearrange_negdrift(graph, e$from, e$to)
+}
+
+
+rearrange_negadmix1 = function(graph, from, to) {
+  # rearranges negative admix edge by flipping its direction if possible
+  newgraph = flipadmix(graph, from, to)
+  if(is_valid(newgraph)) return(newgraph)
+}
+
+rearrange_negadmix2 = function(graph, from, to) {
+  # rearranges negative admix edge by flipping its counterpart's direction if possible
+
+  parent_pos = graph %>% neighbors(to, mode = 'in') %>% names %>% setdiff(from, .)
+  newgraph = flipadmix(graph, parent_pos, to)
+  if(is_valid(newgraph)) return(newgraph)
+}
+
+
+rearrange_negadmix3 = function(graph, from, to) {
+  # rearranges negative admix edge by
+  # attaching admixed node to edge above parent of pos weight; neg edge is attached to parent node if possible
+
+  leaves = sort(get_leafnames(graph))
+  parent_neg = from
+  parent_pos = graph %>% neighbors(to, mode = 'in') %>% names %>% setdiff(parent_neg)
+  grandparent_pos = graph %>% neighbors(parent_pos, mode = 'in') %>% names
+  if(length(grandparent_pos) != 1) return(NULL)
+  newgraph = graph %>%
+    add_edges(c(grandparent_pos, to, to, parent_pos)) %>%
+    delete_edges(paste(c(grandparent_pos, parent_pos, parent_neg), c(parent_pos, to, to), sep = '|'))
+  if(!is_valid(newgraph)) browser()
+  if(length(parent_neg) != 1 || length(parent_pos) != 1) stop('aaa')
+  newgraph2 = newgraph %>% add_edges(c(parent_neg, parent_pos)) %>% simplify_graph
+  if(is_valid(newgraph2)) newgraph = newgraph2
+  else newgraph %<>% find_newedges %>% slice_sample %>%
+    mutate(g = list(insert_admix(newgraph, source_from, source_to, dest_from, dest_to))) %>%
+    pull(g) %>% pluck(1) %>% simplify_graph
+  leaves2 = sort(get_leafnames(newgraph))
+  if(!isTRUE(all.equal(leaves, leaves2)) || !is_valid(newgraph)) return(NULL)
+  nold = numadmix(graph)
+  nnew = numadmix(newgraph)
+  if(nnew < nold) newgraph %<>% insert_admix_multi(nold - nnew)
+  if(is_valid(newgraph)) return(newgraph)
+}
+
+
+
+find_graphs2 = function(graph, qpgfun, numgen = 1, numgraphs = 10,
+                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n), verbose = TRUE) {
+
+  #wfuns = namedList(rearrange_negadmix1, rearrange_negadmix2, rearrange_negadmix3)
+  wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
+  dfuns = namedList(rearrange_negdrift)
+  allfuns = c(wfuns, dfuns, mutfuns)
+
+  models = tibble(g = list(simplify_graph(graph))) %>%
+    mutate(res = map(g, qpgfun), hash = map_chr(g, graph_hash), lasthash = graph_hash(graph)) %>%
+    unnest_wider(res) %>%
+    mutate(edges = map(edges, ~filter(., weight < 0))) %>%
+    transmute(gen2 = 0, hash, g, edges, score, expanded = FALSE)
+  best = besthist = models$score
+  bestmut = 'none'
+  gimp = 0
+  st = data.tree::Node$new('R')
+  st$AddChild(models$hash,
+              gen2 = 0,
+              score = models$score,
+              imp = 0,
+              scm_1 = NA,
+              scm_5 = NA,
+              cntm_1 = NA,
+              cntm_5 = NA)
+  stdat = st_to_dat(st)
+  tm = Sys.time()
+
+  for(i in seq_len(numgen)) {
+
+    if(verbose) {
+      alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
+      msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
+    }
+    newgraph = pick_graph(stdat, verbose = verbose > 2)
+    if(verbose > 1) {
+      msg %<>% paste0(newgraph %$% paste0(' ', round(score, 2), ' ', round(score/best, 2),'\tg ',gen2, ' ', gimp, '\tcnt ',cntm_1,' ',cntm_5, '\ttime '), round(as.numeric(Sys.time()-tm), 1), '\t', bestmut)
+      tm = Sys.time()
+    }
+    if(verbose) alert(paste0(msg, '\n'))
+    sel = models %>% filter(hash == newgraph$hash[[1]])
+
+    if(any(duplicated(models$hash))) browser()
+    models %<>% rows_update(sel %>% mutate(expanded = TRUE), by = 'hash')
+    graph = sel$g[[1]]
+
+    if(gimp > 0 && gimp %% 5 == 0) {
+
+      graph = models %>% slice_min(score, with_ties = FALSE) %>% pull(g) %>% pluck(1)
+      newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10) %>%
+        mutate(hash = map_chr(graph, graph_hash)) %>%
+        slice_min(score, with_ties = FALSE) %>%
+        transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = 'plusminusn')
+      if(newmod$hash == newmod$lasthash) {
+        gimp = gimp + 1
+        next
+      }
+
+    } else {
+
+      e = qpgfun(graph, constrained = FALSE)$edges %>% filter(weight < 0)
+      if(nrow(e) == 0) {
+        newmod = tibble()
+      } else {
+        newmod = e %>% slice_min(weight, n = floor(numgraphs/2)) %>%
+          mutate(mutfun = ifelse(type == 'admix', sample(names(wfuns), 1), sample(names(dfuns), 1)),
+                 fun = allfuns[mutfun],
+                 g = pmap(list(fun, from, to), function(x, y, z) x(graph, y, z))) %>%
+          rowwise %>% filter(!is.null(g)) %>% ungroup
+      }
+      remaining = numgraphs - nrow(newmod)
+
+      if(remaining > 0) {
+        swape = swap_negdrift(graph, e$from, e$to)
+        if(!is.null(swape)) newmod %<>% bind_rows(tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = ceiling(remaining)/2))
+        remaining = numgraphs - nrow(newmod)
+      }
+
+      if(remaining > 0) {
+        randmut = tibble(fun = mutfuns, mutfun = names(fun)) %>%
+          slice_sample(n = remaining, replace = TRUE) %>%
+          rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
+        newmod %<>% bind_rows(randmut)
+      }
+
+      newmod %<>%
+        transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
+        filter(!duplicated(hash), !hash %in% models$hash)
+
+      if(nrow(newmod) == 0) {
+        alert_danger('No new models!\n')
+        next
+      }
+      newmod %<>%
+        # slice_head(n = min(max(numgraphs-3,0), nrow(.))) %>%
+        # bind_rows(slice_sample(newmod)) %>%
+        # bind_rows(slice(newmod, pmax(1,floor(nrow(newmod)/c(2,10))))) %>%
+        # filter(!duplicated(hash)) %>%
+        mutate(res = furrr:::future_map(g, qpgfun)) %>% unnest_wider(res) %>%
+        mutate(edges = map(edges, ~filter(., weight < 0))) %>%
+        transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun, expanded = FALSE) %>%
+        arrange(score)
+    }
+
+    if(any(is.na(newmod$score)) || nrow(newmod) == 0) browser()
+    if(is.na(newmod$score[1])) browser()
+    besthist[i] = newmod$score[1]
+    bestmut = newmod$mutfun[1]
+    if(besthist[i] < best) {
+      best = besthist[i]
+      gimp = 0
+    } else gimp = gimp + 1
+    newmod %<>% filter(!hash %in% models$hash)
+    models %<>% bind_rows(newmod, .)
+
+    for(j in seq_len(nrow(newmod))) {
+      node = data.tree::FindNode(st, newmod$lasthash[j])
+      node$AddChild(newmod$hash[j],
+                    gen2 = i,
+                    score = newmod$score[j],
+                    imp = as.numeric(best != newmod$score[1]),
+                    scm_1 = node$parent$score,
+                    scm_5 = node$parent$parent$parent$parent$parent$score,
+                    cntm_1 = node$parent$totalCount,
+                    cntm_5 = node$parent$parent$parent$parent$parent$totalCount)
+    }
+    stdat = st %>% st_to_dat
+
+  }
+
+  #if(verbose) alert_info(paste0(i, ': ', round(models$score[[1]], 3), '\n'))
+  namedList(models, stdat)
+}
+
+st_to_dat = function(st) {
+
+  fp_inf = function(node) node$scbest = if(node$isLeaf) node$score else min(node$score, sapply(node$children, fp_inf), na.rm=T)
+  fp_1 = function(node, n = 1) node$scp_1 = if(node$isLeaf || n == 0) node$score else min(map_dbl(node$children, function(node) if(is.null(node$score)) NA else node$score), na.rm=T)
+  fp_5 = function(node, n = 5) node$scp_5 = if(node$isLeaf || n == 0) node$score else min(sapply(node$children, function(node) fp_5(node, n-1)), na.rm=T)
+  fimp = function(node) node$gimp = if(is.null(node$imp) || is.na(node$imp) || node$imp == 0) 0 else node$imp + fimp(node$parent)
+
+  st$Do(fp_inf)
+  st$Do(fp_1)
+  st$Do(fp_5)
+  st$Do(fimp)
+
+  as.data.frame(st, NULL, T, 'name', 'score', 'scbest', 'gimp', 'scp_1', 'scp_5', 'scm_1', 'scm_5', 'height', 'level', 'totalCount', 'cntm_1', 'cntm_5', 'gen2') %>%
+    as_tibble %>% rename(hash = name) %>% select(-1)
+}
+
+graph_potential = function(stdat) {
+
+  stdat %>% pivot_longer(contains('_'), names_to = c('type', 'gen'), names_pattern = '([A-Za-z]+)_(\\d+)', values_to = 'v') %>% pivot_wider(names_from = type, values_from = v) %>% mutate(relscore = score/min(score, na.rm=T), relm = scm/score, relp = score/scp, relmcnt = relm/cntm, relpcnt = relp/totalCount) %>% pivot_wider(names_from = gen, values_from = c(scp, scm, cntm, relm, relp, relmcnt, relpcnt)) %>% mutate(potential = 1/(relscore * relmcnt_1 * relmcnt_5))
+
+}
+
+
+pick_graph = function(stdat, minprob = 0.5, cnt1 = 10, cnt5 = 30, pen1 = 1.2, pen5 = 2, gpen = 0.2, verbose = FALSE) {
+  # selects new graph from search tree data and returns one row of stdat
+
+  sel = stdat %>% slice_min(score, with_ties = FALSE)
+  lastimp = max(stdat$gen2, na.rm = TRUE) - sel$gen2
+  #if(sel$totalCount[[1]] == 1 || runif(1) < minprob) {
+  if(sel$totalCount[[1]] == 1 || lastimp < 3 || runif(1) > minprob) {
+    return(sel)
+  }
+
+  out = stdat %>% filter(totalCount == 1) %>%
+    mutate(g1 = replace_na(ifelse(cntm_1 > cnt1, cntm_1/cnt1, 1), 1),
+           g5 = replace_na(ifelse(cntm_5 > cnt5, cntm_5/cnt5, 1), 1),
+           imp = replace_na((gimp+1)^gpen, 1),
+           potential = 1000 / (score * g1 * g5 * imp), potential = replace_na(potential, 1/max(score, na.rm=T)))
+  maxpot = max(out$potential)
+  if(maxpot == Inf) browser()
+  out %<>% slice_sample(n = 1, weight_by = potential^10)
+  if(verbose) alert_warning(out %$% paste0('\tcnt ', sum(stdat$totalCount == 1), '\tpen ', paste0(round(g1, 2), ' ', round(g5, 2), ' ', round(imp, 2), '\tpot ', round(potential, 2), ' ', round(maxpot, 2), '\n')))
+  out
+}
+
+
+
+swap_negdrift = function(graph, from, to) {
+  # from, to are vectors of edges to be swapped
+
+  out = tibble(from, to) %>%
+    expand_grid(rename(., from2 = from, to2 = to)) %>%
+    filter(from != from2, to != to2, from != to2, to != from2) %>%
+    rowwise %>%
+    mutate(g = graph %>%
+             delete_edges(paste(c(from, from2), c(to, to2), sep='|')) %>%
+             add_edges(c(from, to2, from2, to)) %>% list)
+  if(nrow(out) > 0) out %>% filter(is_valid(g)) %>% pull(g)
+}
+
+
+replace_admix_with_random = function(graph, from = NULL, to = NULL) {
+
+  if(!is_valid(graph) || !all(c(from, to) %in% names(V(graph)))) browser()
+  leaves = sort(get_leafnames(graph))
+  g = graph %>% delete_admix(from, to)
+  if(!is_valid(g)) browser()
+  tryCatch(all.equal(leaves, sort(get_leafnames(g))), error = function() browser())
+  g %<>% insert_admix
+  if(!is_valid(g)) browser()
+  g
+}
+
+
+graph_hash = function(graph) {
+  # graph identity is determined by topology and leaf names, but not by internal names
+
+  #graph %>% unify_vertex_names() %>% as_edgelist %>% digest::digest()
+  graph %<>% simplify_graph
+  leaves = get_leafnames(graph) %>% sort
+  internal = setdiff(names(V(graph)), leaves)
+  graph %>%
+    igraph::distances(internal, leaves, mode = 'out') %>%
+    apply(1, function(x) paste(str_replace(as.character(x), 'Inf', '.'), collapse = '')) %>%
+    unname %>% sort %>% c(leaves) %>% digest::digest()
+}
+
+
+edge_targets = function(graph) {
+
+  leaves = graph %>% get_leafnames()
+  nodes = names(V(graph))
+  internal = setdiff(nodes, leaves)
+  dst = graph %>% distances(nodes, leaves, mode = 'out')
+  reachlist = map(nodes, ~names(which(is.finite(dst[.,])))) %>% set_names(nodes)
+  graph %>%
+    as_edgelist %>%
+    as_tibble(.name_repair = ~c('from', 'to')) %>%
+    add_count(to) %>%
+    rowwise %>%
+    mutate(targets = reachlist[to], tgt = paste0((leaves %in% targets)+0, collapse='')) %>%
+    group_by(tgt) %>%
+    mutate(identifiable = n > 1 | n() == 1) %>%
+    ungroup
+
+}
+
+
+vs_to_es = function(vs) {
+  # turns igraph vertex sequence into a vector of edge names
+  if('igraph.vs' %in% class(vs)) nam = names(vs)
+  else nam = vs
+  paste0(head(nam, -1), '|', nam[-1])
+}
+
+
+path_intersections = function(graph) {
+
+  pp = graph %>% pair_paths %>% rowwise %>% mutate(id = paste(sort(c(from, to)), collapse = ' ')) %>% ungroup
+  expand_grid(pp, pp %>% rename_with(~paste0(., 2))) %>%
+    filter(id != id2) %>%
+    rowwise %>%
+    mutate(is = list(intersect(path, path2)), islen = length(is), isstr = paste0(is, collapse = ' '),
+           admtot = length(union(admnodes, admnodes2)), id4 = paste(sort(c(id, id2)), collapse = ' ')) %>%
+    filter(islen > 0) %>%
+    ungroup
+
+}
+
+resolve_paths = function(graph) {
+
+  leaves = graph %>% get_leafnames
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  unresolved_adm = adm
+  pis = path_intersections(graph)
+
+  for(i in 1:10) {
+    pis %<>% rowwise %>%
+      mutate(unresolved = list(intersect(unresolved_adm, union(admnodes, admnodes2))), unum = length(unresolved)) %>%
+      ungroup
+
+    resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
+    resolved1 = pis %>% filter(unum == 1, islen > 0) %>% pull(isstr) %>% unique
+
+    resolvedadm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1) %$%
+      unique(unlist(c(admnodes, admnodes2)))
+
+    unresolved_adm %<>% setdiff(resolvedadm)
+  }
+
+}
+
+paths_through = function(graph, leaves, node) {
+
+  nl = graph %>% neighbors(node, mode = 'out') %>% pluck(1) %>% names
+  nr = graph %>% neighbors(node, mode = 'out') %>% pluck(2) %>% names
+
+  paths = all_simple_paths(graph, node, leaves, mode = 'out') %>%
+    map(names)
+
+  expand_grid(up = paths %>% keep(~.[[2]] == nl), down = paths %>% keep(~.[[2]] == nr))
+}
+
+pair_paths = function(graph) {
+
+  leaves = graph %>% get_leafnames
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  internal = setdiff(names(V(graph)), leaves)
+  nonadm = setdiff(internal, adm)
+  map(nonadm, ~paths_through(graph, leaves, .)) %>% set_names(nonadm) %>% bind_rows(.id = 'pivot') %>% rowwise %>% mutate(from = tail(up, 1), to = tail(down, 1), path = list(c(vs_to_es(up), vs_to_es(down))), admnodes = list(intersect(adm, c(up, down))), admnum = length(admnodes)) %>% ungroup
+
+}
+
+# continue here: use path intersections to determine edges which are not identifiable
+

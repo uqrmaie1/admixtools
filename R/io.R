@@ -97,7 +97,7 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploi
   pops = upops[indvec]
 
   fl = paste0(pref, '.geno')
-  geno = apply(do.call(rbind, str_split(readLines(fl), '')), 2, as.numeric)
+  geno = apply(do.call(rbind, str_split(read_lines(fl), '')), 2, as.numeric)
   nindall = ncol(geno)
   nsnp = nrow(geno)
   numpop = length(upops)
@@ -643,7 +643,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
   }
   if(verbose) alert_info(paste0('\n'))
   if(remove_na || verbose) {
-    keep = apply(f2_blocks, 3, function(x) sum(is.na(x)) == 0)
+    keep = apply(f2_blocks, 3, function(x) sum(!is.finite(x)) == 0)
     if(!all(keep)) {
       if(remove_na) {
         warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
@@ -990,13 +990,13 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
   # 3. set diag to 0
 
   ap_blocks = -2*ap_blocks
-  # if(!is.null(from)) {
-  #   if(!is.null(to)) {
-  #     ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
-  #   } else {
-  #     ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
-  #   }
-  # }
+  if(!is.null(from)) {
+    if(!is.null(to)) {
+      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) * (to - from)/diff(range(ap_blocks, na.rm = TRUE)) + from
+    } else {
+      ap_blocks = (ap_blocks - min(ap_blocks, na.rm=T)) + from
+    }
+  }
   if(isTRUE(all.equal(dimnames(ap_blocks)[[1]], dimnames(ap_blocks)[[2]]))) {
     d1 = dim(ap_blocks)[1]
     d3 = dim(ap_blocks)[3]
@@ -1500,6 +1500,7 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
                            apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
+  if(!dir.exists(dir)) stop(paste0("Directory ", normalizePath(dir, mustWork = FALSE), " doesn't exist!"))
   indpairs = dir.exists(paste0(dir, '/indivs'))
 
   if(indpairs) {
@@ -2080,28 +2081,89 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 
 
 f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
-                                     blgsize = 0.05,
+                                     blgsize = 0.05, maxf4 = 1e5,
                                      block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE) {
 
   #if(is.null(popcombs)) {
   left = unique(c(popcombs$pop1, popcombs$pop2))
   right = unique(c(popcombs$pop3, popcombs$pop4))
   pc = expand_grid(pop1 = left, pop2 = left) %>%
-      expand_grid(expand_grid(pop3 = right, pop4 = right)) %>%
-      filter(pop1 != pop2, pop3 != pop4)
+      expand_grid(expand_grid(pop3 = right, pop4 = right))
   # } else {
   #   pops = popcombs %>% select(pop1:pop4) %>% unlist %>% unique
   #   pc = expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
   #     filter(pop1 != pop2, pop1 != pop3, pop1 != pop4, pop2 != pop3, pop2 != pop4, pop3 != pop4)
   # }
+  #pc %<>% filter(pop1 == pop3 & pop2 == pop4 | runif(n()) < maxf4/n())
+  pc %<>% slice_sample(n = maxf4)
   pc %<>% mutate(model = 1:n())
 
   f4blockdat = f4blockdat_from_geno(pref, pc, auto_only = auto_only, blgsize = blgsize, block_lengths = block_lengths,
-                                    f4mode = f4mode, verbose = verbose) %>% average_f4blockdat %>%
-    mutate(est = est_avg, n = n_avg) %>% select(-model)
+                                    f4mode = f4mode, verbose = verbose) %>% #average_f4blockdat %>%
+    #mutate(est = est_avg, n = n_avg) %>%
+    select(-model)
   popcombs %>% left_join(f4blockdat, by = paste0('pop', 1:4))
 }
 
+
+extract_f2_qpfs = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, maxmem = 8000,
+                           maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
+                           transitions = TRUE, transversions = TRUE,
+                           auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
+                           adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
+
+
+  sp = sort(pops)
+  popcombs = expand_grid(pop1 = sp, pop2 = sp, pop3 = sp, pop4 = sp)
+
+  pc = apply(combn(sp, 2), 2, paste0, collapse = ' ')
+
+  f4blockdat = f4blockdat_from_geno_qpfs(pref, popcombs, maxf4 = maxf4, verbose = verbose) %>% filter(!is.na(est))
+  diags = expand_grid(pop1 = sp, block = seq_len(max(f4blockdat$block, na.rm=T))) %>% mutate(pop2 = pop1, est = 0, n = 0, length = 0)
+  dat = f4blockdat %>%
+    filter(pop1 != pop3, pop2 != pop4) %>%
+    transmute(est, block,
+      p13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)),
+      p24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)),
+      p14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)),
+      p23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>%
+    expand_grid(pc) %>% mutate(coef = (pc == p14) + (pc == p23) - (pc == p13) - (pc == p24)) %>%
+    pivot_wider(names_from = pc, values_from = coef) %>%
+    select(-p13:-p23) %>%
+    group_by(block) %>% group_modify(~broom::tidy(lm(est ~ ., data = ., na.action=na.exclude))[-1, c('term', 'estimate')]) %>%
+    ungroup %>% mutate(term = str_replace_all(term, '`', '')) %>% separate(term, c('pop1', 'pop2'), ' ', T, T) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+    bind_rows(diags %>% transmute(pop1, pop2, block, estimate = est)) %>%
+    mutate(n = 0) %>%
+    arrange(block, pop2, pop1)
+  if(length(table(table(dat$block))) > 1) stop('Increase maxf4!')
+
+  # f2blockdat = f4blockdat %>%
+  #   filter(pop1 == pop3, pop2 == pop4, !is.na(block)) %>% select(pop1, pop2, block, est, n, length) %>%
+  #   #bind_rows(rename(., pop2 = pop1, pop1 = pop2)) %>%
+  #   bind_rows(diags) %>%
+  #   left_join(dat, by = c('pop1', 'pop2', 'block')) %>%
+  #   arrange(block, pop2, pop1)
+
+  d1 = d2 = length(pops)
+  d3 = length(unique(dat$block))
+  dm = c(d1, d2, d3)
+  nam = list(sp, sp, paste0('l', seq_len(d3)))
+
+  arrs = list(
+    f2 = array(dat$estimate, dm, nam)[pops,pops,,drop=F],
+    afprod = array(dat$estimate, dm, nam)[pops,pops,,drop=F],
+    counts = array(dat$n, dm, nam)[pops,pops,,drop=F],
+    countsap = array(dat$n, dm, nam)[pops,pops,,drop=F]
+  )
+
+  if(is.null(outdir)) return(arrs)
+
+  write_f2(arrs, outdir, overwrite = overwrite)
+
+  if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
+  #invisible(afdat$snpfile)
+}
 
 
 #' Convert graph to dot format
@@ -2132,4 +2194,130 @@ write_dot = function(graph, outfile = stdout()) {
 
   writeLines(out, outfile)
 }
+
+
+geno_to_treemix = function(pref, outfile = paste0(pref, '.txt.gz'), pops = NULL, verbose = TRUE) {
+
+  afs = anygeno_to_aftable(pref, verbose = verbose)
+  if(!is.null(pops)) {
+    afs$afs = afs$afs[,pops]
+    afs$counts = afs$counts[,pops]
+  }
+  cnt = rowSums(afs$counts > 0)
+  nomiss = cnt == ncol(afs$counts)
+  m1 = replace_na(afs$counts * afs$afs, 0)[nomiss,]
+  m2 = replace_na(afs$counts * (1-afs$afs), 0)[nomiss,]
+
+  if(verbose) alert_info('Writing data in treemix format...\n')
+  paste0(m1, ',', m2) %>% matrix(nrow(m1)) %>% as_tibble(.name_repair = ~colnames(m1)) %>%
+    write_delim(outfile, delim=' ')
+}
+
+
+graph_to_treemix = function(edges, outpref) {
+
+  # doesn't work for complex graphs. have to define tree from graph first; test how much choice of tree affects fit
+
+  # simplify admixture nodes
+  root = setdiff(edges$from, edges$to)
+  connectors = setdiff(names(which(table(c(edges$from, edges$to)) == 2)), root)
+  remove = edges %>% filter(to %in% connectors) %>% select(to, from) %>% deframe
+  edges %<>% mutate(from = ifelse(from %in% connectors, remove[from], from)) %>% filter(!to %in% connectors)
+
+  # simplify admixed leaves
+  leaves = setdiff(edges$to, edges$from)
+  for(i in 1:10) {
+    admnodes = intersect(names(which(table(edges$to) == 2)), names(which(table(edges$from) == 1)))
+    remove = edges %>% filter(to %in% leaves, from %in% admnodes) %>% select(from, to) %>% deframe
+    edges %<>% mutate(to = ifelse(to %in% names(remove), remove[to], to)) %>% filter(!from %in% names(remove))
+  }
+
+  nodes = union(edges$from, edges$to)
+  edges %<>% add_count(to) %>% group_by(from) %>%
+    mutate(weight = ifelse(type == 'admix', weight, 1), mxw = weight == max(weight, na.rm=T)) %>% ungroup %>%
+    group_by(to) %>% mutate(mig = weight != max(weight) & n > 1 & !mxw) %>% ungroup %>% mutate(weight = weight/sum(weight)) %>% ungroup
+
+  mig = edges %>% filter(mig) %>% pull(from)
+
+  edges %>%
+    transmute(from = match(from, nodes), to = match(to, nodes),
+              l = ifelse(mig, 0, 1),
+              w = ifelse(n > 1, weight, 1),
+              m = ifelse(mig, 'MIG', 'NOT_MIG')) %>% #arrange(desc(m)) %>%
+    write_delim(paste0(outpref, '.edges.gz'), col_names = FALSE, delim = ' ')
+
+  tibble(i = (1:length(nodes)), nodes,
+         r = ifelse(nodes == root, 'ROOT', 'NOT_ROOT'),
+         m = ifelse(nodes %in% mig, 'MIG', 'NOT_MIG'),
+         t = ifelse(nodes %in% leaves, 'TIP', 'NOT_TIP')) %>%
+    mutate(nodes = ifelse(nodes %in% leaves, nodes, NA)) %>%
+    write_delim(paste0(outpref, '.vertices.gz'), col_names = FALSE, delim = ' ')
+}
+
+
+edges_to_treemix = function(edges, outpref) {
+
+
+  graph = edges %>% select(1:2) %>% as.matrix %>% graph_from_edgelist()
+  graph %<>% simplify_graph
+  spl = split_graph(edges)
+  del = paste(spl$deleted[,1], ' ', spl$deleted[,2])
+  kep = paste(spl$kept[,1], ' ', spl$kept[,2])
+
+  leaves = setdiff(edges$to, edges$from)
+  root = setdiff(edges$from, edges$to)
+  edges %<>% mutate(ee = paste(from, ' ', to)) %>% mutate(mig = ee %in% del)
+
+  # simplify admixture nodes
+  root = setdiff(edges$from, edges$to)
+  connectors = setdiff(names(which(table(c(edges$from, edges$to)) == 2)), root)
+  remove = edges %>% filter(to %in% connectors) %>% select(to, from) %>% deframe
+  edges %<>% mutate(from = ifelse(from %in% connectors, remove[from], from)) %>% filter(!to %in% connectors)
+
+  # simplify admixed leaves
+  for(i in 1:10) {
+    admnodes = intersect(names(which(table(edges$to) == 2)), names(which(table(edges$from) == 1)))
+    remove = edges %>% filter(to %in% leaves, from %in% admnodes) %>% select(from, to) %>% deframe
+    edges %<>% mutate(to = ifelse(to %in% names(remove), remove[to], to)) %>% filter(!from %in% names(remove))
+  }
+
+  # H to X
+  hnodes1 = names(which(table(edges$from) == 1))
+  hnodes2 = edges %>% filter(from %in% hnodes1) %>% pull(to)
+  names(hnodes2) = hnodes1
+  edges %<>% filter(!from %in% hnodes1) %>%
+    mutate(to = ifelse(to %in% hnodes1, hnodes2[to], to))
+
+  mignodes = edges %>% filter(mig) %>% pull(from)
+
+  # shift mig targets up to next non-mig node
+  while(edges %>% filter(to %in% mignodes, mig) %>% nrow > 0) {
+    nd = edges %>% filter(to %in% mignodes, mig) %>% pull(to)
+    prev = edges %>% filter(!mig, to %in% nd) %>% select(to, from) %>% deframe
+    edges %<>% mutate(to = ifelse(to %in% nd & mig, prev[nd], to))
+  }
+
+  e = edges
+
+  nodes = union(e$from, e$to)
+
+  e %>%
+    transmute(from = match(from, nodes), to = match(to, nodes),
+              l = ifelse(mig, 0, 1),
+              w = ifelse(type == 'admix', weight, 1),
+              m = ifelse(mig, 'MIG', 'NOT_MIG')) %>%
+    write_delim(paste0(outpref, '.edges.gz'), col_names = FALSE, delim = ' ')
+
+  tibble(i = (1:length(nodes)), nodes,
+         r = ifelse(nodes == root, 'ROOT', 'NOT_ROOT'),
+         m = ifelse(nodes %in% mignodes, 'MIG', 'NOT_MIG'),
+         t = ifelse(nodes %in% leaves, 'TIP', 'NOT_TIP')) %>%
+    mutate(nodes = ifelse(nodes %in% leaves, nodes, NA)) %>%
+    write_delim(paste0(outpref, '.vertices.gz'), col_names = FALSE, delim = ' ')
+}
+
+
+
+
+
 

@@ -4,12 +4,12 @@
 \alias{move_admixedge_once}
 \title{Modify a graph by moving an admixture edge}
 \usage{
-move_admixedge_once(graph, desimplify = TRUE, fix_outgroup = TRUE)
+move_admixedge_once(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
+\item{fix_outgroup}{Keep outgroup in place}
 }
 \value{
 A new admixture graph

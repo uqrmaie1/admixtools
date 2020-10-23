@@ -119,18 +119,19 @@ optimweightsfun = function(weights, args) {
   upper = args[[10]]
   fudge = args[[11]]
   baseind = args[[12]]
+  constrained = args[[13]]
 
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
   pwts = pwts[,-baseind] - pwts[,baseind]
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
   get_score(f3_fit, f3_est, ppinv)
 }
 
 
 
-opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = 1e-4) {
+opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = 1e-4, constrained = TRUE) {
   # finds optimal edge lengths
   # pwts2d: npair x nedge design matrix with paths to outpop
   # ppinv: inverse of npair x npair covariance matrix of jackknife f3 stats
@@ -143,13 +144,20 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudg
   sc = sqrt(diag(cc))
   q1 = (pppp %*% f3_est)[,1]/sc
   cc = cc/tcrossprod(sc)
-  qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))/sc
+  if(constrained) qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))/sc
+  else solve(cc, q1)/sc
 }
 
 get_score = function(f3_fit, f3_est, ppinv) {
   res = f3_fit - f3_est
   lik = t(res) %*% ppinv %*% res
   lik[1,1]
+}
+
+get_score_treemix = function(f3_fit, f3_est, ppinv) {
+  res = f3_fit - f3_est
+  se = sqrt(diag(solve(ppinv)))
+  sum(res^2/(2*se^2) + log(se * sqrt(2*pi)))
 }
 
 
@@ -205,7 +213,7 @@ get_score = function(f3_fit, f3_est, ppinv) {
 #' plot_graph(out$edges)
 qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag_f3 = 1e-5,
                    lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
-                   f3basepop = NULL, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
+                   f3basepop = NULL, constrained = TRUE, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
 
   #----------------- process graph -----------------
   if('matrix' %in% class(graph)) {
@@ -286,15 +294,18 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
       alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
       aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]]), 1)
       aupper = pmin(1, aupper) + 1e-9
-    } else {
+    } else if(constrained) {
       alower = rep(0, nadmix)
       aupper = rep(1, nadmix)
+    } else {
+      alower = rep(-Inf, nadmix)
+      aupper = rep(Inf, nadmix)
     }
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('Testing ', nrow(parmat), ' combinations of admixture weight starting values...\n'))
     weightind = graph_to_weightind(graph)
     arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]],
-                   cmb, qpsolve, elower, eupper, diag, baseind)
+                   cmb, qpsolve, elower, eupper, diag, baseind, constrained)
     oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
                     lower = alower, upper = aupper, control=list(maxit = 1e4, fnscale = 1e-6),
                     verbose = verbose)
@@ -314,7 +325,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   }
   pwts = pwts[,-baseind] - pwts[,baseind]
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
-  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = diag)
+  branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = diag, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
   if(!is.null(f2_blocks_test)) {
@@ -323,7 +334,9 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
   }
 
-  weight[normedges] = pmax(0, branch_lengths)
+  # if(constrained) weight[normedges] = pmax(0, branch_lengths)
+  # else weight[normedges] = branch_lengths
+  weight[normedges] = branch_lengths
   edges %<>% select(1:2) %>% set_colnames(c('from', 'to')) %>%  as_tibble %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight, low = low, high = high)
   f2 = precomp$f2out
@@ -460,7 +473,7 @@ qpgraph_anorexic = function(f3precomp, graph, diag = 1e-4,
 
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve,
                                     lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)),
-                                    fudge = diag)
+                                    fudge = diag, constrained = TRUE)
   f3_fit = ppwts_2d %*% branch_lengths
   score = get_score(f3_fit, f3_est, ppinv)
 
@@ -542,7 +555,7 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 
 #' Compare the fit of two qpgraph models
 #'
-#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
+#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other. Used to be called `compare_fits3`
 #' @export
 #' @param scores1 Scores for the first graph
 #' @param scores2 Scores for the second graph
@@ -552,7 +565,7 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #' boo = boo_list(f2_blocks, nboot = 100)
 #' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
 #' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
-#' compare_fits3(fits1$score_test, fits2$score_test)
+#' compare_fits(fits1$score_test, fits2$score_test)
 #' }
 #' # Use all SNP blocks for f3 covariance matrix
 #' \dontrun{
@@ -561,14 +574,14 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #' ppinv2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))$ppinv
 #' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, ppinv = ppinv1)
 #' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, ppinv = ppinv2)
-#' compare_fits3(fits1$score_test, fits2$score_test)
+#' compare_fits(fits1$score_test, fits2$score_test)
 #' }
 #' # Same as above
 #' \dontrun{
 #' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
-#' compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
+#' compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
 #' }
-compare_fits3 = function(scores1, scores2) {
+compare_fits = function(scores1, scores2) {
 
   scorediff = scores1 - scores2
   ci_low = unname(quantile(scorediff, 0.025, na.rm = T))
@@ -584,7 +597,7 @@ compare_fits3 = function(scores1, scores2) {
   frac = mean(scorediff < 0)
   p_emp = min(frac, 1-frac)*2
   p_emp = max(p_emp, 1/length(scorediff))
-  c(diff=diff, se=se, z=z, p=p, p_emp=p_emp, ci_low=ci_low, ci_high=ci_high)
+  namedList(diff, se, z, p, p_emp, ci_low, ci_high)
 }
 
 
@@ -603,14 +616,23 @@ compare_fits3 = function(scores1, scores2) {
 #' @seealso \code{\link{compare_fits3}} \code{\link{boo_list}}
 qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
 
-  ell = list(...)
-  fun = function(f2dat, f2dat_test, g) function() safely(qpgraph)(data = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+  #progressr::with_progress({
+  #pb = progressr::progressor(steps = length(f2_blocks))
 
+  ell = list(...)
+  fun = function(f2dat, f2dat_test, g) function() {
+    #pb$tick()
+    pb()
+    safely(qpgraph)(data = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
+  }
+
+  #pb = progress::progress_bar$new(total = length(f2_blocks))
   tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
     mutate(fun2 = pmap(list(f2_blocks, f2_blocks_test, graph), fun)) %>%
     mutate(out = furrr::future_invoke_map(fun2, .progress = verbose),
            result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
     select(-out, -fun2) %>% unnest_wider(result)
+  #})
 }
 
 # qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {

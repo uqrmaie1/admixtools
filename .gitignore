@@ -29,3 +29,6 @@ msprime_sim.geno
 msprime_sim.ind
 msprime_sim.py
 msprime_sim.snp
+fstats
+msprime_sim2.py
+poplist

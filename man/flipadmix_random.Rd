@@ -4,12 +4,10 @@
 \alias{flipadmix_random}
 \title{Modify a graph flipping the direction of an admixture edge}
 \usage{
-flipadmix_random(graph, desimplify = TRUE, fix_outgroup = TRUE)
+flipadmix_random(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 
 \item{fix_outgroup}{Keep outgroup in place (has no effect here)}
 }

@@ -22,6 +22,7 @@ Imports:
     cli,
     crayon,
     cubelyr,
+    data.tree,
     digest,
     dplyr (>= 1.0.0),
     furrr,

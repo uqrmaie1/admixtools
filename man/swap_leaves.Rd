@@ -4,12 +4,10 @@
 \alias{swap_leaves}
 \title{Modify a graph by swapping two leaf nodes}
 \usage{
-swap_leaves(graph, desimplify = TRUE, fix_outgroup = TRUE)
+swap_leaves(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 
 \item{fix_outgroup}{Keep outgroup in place}
 }

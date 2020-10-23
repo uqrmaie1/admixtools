@@ -31,9 +31,10 @@ This function runs multiple qpadm models, re-using f4-statistics where possible.
 \examples{
 \dontrun{
 pops = paste0('pop', 1:10)
+# the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
 models = tibble(
-           left = list(c('pop1', 'pop2'), c('pop3', 'pop4')),
-           right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8', 'pop9')),
+           left = list(c('pop1', 'pop2'), c('pop3')),
+           right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8')),
            target = c('pop10', 'pop10'))
 results = qpadm_multi('/my/geno/prefix', models)
 }

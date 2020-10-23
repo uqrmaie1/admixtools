@@ -146,7 +146,7 @@ jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   namedList(est, var)
 }
 
-jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
+jack_mat_stats_old = function(loo_mat, block_lengths, na.rm = TRUE) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
 
@@ -167,8 +167,27 @@ jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
   namedList(est, var)
 }
 
+jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
+  # input is matrix (one block per column)
+  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
 
-jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
+  # est == tot; only valid when estimates are additive
+
+  nr = nrow(loo_mat)
+  bl_mat = matrix(rep(block_lengths, each = nr), nr)
+  bl_mat[which(is.na(loo_mat))] = NA
+  n = rowSums(bl_mat, na.rm=T)
+  h = n/bl_mat
+  est = sapply(1:nr, function(i) weighted.mean(loo_mat[i,], 1-1/h[i,], na.rm=na.rm))
+  xtau = (est - loo_mat) * sqrt(h-1)
+  #est = weighted_row_means(loo_mat, 1-1/h, na.rm=na.rm)
+  #xtau = (est - loo_mat) * sqrt(rep(h, each = nrow(loo_mat))-1)
+  var = tcrossprod(replace_na(xtau, 0)) / tcrossprod(!is.na(xtau))
+
+  namedList(est, var)
+}
+
+jack_arr_stats_old = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
   # input is 3d array (n x n x m) with leave-one-out statistics
   # output is list with jackknife means and jackknife variances
   # should give same results as 'jack_mat_stats'
@@ -191,6 +210,37 @@ jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
   estarr = replicate(numblocks, est)
   h = rep(n/block_lengths, each = d1*d2)
   tau = h*totarr - (h-1)*loo_arr
+  xtau = (tau - estarr)^2 / (h-1)
+  var = apply(xtau, 1:2, mean, na.rm = na.rm)
+
+  namedList(est, var)
+}
+
+jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
+  # input is 3d array (n x n x m) with leave-one-out statistics
+  # output is list with jackknife means and jackknife variances
+  # should give same results as 'jack_mat_stats'
+
+  d1 = dim(loo_arr)[1]
+  d2 = dim(loo_arr)[2]
+  d3 = dim(loo_arr)[3]
+  bl_arr = (loo_arr*0+1) * rep(block_lengths, each = prod(dim(loo_arr)[1:2]))
+  n = apply(bl_arr, 1:2, sum, na.rm=T)
+  narr = replicate(d3, n)
+  w = 1-bl_arr/narr
+  if(is.null(tot)) tot = apply(loo_arr * w, 1:2, sum, na.rm=T)/apply(w, 1:2, sum, na.rm=T)
+  #if(is.null(tot)) tot = apply(loo_arr, 1:2, weighted.mean, 1-block_lengths/n, na.rm=na.rm)
+  # above line only valid when estimates are additive
+  numblocks = apply(bl_arr, 1:2, function(x) sum(!is.na(x)))
+  totarr = replicate(d3, tot)
+
+  est = apply(totarr - loo_arr, 1:2, mean, na.rm=na.rm) * numblocks +
+    apply(loo_arr*bl_arr, 1:2, sum, na.rm=T)/n
+    #apply(loo_arr, 1:2, weighted.mean, block_lengths, na.rm=na.rm)
+
+  estarr = replicate(dim(loo_arr)[3], est)
+  h = narr/bl_arr
+  tau = h*totarr - (h-1) * loo_arr
   xtau = (tau - estarr)^2 / (h-1)
   var = apply(xtau, 1:2, mean, na.rm = na.rm)
 
@@ -327,6 +377,24 @@ get_block_lengths = function(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE) {
 
 
 
+est_to_loo_old = function(arr, block_lengths = NULL) {
+  # turns block estimates into leave-one-block-out estimates
+  # assumes blocks are along 3rd dimension
+
+  if(is.null(block_lengths)) block_lengths = parse_number(dimnames(arr)[[3]])
+  nam = dimnames(arr)
+  dm = length(dim(arr))
+  if(dm == 0) arr = array(arr, c(1,1,length(arr)))
+  else if(dm == 2) arr = array(c(arr), c(nrow(arr),1,ncol(arr)))
+  tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
+  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
+  out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
+  if(dm == 0) out %<>% c
+  else if(dm == 2) out = matrix(c(out), dim(arr)[1])
+  dimnames(out) = nam
+  out
+}
+
 #' Turn per-block estimates into leave-one-out estimates
 #'
 #' This works for any statistics which, when computed across `N` blocks, are equal
@@ -346,7 +414,9 @@ est_to_loo = function(arr, block_lengths = NULL) {
   if(dm == 0) arr = array(arr, c(1,1,length(arr)))
   else if(dm == 2) arr = array(c(arr), c(nrow(arr),1,ncol(arr)))
   tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
-  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
+  bl = rep(block_lengths, each = length(tot))
+  if(any(is.na(arr))) rel_bl = bl / c(apply((arr*0+1)*bl, 1:2, sum, na.rm=T))
+  else rel_bl = bl / sum(block_lengths)
   out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
   if(dm == 0) out %<>% c
   else if(dm == 2) out = matrix(c(out), dim(arr)[1])
@@ -373,9 +443,10 @@ loo_to_est = function(arr, block_lengths = NULL) {
   dm = length(dim(arr))
   if(dm == 0) arr = array(arr, c(1,1,length(arr)))
   else if(dm == 2) arr = array(c(arr), c(nrow(arr),1,ncol(arr)))
-  rel_bl = block_lengths/sum(block_lengths)
-  tot = apply(arr, 1:2, weighted.mean, 1-rel_bl, na.rm=T)
-  rel_bl = rep(rel_bl, each = length(tot))
+  bl = (arr*0+1) * rep(block_lengths, each = prod(dim(arr)[1:2]))
+  if(any(is.na(arr))) rel_bl = bl / c(apply(bl, 1:2, sum, na.rm=T))
+  else rel_bl = bl / sum(block_lengths)
+  tot = apply(arr*(1-rel_bl), 1:2, sum, na.rm=T) / apply(array(1-rel_bl, dim(arr)), 1:2, sum, na.rm=T)
   out = (replicate(dim(arr)[3], tot) - arr * (1-rel_bl))/rel_bl
   if(dm == 0) out %<>% c
   else if(dm == 2) out = matrix(c(out), dim(arr)[1])

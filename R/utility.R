@@ -170,13 +170,13 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
     # ans = cpp_lbfgsb(parmat[i,], args[[1]], args[[2]], args[[3]], args[[4]], args[[5]], args[[6]], args[[8]])
     # cpp_lbfgsb is ~ 10% faster for large graphs (20 pops, 12 admixnodes), but very similar in speed for smaller ones.
     # only returns 'par' and 'value' at the moment
+    if(verbose) cat(paste0('\r', i, ' out of ', nset, '...'))
     tryCatch({
       ans = optim(par = parmat[i, ], fn = fn, gr = gr, lower = lower,
                   upper = upper, method = method, hessian = hessian,
                   control = control, args = args, ...)
       ansret[i, ] = c(ans$par, ans$value, ans$counts[1], ans$counts[2], ans$convergence)
     }, error = function(e) {if(!str_detect(e$message, 'constraints are inconsistent')) stop(e)})
-    if(verbose) cat(paste0('\r', i, ' out of ', nset))
   }
   if(verbose) cat('\n')
   if(all(is.na(ansret[,1]))) stop("Optimization unsuccessful (constraints inconsistent). Try increasing 'diag'.")

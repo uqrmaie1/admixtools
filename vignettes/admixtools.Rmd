@@ -57,7 +57,7 @@ $f_2$, $f_3$, and $f_4$ describe how populations are related to one another. All
 $f_2$ measures the amount of genetic drift that separates two populations. It is the expected squared difference in allele frequencies and can be estimated across $M$ SNPs as:
 
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2$$
-$A$ and $B$ are populations, and $a$ and $b$ are their allele frequencies.
+$A$ and $B$ are populations, and $a$ and $b$ are their allele frequencies at SNP $j$.
 
 In practice, the estimation of $f_2$ is more complicated than shown here, because it needs to account for low sample counts, missing data, and differences in ploidy. This is described [here](fstats.html).
 
@@ -168,6 +168,12 @@ If you want to try any of this without extracting and loading your own $f_2$-sta
 <br>
 
 ## *f*~3~ and *qp3Pop*
+
+There are three main uses of $f_3$-statistics:
+
+1. Testing whether a population is admixed: If $f_3(A; B, C)$ is negative, this suggests that $A$ is admixed between a population related to $B$ and one related to $C$.
+2. Estimating the relative divergence time for pairs of populations (outgroup $f_3$-statistics): Pairwise $F_{ST}$ and $f_2$ are simpler estimates of genetic distance or divergence time, but they are affected by differences in population size. If $O$ is an outgroup relative to all populations $i$ and $j$, then $f_3(O; i, j)$ will estimate the genetic distance between $O$ and the points of separation between $i$ and $j$ without being affected to drift that is specific to any population $i$ or $j$.
+3. Fitting admixture graphs: $f_3$-statistics of the form $f_3(O; i, j)$ for an arbitrary population $O$, and all pairs of $i$ and $j$ are used in *qpGraph*, which is described below.
 
 The original *ADMIXTOOLS* program for computing $f_3$-statistics is called *qp3Pop*. In *ADMIXTOOLS 2*, you can compute $f_3$-statistics like this:
 

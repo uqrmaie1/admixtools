@@ -4,7 +4,7 @@
 \alias{spr_leaves}
 \title{Modify a graph by regrafting a leaf}
 \usage{
-spr_leaves(graph, desimplify = TRUE, fix_outgroup = TRUE)
+spr_leaves(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

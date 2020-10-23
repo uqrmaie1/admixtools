@@ -4,12 +4,10 @@
 \alias{decomposed_tree_neighbors}
 \title{Find all trees within SPR distance of 1 of all graph component trees}
 \usage{
-decomposed_tree_neighbors(graph, desimplify = TRUE)
+decomposed_tree_neighbors(graph)
 }
 \arguments{
 \item{graph}{An admixture graph}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 }
 \value{
 A data frame with all trees

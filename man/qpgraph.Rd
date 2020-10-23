@@ -18,6 +18,7 @@ qpgraph(
   return_f4 = FALSE,
   f3precomp = NULL,
   f3basepop = NULL,
+  constrained = TRUE,
   ppinv = NULL,
   f2_blocks_test = NULL,
   verbose = FALSE

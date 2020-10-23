@@ -183,8 +183,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_opt_edge_lengths
-arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv, const arma::vec& f3_est, Function qpsolve, const arma::vec& lower, const arma::vec& upper, double fudge);
-RcppExport SEXP _admixtools_cpp_opt_edge_lengths(SEXP ppwts_2dSEXP, SEXP ppinvSEXP, SEXP f3_estSEXP, SEXP qpsolveSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP fudgeSEXP) {
+arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv, const arma::vec& f3_est, Function qpsolve, const arma::vec& lower, const arma::vec& upper, double fudge, bool constrained);
+RcppExport SEXP _admixtools_cpp_opt_edge_lengths(SEXP ppwts_2dSEXP, SEXP ppinvSEXP, SEXP f3_estSEXP, SEXP qpsolveSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP fudgeSEXP, SEXP constrainedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -195,7 +195,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type lower(lowerSEXP);
     Rcpp::traits::input_parameter< const arma::vec& >::type upper(upperSEXP);
     Rcpp::traits::input_parameter< double >::type fudge(fudgeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge));
+    Rcpp::traits::input_parameter< bool >::type constrained(constrainedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge, constrained));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -396,7 +397,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 7},
     {"_admixtools_cpp_get_weights_covariance", (DL_FUNC) &_admixtools_cpp_get_weights_covariance, 7},
     {"_admixtools_cpp_is_polymorphic", (DL_FUNC) &_admixtools_cpp_is_polymorphic, 1},
-    {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 7},
+    {"_admixtools_cpp_opt_edge_lengths", (DL_FUNC) &_admixtools_cpp_opt_edge_lengths, 8},
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
     {"_admixtools_cpp_get_pairindex", (DL_FUNC) &_admixtools_cpp_get_pairindex, 1},

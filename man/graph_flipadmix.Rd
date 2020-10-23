@@ -4,12 +4,10 @@
 \alias{graph_flipadmix}
 \title{Find all valid graphs which result from flipping one admixture edge}
 \usage{
-graph_flipadmix(graph, desimplify = TRUE)
+graph_flipadmix(graph)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
-
-\item{desimplify}{Separate admixture edges from drift edges (default is \code{TRUE})}
 }
 \value{
 A data frame with columns \code{from}, \code{to}, and \code{graph}

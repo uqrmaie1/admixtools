@@ -4,7 +4,7 @@
 \alias{delete_admix}
 \title{Delete an admixture edge}
 \usage{
-delete_admix(graph, from, to)
+delete_admix(graph, from = NULL, to = NULL)
 }
 \arguments{
 \item{graph}{An admixture graph}
@@ -20,5 +20,5 @@ Admixture graph with one deleted edge
 Delete an admixture edge
 }
 \seealso{
-\code{\link{insert_edge}}
+\code{\link{insert_admix}}
 }

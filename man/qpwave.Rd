@@ -27,7 +27,7 @@ qpwave(
 
 \item{right}{Right populations (outgroups)}
 
-\item{fudge}{value added to diagonal matrix elements before inverting}
+\item{fudge}{Value added to diagonal matrix elements before inverting}
 
 \item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
 of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.

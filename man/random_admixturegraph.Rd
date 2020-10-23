@@ -7,13 +7,13 @@
 random_admixturegraph(leaves, numadmix = 0, simple = FALSE, outpop = NULL)
 }
 \arguments{
-\item{leaves}{the names of the leaf nodes, or a number specifying how many leaf nodes there should be}
+\item{leaves}{Names of the leaf nodes, or a number specifying how many leaf nodes there should be}
 
-\item{numadmix}{the number of admixture events}
+\item{numadmix}{Number of admixture events}
 
-\item{simple}{should edges leading to admixture nodes consist of separate admix edges and normal edges}
+\item{simple}{Should edges leading to admixture nodes consist of separate admix edges and normal edges}
 
-\item{outpop}{the outgroup population}
+\item{outpop}{Outgroup population}
 }
 \description{
 This function randomly generates an admixture graph for a given set of leaf nodes

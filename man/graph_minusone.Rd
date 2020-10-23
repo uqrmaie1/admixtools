@@ -4,12 +4,10 @@
 \alias{graph_minusone}
 \title{Find all graphs which result from removing one admixture edge}
 \usage{
-graph_minusone(graph, desimplify = TRUE)
+graph_minusone(graph, ntry = Inf)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
-
-\item{desimplify}{Separate admixture edges from drift edges (default is \code{TRUE})}
 }
 \value{
 A data frame with columns \code{from}, \code{to}, and \code{graph}

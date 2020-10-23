@@ -4,14 +4,12 @@
 \alias{delete_leaf}
 \title{Remove population from graph}
 \usage{
-delete_leaf(graph, leaf, desimplify = TRUE)
+delete_leaf(graph, leaf)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
 \item{leaf}{Population to be removed}
-
-\item{desimplify}{Desimplify graph (\code{\link{desimplify_graph}})}
 }
 \value{
 Admixture graph with removed population

@@ -4,7 +4,7 @@
 \alias{spr_all}
 \title{Modify a graph by regrafting a subcomponent}
 \usage{
-spr_all(graph, desimplify = TRUE, fix_outgroup = TRUE)
+spr_all(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
