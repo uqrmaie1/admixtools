@@ -949,13 +949,14 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
     mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   adm = edges %>% filter(type == 'admix') %>% pull(to)
   dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
-    mutate(y = y - min(y)) %>% distinct %>% deframe
+    mutate(y = y - min(y) + 1) %>% distinct %>% deframe
   graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
   nodes = names(V(graph))
   leaves = get_leafnames(graph)
   leaves = intersect(nodes, leaves)
 
   if(shorten_admixed_leaves) {
+    # simulates the behavior of treemix where drift after admixture is not allowed
     admleaves = edges %>% filter(to %in% leaves, from %in% adm) %>% select(from, to) %>% deframe
     dates[admleaves] = 0.999 * dates[names(admleaves)]
   }
@@ -967,27 +968,44 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   popsize[setdiff(edges$from, edges$to)] = 1
   edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup
 
-  out = "import math\nimport numpy\nimport msprime\nimport multiprocessing"
+  out = "import math\nimport numpy\nimport msprime\nimport multiprocessing\n"
 
-  out = paste0(out, '\ngen = 29')
-  out = paste0(out, '\npops = [\n', paste0('  msprime.PopulationConfiguration(initial_size = ', round(neff*replace_na(popsize[nodes], neff*100), 2),
+  out = paste0(out, '\ngen = 29\nnsnps = int(', nsnps, ')')
+  if(length(neff) == 1) initsize = round(neff*replace_na(popsize[nodes], neff*100), 2)
+  else if(all(nodes %in% names(neff))) initsize = neff[nodes]
+  else stop("'neff' has to be a single number or a named vector with a number for each node!")
+  out = paste0(out, '\npops = [\n', paste0('  msprime.PopulationConfiguration(initial_size = ', initsize,
                                         ')', c(rep(',', length(nodes)-1), ''),
                                         ' #',(1:length(nodes))-1, ' ', nodes, '\n', collapse = '') ,']\n')
 
-  indnam = paste(rep(leaves, each = ind_per_pop), seq_len(ind_per_pop), sep = '_')
-  out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
-  out = paste0(out, '\nsamples = [\n', paste0('  msprime.Sample(', rep(match(leaves, nodes), each = 2*ind_per_pop)-1, ', ',
-                                              #dates[rep(leaves, each=2)]*time,
-                                              0,
-                                              '/gen)', c(rep(',', length(indnam)*2-1), ' '),
-                                                           ' # ', rep(indnam, each = 2), '\n', collapse = ''), ']\n')
-  out = paste0(out, '\nevents = [\n',
+  lnum = match(leaves, nodes) - 1
+
+
+  if(length(ind_per_pop) > 1) {
+    if(!isTRUE(all.equal(sort(names(ind_per_pop)), sort(leaves)))) stop("'ind_per_pop' has to be a single number or a named vector with a number for each leaf node!")
+
+  out = paste0(out,
+  '\nind_per_pop = [',paste0(ind_per_pop[leaves], collapse = ', '),']',
+  '\nss = [j for l in ind_per_pop for j in range(l)]',
+  '\npp = list(numpy.repeat([', paste0(lnum, collapse = ', '), '], ind_per_pop))',
+  '\npp2 = list(numpy.repeat(["', paste0(leaves, collapse = '", "'), '"], ind_per_pop))',
+  '\nsamples = [msprime.Sample(pp[i], 0/gen) for i in range(len(pp)) for j in range(2)]',
+  '\nindnam = [str(pp2[i]) + "_" + str(ss[i]+1) for i in range(len(pp2))]')
+
+  } else {
+
+    indnam = paste(rep(leaves, each = ind_per_pop), seq_len(ind_per_pop), sep = '_')
+    out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
+    out = paste0(out, '\n\nsamples = [msprime.Sample(j, 0/gen) for j in [', paste(lnum, collapse = ', '),'] for i in range(',2*ind_per_pop,')]')
+  }
+
+  out = paste0(out, '\n\nevents = [\n',
                paste0('  msprime.MassMigration(time = ',
                       edges$date*time, '/gen, source = ', edges$source,', destination = ', edges$dest,
                       ', proportion = ', edges$weight,')',
                       collapse = ',\n'), '\n]\n')
 
-  out = paste0(out, "\ngt = numpy.zeros((int(",nsnps,"),len(samples)//2), 'int')")
+  out = paste0(out, "\ngt = numpy.zeros((int(nsnps),len(samples)//2), 'int')")
 
   out = paste0(out, "\ndef f(i):", "\n  tree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")",
                "\n  if tree_sequence.genotype_matrix().shape[0] > 0:",
@@ -996,7 +1014,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
                "\n    return numpy.zeros((1, len(samples)//2))")
 
   out = paste0(out, "\np = multiprocessing.Pool(multiprocessing.cpu_count()-1)")
-  out = paste0(out, "\ngt = numpy.array(p.map(f, range(int(",nsnps,"))))")
+  out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")
 
   # out = paste0(out, "\nfor i in range(int(",nsnps,")):")
   # out = paste0(out, paste0("\n  tree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")"))
@@ -1008,8 +1026,8 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   out = paste0(out, "\n\nnumpy.savetxt('",outpref,".geno', gt, '%d', '')")
 
   out = paste0(out, "\n\nwith open('",outpref,".snp', 'w') as f:")
-  out = paste0(out, "\n  for i in range(int(",nsnps,")):")
-  out = paste0(out, "\n    bytes = f.write('.\\t1\\t' + str(i*50/float(",nsnps-1,")) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
+  out = paste0(out, "\n  for i in range(nsnps):")
+  out = paste0(out, "\n    bytes = f.write('.\\t1\\t' + str(i*50/float(nsnps-1)) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
   out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
   out = paste0(out, "\n  for i in range(len(indnam)):")
   out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')")
@@ -1021,8 +1039,8 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
 }
 
 
-f2_from_graph = function(graph, outpref = NULL, nsnps = 1e3,
-                         neff = 1000, ind_per_pop = 1, mutation_rate = 1e-5, time = 1e4, run = FALSE, python = 'python',
+f2_from_graph = function(graph, outpref = NULL, nsnps = 1e3, neff = 1000, ind_per_pop = 1,
+                         mutation_rate = 1e-5, time = 1e4, python = 'python',
                          cleanup = TRUE, blgsize = 0.05, verbose = TRUE) {
 
   if(is.null(outpref)) outpref = tempfile()

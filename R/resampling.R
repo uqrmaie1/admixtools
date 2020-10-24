@@ -494,12 +494,12 @@ est_to_boo = function(arr, nboot = dim(arr)[3], block_lengths = NULL) {
   lengths = block_lengths[sel]
   grp = rep(seq_len(nboot), each = numblocks)
   arr %>%
-    `*`(rep(block_lengths, each = prod(dim(arr)[1:2]))) %>%
+    magrittr::multiply_by(rep(block_lengths, each = prod(dim(arr)[1:2]))) %>%
     matrix(numblocks, byrow=T) %>%
     `[`(sel,) %>%
     rowsum(grp, na.rm=T) %>%
     #`/`(numblocks) %>%
-    `/`(c(tapply(lengths, grp, sum))) %>%
+    magrittr::divide_by(c(tapply(lengths, grp, sum))) %>%
     t %>%
     array(c(dim(arr)[1:2], nboot),
           dimnames = list(dimnames(arr)[[1]], dimnames(arr)[[2]], rep('l1', nboot))) %>%

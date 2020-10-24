@@ -165,7 +165,10 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
 
   stopifnot(class(leaves)[1] %in% c('numeric', 'character'))
-  if(length(leaves) == 1) leaves = paste0('l', 1:leaves)
+  if(length(leaves) == 1) {
+    if(leaves > length(LETTERS)) leaves = paste0('l', seq_len(leaves))
+    else leaves = LETTERS[seq_len(leaves)]
+  }
   #if(is.null(outpop)) outpop = sample(leaves, 1)
   graph = leaves %>%
     setdiff(outpop) %>%
