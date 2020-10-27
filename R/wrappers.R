@@ -955,7 +955,7 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 #' msprime_sim(results$edges)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000, ind_per_pop = 1,
-                       mutation_rate = 1e-3, time = 1e4, run = FALSE, shorten_admixed_leaves = FALSE) {
+                       mutation_rate = 1e-3, time = 1e4, run = FALSE, numcores = 1, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -1039,7 +1039,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
                "\n  else:",
                "\n    return numpy.zeros((1, len(samples)//2))")
 
-  out = paste0(out, "\n\np = multiprocessing.Pool(multiprocessing.cpu_count()-1)")
+  out = paste0(out, "\n\np = multiprocessing.Pool(int(min(multiprocessing.cpu_count(),", numcores,")))")
   out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")
 
   # out = paste0(out, "\nfor i in range(int(",nsnps,")):")
