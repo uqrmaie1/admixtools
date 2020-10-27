@@ -2355,7 +2355,7 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
 #' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
-find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10, numadmix = 0,
+find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
                         mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
                         verbose = TRUE, ...) {
 
@@ -2367,6 +2367,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
     graph = initgraph
   }
   qpgfun = function(...) qpgraph(f2_blocks, numstart = 1, ...)
+  stop_at = Sys.time() + stop_after
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
   allfuns = c(wfuns, dfuns, mutfuns)
@@ -2393,6 +2394,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
 
   for(i in seq_len(numgen)) {
 
+    if(best <= stopscore || !is.null(stop_after) && Sys.time() > stop_at) break
     if(verbose) {
       alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
       msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
