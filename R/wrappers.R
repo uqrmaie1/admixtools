@@ -502,7 +502,7 @@ run_admixtools = function(cmd, parsefun, outfile, printonly, verbose) {
   }
 }
 
-
+#' @export
 parse_fstats = function(outfile, denom1 = 1e3, denom2 = 1e7) {
   # parse Nick's qpGraph fstats file
 
@@ -627,7 +627,20 @@ parse_qpgraph_output = function(outfile, logfile = outfile) {
       select(-ff3fit) %>%
       mutate(pop2 = rep(pops[-1], each = numpop-1), pop3 = rep(pops[-1], numpop-1))
   } else {
-    f3 = NULL
+    mul = 1000
+    f3eststart = str_which(dat$X1, '^ff3:')[1]+2
+    f3estend = str_which(dat$X1, '^ff3sig\\*10:')[1]-2
+    f3sigstart = f3estend+4
+    f3sigend = f3sigstart + (f3estend-f3eststart)
+    f3fitstart = str_which(dat$X1, '^ff3fit:')[1]+2
+    f3fitend = f3fitstart + (f3estend-f3eststart)
+    fn = function(start, end) dat %>% slice(start:end) %>% pull(X1) %>% str_squish() %>%
+      str_sub(3) %>% str_split(' ') %>% unlist %>% as.numeric
+    f3 = expand_grid(pop2 = pops, pop3 = pops) %>% mutate(pop1 = pops[1], .before = 1) %>%
+      mutate(est = fn(f3eststart, f3estend)/mul, fit = fn(f3fitstart, f3fitend)/mul, se = fn(f3sigstart, f3sigend)/mul/10) %>%
+      mutate(diff = fit - est, z = diff/se)
+
+    #f3 = NULL
   }
 
   outlierstart = str_which(dat$X1, '^outliers:')[1]+2
@@ -928,17 +941,21 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 
 
 
-#' Generate msprime simulation code from admixture graph
+#' Simulate an admixture graph in msprime
 #' @export
-#' @param graph Graph as `igraph` object or edge list with columns 'from' and 'to' (optionally 'weight')
-#' @return msprime python code backbone
+#' @param graph Graph as `igraph` object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.
+#' @param outpref Prefix of output files
+#' @param nsnps The number of SNPs to simulate. All SNPs will be simulated independently of each other.
+#' @param neff Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
+#' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
+#' @param mutation_rate The default is set to a high value to obtain more polymorphic SNPs in order to speed up the simulation.
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' msprime_sim(results$edges)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000, ind_per_pop = 1,
-                       mutation_rate = 1e-3, time = 1e4, run = FALSE, shorten_admixed_leaves = FALSE, python = 'python') {
+                       mutation_rate = 1e-3, time = 1e4, run = FALSE, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -948,23 +965,33 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   edges %<>% add_count(to) %>%
     mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   adm = edges %>% filter(type == 'admix') %>% pull(to)
-  dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
-    mutate(y = y - min(y) + 1) %>% distinct %>% deframe
   graph = igraph::graph_from_edgelist(as.matrix(edges[,1:2]))
   nodes = names(V(graph))
   leaves = get_leafnames(graph)
   leaves = intersect(nodes, leaves)
 
-  if(shorten_admixed_leaves) {
-    # simulates the behavior of treemix where drift after admixture is not allowed
-    admleaves = edges %>% filter(to %in% leaves, from %in% adm) %>% select(from, to) %>% deframe
-    dates[admleaves] = 0.999 * dates[names(admleaves)]
+  if(length(time) == 1) {
+
+    dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
+      mutate(y = y - min(y) + 1) %>% distinct %>% deframe
+    if(shorten_admixed_leaves) {
+      # simulates the behavior of treemix where drift after admixture is not allowed
+      admleaves = edges %>% filter(to %in% leaves, from %in% adm) %>% select(from, to) %>% deframe
+      dates[admleaves] = 0.999 * dates[names(admleaves)]
+    }
+    edges %<>% mutate(date = dates[edges$to]*time)
+
+  } else {
+
+    edges %<>% left_join(enframe(time, 'from', 'date'), by = 'from')
+
   }
-  edges %<>% mutate(date = dates[edges$to], source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
+  edges %<>% mutate(source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
     arrange(date)
 
+  # continue here: popsize controls neff and adm weights?
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = ifelse(type == 'admix', 0.5, 1))
-  popsize = edges %>% filter(type != 'admix') %>% transmute(to, 1/weight) %>% deframe
+  popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
   popsize[setdiff(edges$from, edges$to)] = 1
   edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup
 
@@ -979,7 +1006,6 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
                                         ' #',(1:length(nodes))-1, ' ', nodes, '\n', collapse = '') ,']\n')
 
   lnum = match(leaves, nodes) - 1
-
 
   if(length(ind_per_pop) > 1) {
     if(!isTRUE(all.equal(sort(names(ind_per_pop)), sort(leaves)))) stop("'ind_per_pop' has to be a single number or a named vector with a number for each leaf node!")
@@ -1001,19 +1027,19 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
 
   out = paste0(out, '\n\nevents = [\n',
                paste0('  msprime.MassMigration(time = ',
-                      edges$date*time, '/gen, source = ', edges$source,', destination = ', edges$dest,
+                      edges$date, '/gen, source = ', edges$source,', destination = ', edges$dest,
                       ', proportion = ', edges$weight,')',
                       collapse = ',\n'), '\n]\n')
 
   out = paste0(out, "\ngt = numpy.zeros((int(nsnps),len(samples)//2), 'int')")
 
-  out = paste0(out, "\ndef f(i):", "\n  tree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")",
+  out = paste0(out, "\n\ndef f(i):", "\n  tree_sequence = msprime.simulate(population_configurations = pops, samples = samples, demographic_events = events, mutation_rate = ", mutation_rate,")",
                "\n  if tree_sequence.genotype_matrix().shape[0] > 0:",
                '\n    return (tree_sequence.genotype_matrix()[0,range(0,len(samples),2)] + tree_sequence.genotype_matrix()[0,range(1,len(samples),2)])',
                "\n  else:",
                "\n    return numpy.zeros((1, len(samples)//2))")
 
-  out = paste0(out, "\np = multiprocessing.Pool(multiprocessing.cpu_count()-1)")
+  out = paste0(out, "\n\np = multiprocessing.Pool(multiprocessing.cpu_count()-1)")
   out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")
 
   # out = paste0(out, "\nfor i in range(int(",nsnps,")):")
@@ -1030,24 +1056,27 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   out = paste0(out, "\n    bytes = f.write('.\\t1\\t' + str(i*50/float(nsnps-1)) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
   out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
   out = paste0(out, "\n  for i in range(len(indnam)):")
-  out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')")
+  out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')\n")
 
   outfilename = paste0(outpref, '.py')
   writeLines(out, outfilename)
 
-  if(run) system(paste(python, outfilename))
+
+  if(run != FALSE) {
+    if(isTRUE(run)) run = 'python'
+    system(paste(run, outfilename))
+  }
 }
 
 
 f2_from_graph = function(graph, outpref = NULL, nsnps = 1e3, neff = 1000, ind_per_pop = 1,
-                         mutation_rate = 1e-5, time = 1e4, python = 'python',
+                         mutation_rate = 1e-5, time = 1e4, run = 'python',
                          cleanup = TRUE, blgsize = 0.05, verbose = TRUE) {
 
   if(is.null(outpref)) outpref = tempfile()
   if(verbose) alert_info('Simulating data...\n')
   msprime_sim(graph, outpref = outpref, nsnps = nsnps,
-              neff = neff, ind_per_pop = ind_per_pop, mutation_rate = mutation_rate, time = time, run = TRUE,
-              python = python)
+              neff = neff, ind_per_pop = ind_per_pop, mutation_rate = mutation_rate, time = time, run = run)
 
   if(verbose) alert_info('Reading data...\n')
   f2_blocks = f2_from_geno(outpref, verbose = verbose, auto_only = FALSE, blgsize = blgsize)
@@ -1064,6 +1093,24 @@ f2_from_graph = function(graph, outpref = NULL, nsnps = 1e3, neff = 1000, ind_pe
 #   edges
 # }
 
+plot_ellout = function(evecfile, ellfile) {
+
+  evec = read_table2(evecfile, col_names = FALSE, skip = 1) %>%
+    transmute(id = X1, pop = X4, x = X2, y = X3)
+  dd = read_lines(ellfile)
+  samples = dd %>% str_subset('^sample:') %>% str_squish %>% word(2)
+  num = dd %>% str_subset('^ell') %>% str_squish %>% str_split(' ') %>% do.call(rbind, .) %>%
+    `[`(,-c(1,7)) %>% apply(2,as.numeric)
+  elldat = as_tibble(num, .name_repair = ~c('x0', 'y0', 'a', 'b', 'angle', 'ci')) %>%
+    mutate(id = samples, .before = 1)
+  evec %>% left_join(elldat %>% select(-x0, -y0), by = 'id') %>%
+    mutate(col = ifelse(is.na(a), pop, id)) %>%
+    ggplot() + geom_point(aes(x, y, col = col, shape = pop), size=1) +
+    ggforce::geom_ellipse(aes(x0=x, y0=y, a=a, b=b, angle=angle, fill = col, col = col), size=0.05, alpha = 0.05) +
+    theme(panel.background = element_blank(), axis.line = element_line(), legend.title = element_blank()) + xlab('Eigenvector 1') + ylab('Eigenvector 2') + guides(col='none')
+
+}
+
 parse_treemix_treeout = function(treeout) {
 
   dat = read_lines(treeout)
@@ -1071,7 +1118,7 @@ parse_treemix_treeout = function(treeout) {
   graph = graph_from_edgelist(edges)
   leaves = get_leafnames(graph)
 
-  nammap = graph %>% distances(setdiff(names(V(graph)), leaves), leaves, mode = 'out') %>%
+  nammap = graph %>% igraph::distances(setdiff(names(V(graph)), leaves), leaves, mode = 'out') %>%
     apply(1, function(x) paste0(sort(names(which(is.finite(x)))), collapse=',')) %>%
     enframe %>% select(2:1) %>% deframe %>% c(purrr::set_names(leaves))
 

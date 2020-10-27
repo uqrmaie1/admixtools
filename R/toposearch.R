@@ -108,8 +108,8 @@ unify_vertex_names_rec = function(graph, node, vnamemap, sep1 = '.', sep2 = '_')
     return(vnamemap)
   } else if(length(children) == 2) {
     leaves = get_leafnames(graph)
-    c1 = distances(graph, children[1], leaves) %>% paste(collapse='')
-    c2 = distances(graph, children[2], leaves) %>% paste(collapse='')
+    c1 = igraph::distances(graph, children[1], leaves) %>% paste(collapse='')
+    c2 = igraph::distances(graph, children[2], leaves) %>% paste(collapse='')
     if(c1 < c2) children %<>% rev
   }
 
@@ -2318,11 +2318,55 @@ rearrange_negadmix3 = function(graph, from, to) {
 }
 
 
+#' Find well fitting admixture graphs
+#'
+#' This function generates and evaluates admixture graphs in `numgen` iterations
+#' to find well fitting admixturegraphs.
+#' @export
+#' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
+#' @param numgraphs Number of graphs in each generation
+#' @param numgen Number of generations
+#' @param numadmix Number of admixture events within each graph. (Only relevant if `initgraph = NULL`)
+#' @param mutfuns Functions used to modify graphs. Defaults to the following:
+#' \itemize{
+#' \item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
+#' to a random other edge in the graph.
+#' \item \code{\link{spr_all}}: Subtree prune and regraft. Cuts any edge and attaches the new orphan node
+#' to a random other edge in the graph, keeping the number of admixture nodes constant.
+#' \item \code{\link{swap_leaves}}: Swaps two leaf nodes.
+#' \item \code{\link{move_admixedge_once}}: Moves an admixture edge to a nearby location.
+#' \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
+#' \item \code{\link{mutate_n}}: Apply `n` of the mutation functions in this list to a graph (defaults to 2).
+#' }
+#' @param verbose Print progress updates
+#' @param ... Additional arguments passed to \code{\link{qpgraph}}
+#' @return A nested data frame with one model per line
+#' @seealso \code{\link{qpgraph}}
+#' @examples
+#' \dontrun{
+#' pops = dimnames(example_f2_blocks)[[1]]
+#' initgraph = random_admixturegraph(pops, 2, outpop = 'Chimp.REF')
+#' res = find_graphs2(example_f2_blocks, initgraph, numgen = 100)
+#' res %>% slice_min(score)
+#' }
+#' \dontrun{
+#' # Making new mutation functions by modifying or combining existing ones:
+#' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
+#' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
+#' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+#' }
+find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10, numadmix = 0,
+                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
+                        verbose = TRUE, ...) {
 
-find_graphs2 = function(graph, qpgfun, numgen = 1, numgraphs = 10,
-                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n), verbose = TRUE) {
 
-  #wfuns = namedList(rearrange_negadmix1, rearrange_negadmix2, rearrange_negadmix3)
+  if(is.null(initgraph)) {
+    pops = dimnames(f2_blocks)[[1]]
+    graph = random_admixturegraph(pops, numadmix)
+  } else {
+    graph = initgraph
+  }
+  qpgfun = function(...) qpgraph(f2_blocks, numstart = 1, ...)
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
   allfuns = c(wfuns, dfuns, mutfuns)
@@ -2526,7 +2570,12 @@ replace_admix_with_random = function(graph, from = NULL, to = NULL) {
   g
 }
 
-
+#' Get unique hash of an admixture graph
+#'
+#' This can be used to check if two graphs are identical. For two graphs to be identical, the topology and leaf nodes have to match, but internal node names do not matter.
+#' @export
+#' @param graph Admixture graph in igraph format
+#' @return A hash string of the admixture graph
 graph_hash = function(graph) {
   # graph identity is determined by topology and leaf names, but not by internal names
 

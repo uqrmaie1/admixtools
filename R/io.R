@@ -2166,6 +2166,85 @@ extract_f2_qpfs = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, maxm
 }
 
 
+extract_f2_qpfs2 = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, maxmem = 8000,
+                           maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
+                           transitions = TRUE, transversions = TRUE,
+                           auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
+                           adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
+
+
+  sp = sort(pops)
+  popcombs = expand_grid(pop1 = sp, pop2 = sp, pop3 = sp, pop4 = sp)
+  pcf4 = popcombs %>%
+    rowwise %>%
+    filter(length(unique(c(pop1,pop2,pop3,pop4))) == 4) %>%
+    ungroup %>%
+    slice_sample(n = maxf4)
+  pcf2 = popcombs %>% filter(pop1 == pop3, pop2 == pop4, pop1 != pop2)
+
+  f4blockdat = f4blockdat_from_geno(pref, pcf4, allsnps = TRUE)
+
+  f4pass1 = pcf4 %>%
+    left_join(f4blockdat %>% admixtools:::f4blockdat_to_f4out(FALSE), by = c('pop1', 'pop2', 'pop3', 'pop4'))
+
+  denom = 2
+  f4dat = f4blockdat %>%
+    left_join(f4pass1 %>% select(pop1:pop4, se), by = paste0('pop', 1:4)) %>%
+    bind_rows(pcf2 %>% expand_grid(block = seq_len(max(f4blockdat$block))) %>%
+                mutate(est = NA, se = NA, n = NA, length = NA)) %>%
+    group_by(block, pop1, pop3) %>% mutate(e13 = weighted.mean(est, 1/se^2, na.rm=T), n13 = mean(n)) %>%
+    group_by(block, pop2, pop4) %>% mutate(e24 = weighted.mean(est, 1/se^2, na.rm=T), n24 = mean(n)) %>%
+    group_by(block, pop2, pop3) %>% mutate(e23 = weighted.mean(est, 1/se^2, na.rm=T), n23 = mean(n)) %>%
+    group_by(block, pop1, pop4) %>% mutate(e14 = weighted.mean(est, 1/se^2, na.rm=T), n14 = mean(n)) %>%
+    ungroup %>%
+    mutate(across(e13:n14, ~replace_na(., 0)),
+      est_avg = (e13 + e24 + e23 + e14) / denom,
+      n_avg =   (n13 + n24 + n23 + n14) / 4) %>%
+    select(-e13:-n14)
+
+  dat = f4blockdat %>%
+    filter(pop1 != pop3, pop2 != pop4) %>%
+    left_join(f4pass1 %>% select(pop1:pop4, se), by = paste0('pop', 1:4)) %>%
+    transmute(est = est/se, se, block,
+              p13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)),
+              p24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)),
+              p14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)),
+              p23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>%
+    expand_grid(pc) %>% mutate(coef = ((pc == p14) + (pc == p23) - (pc == p13) - (pc == p24))/se) %>%
+    pivot_wider(names_from = pc, values_from = coef) %>%
+    select(-p13:-p23, -se) %>%
+    group_by(block) %>% group_modify(~broom::tidy(lm(est ~ ., data = ., na.action=na.exclude))[-1, c('term', 'estimate')]) %>%
+    ungroup %>% mutate(term = str_replace_all(term, '`', '')) %>% separate(term, c('pop1', 'pop2'), ' ', T, T) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+    bind_rows(diags %>% transmute(pop1, pop2, block, estimate = est)) %>%
+    mutate(n = 0) %>%
+    arrange(block, pop2, pop1)
+  if(length(table(table(dat$block))) > 1) stop('Increase maxf4!')
+
+  d1 = d2 = length(pops)
+  d3 = length(unique(f4dat$block))
+  dm = c(d1, d2, d3)
+  nam = list(sp, sp, paste0('l', seq_len(d3)))
+  dat = f4dat %>% filter(pop1 == pop3, pop2 == pop4) %>%
+    bind_rows(expand_grid(pop1 = pops, block = seq_len(d3)) %>% mutate(pop2 = pop1, est_avg = 0)) %>%
+    arrange(block, pop2, pop1)
+
+  arrs = list(
+    f2 = array(dat$est_avg, dm, nam)[pops,pops,,drop=F],
+    afprod = array(dat$est_avg, dm, nam)[pops,pops,,drop=F],
+    counts = array(dat$n_avg, dm, nam)[pops,pops,,drop=F],
+    countsap = array(dat$n_avg, dm, nam)[pops,pops,,drop=F]
+  )
+
+  if(is.null(outdir)) return(arrs)
+  write_f2(arrs, outdir, overwrite = overwrite)
+  if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
+  #invisible(afdat$snpfile)
+}
+
+
+
+
 #' Convert graph to dot format
 #' @export
 #' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')

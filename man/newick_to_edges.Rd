@@ -4,7 +4,7 @@
 \alias{newick_to_edges}
 \title{Turn a newick format tree to a matrix of edges}
 \usage{
-newick_to_edges(newwick)
+newick_to_edges(newick, node = "R", edgemat = matrix(NA, 0, 2))
 }
 \arguments{
 \item{newick}{Tree in newick format.}

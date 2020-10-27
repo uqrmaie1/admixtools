@@ -2,7 +2,7 @@
 % Please edit documentation in R/wrappers.R
 \name{msprime_sim}
 \alias{msprime_sim}
-\title{Generate msprime simulation code from admixture graph}
+\title{Simulate an admixture graph in msprime}
 \usage{
 msprime_sim(
   graph,
@@ -13,17 +13,24 @@ msprime_sim(
   mutation_rate = 0.001,
   time = 10000,
   run = FALSE,
-  python = "python"
+  shorten_admixed_leaves = FALSE
 )
 }
 \arguments{
-\item{graph}{Graph as \code{igraph} object or edge list with columns 'from' and 'to' (optionally 'weight')}
-}
-\value{
-msprime python code backbone
+\item{graph}{Graph as \code{igraph} object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.}
+
+\item{outpref}{Prefix of output files}
+
+\item{nsnps}{The number of SNPs to simulate. All SNPs will be simulated independently of each other.}
+
+\item{neff}{Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.}
+
+\item{ind_per_pop}{The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.}
+
+\item{mutation_rate}{The default is set to a high value to obtain more polymorphic SNPs in order to speed up the simulation.}
 }
 \description{
-Generate msprime simulation code from admixture graph
+Simulate an admixture graph in msprime
 }
 \examples{
 \dontrun{

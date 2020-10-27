@@ -34,7 +34,10 @@ plot_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
 #' plotly_comparison(fit1, fit2)
 plotly_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
-  p = plot_comparison(out1, out2, name1 = NULL, name2 = NULL)
+
+  if(is.null(name1)) name1 = enexpr(out1)
+  if(is.null(name2)) name2 = enexpr(out2)
+  p = plot_comparison(out1, out2, name1 = name1, name2 = name2)
   plotly::ggplotly(p)
 }
 
