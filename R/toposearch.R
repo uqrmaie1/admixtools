@@ -372,6 +372,22 @@ shorten_admixed_leaves = function(graph) {
     set_vertex_attr('name', parents[ind], leaves[ind])
 }
 
+restore_admixed_leaves = function(graph) {
+
+  # keep terminal branch only for leaves which are non-admixed
+
+  leaves = get_leafnames(graph)
+  adm = names(which(igraph::degree(restm, mode = 'in') == 2)) %>%
+    intersect(leaves)
+  if(length(adm) == 0) return(graph)
+  nam = paste0('adm_before_', adm)
+
+  graph %>%
+    igraph::set_vertex_attr('name', adm, nam) %>%
+    igraph::add_vertices(1, attr = list(name = adm)) %>%
+    igraph::add_edges(interleave(nam, adm))
+}
+
 
 newnodenam = function(newnam, current) {
   # this function takes a vector of proposed new node names (newnam), checks if they already exist,
@@ -2629,11 +2645,15 @@ path_intersections = function(graph) {
     mutate(is = list(intersect(path, path2)), islen = length(is), isstr = paste0(is, collapse = ' '),
            admtot = length(union(admnodes, admnodes2)), id4 = paste(sort(c(id, id2)), collapse = ' ')) %>%
     filter(islen > 0) %>%
+    group_by(from, to, from2, to2) %>%
+    mutate(uniq = list(names(which(table(unlist(is))==1)))) %>%
+    rowwise %>%
+    mutate(allunique = all(is %in% uniq)) %>%
     ungroup
 
 }
 
-resolve_paths = function(graph) {
+unidentifiable_admixture = function(graph) {
 
   leaves = graph %>% get_leafnames
   adm = names(which(degree(graph, mode = 'in') > 1))
@@ -2641,19 +2661,21 @@ resolve_paths = function(graph) {
   pis = path_intersections(graph)
 
   for(i in 1:10) {
+    if(length(unresolved_adm) == 0 || length(resolvedadm) == 0) break
+
     pis %<>% rowwise %>%
       mutate(unresolved = list(intersect(unresolved_adm, union(admnodes, admnodes2))), unum = length(unresolved)) %>%
       ungroup
 
     resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
-    resolved1 = pis %>% filter(unum == 1, islen > 0) %>% pull(isstr) %>% unique
+    resolved1 = pis %>% filter(unum == 1, islen > 0, allunique) %>% pull(isstr) %>% unique
 
     resolvedadm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1) %$%
       unique(unlist(c(admnodes, admnodes2)))
 
     unresolved_adm %<>% setdiff(resolvedadm)
   }
-
+  unresolved_adm
 }
 
 paths_through = function(graph, leaves, node) {
@@ -2664,7 +2686,8 @@ paths_through = function(graph, leaves, node) {
   paths = all_simple_paths(graph, node, leaves, mode = 'out') %>%
     map(names)
 
-  expand_grid(up = paths %>% keep(~.[[2]] == nl), down = paths %>% keep(~.[[2]] == nr))
+  expand_grid(up = paths %>% keep(~.[[2]] == nl), down = paths %>% keep(~.[[2]] == nr)) %>%
+    bind_rows(rename(., up=down, down=up))
 }
 
 pair_paths = function(graph) {
