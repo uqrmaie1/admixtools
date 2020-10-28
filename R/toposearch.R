@@ -384,7 +384,7 @@ restore_admixed_leaves = function(graph) {
 
   graph %>%
     igraph::set_vertex_attr('name', adm, nam) %>%
-    igraph::add_vertices(1, attr = list(name = adm)) %>%
+    igraph::add_vertices(length(adm), attr = list(name = adm)) %>%
     igraph::add_edges(interleave(nam, adm))
 }
 
