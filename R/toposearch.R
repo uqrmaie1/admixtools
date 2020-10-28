@@ -2655,13 +2655,15 @@ path_intersections = function(graph) {
 
 unidentifiable_admixture = function(graph) {
 
+  stopifnot(is_valid(graph) && is_simplified(graph))
+
   leaves = graph %>% get_leafnames
   adm = names(which(degree(graph, mode = 'in') > 1))
   unresolved_adm = adm
   pis = path_intersections(graph)
 
   for(i in 1:10) {
-    if(length(unresolved_adm) == 0 || length(resolvedadm) == 0) break
+    if(length(unresolved_adm) == 0) break
 
     pis %<>% rowwise %>%
       mutate(unresolved = list(intersect(unresolved_adm, union(admnodes, admnodes2))), unum = length(unresolved)) %>%
@@ -2670,10 +2672,12 @@ unidentifiable_admixture = function(graph) {
     resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
     resolved1 = pis %>% filter(unum == 1, islen > 0, allunique) %>% pull(isstr) %>% unique
 
-    resolvedadm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1) %$%
+    resolved_adm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1) %$%
       unique(unlist(c(admnodes, admnodes2)))
 
-    unresolved_adm %<>% setdiff(resolvedadm)
+    if(length(resolved_adm) == 0) break
+
+    unresolved_adm %<>% setdiff(resolved_adm)
   }
   unresolved_adm
 }
