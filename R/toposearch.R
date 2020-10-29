@@ -220,33 +220,6 @@ simplify_graph = function(graph) {
   graph
 }
 
-X_to_H = function(graph) {
-
-  crosses = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 2))
-  for(i in seq_along(crosses)) {
-    nam = newnodenam(crosses[i], names(V(graph)))
-    parents = names(neighbors(graph, crosses[i], mode = 'in'))
-    graph %<>% igraph::add_vertices(1, name = nam) %>%
-      add_edges(c(parents[1], nam, parents[2], nam, nam, crosses[i])) %>%
-      delete_edges(paste0(parents, '|', crosses[i]))
-  }
-  graph
-}
-
-H_to_X = function(graph) {
-  # keeps child names
-
-  adm = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 1))
-  children = names(neighbors(graph, adm, mode = 'out'))
-  ind = which(degree(graph, children, mode = 'out') == 2)
-  for(i in seq_along(ind)) {
-    parents = names(neighbors(graph, adm[i], mode = 'in'))
-    graph %<>% delete_vertices(adm[i]) %>%
-      add_edges(c(parents[1], children[i], parents[2], children[i]))
-  }
-  graph
-}
-
 #' Add two nodes before each admixture node
 #'
 #' This is used to revert simplify_graph.
@@ -279,6 +252,54 @@ desimplify_graph = function(graph) {
   if(convmat) graph = igraph::as_edgelist(graph)
   graph
 }
+
+
+X_to_H = function(graph) {
+
+  crosses = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 2))
+  for(i in seq_along(crosses)) {
+    nam = newnodenam(crosses[i], names(V(graph)))
+    parents = names(neighbors(graph, crosses[i], mode = 'in'))
+    graph %<>% igraph::add_vertices(1, name = nam) %>%
+      add_edges(c(parents[1], nam, parents[2], nam, nam, crosses[i])) %>%
+      delete_edges(paste0(parents, '|', crosses[i]))
+  }
+  graph
+}
+
+H_to_X = function(graph) {
+  # keeps child names
+
+  adm = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 1))
+  children = names(neighbors(graph, adm, mode = 'out'))
+  ind = which(degree(graph, children, mode = 'out') == 2)
+  for(i in seq_along(ind)) {
+    parents = names(neighbors(graph, adm[i], mode = 'in'))
+    graph %<>% delete_vertices(adm[i]) %>%
+      add_edges(c(parents[1], children[i], parents[2], children[i]))
+  }
+  graph
+}
+
+merge_nested_admix = function(graph) {
+
+  leaves = get_leafnames(graph)
+
+  while(TRUE) {
+    adm = names(which(degree(graph, mode = 'in') > 1))
+    admchildren = map_chr(adm, ~names(neighbors(graph, ., mode = 'out')))
+    both = which(admchildren %in% adm)
+    if(length(both) == 0) break
+    parent = adm[both[1]]
+    child = admchildren[both[1]]
+    grandparents = names(neighbors(graph, parent, mode = 'in'))
+    graph %<>%
+      delete_vertices(parent) %>%
+      add_edges(interleave(grandparents, rep(child, length(grandparents))))
+  }
+  graph
+}
+
 
 split_graph = function(graph) {
   # removes admixture nodes from an admixturegraph
@@ -377,7 +398,7 @@ restore_admixed_leaves = function(graph) {
   # keep terminal branch only for leaves which are non-admixed
 
   leaves = get_leafnames(graph)
-  adm = names(which(igraph::degree(restm, mode = 'in') == 2)) %>%
+  adm = names(which(igraph::degree(graph, mode = 'in') == 2)) %>%
     intersect(leaves)
   if(length(adm) == 0) return(graph)
   nam = paste0('adm_before_', adm)
@@ -2672,7 +2693,7 @@ unidentifiable_admixture = function(graph) {
     resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
     resolved1 = pis %>% filter(unum == 1, islen > 0, allunique) %>% pull(isstr) %>% unique
 
-    resolved_adm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1) %$%
+    resolved_adm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1, allunique) %$%
       unique(unlist(c(admnodes, admnodes2)))
 
     if(length(resolved_adm) == 0) break

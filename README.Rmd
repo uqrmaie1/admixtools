@@ -37,6 +37,7 @@ A new, lightning fast implementation of [*ADMIXTOOLS*](https://github.com/DReich
   + Simultaneous exploration of many *qpAdm* models
   + Unbiased comparison of any two *qpGraph* models using out-of-sample scores
   + Jackknife and bootstrap standard errors and confidence intervals for any *qpAdm*, *qpWave*, and *qpGraph* parameters
+  + Interface with *msprime* makes it easy to [simulate](https://uqrmaie1.github.io/admixtools/articles/simulations.html) genetic data under an admixture graph
 * Full support for genotype data in *PACKEDANCESTRYMAP/EIGENSTRAT* format and *PLINK* format
 * Wrapper functions around the original *ADMIXTOOLS* software (see also [admixr](https://bodkan.net/admixr/index.html))
 <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->

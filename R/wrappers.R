@@ -955,7 +955,7 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 #' msprime_sim(results$edges)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000, ind_per_pop = 1,
-                       mutation_rate = 1e-3, time = 1e4, run = FALSE, numcores = 1, shorten_admixed_leaves = FALSE) {
+                       mutation_rate = 1e-3, time = 1000, run = FALSE, numcores = 1, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -997,7 +997,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
 
   out = "import math\nimport numpy\nimport msprime\nimport multiprocessing\n"
 
-  out = paste0(out, '\ngen = 29\nnsnps = int(', nsnps, ')')
+  out = paste0(out, '\nnsnps = int(', nsnps, ')')
   if(length(neff) == 1) initsize = round(neff*replace_na(popsize[nodes], neff*100), 2)
   else if(all(nodes %in% names(neff))) initsize = neff[nodes]
   else stop("'neff' has to be a single number or a named vector with a number for each node!")
@@ -1015,19 +1015,19 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   '\nss = [j for l in ind_per_pop for j in range(l)]',
   '\npp = list(numpy.repeat([', paste0(lnum, collapse = ', '), '], ind_per_pop))',
   '\npp2 = list(numpy.repeat(["', paste0(leaves, collapse = '", "'), '"], ind_per_pop))',
-  '\nsamples = [msprime.Sample(pp[i], 0/gen) for i in range(len(pp)) for j in range(2)]',
+  '\nsamples = [msprime.Sample(pp[i], 0) for i in range(len(pp)) for j in range(2)]',
   '\nindnam = [str(pp2[i]) + "_" + str(ss[i]+1) for i in range(len(pp2))]')
 
   } else {
 
     indnam = paste(rep(leaves, each = ind_per_pop), seq_len(ind_per_pop), sep = '_')
     out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
-    out = paste0(out, '\n\nsamples = [msprime.Sample(j, 0/gen) for j in [', paste(lnum, collapse = ', '),'] for i in range(',2*ind_per_pop,')]')
+    out = paste0(out, '\n\nsamples = [msprime.Sample(j, 0) for j in [', paste(lnum, collapse = ', '),'] for i in range(',2*ind_per_pop,')]')
   }
 
   out = paste0(out, '\n\nevents = [\n',
                paste0('  msprime.MassMigration(time = ',
-                      edges$date, '/gen, source = ', edges$source,', destination = ', edges$dest,
+                      edges$date, ', source = ', edges$source,', destination = ', edges$dest,
                       ', proportion = ', edges$weight,')',
                       collapse = ',\n'), '\n]\n')
 

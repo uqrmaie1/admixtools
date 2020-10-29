@@ -39,6 +39,9 @@ fit of a new *qpGraph* model:
         out-of-sample scores
       - Jackknife and bootstrap standard errors and confidence intervals
         for any *qpAdm*, *qpWave*, and *qpGraph* parameters
+      - Interface with *msprime* makes it easy to
+        [simulate](https://uqrmaie1.github.io/admixtools/articles/simulations.html)
+        genetic data under an admixture graph
   - Full support for genotype data in *PACKEDANCESTRYMAP/EIGENSTRAT*
     format and *PLINK* format
   - Wrapper functions around the original *ADMIXTOOLS* software (see
