@@ -283,12 +283,13 @@ H_to_X = function(graph) {
 
 merge_nested_admix = function(graph) {
 
+  graph %<>% X_to_H
   leaves = get_leafnames(graph)
 
   while(TRUE) {
-    adm = names(which(degree(graph, mode = 'in') > 1))
+    adm = names(which(degree(graph, mode = 'in') > 1)) %>% setdiff(leaves)
     admchildren = map_chr(adm, ~names(neighbors(graph, ., mode = 'out')))
-    both = which(admchildren %in% adm)
+    both = which(admchildren %in% names(which(degree(graph, admchildren, mode = 'in') > 1)))
     if(length(both) == 0) break
     parent = adm[both[1]]
     child = admchildren[both[1]]
@@ -297,7 +298,7 @@ merge_nested_admix = function(graph) {
       delete_vertices(parent) %>%
       add_edges(interleave(grandparents, rep(child, length(grandparents))))
   }
-  graph
+  graph %<>% H_to_X
 }
 
 
@@ -398,7 +399,7 @@ restore_admixed_leaves = function(graph) {
   # keep terminal branch only for leaves which are non-admixed
 
   leaves = get_leafnames(graph)
-  adm = names(which(igraph::degree(graph, mode = 'in') == 2)) %>%
+  adm = names(which(igraph::degree(graph, mode = 'in') > 1)) %>%
     intersect(leaves)
   if(length(adm) == 0) return(graph)
   nam = paste0('adm_before_', adm)
@@ -1898,7 +1899,9 @@ split_multifurcations = function(graph) {
 
   # probably doesn't work for nodes with more than 2 or 3 incoming edges
 
-  stopifnot(class(graph)[1] == 'matrix')
+  ig = class(graph)[1] == 'igraph'
+  if(ig) graph %<>% igraph::as_edgelist()
+
   multi = names(which(table(graph[,1]) > 2))
   if(ncol(graph) == 2) graph = cbind(graph, NA, NA)
 
@@ -1930,9 +1933,11 @@ split_multifurcations = function(graph) {
     graph %<>% rbind(cbind(newnam, graph[rows, 1], '0', '1e-9'))
   }
 
-  graph %>%
+  graph %<>%
     as_tibble(.name_repair = ~c('from', 'to', 'lower', 'upper')) %>%
     type_convert(col_types = cols())
+  if(ig) graph %<>% edges_to_igraph()
+  graph
 }
 
 
