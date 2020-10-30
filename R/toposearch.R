@@ -298,7 +298,7 @@ merge_nested_admix = function(graph) {
       delete_vertices(parent) %>%
       add_edges(interleave(grandparents, rep(child, length(grandparents))))
   }
-  graph %<>% H_to_X
+  graph #%<>% H_to_X
 }
 
 
