@@ -2436,7 +2436,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
 
   for(i in seq_len(numgen)) {
 
-    if(best <= stopscore || !is.null(stop_after) && Sys.time() > stop_at) break
+    if(best <= stopscore || gimp > 15 || !is.null(stop_after) && Sys.time() > stop_at) break
     if(verbose) {
       alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
       msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
