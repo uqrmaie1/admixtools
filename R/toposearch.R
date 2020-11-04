@@ -1,5 +1,5 @@
 
-# number of all binary trees with a given number of leaf nodes
+# number of all binary trees with a given number of leaf nodes (== doublefactorial(2*n-3))
 numtrees = function(n) factorial(2*n-2)/(2^(n-1)*factorial(n-1))
 
 # number of all binary tree topologies
@@ -18,6 +18,17 @@ numtreesadmix = function(n, nadmix) numtrees(n) * numadmixplacements(2*n-2, nadm
 numadmixplacements = function(numedges, nadmix) {
   if(nadmix == 0) return(1)
   choose(numedges, 2) * numadmixplacements(numedges+3, nadmix-1)
+}
+
+doublefactorial = function(n) {
+  if(n %% 2 == 0) {
+    k = n/2
+    out = 2^k*factorial(k)
+  } else {
+    k = (n+1)/2
+    out = factorial(2*k-1)/(2^(k-1)*factorial(k-1))
+  }
+  out
 }
 
 #' Count number of admixture nodes
@@ -256,12 +267,12 @@ desimplify_graph = function(graph) {
 
 X_to_H = function(graph) {
 
-  crosses = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 2))
+  crosses = names(which(degree(graph, mode = 'in') > 1 & degree(graph, mode = 'out') > 1))
   for(i in seq_along(crosses)) {
     nam = newnodenam(crosses[i], names(V(graph)))
     parents = names(neighbors(graph, crosses[i], mode = 'in'))
     graph %<>% igraph::add_vertices(1, name = nam) %>%
-      add_edges(c(parents[1], nam, parents[2], nam, nam, crosses[i])) %>%
+      add_edges(c(interleave(parents, rep(nam, length(parents))), nam, crosses[i])) %>%
       delete_edges(paste0(parents, '|', crosses[i]))
   }
   graph
@@ -270,13 +281,13 @@ X_to_H = function(graph) {
 H_to_X = function(graph) {
   # keeps child names
 
-  adm = names(which(degree(graph, mode = 'in') == 2 & degree(graph, mode = 'out') == 1))
+  adm = names(which(degree(graph, mode = 'in') > 1 & degree(graph, mode = 'out') == 1))
   children = names(neighbors(graph, adm, mode = 'out'))
   ind = which(degree(graph, children, mode = 'out') == 2)
   for(i in seq_along(ind)) {
     parents = names(neighbors(graph, adm[i], mode = 'in'))
     graph %<>% delete_vertices(adm[i]) %>%
-      add_edges(c(parents[1], children[i], parents[2], children[i]))
+      add_edges(interleave(parents, rep(children[i], length(parents))))
   }
   graph
 }
