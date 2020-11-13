@@ -29,6 +29,10 @@ cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2) {
     .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2)
 }
 
+row_prods <- function(x) {
+    .Call('_admixtools_row_prods', PACKAGE = 'admixtools', x)
+}
+
 cpp_opt_A <- function(B, xvec, qinv, nr, fudge) {
     .Call('_admixtools_cpp_opt_A', PACKAGE = 'admixtools', B, xvec, qinv, nr, fudge)
 }

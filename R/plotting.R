@@ -115,9 +115,9 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
     gl = geom_label(data=pdat$nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
   } else {
-    #gs = geom_segment(aes_string(linetype = 'type'), col = 'grey',
-    #                  arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(label)'),
+    # gs = geom_segment(aes_string(linetype = 'type', col = "as.factor((to %in% c('X1', 'X2') & name %in% c('AB1', 'AB2')) + (name == 'AB1' & to == 'X1'))"),
+    #                   arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+    gs = geom_segment(aes_string(linetype = 'type'),
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
     gl = geom_label(data=pdat$nodes, aes_string(label = 'name'), col = 'black', size = textsize)
   }
@@ -135,7 +135,7 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
     xlab('') + ylab('') +
     scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle(title) +
-    scale_x_continuous(expand = c(0.15, 0.15))
+    scale_x_continuous(expand = c(0.15, 0.15)) #+ scale_color_manual(values = c('black', 'red', 'blue'))
   plt
 }
 

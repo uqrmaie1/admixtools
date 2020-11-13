@@ -10,6 +10,8 @@ find_graphs2(
   numgen = 1,
   numgraphs = 10,
   numadmix = 0,
+  stopscore = 0,
+  stop_after = NULL,
   mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
     flipadmix_random, mutate_n),
   verbose = TRUE,

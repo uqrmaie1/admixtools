@@ -924,8 +924,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   }
   if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".')
 
-
-  afdat = anygeno_to_aftable(pref, inds = inds, pops = union(pops, pops2), format = format,
+  if(is.null(inds)) pops = union(pops, pops2)
+  afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
   afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
                                   transitions = transitions, transversions = transversions,

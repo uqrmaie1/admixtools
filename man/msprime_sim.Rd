@@ -11,8 +11,9 @@ msprime_sim(
   neff = 1000,
   ind_per_pop = 1,
   mutation_rate = 0.001,
-  time = 10000,
+  time = 1000,
   run = FALSE,
+  numcores = 1,
   shorten_admixed_leaves = FALSE
 )
 }

@@ -25,7 +25,7 @@ $f_2$ is the expected squared difference in allele frequencies between two popul
 In the simplest case, we can estimate $f_2$ across $M$ SNPs like this:
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}$$
 
-$f_2$ is closely related to the more widely used pairwise $F_{ST}$. $f_2$ is the genetic variance between populations, and $F_{ST}$ is the ratio of between-population variance ($f_2$) to total variance.
+$f_2$ is closely related to the more widely used pairwise $F_{ST}$. $f_2$ is the genetic variance between populations, and $F_{ST}$ is the ratio of between-population variance ($f_2$) to total variance (which is itself the sum of between- and average within- population variance).
 
 $$F_{ST}(A, B) = \frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}} = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}$$
 
@@ -75,7 +75,7 @@ D(A, B; C, D) &= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\
 \end{aligned}
 \end{equation}
 $$
-Here, $P(ABBA)$ is the probability of observing the same allele in populations $A$ and $D$, and a different one in $B$ and $C$, and $P(BABA)$ is the probability of observing the same allele in populations $A$ and $C$, and a different one in $B$ and $D$.
+Here, $P(ABBA)$ is the probability of observing the same allele in populations $A$ and $D$, and a different one in $B$ and $C$, and $P(BABA)$ is the probability of observing the same allele in populations $A$ and $C$, and a different one in $B$ and $D$. Expressed in terms of allele frequencies, $P(ABBA)_j = (1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j$, and similar for $P(BABA)$.
 
 Naively one might think that estimating $f_4$ without bias is at least as difficult as estimating $f_2$ without bias, but that is not the case. Since each population is represented in $f_4$ through two $f_2$ terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor $\frac{p(1-p)}{n-1}$, which is not necessary when estimating $f_4$.
 
@@ -104,11 +104,11 @@ There are at least three potential sources of bias in the estimation of *f*-stat
     
 [2. Bias due to missing data](#bias-due-to-missing-data)
     
-  This can be a problem when dealing with populations with lots of missing data, and involves a tradeoff between the [type I and type II error rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors).
+  This can be a problem when dealing with populations with lots of missing data, and involves a trade-off between the [type I and type II error rate](https://en.wikipedia.org/wiki/Type_I_and_type_II_errors): Using only SNPs which are present in all populations reduces the probability of bias, but also reduces power, while using SNPs which are missing in some or most populations has the opposite effect. Problems due to missing data only arise when SNPs in some populations are not missing at random, and the mechanisms by which biases can arise are the same as in Biases due to SNP ascertainment.
     
 [3. Bias due to SNP ascertainment](#bias-due-to-snp-ascertainment)
 
-  This doesn't seem to be a major problem in practice, but it's good to know about it.
+The theory behind *f*-statistics assumes that SNPs have either not been ascertained at all, or that they have been ascertained to be heterozygous in a population which is known to be an outgroup. By definition SNPs are polymorphisms that are common in some population. This already represents an ascertainment, so no ascertainment means using all sequenced sites. Many types of ascertainment, such as using certain panels of common SNPs, are robust to biases in most analyses, but there are exceptions to this rule. Below we illustrate how SNP ascertainment can bias results.
     
 
 ### Bias due to inaccurate allele frequency estimates

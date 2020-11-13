@@ -107,6 +107,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// row_prods
+NumericVector row_prods(NumericMatrix x);
+RcppExport SEXP _admixtools_row_prods(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(row_prods(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_opt_A
 arma::mat cpp_opt_A(const arma::mat& B, const arma::mat& xvec, const arma::mat& qinv, int nr, double fudge);
 RcppExport SEXP _admixtools_cpp_opt_A(SEXP BSEXP, SEXP xvecSEXP, SEXP qinvSEXP, SEXP nrSEXP, SEXP fudgeSEXP) {
@@ -392,6 +403,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_outer_array_plus", (DL_FUNC) &_admixtools_cpp_outer_array_plus, 2},
     {"_admixtools_cpp_outer_array_minus", (DL_FUNC) &_admixtools_cpp_outer_array_minus, 2},
     {"_admixtools_cpp_mats_to_f2_arr", (DL_FUNC) &_admixtools_cpp_mats_to_f2_arr, 4},
+    {"_admixtools_row_prods", (DL_FUNC) &_admixtools_row_prods, 1},
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
     {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 7},

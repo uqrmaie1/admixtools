@@ -425,3 +425,47 @@ average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
 }
 
 
+#' Estimate joint allele frequency spectrum
+#'
+#' @export
+#' @param afs A matrix or data frame of allele frequencies
+#' @return A data frame with columns `pattern` and `proportion`
+#' @examples
+#' \dontrun{
+#' dat = plink_to_afs('/my/plink/file', pops = c('pop1', 'pop2', 'pop3', 'pop4', 'pop5'))
+#'
+#' # Spectrum across all SNPs
+#' joint_spectrum(dat$afs)
+#'
+#' # Stratify by allele frequency in one population
+#' dat$afs %>% as_tibble %>% select(1:4) %>%
+#'   group_by(grp = cut(pop1, 10)) %>%
+#'   group_modify(joint_spectrum) %>%
+#'   ungroup
+#'
+#' # Stratify by mutation class
+#' dat$afs %>% as_tibble %>% select(1:4) %>%
+#'   mutate(mut = paste(dat$snpfile$A1, dat$snpfile$A2)) %>%
+#'   group_by(mut) %>%
+#'   group_modify(joint_spectrum) %>%
+#'   ungroup
+#' }
+joint_spectrum = function(afs, ...) {
+
+  afs %<>% as.matrix
+  npop = ncol(afs)
+  ps = power_set(seq_len(npop))
+  allanc = rep('A', npop)
+  names = ps %>% map(~{x = allanc; x[.] = 'B'; x}) %>%
+    prepend(list(allanc)) %>%
+    map_chr(~paste(., collapse=''))
+  snpcounts = ps %>%
+    map(~row_prods(afs[,.,drop=F]) * row_prods(1-afs[,-.,drop=F])) %>%
+    prepend(list(row_prods(1-afs))) %>%
+    bind_cols(.name_repair = ~names)
+  snpcounts %>%
+    colMeans(na.rm = TRUE) %>%
+    enframe('pattern', 'proportion')
+}
+
+

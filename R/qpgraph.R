@@ -593,11 +593,11 @@ compare_fits = function(scores1, scores2) {
   diff = stats$est
   se = sqrt(stats$var)
   z = diff/se
-  p = ztop(z)
+  p = ztop(z)[1]
   frac = mean(scorediff < 0)
-  p_emp = min(frac, 1-frac)*2
-  p_emp = max(p_emp, 1/length(scorediff))
-  namedList(diff, se, z, p, p_emp, ci_low, ci_high)
+  p_emp_nocorr = min(frac, 1-frac)*2
+  p_emp = max(p_emp_nocorr, 1/length(scorediff))
+  namedList(diff, se, z, p, p_emp, p_emp_nocorr, ci_low, ci_high)
 }
 
 
