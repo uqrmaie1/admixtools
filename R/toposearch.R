@@ -195,16 +195,7 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
 }
 
 
-#' Remove redundant edges
-#'
-#' Nodes with in and out degree of one will be removed.
-#' @param graph an igraph object
-#' @export
-#' @examples
-#' simple = simplify_graph(example_igraph)
-#' plot_graph(example_igraph)
-#' plot_graph(simple)
-simplify_graph = function(graph) {
+simplify_graph_old = function(graph) {
   # removes redundant nodes
 
   if(is_simplified(graph)) return(graph)
@@ -230,6 +221,40 @@ simplify_graph = function(graph) {
   if(convmat) graph = igraph::as_edgelist(graph)
   graph
 }
+
+#' Remove redundant edges
+#'
+#' Nodes with in and out degree of one will be removed.
+#' @param graph an igraph object
+#' @export
+#' @examples
+#' simple = simplify_graph(example_igraph)
+#' plot_graph(example_igraph)
+#' plot_graph(simple)
+simplify_graph = function(graph) {
+  # removes redundant nodes
+
+  if(is_simplified(graph)) return(graph)
+  convmat = FALSE
+  if(class(graph) == 'matrix') {
+    convmat = TRUE
+    graph = graph_from_edgelist(graph)
+  }
+  graph %<>% igraph::simplify()
+  repeat({
+    redundant = which(degree(graph, mode='in') == 1 & degree(graph, mode='out') == 1)
+    if(length(redundant) == 0) break
+    newfrom = names(neighbors(graph, redundant[1], mode='in'))
+    newto = names(neighbors(graph, redundant[1], mode='out'))
+    graph %<>% igraph::delete_vertices(redundant[1]) %>% igraph::add_edges(c(newfrom, newto))
+    #%>% igraph::simplify()
+  })
+  graph %<>% igraph::simplify() %>% X_to_H
+  if(convmat) graph = igraph::as_edgelist(graph)
+  graph
+}
+
+
 
 #' Add two nodes before each admixture node
 #'
@@ -1756,6 +1781,7 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   graph
 }
 
+
 #' Remove population from graph
 #'
 #' @export
@@ -1769,13 +1795,30 @@ delete_leaf = function(graph, leaf) {
   if(desimplify) graph %<>% simplify_graph
   leaves = get_leafnames(graph)
   graph %<>%
-    subcomponent(leaf, mode = 'in') %>%
+    igraph::subcomponent(leaf, mode = 'in') %>%
     keep(~length(intersect(leaves, names(igraph::subcomponent(graph, .x, mode = 'out')))) == 1) %>%
     igraph::delete_vertices(graph, .) %>%
     simplify_graph()
   if(desimplify) graph %<>% desimplify_graph
   graph
 }
+
+delete_leaves = function(graph, leaves) {
+  # assumes simplified graph
+
+  keepleaves = graph %>% get_leafnames %>% setdiff(leaves)
+  keep_leaves(graph, keepleaves)
+}
+
+keep_leaves = function(graph, leaves) {
+  # assumes simplified graph
+
+  keepv = map(leaves, ~igraph::subcomponent(graph, ., mode = 'in')) %>% unlist %>% names %>% unique
+  delv = setdiff(names(V(graph)), keepv)
+  out = graph %>% igraph::delete_vertices(delv)
+  out %>% simplify_graph
+}
+
 
 #' Add population to graph
 #'
@@ -2419,7 +2462,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
   } else {
     graph = initgraph
   }
-  qpgfun = function(...) qpgraph(f2_blocks, numstart = 1, ...)
+  qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
   stop_at = Sys.time() + stop_after
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
@@ -2495,18 +2538,15 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
         if(!is.null(swape)) newmod %<>% bind_rows(tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = ceiling(remaining)/2))
         remaining = numgraphs - nrow(newmod)
       }
-
       if(remaining > 0) {
         randmut = tibble(fun = mutfuns, mutfun = names(fun)) %>%
           slice_sample(n = remaining, replace = TRUE) %>%
           rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
         newmod %<>% bind_rows(randmut)
       }
-
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
         filter(!duplicated(hash), !hash %in% models$hash)
-
       if(nrow(newmod) == 0) {
         alert_danger('No new models!\n')
         next
@@ -2516,7 +2556,8 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
         # bind_rows(slice_sample(newmod)) %>%
         # bind_rows(slice(newmod, pmax(1,floor(nrow(newmod)/c(2,10))))) %>%
         # filter(!duplicated(hash)) %>%
-        mutate(res = furrr:::future_map(g, qpgfun)) %>% unnest_wider(res) %>%
+        mutate(res = furrr:::future_map(g, qpgfun)) %>%
+        unnest_wider(res) %>%
         mutate(edges = map(edges, ~filter(., weight < 0))) %>%
         transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun, expanded = FALSE) %>%
         arrange(score)
@@ -2742,4 +2783,65 @@ pair_paths = function(graph) {
 }
 
 # continue here: use path intersections to determine edges which are not identifiable
+
+
+tabulate_subgraphs = function(graphlist, pops) {
+  # for a list of graphs and set of populations in that graph
+  # returns data frame counting all subgraphs consisting of those populations
+
+  #delete_leaves = function(graph, leaves) reduce(leaves, delete_leaf, .init = graph)
+  graphlist %>%
+    tibble(.name_repair = ~'graph') %>%
+    rowwise %>%
+    mutate(subgraph = list(keep_leaves(graph, pops)), hash = graph_hash(subgraph)) %>%
+    ungroup %>%
+    select(-graph) %>%
+    add_count(hash) %>%
+    filter(!duplicated(hash)) %>%
+    arrange(-n)
+}
+
+tabulate_subgraphs_n = function(graphlist, pops, n, outpop = NULL, verbose = TRUE) {
+
+  cmb = t(combn(setdiff(pops, outpop), n))
+  if(verbose) alert_info(paste0('Tabulating ', nrow(cmb), ' combinations of ', n, ' populations...'))
+  #pb = progress::progress_bar$new(total = nrow(cmb))
+  as_tibble(cmb, .name_repair = ~paste0('X', seq_len(n))) %>%
+    mutate(i = 1:n()) %>% rowwise %>%
+    mutate(subgraphs = list(tabulate_subgraphs(graphlist, c(outpop, cmb[i,])))) %>%
+    unnest(subgraphs) %>% arrange(-n)
+}
+
+
+count_admix = function(graph) {
+
+  leaves = get_leafnames(graph)
+  admnodes = names(which(degree(graph, mode = 'in') > 1))
+  map_dbl(leaves, ~length(intersect(names(subcomponent(graph, .x, mode = 'in')), admnodes))) %>%
+    set_names(leaves) %>% enframe('pop', 'nadmix') %>% arrange(pop)
+}
+
+unadmixed = function(graph) {
+
+  graph %>% count_admix %>% filter(nadmix == 0) %>% pull(pop)
+}
+
+label_unadmixed_descendants = function(graph) {
+
+  leaves = get_leafnames(graph)
+  admnodes = names(which(degree(graph, mode = 'in') > 1))
+  admparents = map(admnodes, ~names(neighbors(graph, ., mode = 'in'))) %>% unlist %>% unique
+
+  unadm_desc = function(graph, v, leaves) {
+    all_simple_paths(graph, v, leaves, mode = 'out') %>% discard(~any(names(.)[-1] %in% admnodes)) %>% set_names(map_chr(., ~tail(names(.), 1))) %>% names %>% table %>% enframe %>% filter(value == 1) %>% pull(name)
+  }
+  vnam = names(V(graph))
+  map(vnam, ~unadm_desc(graph, ., leaves)) %>% set_names(vnam)
+
+  # continue here: assign key pops to each admparent
+}
+
+
+
+
 

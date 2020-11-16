@@ -49,8 +49,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
   if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec)
   else ploidy = rep(2, nindall)
   afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1,
-                                           last = last, ploidy = ploidy,
-                                           transpose = FALSE, verbose = verbose)
+                                       last = last, ploidy = ploidy,
+                                       transpose = FALSE, verbose = verbose)
 
   if(verbose) {
     alert_success(paste0(nrow(afdat$afs), ' SNPs read in total\n'))
@@ -398,8 +398,11 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #'
 #' @export
 #' @param pref prefix of `PLINK` files (files have to end in `.bed`, `.bim`, `.fam`).
+#' @param numblocks Number of blocks in which to read genotype file. Setting this to a number
+#' greater than one is more memory efficient, but slower.
+#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1.
 #' @inheritParams packedancestrymap_to_afs
-#' @return a list with two items: allele frequency data and individual counts.
+#' @return A list with three items: Allele frequency matrix, allele count matrix, and SNP meta data.
 #' @examples
 #' \dontrun{
 #' afdat = plink_to_afs(prefix, pops)
@@ -407,7 +410,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' counts = afdat$counts
 #' }
 plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
-                        first = 1, last = NULL, verbose = TRUE) {
+                        first = 1, last = NULL, numblocks = 1, poly_only = FALSE, verbose = TRUE) {
   # This is based on Gad Abraham's "plink2R" package
   # Modified to return per-group allele frequencies rather than raw genotypes.
 
@@ -439,11 +442,33 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   }
 
   # todo: first and last option
-  afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2, adjust_pseudohaploid = adjust_pseudohaploid,
-                           verbose = verbose)
+  # afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2,
+  #                          adjust_pseudohaploid = adjust_pseudohaploid,
+  #                          verbose = verbose)
+  afmatrix = countmatrix = matrix(NA, last - first + 1, length(upops))
+  aflist = countlist = list()
+  firsts = round(seq(first, last, length = numblocks))
+  lasts = c(firsts[-1]-1, last)
+  snp_indices = c()
+  for(i in seq_len(numblocks)) {
+    if(numblocks > 1) alert_info(paste0('Reading block ', i,' of ', numblocks,'...\r'))
+    dat = cpp_plink_to_afs(normalizePath(bedfile), nsnpall, nindall, indvec-1,
+                           first = firsts[i]-1, last = lasts[i], rep(2, nindall), FALSE, verbose && numblocks == 1)
+    if(poly_only) {
+      keep = !rowMeans(dat$afs, na.rm=TRUE) %in% 0:1
+      dat$afs %<>% `[`(keep,)
+      dat$counts %<>% `[`(keep,)
+      snp_indices %<>% c((firsts[i]:lasts[i])[keep])
+    } else {
+      snp_indices %<>% c((firsts[i]:lasts[i]))
+    }
+    aflist[[i]] = dat$afs
+    countlist[[i]] = dat$counts
+  }
+  bim %<>% slice(snp_indices)
 
-  afmatrix = afs[[1]]
-  countmatrix = afs[[2]]
+  afmatrix = do.call(rbind, aflist)
+  countmatrix = do.call(rbind, countlist)
   rownames(afmatrix) = rownames(countmatrix) = bim$SNP
   colnames(afmatrix) = colnames(countmatrix) = upops
 

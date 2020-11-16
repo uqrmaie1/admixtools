@@ -453,19 +453,29 @@ average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
 joint_spectrum = function(afs, ...) {
 
   afs %<>% as.matrix
+  if(class(afs[,1]) != 'numeric') stop("'afs' should only have numeric columns!")
   npop = ncol(afs)
   ps = power_set(seq_len(npop))
-  allanc = rep('A', npop)
-  names = ps %>% map(~{x = allanc; x[.] = 'B'; x}) %>%
+  allanc = rep('0', npop)
+  names = ps %>% map(~{x = allanc; x[.] = '1'; x}) %>%
     prepend(list(allanc)) %>%
     map_chr(~paste(., collapse=''))
   snpcounts = ps %>%
     map(~row_prods(afs[,.,drop=F]) * row_prods(1-afs[,-.,drop=F])) %>%
     prepend(list(row_prods(1-afs))) %>%
     bind_cols(.name_repair = ~names)
+  obs = snpcounts %>% as.matrix %>% is.na %>% `!` %>% colSums %>% enframe('pattern', 'total')
   snpcounts %>%
     colMeans(na.rm = TRUE) %>%
-    enframe('pattern', 'proportion')
+    enframe('pattern', 'proportion') %>%
+    left_join(obs, by = 'pattern')
 }
+
+combine_spectra = function(spectra) {
+
+
+}
+
+
 
 

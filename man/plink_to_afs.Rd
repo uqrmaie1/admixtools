@@ -11,6 +11,8 @@ plink_to_afs(
   adjust_pseudohaploid = TRUE,
   first = 1,
   last = NULL,
+  numblocks = 1,
+  poly_only = FALSE,
   verbose = TRUE
 )
 }
@@ -23,10 +25,15 @@ plink_to_afs(
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option.}
 
+\item{numblocks}{Number of blocks in which to read genotype file. Setting this to a number
+greater than one is more memory efficient, but slower.}
+
+\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1.}
+
 \item{verbose}{Print progress updates}
 }
 \value{
-a list with two items: allele frequency data and individual counts.
+A list with three items: Allele frequency matrix, allele count matrix, and SNP meta data.
 }
 \description{
 Read allele frequencies from \code{PLINK} files
