@@ -728,7 +728,7 @@ parse_qpgraph_graphfile = function(graphfile, split_multi = TRUE, igraph = FALSE
   lines = read_lines(graphfile) %>% enframe %>% transmute(V1 = value)
   nammap = lines %>% filter(grepl('^label', V1)) %>%
     separate('V1', c('type', 'name', 'label'), sep = '\\s+', extra = 'drop') %>%
-    select(label, name) %>% deframe
+    select(name, label) %>% deframe
 
   dat = lines %>%
     filter(grepl('^edge|^redge|^ledge|^admix|^lock', V1)) %>%
@@ -1037,7 +1037,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
                "\n  if tree_sequence.genotype_matrix().shape[0] > 0:",
                '\n    return (tree_sequence.genotype_matrix()[0,range(0,len(samples),2)] + tree_sequence.genotype_matrix()[0,range(1,len(samples),2)])',
                "\n  else:",
-               "\n    return numpy.zeros((1, len(samples)//2))")
+               "\n    return numpy.zeros(len(samples)//2, 'int')")
 
   out = paste0(out, "\n\np = multiprocessing.Pool(int(min(multiprocessing.cpu_count(),", numcores,")))")
   out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")

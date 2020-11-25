@@ -622,7 +622,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
   ell = list(...)
   fun = function(f2dat, f2dat_test, g) function() {
     #pb$tick()
-    pb()
+    #pb()
     safely(qpgraph)(data = f2dat, graph = g, f2_blocks_test = f2dat_test, verbose = FALSE, ...)
   }
 

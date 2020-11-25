@@ -5,6 +5,7 @@
 #' @import stringr
 #' @import ggplot2
 # @import utils
+#' @importFrom Rcpp sourceCpp
 #' @importFrom magrittr set_colnames "%$%" "%<>%"
 #' @importFrom abind abind
 #' @importFrom crayon blue red green bold italic

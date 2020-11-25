@@ -273,6 +273,7 @@ desimplify_graph = function(graph) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
+  ograph = graph
   admix = which(degree(graph, mode='in') == 2)
   if(length(admix) == 0) return(graph)
   parents = names(unlist(unname(lapply(admix, function(v) neighbors(graph, v, mode='in')))))
@@ -284,7 +285,10 @@ desimplify_graph = function(graph) {
   graph = igraph::add_edges(graph, newedges)
   graph = igraph::simplify(graph)
   graph = igraph::delete_edges(graph, deledges)
-  if(max(degree(graph, mode='in')) > 2 || max(degree(graph, mode='out')) > 2) stop('Desimplify failed')
+  if(max(degree(graph, mode='in')) > 2 || max(degree(graph, mode='out')) > 2) {
+    browser()
+    stop('Desimplify failed')
+  }
   if(convmat) graph = igraph::as_edgelist(graph)
   graph
 }
@@ -1015,7 +1019,9 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
     qpgfun = function(graph) qpgraph(data = precomp, graph = graph,
                                      numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
   } else {
-    qpgfun = function(graph) qpgraph(data = NULL, graph = graph, f3precomp = precomp,
+    # qpgfun = function(graph) qpgraph(data = NULL, graph = graph, f3precomp = precomp,
+    #                                  numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+    qpgfun = function(graph) qpgraph(data = precomp, graph = graph,
                                      numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
   }
 
@@ -1141,8 +1147,9 @@ find_graphs = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs =
     } else stop('Please provide population names!')
   }
 
-  if(!opt_worst_residual) precomp = qpgraph_precompute_f3(data, pops, f3basepop = outpop, ...)
-  else precomp = get_f2(data, pops, ...)
+  # if(!opt_worst_residual) precomp = qpgraph_precompute_f3(data, pops, f3basepop = outpop, ...)
+  # else precomp = get_f2(data, pops, ...)
+  precomp = get_f2(data, pops, ...)
 
   if(class(mutfuns[[1]]) == 'character') mutfuns %<>% rlang::set_names() %>% map(get)
   if(is.null(mutprobs)) {
@@ -1759,12 +1766,12 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   if(length(parents) == 1 && degree(graph, from) == 2) {
     del = from
     if(length(neighbors(graph, parents, mode = 'in')) == 2) del = c(del, names(parents))
-    browser()
+    #browser()
     graph %<>% igraph::delete_vertices(del)
   } else {
     graph %<>% delete_edges(paste(from, to, sep = '|'))
-    if(!is_valid(graph)) browser()
   }
+  if(!is_valid(graph)) browser()
   graph %<>% simplify_graph
   newleaves = setdiff(get_leafnames(graph), leaves)
   while(length(newleaves) > 0) {
@@ -2826,19 +2833,313 @@ unadmixed = function(graph) {
   graph %>% count_admix %>% filter(nadmix == 0) %>% pull(pop)
 }
 
-label_unadmixed_descendants = function(graph) {
+find_proxies = function(graph) {
 
   leaves = get_leafnames(graph)
   admnodes = names(which(degree(graph, mode = 'in') > 1))
-  admparents = map(admnodes, ~names(neighbors(graph, ., mode = 'in'))) %>% unlist %>% unique
+  admparents = map(admnodes, ~names(neighbors(graph, ., mode = 'in'))) %>% do.call(rbind, .)
 
   unadm_desc = function(graph, v, leaves) {
-    all_simple_paths(graph, v, leaves, mode = 'out') %>% discard(~any(names(.)[-1] %in% admnodes)) %>% set_names(map_chr(., ~tail(names(.), 1))) %>% names %>% table %>% enframe %>% filter(value == 1) %>% pull(name)
+    all_simple_paths(graph, v, leaves, mode = 'out') %>%
+      discard(~any(names(.)[-1] %in% admnodes)) %>%
+      set_names(map_chr(., ~tail(names(.), 1))) %>% names %>% table %>%
+      enframe %>% filter(value == 1) %>% pull(name)
   }
   vnam = names(V(graph))
-  map(vnam, ~unadm_desc(graph, ., leaves)) %>% set_names(vnam)
+  ud = map(vnam, ~unadm_desc(graph, ., leaves)) %>% set_names(vnam) #%>% keep(~length(.) > 0)
 
-  # continue here: assign key pops to each admparent
+  # very inefficient; change this if function is slow
+  find_keys = function(graph, v, stopv) {
+    root = names(get_root(graph))
+    for(n in names(all_simple_paths(graph, v, root, mode = 'in')[[1]])) {
+      #if(stopv %in% names(subcomponent(graph, n, mode = 'out'))) return(NULL)
+      if(length(ud[[n]]) > 0) return(ud[[n]])
+      if(degree(graph, n, mode = 'in') > 1) {
+        par = names(neighbors(graph, n, mode = 'in'))
+        return(c(find_keys(graph, par[1], par[2]), find_keys(graph, par[2], par[1])))
+      }
+    }
+  }
+  admkeys = tibble(admnodes,
+                   left = map(1:nrow(admparents), ~find_keys(graph, admparents[.,1], admparents[.,2])),
+                   right = map(1:nrow(admparents), ~find_keys(graph, admparents[.,2], admparents[.,1])))
+  lastadm = map(leaves, ~intersect(names(subcomponent(graph, .x, mode = 'in')), admnodes)) %>% set_names(leaves) %>% discard(~length(.) == 0) %>% map(~head(., 1)) %>% unlist %>% enframe('pop', 'admnodes')
+
+  proxies = lastadm %>% left_join(admkeys, by = 'admnodes') %>% rowwise %>%
+    transmute(pop, proxy = list(sort(unique(c(left, right)))), nproxies = length(proxy)) %>% ungroup %>% unnest(proxy)
+  graph %>% count_admix %>% filter(nadmix > 0) %>% left_join(proxies, by = 'pop') %>% select(pop, nadmix, nproxies, proxy)
+}
+
+
+summarize_graphlist = function(graphlist) {
+
+  graphlist %>% map(find_proxies) %>% bind_rows(.id = 'g') %>%
+    group_by(pop) %>% add_count(proxy) %>%
+    group_by(pop, proxy) %>%
+    summarize(nadmix = mean(nadmix), nproxies = mean(nproxies), n = mean(n)) %>%
+    mutate(frac = n/length(graphlist)) %>% arrange(-n) %>% ungroup
+}
+
+
+
+proxypred = function(sim, graphlist, auc = FALSE) {
+
+  pops = get_leafnames(sim)
+
+  out = expand_grid(pop = pops, proxy = pops) %>% filter(pop != proxy) %>%
+    left_join(find_proxies(sim), by = c('pop', 'proxy')) %>%
+    transmute(pop, proxy, obs = !is.na(nadmix)) %>%
+    left_join(summarize_graphlist(graphlist), by = c('pop', 'proxy')) %>%
+    transmute(pop, proxy, obs, pred = replace_na(frac, 0))
+  if(auc) out = out %$% pROC::auc(obs, pred) %>% c
+  out
+}
+
+
+node_events = function(graph, leaves, node) {
+  # for a node, list associated population splits and merges
+
+  children = neighbors(graph, node, mode = 'out')
+  if(length(children) == 0) {
+    out = tibble(type = 'leaf', pop1 = node, pop2 = NA)
+  } else if(length(children) == 1) {
+    # parents = neighbors(graph, node, mode = 'in')
+    # desc1 = subcomponent(graph, parents[1], mode = 'out') %>% names %>% intersect(leaves)
+    # desc2 = subcomponent(graph, parents[2], mode = 'out') %>% names %>% intersect(leaves)
+    # out = expand_grid(type = 'merge', pop1 = setdiff(desc1, desc2), pop2 = setdiff(desc2, desc1))
+    out = tibble()
+  } else if(length(children) == 2) {
+    desc1 = subcomponent(graph, children[1], mode = 'out') %>% names %>% intersect(leaves)
+    desc2 = subcomponent(graph, children[2], mode = 'out') %>% names %>% intersect(leaves)
+    out = expand_grid(type = 'split', pop1 = setdiff(desc1, desc2), pop2 = setdiff(desc2, desc1))
+  } else {
+    stop('More than two children!')
+  }
+  out
+}
+
+
+all_node_events = function(graph) {
+  # for each node in a graph, list associated population splits and merges
+
+  leaves = get_leafnames(graph)
+  graph %>% V %>% names %>% set_names %>% map(~node_events(graph, leaves, .)) %>% bind_rows(.id = '.node')
+
+}
+
+event_order = function(graph, unique_only = TRUE) {
+
+  node_pairs = graph %>% distances(mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>%
+    mutate(order = is.finite(order)+0) %>% filter(order > 0, from != to) %>%
+    bind_rows(rename(., from = to, to = from) %>% mutate(order = -order))
+
+  events = all_node_events(graph) %>%
+    bind_rows(rename(., pop2 = pop1, pop1 = pop2) %>% filter(type != 'leaf'))
+
+  out = expand_grid(rename_with(events, ~paste0(., '_1')), rename_with(events, ~paste0(., '_2'))) %>%
+    filter(.node_1 != .node_2) %>% left_join(node_pairs, by = c('.node_1'='from', '.node_2'='to')) %>%
+    mutate(order = replace_na(order, 0))
+  if(unique_only) {
+  #   bla = out %>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
+  #     mutate(x = all(c(-1,1) %in% order)) %>% ungroup %>% filter(x)
+  #   if(nrow(bla) > 1) browser()
+    out %<>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
+      mutate(order = all(c(-1,1) %in% order)) %>%
+    slice_max(abs(order), with_ties = FALSE) %>% ungroup
+  }
+  out
+}
+
+summarize_graphlist_eventorder = function(graphlist) {
+
+  graphlist %>% map(event_order) %>% bind_rows(.id = 'g') %>%
+    select(-.node_1, -.node_2) %>%
+    add_count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, name = 'obs') %>%
+    count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, order, obs) %>%
+    mutate(frac1 = n/length(graphlist), frac2 = n/obs) %>%
+    arrange(-n) %>% ungroup
+}
+
+
+unresolvable_params = function(groebner, vrs) {
+
+  resolved = c()
+  remaining = groebner %>% map(~intersect(vrs, unlist(map(., ~head(names(.), -1))))) %>% keep(~length(.) > 0)
+
+  repeat {
+  newresolved = remaining %>% keep(~length(.) == 1) %>% unlist %>% unique
+  resolved %<>% c(newresolved)
+  remaining %<>% keep(~length(.) > 1) %>% map(~setdiff(., resolved))
+  if(length(newresolved) == 0 || length(remaining) == 0) break
+  }
+  remaining
+}
+
+
+path_pairs = function(graph) {
+
+  # returns all pairs of paths from root to all leaves
+
+  leaves = get_leafnames(graph)
+  root = get_rootname(graph)
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  parents = adm %>% rlang::set_names() %>% map(~names(neighbors(graph, ., mode = 'in')))
+  admedges = parents %>% imap(~paste(.x, .y, sep = '|'))
+
+  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names) %>% tibble(.name_repair = ~'path') %>% rowwise %>% mutate(target = tail(path, 1), edges = list(setdiff(vs_to_es(path), admedges)), admix = list(intersect(path, adm)), lr = list(map(admedges[admix], 1) %in% edges + 0), edges = list(setdiff(edges, unlist(admedges)))) %>% ungroup %>% add_count(target)
+
+  expand_grid(rename_with(paths, ~paste0(.,'_1')), rename_with(paths, ~paste0(.,'_2'))) %>% filter(target_1 != target_2) %>% rowwise %>% mutate(edges = list(setdiff(union(edges_1, edges_2), intersect(edges_1, edges_2))), admix = list(c(admix_1, admix_2)), lr = list(c(lr_1, lr_2))) %>% ungroup
+
+}
+
+
+graph_equations = function(graph, substitute = TRUE, nam = c('e', 'a', 'f')) {
+
+  pp = path_pairs(graph)
+  leaves = get_leafnames(graph)
+  e = pp$edges %>% unlist %>% unique
+  a = names(which(degree(graph, mode = 'in') > 1))
+  f = apply(combn(sort(leaves), 2), 2, paste, collapse = ' ')
+  if(substitute) {
+    evars = paste0(nam[1], seq_along(e)) %>% set_names(e)
+    avars = paste0(nam[2], seq_along(a)) %>% set_names(a)
+    fvars = paste0(nam[3], seq_len(choose(length(leaves), 2))) %>% set_names(f)
+  } else {
+    evars = e %>% set_names(e)
+    avars = a %>% set_names(a)
+    fvars = f %>% set_names(f)
+  }
+  coding = map2(list(evars, avars, fvars), nam, ~enframe(.x) %>% mutate(type = .y)) %>% bind_rows
+
+  eq = pp %>% filter(target_1 < target_2) %>%
+    rowwise %>%
+    mutate(mul = list(ifelse(lr == 0, avars[admix], paste0('(1-',avars[admix],')'))), add = list(paste0(evars[edges])),
+           eq = list(paste0(paste0(mul, collapse = '*'), '*(', paste0(add, collapse = '+'), ')') %>% str_replace_all('^\\*', '')),
+           res = prod(ifelse(lr == 0, 1/4, 3/4)) * length(add),  resold = (1/4)^length(mul) * length(add),
+           fvar = fvars[paste(target_1, target_2)]) %>%
+    group_by(target_1, target_2) %>%
+    summarize(eq = paste0(eq, collapse = ' + '), fvar = fvar[1], res = sum(res)) %>% ungroup %>%
+    mutate(eq2 = paste0('(', eq, ')*2^10 - ', res*2^10)) %>% suppressMessages
+
+  namedList(eq, coding)
+}
+
+
+gr = function(graph) {
+
+  eq = graph_equations(graph)$eq %>% pull(eq2)
+  #vrs = eq %>% str_replace_all('[\\*\\+\\(\\)]', ' ') %>% str_replace_all('1-', '') %>% str_replace_all('-', '') %>%
+  #  str_squish() %>% str_split(' ') %>% unlist %>% unique
+  m2r::stop_m2()
+  vrs = c(paste0('e', 1:50), paste0('a', 1:20))
+  rng = m2r::ring_.(vrs, coefring = "QQ")
+
+  # aa = map2(paste0('a', 1:3), rep(0.5, 3), ~assign(.x, .y, envir = .GlobalEnv))
+  # aa = map2(paste0('f', 1:21), rep(0, 3), ~assign(.x, .y, envir = .GlobalEnv))
+  #
+  # fpred = map_dbl(rlang::parse_exprs(eq1), eval)
+
+  out = m2r::gb_(eq)
+  m2r::stop_m2()
+  out
+}
+
+find_invariants = function(graph, eps = 1e-7) {
+
+  pops = get_leafnames(graph)
+  ge = graph_equations(graph)
+  eq = ge$eq %>% transmute(p1 = target_1, p2 = target_2, eq = paste0('(', eq, ')')) %>%
+    bind_rows(rename(., p1 = p2, p2 = p1))
+
+  myenv = new.env()
+  ge$coding %>% mutate(val = ifelse(type == 'e', 1, ifelse(type == 'a', runif(n()), NA))) %$%
+    map2(value, val, ~assign(.x, .y, myenv)) %>% invisible
+
+  expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+    filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
+    left_join(eq %>% rename(pop1 = p1, pop3 = p2, eq13 = eq)) %>%
+    left_join(eq %>% rename(pop2 = p1, pop4 = p2, eq24 = eq)) %>%
+    left_join(eq %>% rename(pop1 = p1, pop4 = p2, eq14 = eq)) %>%
+    left_join(eq %>% rename(pop2 = p1, pop3 = p2, eq23 = eq)) %>%
+    rowwise %>%
+    mutate(f4 = paste(eq14, ' + ', eq23, ' - ', eq13, ' - ', eq24), res = eval(parse(text = f4), envir=myenv)) %>%
+    ungroup %>%
+    filter(between(res, -eps, eps)) %>% select(pop1:pop4) %>% suppressMessages
+}
+
+
+satisfies_constraint = function(graph, earlier1, earlier2, later1, later2) {
+
+  root = get_rootname(graph)
+  # pe1 = all_simple_paths(graph, 'Russia_Ust_Ishim.DG', root, mode = 'in')
+  # pe2 = all_simple_paths(graph, 'Altai_Neanderthal.DG', root, mode = 'in')
+  # pl1 = all_simple_paths(graph, 'Mbuti.DG', root, mode = 'in')
+  # pl2 = all_simple_paths(graph, 'Vindija.DG', root, mode = 'in')
+
+  pe1 = all_simple_paths(graph, earlier1, root, mode = 'in')
+  pe2 = all_simple_paths(graph, earlier2, root, mode = 'in')
+  pl1 = all_simple_paths(graph, later1, root, mode = 'in')
+  pl2 = all_simple_paths(graph, later2, root, mode = 'in')
+
+  ppis = expand_grid(expand_grid(pe1, pe2) %>% mutate(i = 1:n()),
+                     expand_grid(pl1, pl2) %>% mutate(j = 1:n())) %>% rowwise %>%
+    mutate(is1 = list(intersect(pe1, pe2)), is2 = list(intersect(pl1, pl2)),
+           diff1 = list(setdiff(is1, is2)), diff2 = list(setdiff(is2, is1)),
+           d1len = length(diff1), d2len = length(diff2)) %>% ungroup %>%
+    group_by(j) %>% mutate(maxdiff1len = max(d1len)) %>%
+    group_by(i) %>% mutate(maxdiff2len = max(d2len)) %>% ungroup
+
+  if(min(ppis$maxdiff1len) == 0 && min(ppis$maxdiff2len) == 0) res = NA
+  else if(min(ppis$maxdiff1len) == 0 && min(ppis$maxdiff2len) > 0) res = TRUE
+  else if(min(ppis$maxdiff2len) == 0) res = FALSE
+  else res = NA
+  res
+}
+
+
+validate_constraints = function(constraints, graph) {
+
+  # constraints is data frame with columns earlier1, earlier2, later1, later2
+  # output adds column 'status'
+
+  constraints %>% rowwise %>% mutate(status = satisfies_constraint(graph, earlier1, earlier2, later1, later2)) %>% ungroup
+
+}
+
+
+# can delete this one
+edge_poppairs = function(graph) {
+  # lists the two sets of population pairs (up, down) associated with each drift edge
+
+  leaves = get_leafnames(graph)
+  root = get_rootname(graph)
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  internal = setdiff(names(V(graph)), c(leaves, root))
+  internal %>% rlang::set_names() %>% map(~names(subcomponent(graph, ., mode = 'out'))) %>%
+    map(~intersect(., leaves)) %>% keep(~length(.) > 1) %>% enframe('node', 'down') %>%
+    rowwise %>% mutate(up = list(setdiff(leaves, down))) %>% filter(length(up) > 1) %>% ungroup %>% unnest(down) %>% unnest(up)
+}
+
+
+
+classify_drift = function(graph) {
+
+  leaves = get_leafnames(graph)
+  root = get_rootname(graph)
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  internal = setdiff(names(V(graph)), c(leaves, root))
+
+  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names)
+
+  pairwise = expand_grid(p1 = paths, p2 = paths) %>% rowwise %>% mutate(d1 = list(setdiff(p1, p2)), d2 = list(setdiff(p2, p1)), pop1 = tail(p1, 1), pop2 = tail(p2, 1)) %>% filter(pop1 != pop2) %>% group_by(pop1, pop2) %>% summarize(c1 = list(setdiff(unlist(d1), unlist(d2))), c2 = list(setdiff(unlist(d2), unlist(d1)))) %>% ungroup
+
+  # continue here: not enough clades in g_afr
+
+  driftclass = pairwise %>% expand_grid(int = internal) %>% rowwise %>% mutate(to1 = (int %in% c1)+0, to2 = (int %in% c2)+0, txt = ifelse(to1 & to2, 'both', ifelse(!to1 & !to2, 'neither', ifelse(to1, '1', '2')))) %>% select(-c1, -c2) %>% ungroup
+
+  driftclass %>% left_join(driftclass, by = c('int')) %>% filter(pop1.x != pop1.y, pop1.x != pop2.y, pop2.x != pop1.y) %>% mutate(pos = ifelse(txt.x == 'neither' | txt.y == 'neither', NA, ifelse(txt.x != 'both' & txt.y != 'both' & txt.x == txt.y, TRUE, FALSE)), neg = ifelse(txt.x == 'neither' | txt.y == 'neither', NA, ifelse(txt.x != 'both' & txt.y != 'both' & txt.x != txt.y, TRUE, FALSE))) %>% group_by(pop1.x, pop2.x, pop1.y, pop2.y) %>% summarize(clade = !any((to1.x | to2.x) & (to1.y | to2.y)), pos = all(pos, na.rm=T), neg = all(neg, na.rm=T)) %>% ungroup
+
 }
 
 
