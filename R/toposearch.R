@@ -41,10 +41,17 @@ numadmix = function(graph) {
 }
 
 is_valid = function(graph) {
+
+  indegree = igraph::degree(graph, mode = 'in')
+  outdegree = igraph::degree(graph, mode = 'out')
+
   igraph::is_simple(graph) &&
     igraph::is_connected(graph) &&
     igraph::is_dag(graph) &&
-    sum(igraph::degree(graph, mode = 'in') == 0) == 1
+    sum(indegree == 0) == 1 &&
+    all(indegree <= 2) &&
+    all(outdegree <= 2) &&
+    !any(outdegree == 0 & indegree != 1)
 }
 
 is_simplified = function(graph) {
@@ -399,6 +406,7 @@ split_graph = function(graph) {
     #if(adm %in% tonodes) tonodes[tonodes == adm] = tonode
     #if(adm == 'pPygmy3' || p1 == 'pPygmy3') browser()
     graphnew = igraph::delete_vertices(graph, adm)
+    if(length(c(tonode0, tonode)) %% 2 != 0) browser()
     graphnew = igraph::add_edges(graphnew, c(tonode0, tonode))
     if(tonode %in% admix) frommap[tonode0] = adm
     #if(delete_nodes) {
@@ -950,8 +958,8 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_
                      oldindex = rep(winners$index, numeach)[sq])
   mutations = sample(mutfuns, numgraphs-numsel, replace = TRUE)
   if(parallel) {
-    map = furrr::future_map
-    imap = furrr::future_imap
+    map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
+    imap = function(...) furrr::future_imap(..., .options = furrr::furrr_options(seed = TRUE))
   }
   if(verbose) alert_info(paste0('Generating new graphs...', space))
   newmodels %<>% mutate(mutation = names(mutations),
@@ -1032,7 +1040,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
                                                 simplify = FALSE)
   else initgraphs = initgraphs[round(seq(1, length(initgraphs), numgraphs))]
   if(verbose) alert_info(paste0('Evaluate graphs...', space))
-  if(parallel) map = furrr::future_map
+  if(parallel) map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
   init = tibble(generation=0, index = seq_len(numgraphs),
                 igraph = initgraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun), isn = map_lgl(out, is.null))
@@ -1766,12 +1774,10 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   if(length(parents) == 1 && degree(graph, from) == 2) {
     del = from
     if(length(neighbors(graph, parents, mode = 'in')) == 2) del = c(del, names(parents))
-    #browser()
     graph %<>% igraph::delete_vertices(del)
   } else {
     graph %<>% delete_edges(paste(from, to, sep = '|'))
   }
-  if(!is_valid(graph)) browser()
   graph %<>% simplify_graph
   newleaves = setdiff(get_leafnames(graph), leaves)
   while(length(newleaves) > 0) {
@@ -2288,7 +2294,7 @@ eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
   newgraphs %>%
-    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
   #%>% select(source_from, source_to, dest_from, dest_to, graph, score)
 }
@@ -2299,7 +2305,7 @@ eval_minusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
   newgraphs %>%
-    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
 }
 
@@ -2326,7 +2332,7 @@ eval_plusonepop = function(graph, pop, qpgfun, ntry = Inf, verbose = TRUE) {
   if(verbose) alert_info(paste0('Found ',nrow(newgraphs),' graphs. Evaluating ', min(nrow(newgraphs), ntry), '...\n'))
   newgraphs %>%
     slice_sample(n = ntry) %>%
-    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose)) %>%
+    mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score) %>% select(from, to, graph, score)
 }
 
@@ -2470,6 +2476,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
     graph = initgraph
   }
   qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
+  qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
   stop_at = Sys.time() + stop_after
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
@@ -2563,7 +2570,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
         # bind_rows(slice_sample(newmod)) %>%
         # bind_rows(slice(newmod, pmax(1,floor(nrow(newmod)/c(2,10))))) %>%
         # filter(!duplicated(hash)) %>%
-        mutate(res = furrr:::future_map(g, qpgfun)) %>%
+        mutate(res = furrr::future_map(g, qpgfun, .options = furrr::furrr_options(seed = TRUE))) %>%
         unnest_wider(res) %>%
         mutate(edges = map(edges, ~filter(., weight < 0))) %>%
         transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun, expanded = FALSE) %>%
@@ -2987,14 +2994,14 @@ path_pairs = function(graph) {
   parents = adm %>% rlang::set_names() %>% map(~names(neighbors(graph, ., mode = 'in')))
   admedges = parents %>% imap(~paste(.x, .y, sep = '|'))
 
-  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names) %>% tibble(.name_repair = ~'path') %>% rowwise %>% mutate(target = tail(path, 1), edges = list(setdiff(vs_to_es(path), admedges)), admix = list(intersect(path, adm)), lr = list(map(admedges[admix], 1) %in% edges + 0), edges = list(setdiff(edges, unlist(admedges)))) %>% ungroup %>% add_count(target)
+  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names) %>% tibble(.name_repair = ~'path') %>% rowwise %>% mutate(pop = tail(path, 1), edges = list(setdiff(vs_to_es(path), admedges)), admix = list(intersect(path, adm)), lr = list(map(admedges[admix], 1) %in% edges + 0), edges = list(setdiff(edges, unlist(admedges)))) %>% ungroup %>% add_count(pop)
 
-  expand_grid(rename_with(paths, ~paste0(.,'_1')), rename_with(paths, ~paste0(.,'_2'))) %>% filter(target_1 != target_2) %>% rowwise %>% mutate(edges = list(setdiff(union(edges_1, edges_2), intersect(edges_1, edges_2))), admix = list(c(admix_1, admix_2)), lr = list(c(lr_1, lr_2))) %>% ungroup
+  expand_grid(rename_with(paths, ~paste0(.,'1')), rename_with(paths, ~paste0(.,'2'))) %>% filter(pop1 != pop2) %>% rowwise %>% mutate(edges = list(setdiff(union(edges1, edges2), intersect(edges1, edges2))), admix = list(c(admix1, admix2)), lr = list(c(lr1, lr2))) %>% ungroup
 
 }
 
 
-graph_equations = function(graph, substitute = TRUE, nam = c('e', 'a', 'f')) {
+graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
 
   pp = path_pairs(graph)
   leaves = get_leafnames(graph)
@@ -3002,54 +3009,135 @@ graph_equations = function(graph, substitute = TRUE, nam = c('e', 'a', 'f')) {
   a = names(which(degree(graph, mode = 'in') > 1))
   f = apply(combn(sort(leaves), 2), 2, paste, collapse = ' ')
   if(substitute) {
-    evars = paste0(nam[1], seq_along(e)) %>% set_names(e)
-    avars = paste0(nam[2], seq_along(a)) %>% set_names(a)
+    avars = paste0(nam[1], seq_along(a))[seq_along(a)] %>% set_names(a)
+    evars = paste0(nam[2], seq_along(e)) %>% set_names(e)
     fvars = paste0(nam[3], seq_len(choose(length(leaves), 2))) %>% set_names(f)
   } else {
     evars = e %>% set_names(e)
     avars = a %>% set_names(a)
     fvars = f %>% set_names(f)
   }
-  coding = map2(list(evars, avars, fvars), nam, ~enframe(.x) %>% mutate(type = .y)) %>% bind_rows
+  coding = map2(list(avars, evars, fvars), nam, ~enframe(.x, 'edge', 'symbol') %>% mutate(type = .y)) %>% bind_rows
 
-  eq = pp %>% filter(target_1 < target_2) %>%
+  eq = pp %>% filter(pop1 < pop2) %>%
     rowwise %>%
     mutate(mul = list(ifelse(lr == 0, avars[admix], paste0('(1-',avars[admix],')'))), add = list(paste0(evars[edges])),
            eq = list(paste0(paste0(mul, collapse = '*'), '*(', paste0(add, collapse = '+'), ')') %>% str_replace_all('^\\*', '')),
            res = prod(ifelse(lr == 0, 1/4, 3/4)) * length(add),  resold = (1/4)^length(mul) * length(add),
-           fvar = fvars[paste(target_1, target_2)]) %>%
-    group_by(target_1, target_2) %>%
+           fvar = fvars[paste(pop1, pop2)]) %>%
+    group_by(pop1, pop2) %>%
     summarize(eq = paste0(eq, collapse = ' + '), fvar = fvar[1], res = sum(res)) %>% ungroup %>%
     mutate(eq2 = paste0('(', eq, ')*2^10 - ', res*2^10)) %>% suppressMessages
 
   namedList(eq, coding)
 }
 
+graph_to_function = function(graph, ge = NULL) {
+
+  if(is.null(ge)) ge = graph_equations(graph)
+  body1 = c('a = x[seq_len(na)]; e = x[(na+1):length(x)]; ')
+  body2 = map_chr(ge$eq$eq, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]')) %>%
+    paste(collapse = ', ') %>% paste('c(', ., ')')
+  body = rlang::parse_expr(paste0('{', body1, body2, '}'))
+
+  args = list(x = NULL, na = 0)
+  eval(call("function", as.pairlist(args), body), env = parent.frame())
+}
+
+graph_to_function2 = function(graph, ge = NULL) {
+
+  ge = graph_equations(graph)
+  xx = map_chr(ge$eq$eq, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]'))
+  Rcpp::cppFunction(paste0('NumericVector cppt(NumericVector x, int na) {x.push_front(0); NumericVector out(',length(ge$eq$eq),'); NumericVector a = x[Range(0,na)]; NumericVector e = x[Range(na-1,x.length())] = x[Range(na,x.length())]; ',paste0('out[', seq_along(xx)-1, '] = ', xx, collapse = '; '),'; return out;}'), plugins = 'cpp11')
+
+}
+
+graph_to_function3 = function(graph, ge = NULL) {
+
+  ge = graph_equations(graph)
+  na = numadmix(graph)
+  ne = length(E(graph)) - 2*na
+
+  pp = path_pairs(graph) %>% select(pop1, pop2, edges, admix, lr) %>% mutate(i = 1:n()) %>% filter(pop1 < pop2)
+  pp2 = pp %>% select(-pop1, -pop2, -edges) %>% unnest(admix) %>% mutate(lr = pp %>% unnest(lr) %>% pull(lr))
+
+  function(x, na) {
+
+    a = x[seq_len(na)]
+    e = x[(na+1):length(x)]
+
+    adat = ge$coding %>% filter(type == 'a') %>% transmute(admix = edge, aval = x[seq_len(na)])
+    edat = ge$coding %>% filter(type == 'e') %>% transmute(edges = edge, eval = x[(na+1):length(x)])
+    admixvals = pp2 %>% left_join(adat, by = 'admix') %>%
+      mutate(aval = ifelse(lr == 0, aval, 1-aval)) %>%
+      group_by(i) %>% summarize(aval = prod(aval), .groups = 'drop')
+
+    pp %>% left_join(admixvals, by = 'i') %>% mutate(aval = replace_na(aval, 1)) %>% unnest(edges) %>% left_join(edat, by = 'edges') %>% group_by(pop1, pop2) %>% summarize(f2pred = sum(aval * eval), .groups = 'drop') %>% ungroup %>% pull(f2pred)
+
+  }
+
+}
+
+graph_jacobian = function(graph) {
+
+  fun = graph_to_function(graph)
+  na = numadmix(graph)
+  ne = length(E(graph)) - 2*na
+  numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
+}
+
+
+unidentifiable_edges = function(graph, gtof = 1) {
+
+  ge = graph_equations(graph)
+  fun = get(paste0('graph_to_function', gtof))(graph, ge)
+  na = numadmix(graph)
+  ne = length(E(graph)) - 2*na
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  parents = adm %>% rlang::set_names() %>% map(~names(neighbors(graph, ., mode = 'in')))
+
+  jac = numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
+  dep = which(qr(jac)$rank == sapply(1:ncol(jac), function (x) qr(jac[,-x])$rank))
+  out = ge$coding %>% slice(dep)
+  oa = out %>% filter(type == 'a') %>% rename(to = edge) %>% rowwise %>%  mutate(from = parents[to]) %>%
+    unnest(from) %>% select(from, to, type)
+  oe = out %>% filter(type == 'e') %>% separate(edge, c('from', 'to'), '\\|') %>% select(-symbol)
+  bind_rows(oa, oe) %>% mutate(type = ifelse(type == 'a', 'admix', 'edge'))
+}
+
+predicted_f2 = function(graph, a = NULL, e = NULL) {
+
+  ge = graph_equations(graph)
+  fun = graph_to_function2(graph, ge)
+  if(is.null(a)) a = runif(numadmix(graph))
+  if(is.null(e)) e = rep(1e-2, length(E(graph))-2*length(a))
+  ge$eq %>% select(pop1, pop2) %>% mutate(f2 = fun(c(a,e), na))
+}
+
+predicted_f4 = function(graph, a = NULL, e = NULL) {
+
+}
 
 gr = function(graph) {
 
-  eq = graph_equations(graph)$eq %>% pull(eq2)
+  require(m2r)
+  eq = graph_equations(graph)
   #vrs = eq %>% str_replace_all('[\\*\\+\\(\\)]', ' ') %>% str_replace_all('1-', '') %>% str_replace_all('-', '') %>%
   #  str_squish() %>% str_split(' ') %>% unlist %>% unique
   m2r::stop_m2()
-  vrs = c(paste0('e', 1:50), paste0('a', 1:20))
-  rng = m2r::ring_.(vrs, coefring = "QQ")
+  rng = m2r::ring_.(eq$coding$symbol, coefring = "QQ")
 
-  # aa = map2(paste0('a', 1:3), rep(0.5, 3), ~assign(.x, .y, envir = .GlobalEnv))
-  # aa = map2(paste0('f', 1:21), rep(0, 3), ~assign(.x, .y, envir = .GlobalEnv))
-  #
-  # fpred = map_dbl(rlang::parse_exprs(eq1), eval)
-
-  out = m2r::gb_(eq)
+  out = m2r::gb_(eq$eq$eq2)
   m2r::stop_m2()
   out
 }
 
 find_invariants = function(graph, eps = 1e-7) {
+  # find f4-statistics which are exactly 0
 
   pops = get_leafnames(graph)
   ge = graph_equations(graph)
-  eq = ge$eq %>% transmute(p1 = target_1, p2 = target_2, eq = paste0('(', eq, ')')) %>%
+  eq = ge$eq %>% transmute(p1 = pop1, p2 = pop2, eq = paste0('(', eq, ')')) %>%
     bind_rows(rename(., p1 = p2, p2 = p1))
 
   myenv = new.env()

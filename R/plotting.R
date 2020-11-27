@@ -103,10 +103,11 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param title Plot title
 #' @param color Plot it in color or greyscale
 #' @param textsize Size of edge and node labels
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
-plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5) {
+plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE) {
 
   pdat = graph_to_plotdat(graph, fix = NULL, fix_down = TRUE)
 
@@ -136,6 +137,13 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
     scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle(title) +
     scale_x_continuous(expand = c(0.15, 0.15)) #+ scale_color_manual(values = c('black', 'red', 'blue'))
+
+  if(highlight_unidentifiable) {
+    unid = unidentifiable_edges(graph, 2)
+    unid2 = pdat$eg %>% rename(from = name) %>% right_join(unid %>% select(-type), by = c('from', 'to'))
+    plt = plt + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2,
+                             arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
+  }
   plt
 }
 
@@ -144,7 +152,7 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
 
   if(class(graph)[1] == 'igraph') {
     graph = graph
-    edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('V1', 'V2'))
+    edges = graph %>% igraph::as_edgelist() %>% as_tibble(.name_repair = ~c('V1', 'V2'))
   } else {
     if(is.null(colnames(graph))) colnames(graph) = paste0('V', 1:ncol(graph))
     edges = graph %>% as_tibble
@@ -156,7 +164,9 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
 
   pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
-  eg = as_tibble(as_edgelist(graph)) %>% left_join(pos, by=c('V1'='node')) %>%
+  eg = graph %>% igraph::as_edgelist() %>%
+    as_tibble(.name_repair = ~c('V1', 'V2')) %>%
+    left_join(pos, by=c('V1'='node')) %>%
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
@@ -691,13 +701,13 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
 #' @param shift_down Shift descendent nodes down
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @return A plotly object
 #' @examples
 #' plotly_graph(example_graph)
-plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE) {
+plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE, highlight_unidentifiable = FALSE) {
 
   if(class(graph)[1] == 'igraph') {
-    graph = graph
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
   } else {
     edges = graph %>% as_tibble
@@ -771,7 +781,11 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     ggtitle('') +
     scale_x_continuous(expand = c(0.1, 0.1))
 })
-
+    if(highlight_unidentifiable) {
+      unid = unidentifiable_edges(graph, 2)
+      unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
+      gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', data = unid2, size = 1)
+    }
   plt = plotly::ggplotly(gg, tooltip=c('text'))
   plt
 

@@ -10,7 +10,8 @@ plot_graph(
   fix_down = TRUE,
   title = "",
   color = TRUE,
-  textsize = 2.5
+  textsize = 2.5,
+  highlight_unidentifiable = FALSE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ By default this is only done for graphs with fewer than 10 leaves.}
 \item{color}{Plot it in color or greyscale}
 
 \item{textsize}{Size of edge and node labels}
+
+\item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 }
 \value{
 A ggplot object

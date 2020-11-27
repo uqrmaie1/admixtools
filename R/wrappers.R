@@ -990,7 +990,8 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
     arrange(date)
 
   # continue here: popsize controls neff and adm weights?
-  if(!'weight' %in% names(edges)) edges %<>% mutate(weight = ifelse(type == 'admix', 0.5, 1))
+  if(!'weight' %in% names(edges)) edges %<>% group_by(to) %>%
+    mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), 0.3, 0.7), 1)) %>% ungroup
   popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
   popsize[setdiff(edges$from, edges$to)] = 1
   edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup

@@ -4,7 +4,13 @@
 \alias{plotly_graph}
 \title{Plot an admixture graph using plotly}
 \usage{
-plotly_graph(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE)
+plotly_graph(
+  graph,
+  collapse_threshold = 0,
+  fix = FALSE,
+  shift_down = TRUE,
+  highlight_unidentifiable = FALSE
+)
 }
 \arguments{
 \item{graph}{An admixture graph}
@@ -16,6 +22,8 @@ the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
 
 \item{shift_down}{Shift descendent nodes down}
+
+\item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 }
 \value{
 A plotly object

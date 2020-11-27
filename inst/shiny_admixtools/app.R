@@ -278,7 +278,8 @@ ui = function(request) {
                                                                downloadButton('downloadgraph', 'Save graph'))),
                                                   menuItem('Plot options',
                                                            checkboxGroupInput('plotopt', '',
-                                                                              choices = c(`Reorder edges`='reorder_edges',
+                                                                              choices = c(`Highlight unidentifiable` = 'highlight_unidentifiable',
+                                                                                          `Reorder edges`='reorder_edges',
                                                                                           `Shift edges down`='shift_down',
                                                                                           `Collapse edges`='collapse_edges',
                                                                                           `Simplify`='simplify_graph'),
@@ -511,7 +512,7 @@ server = function(input, output, session) {
             numadm = numadmix(isolate(global$graph))
           }
           op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
-          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, outpop = op)
+          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, TRUE, outpop = op)
         }
 
         #global$qpg_right = qpg_right_fit()
@@ -658,7 +659,7 @@ server = function(input, output, session) {
   observeEvent(input$randgraph, {
     print('randg')
     op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
-    global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, outpop = op)
+    global$graph = random_admixturegraph(get_leafnames(global$graph), input$nadmix, TRUE, outpop = op)
   })
 
   observeEvent(input$qpgraph_update, {
@@ -1878,6 +1879,12 @@ server = function(input, output, session) {
       scale_linetype_manual(values = c(admix=3, normal=1)) +
       ggtitle('') +
       scale_x_continuous(expand = c(0.1, 0.1))
+
+    if('highlight_unidentifiable' %in% input$plotopt) {
+      unid = admixtools:::unidentifiable_edges(global$graph, 2)
+      unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
+      gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2)
+    }
 
     print('plotly_graph 4')
     plt = plotly::ggplotly(gg, source = 'src', tooltip=c('text'))
