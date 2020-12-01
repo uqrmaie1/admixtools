@@ -28,7 +28,10 @@ msprime_sim(
 
 \item{ind_per_pop}{The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.}
 
-\item{mutation_rate}{The default is set to a high value to obtain more polymorphic SNPs in order to speed up the simulation.}
+\item{mutation_rate}{Mutation rate per site per generation. The default is set to a high value (0.001) to obtain more polymorphic SNPs in order to speed up the simulation.}
+}
+\value{
+The file name and path of the simulation script
 }
 \description{
 Simulate an admixture graph in msprime

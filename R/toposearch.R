@@ -40,6 +40,11 @@ numadmix = function(graph) {
   sum(degree(graph, mode='in') == 2)
 }
 
+#' Test if an admixture graph is valid
+#'
+#' @export
+#' @param graph An admixture graph
+#' @return `TRUE` if graph is valid, otherwise `FALSE`
 is_valid = function(graph) {
 
   indegree = igraph::degree(graph, mode = 'in')
@@ -177,7 +182,8 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
-random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = NULL) {
+random_admixturegraph = function(leaves, numadmix = 0, simple = TRUE, outpop = NULL,
+                                 nonzero_f4 = NULL, admix_constraints = NULL, event_order = NULL, ntry = 100) {
   # makes a random admixture graph
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
@@ -187,16 +193,20 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = FALSE, outpop = 
     if(leaves > length(LETTERS)) leaves = paste0('l', seq_len(leaves))
     else leaves = LETTERS[seq_len(leaves)]
   }
-  #if(is.null(outpop)) outpop = sample(leaves, 1)
-  graph = leaves %>%
-    setdiff(outpop) %>%
-    sample %>%
-    random_newick(outpop = outpop) %>%
-    newick_to_edges %>%
-    graph_from_edgelist %>%
-    insert_admix_multi(numadmix)
-  #newick = random_newick(sample(setdiff(leaves, outpop)), outpop = outpop)
-  #graph = graph_from_edgelist(newick_to_edges(newick)) %>% insert_admix_multi(numadmix)
+  for(i in seq_len(ntry)) {
+    graph = leaves %>%
+      setdiff(outpop) %>%
+      sample %>%
+      random_newick(outpop = outpop) %>%
+      newick_to_edges %>%
+      graph_from_edgelist %>%
+      insert_admix_multi(numadmix)
+    if(all(map_lgl(list(nonzero_f4, admix_constraints, event_order), is.null)) ||
+       satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
+                             event_order = event_order)) break
+    if(i == ntry) warning('Constraints not satisfied!')
+  }
+
   if(!simple) graph %<>% desimplify_graph
   graph
 }
@@ -1239,7 +1249,6 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
 #'
 #' This function summarizes topologies of population triples across graphs. If the list of graphs comes from \code{\link{find_graphs}}, only one graph from each run should be included, as graphs within the same run are not independent of each other.
 #'
-#' @export
 #' @param graphs A list of graphs
 #' @return A data frame with one line for each population triple and columns summarizing the relationship of each triple across graphs.
 #' \itemize{
@@ -1762,6 +1771,7 @@ delete_admix = function(graph, from = NULL, to = NULL) {
 
   leaves = sort(get_leafnames(graph))
   desimplify = !is_simplified(graph)
+  ograph = graph
   if(is.null(from)) {
     if(desimplify) graph %<>% simplify_graph
     if(!is_valid(graph)) browser()
@@ -1959,7 +1969,11 @@ graphmod_pavel = function(basegraph, addpops, connection_edge, source_nodes) {
   graphs %>% map(~insert_edges(., e$source_nodes, e$addpops))
 }
 
-
+#' Split nodes with more than two edges
+#'
+#' @export
+#' @param graph An admixture graph
+#' @return A new admixture graph in which no node has more than two incoming or outgoing edges
 split_multifurcations = function(graph) {
   # input is graph as edge list matrix
   # output is a four column matrix with 'lower' and 'upper'
@@ -2411,7 +2425,10 @@ rearrange_negadmix3 = function(graph, from, to) {
   newgraph = graph %>%
     add_edges(c(grandparent_pos, to, to, parent_pos)) %>%
     delete_edges(paste(c(grandparent_pos, parent_pos, parent_neg), c(parent_pos, to, to), sep = '|'))
-  if(!is_valid(newgraph)) browser()
+  if(!is_valid(newgraph)) {
+    warning('rearrange_negadmix3 failed!')
+    return(NULL)
+  }
   if(length(parent_neg) != 1 || length(parent_pos) != 1) stop('aaa')
   newgraph2 = newgraph %>% add_edges(c(parent_neg, parent_pos)) %>% simplify_graph
   if(is_valid(newgraph2)) newgraph = newgraph2
@@ -2465,7 +2482,9 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
 find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
+                        stopafter_noimprovement = 15,
                         mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
+                        admix_constraints = NULL, event_order = NULL, reject_f4z = 0,
                         verbose = TRUE, ...) {
 
 
@@ -2476,7 +2495,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
     graph = initgraph
   }
   qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
-  qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
+  #qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
   stop_at = Sys.time() + stop_after
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
@@ -2501,10 +2520,12 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
               cntm_5 = NA)
   stdat = st_to_dat(st)
   tm = Sys.time()
+  nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
+  allzerof4ok = FALSE
 
   for(i in seq_len(numgen)) {
 
-    if(best <= stopscore || gimp > 15 || !is.null(stop_after) && Sys.time() > stop_at) break
+    if(best <= stopscore || gimp > stopafter_noimprovement || !is.null(stop_after) && Sys.time() > stop_at) break
     if(verbose) {
       alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
       msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
@@ -2520,6 +2541,10 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
     if(any(duplicated(models$hash))) browser()
     models %<>% rows_update(sel %>% mutate(expanded = TRUE), by = 'hash')
     graph = sel$g[[1]]
+    if(!allzerof4ok && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)){
+      allzerof4ok = TRUE
+      alert_info('All zero f4 ok!\n')
+    }
 
     if(gimp > 0 && gimp %% 5 == 0) {
 
@@ -2558,6 +2583,10 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
           rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
         newmod %<>% bind_rows(randmut)
       }
+      nzf4 = if(allzerof4ok) nonzero_f4 else NULL
+      print(nrow(newmod))
+      newmod %<>% filter(map_lgl(g, ~satisfies_constraints(., nzf4, admix_constraints, event_order)))
+      print(nrow(newmod))
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
         filter(!duplicated(hash), !hash %in% models$hash)
@@ -2745,34 +2774,34 @@ path_intersections = function(graph) {
 
 }
 
-unidentifiable_admixture = function(graph) {
-
-  stopifnot(is_valid(graph) && is_simplified(graph))
-
-  leaves = graph %>% get_leafnames
-  adm = names(which(degree(graph, mode = 'in') > 1))
-  unresolved_adm = adm
-  pis = path_intersections(graph)
-
-  for(i in 1:10) {
-    if(length(unresolved_adm) == 0) break
-
-    pis %<>% rowwise %>%
-      mutate(unresolved = list(intersect(unresolved_adm, union(admnodes, admnodes2))), unum = length(unresolved)) %>%
-      ungroup
-
-    resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
-    resolved1 = pis %>% filter(unum == 1, islen > 0, allunique) %>% pull(isstr) %>% unique
-
-    resolved_adm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1, allunique) %$%
-      unique(unlist(c(admnodes, admnodes2)))
-
-    if(length(resolved_adm) == 0) break
-
-    unresolved_adm %<>% setdiff(resolved_adm)
-  }
-  unresolved_adm
-}
+# unidentifiable_admixture = function(graph) {
+#
+#   stopifnot(is_valid(graph) && is_simplified(graph))
+#
+#   leaves = graph %>% get_leafnames
+#   adm = names(which(degree(graph, mode = 'in') > 1))
+#   unresolved_adm = adm
+#   pis = path_intersections(graph)
+#
+#   for(i in 1:10) {
+#     if(length(unresolved_adm) == 0) break
+#
+#     pis %<>% rowwise %>%
+#       mutate(unresolved = list(intersect(unresolved_adm, union(admnodes, admnodes2))), unum = length(unresolved)) %>%
+#       ungroup
+#
+#     resolved0 = pis %>% filter(unum == 0, islen > 0) %>% pull(isstr) %>% unique
+#     resolved1 = pis %>% filter(unum == 1, islen > 0, allunique) %>% pull(isstr) %>% unique
+#
+#     resolved_adm = pis %>% filter(isstr %in% intersect(resolved0, resolved1), unum == 1, allunique) %$%
+#       unique(unlist(c(admnodes, admnodes2)))
+#
+#     if(length(resolved_adm) == 0) break
+#
+#     unresolved_adm %<>% setdiff(resolved_adm)
+#   }
+#   unresolved_adm
+# }
 
 paths_through = function(graph, leaves, node) {
 
@@ -2906,9 +2935,10 @@ proxypred = function(sim, graphlist, auc = FALSE) {
 node_events = function(graph, leaves, node) {
   # for a node, list associated population splits and merges
 
-  children = neighbors(graph, node, mode = 'out')
+  children = names(neighbors(graph, node, mode = 'out'))
   if(length(children) == 0) {
-    out = tibble(type = 'leaf', pop1 = node, pop2 = NA)
+    #out = tibble(type = 'leaf', pop1 = node, pop2 = NA)
+    out = tibble()
   } else if(length(children) == 1) {
     # parents = neighbors(graph, node, mode = 'in')
     # desc1 = subcomponent(graph, parents[1], mode = 'out') %>% names %>% intersect(leaves)
@@ -2919,6 +2949,8 @@ node_events = function(graph, leaves, node) {
     desc1 = subcomponent(graph, children[1], mode = 'out') %>% names %>% intersect(leaves)
     desc2 = subcomponent(graph, children[2], mode = 'out') %>% names %>% intersect(leaves)
     out = expand_grid(type = 'split', pop1 = setdiff(desc1, desc2), pop2 = setdiff(desc2, desc1))
+    if(children[1] %in% leaves) out %<>% bind_rows(tibble(type = 'leaf', pop1 = children[1], pop2 = NA))
+    if(children[2] %in% leaves) out %<>% bind_rows(tibble(type = 'leaf', pop1 = children[2], pop2 = NA))
   } else {
     stop('More than two children!')
   }
@@ -2930,11 +2962,20 @@ all_node_events = function(graph) {
   # for each node in a graph, list associated population splits and merges
 
   leaves = get_leafnames(graph)
-  graph %>% V %>% names %>% set_names %>% map(~node_events(graph, leaves, .)) %>% bind_rows(.id = '.node')
+  graph %>% V %>% names %>% set_names %>% map(~node_events(graph, leaves, .)) %>% bind_rows(.id = 'node')
 
 }
 
-event_order = function(graph, unique_only = TRUE) {
+#' List the number of admixture events for each population
+#'
+#' @export
+#' @param graph An admixture graph
+#' @return A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
+#' @examples
+#' \dontrun{
+#' summarize_eventorder(example_igraph)
+#' }
+summarize_eventorder = function(graph, unique_only = TRUE) {
 
   node_pairs = graph %>% distances(mode = 'out') %>% as_tibble(rownames = 'from') %>%
     pivot_longer(-from, names_to = 'to', values_to = 'order') %>%
@@ -2945,23 +2986,29 @@ event_order = function(graph, unique_only = TRUE) {
     bind_rows(rename(., pop2 = pop1, pop1 = pop2) %>% filter(type != 'leaf'))
 
   out = expand_grid(rename_with(events, ~paste0(., '_1')), rename_with(events, ~paste0(., '_2'))) %>%
-    filter(.node_1 != .node_2) %>% left_join(node_pairs, by = c('.node_1'='from', '.node_2'='to')) %>%
+    filter(node_1 != node_2) %>% left_join(node_pairs, by = c('node_1'='from', 'node_2'='to')) %>%
     mutate(order = replace_na(order, 0))
   if(unique_only) {
   #   bla = out %>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
   #     mutate(x = all(c(-1,1) %in% order)) %>% ungroup %>% filter(x)
   #   if(nrow(bla) > 1) browser()
+    # out %<>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
+    #   mutate(order = all(c(-1,1) %in% order)) %>%
+    # slice_max(abs(order), with_ties = FALSE) %>% ungroup
     out %<>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
-      mutate(order = all(c(-1,1) %in% order)) %>%
-    slice_max(abs(order), with_ties = FALSE) %>% ungroup
+      filter(all(order != -1) & any(order == 1)) %>% ungroup %>%
+      transmute(earlier1 = pmin(pop1_1, pop2_1, na.rm=T),
+                earlier2 = pmax(pop1_1, pop2_1),
+                later1 = pmin(pop1_2, pop2_2, na.rm=T),
+                later2 = pmax(pop1_2, pop2_2), type1 = type_1, type2 = type_2) %>% distinct
   }
   out
 }
 
 summarize_graphlist_eventorder = function(graphlist) {
 
-  graphlist %>% map(event_order) %>% bind_rows(.id = 'g') %>%
-    select(-.node_1, -.node_2) %>%
+  graphlist %>% map(summarize_eventorder) %>% bind_rows(.id = 'g') %>%
+    select(-node_1, -node_2) %>%
     add_count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, name = 'obs') %>%
     count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, order, obs) %>%
     mutate(frac1 = n/length(graphlist), frac2 = n/obs) %>%
@@ -2969,19 +3016,19 @@ summarize_graphlist_eventorder = function(graphlist) {
 }
 
 
-unresolvable_params = function(groebner, vrs) {
-
-  resolved = c()
-  remaining = groebner %>% map(~intersect(vrs, unlist(map(., ~head(names(.), -1))))) %>% keep(~length(.) > 0)
-
-  repeat {
-  newresolved = remaining %>% keep(~length(.) == 1) %>% unlist %>% unique
-  resolved %<>% c(newresolved)
-  remaining %<>% keep(~length(.) > 1) %>% map(~setdiff(., resolved))
-  if(length(newresolved) == 0 || length(remaining) == 0) break
-  }
-  remaining
-}
+# unresolvable_params = function(groebner, vrs) {
+#
+#   resolved = c()
+#   remaining = groebner %>% map(~intersect(vrs, unlist(map(., ~head(names(.), -1))))) %>% keep(~length(.) > 0)
+#
+#   repeat {
+#   newresolved = remaining %>% keep(~length(.) == 1) %>% unlist %>% unique
+#   resolved %<>% c(newresolved)
+#   remaining %<>% keep(~length(.) > 1) %>% map(~setdiff(., resolved))
+#   if(length(newresolved) == 0 || length(remaining) == 0) break
+#   }
+#   remaining
+# }
 
 
 path_pairs = function(graph) {
@@ -3000,7 +3047,15 @@ path_pairs = function(graph) {
 
 }
 
-
+#' Find well fitting admixture graphs
+#'
+#' This function generates and evaluates admixture graphs in `numgen` iterations
+#' to find well fitting admixturegraphs.
+#' @export
+#' @param graph An admixture graph
+#' @param substitute Should edge names be represented by shorter symbols?
+#' @param nam Symbols used to shorten edge names
+#' @return A list with two data frames: `equations` holds the equtions for all f2-statistics; `coding` has the mapping from edge names to edge symbols, which is used when `substitute = TRUE`
 graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
 
   pp = path_pairs(graph)
@@ -3021,22 +3076,22 @@ graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
 
   eq = pp %>% filter(pop1 < pop2) %>%
     rowwise %>%
-    mutate(mul = list(ifelse(lr == 0, avars[admix], paste0('(1-',avars[admix],')'))), add = list(paste0(evars[edges])),
-           eq = list(paste0(paste0(mul, collapse = '*'), '*(', paste0(add, collapse = '+'), ')') %>% str_replace_all('^\\*', '')),
+    mutate(mul = list(ifelse(lr == 0, avars[admix], paste0('(1 - ',avars[admix],')'))), add = list(paste0(evars[edges])),
+           eq = list(paste0(paste0(mul, collapse = ' * '), ' * (', paste0(add, collapse = ' + '), ')') %>% str_replace_all('^ \\* ', '')),
            res = prod(ifelse(lr == 0, 1/4, 3/4)) * length(add),  resold = (1/4)^length(mul) * length(add),
            fvar = fvars[paste(pop1, pop2)]) %>%
     group_by(pop1, pop2) %>%
-    summarize(eq = paste0(eq, collapse = ' + '), fvar = fvar[1], res = sum(res)) %>% ungroup %>%
-    mutate(eq2 = paste0('(', eq, ')*2^10 - ', res*2^10)) %>% suppressMessages
+    summarize(equation = paste0(eq, collapse = ' + '), fvar = fvar[1], res = sum(res)) %>% ungroup %>%
+    mutate(eq2 = paste0('(', equation, ')*2^10 - ', res*2^10)) %>% select(pop1, pop2, equation) %>% suppressMessages
 
-  namedList(eq, coding)
+  list(equations = eq, coding = coding)
 }
 
-graph_to_function = function(graph, ge = NULL) {
+graph_to_function1 = function(graph, ge = NULL) {
 
   if(is.null(ge)) ge = graph_equations(graph)
   body1 = c('a = x[seq_len(na)]; e = x[(na+1):length(x)]; ')
-  body2 = map_chr(ge$eq$eq, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]')) %>%
+  body2 = map_chr(ge$equations$equation, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]')) %>%
     paste(collapse = ', ') %>% paste('c(', ., ')')
   body = rlang::parse_expr(paste0('{', body1, body2, '}'))
 
@@ -3047,14 +3102,14 @@ graph_to_function = function(graph, ge = NULL) {
 graph_to_function2 = function(graph, ge = NULL) {
 
   ge = graph_equations(graph)
-  xx = map_chr(ge$eq$eq, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]'))
-  Rcpp::cppFunction(paste0('NumericVector cppt(NumericVector x, int na) {x.push_front(0); NumericVector out(',length(ge$eq$eq),'); NumericVector a = x[Range(0,na)]; NumericVector e = x[Range(na-1,x.length())] = x[Range(na,x.length())]; ',paste0('out[', seq_along(xx)-1, '] = ', xx, collapse = '; '),'; return out;}'), plugins = 'cpp11')
+  xx = map_chr(ge$equations$equation, ~str_replace_all(., '([ae])([0-9]+)', '\\1\\[\\2\\]'))
+  Rcpp::cppFunction(paste0('NumericVector cppt(NumericVector x, int na) {x.push_front(0); NumericVector out(',length(ge$equations$equation),'); NumericVector a = x[Range(0,na)]; NumericVector e = x[Range(na-1,x.length())] = x[Range(na,x.length())]; ',paste0('out[', seq_along(xx)-1, '] = ', xx, collapse = '; '),'; return out;}'), plugins = 'cpp11')
 
 }
 
 graph_to_function3 = function(graph, ge = NULL) {
 
-  ge = graph_equations(graph)
+  if(is.null(ge)) ge = graph_equations(graph)
   na = numadmix(graph)
   ne = length(E(graph)) - 2*na
 
@@ -3078,26 +3133,36 @@ graph_to_function3 = function(graph, ge = NULL) {
 
 }
 
-graph_jacobian = function(graph) {
 
-  fun = graph_to_function(graph)
+graph_jacobian = function(graph, ge = NULL) {
+
+  if(is.null(ge)) ge = graph_equations(graph)
+  fun = graph_to_function1(graph, ge)
   na = numadmix(graph)
   ne = length(E(graph)) - 2*na
-  numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
+  jac = numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
+  colnames(jac) = ge$coding %>% filter(type != 'f') %>% pull(edge)
+  rownames(jac) = paste(ge$equations$pop1, ge$equations$pop2)
+  jac
 }
 
 
+#' Find all unidentifiable edges
+#'
+#' This function generates and evaluates admixture graphs in `numgen` iterations
+#' to find well fitting admixturegraphs.
+#' @export
+#' @param graph An admixture graph
+#' @param gtof which version of `graph_to_function` to use
+#' @return A data frame with all unidentifiable graph parameters
 unidentifiable_edges = function(graph, gtof = 1) {
 
   ge = graph_equations(graph)
-  fun = get(paste0('graph_to_function', gtof))(graph, ge)
-  na = numadmix(graph)
-  ne = length(E(graph)) - 2*na
+  jac = graph_jacobian(graph, ge)
+
+  dep = which(qr(jac)$rank == sapply(1:ncol(jac), function (i) qr(jac[,-i])$rank))
   adm = names(which(degree(graph, mode = 'in') > 1))
   parents = adm %>% rlang::set_names() %>% map(~names(neighbors(graph, ., mode = 'in')))
-
-  jac = numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
-  dep = which(qr(jac)$rank == sapply(1:ncol(jac), function (x) qr(jac[,-x])$rank))
   out = ge$coding %>% slice(dep)
   oa = out %>% filter(type == 'a') %>% rename(to = edge) %>% rowwise %>%  mutate(from = parents[to]) %>%
     unnest(from) %>% select(from, to, type)
@@ -3105,20 +3170,60 @@ unidentifiable_edges = function(graph, gtof = 1) {
   bind_rows(oa, oe) %>% mutate(type = ifelse(type == 'a', 'admix', 'edge'))
 }
 
+identifiable_sets = function(graph, jac, edge = NULL, n = 2) {
+
+  rnk = qr(jac)$rank
+  edges = colnames(jac)
+  dep = which(rnk == sapply(1:ncol(jac), function (i) qr(jac[,-i])$rank))
+  if(n == 1) return(t(t(edges[setdiff(1:ncol(jac), dep)])))
+  if(n > length(dep)) return(NULL)
+  if(is.null(edge)) cmb = combn(dep, n)
+  else cmb = rbind(edge, combn(dep, n-1))
+  #depn = which(sapply(1:ncol(cmb), function (i) qr(jac[,-cmb[,i]])$rank < rnk && all(map_lgl(seq_len(n), ~qr(jac[,-cmb[-.,i]])$rank == rnk))))
+  depn = which(sapply(1:ncol(cmb), function (i) qr(jac[,-cmb[,i]])$rank < rnk))
+  map(depn, ~edges[cmb[,.]]) %>% do.call('rbind', .)
+}
+
+identifiable_comb = function(graph, edge, jac = NULL, verbose = TRUE) {
+  # returns the smallest sets in which an edge becomes identifiable
+
+  stopifnot(edge %in% c(attr(E(graph), 'vnames'), names(V(graph))))
+  if(is.null(jac)) jac = graph_jacobian(graph)
+  edges = colnames(jac)
+
+  for(i in seq_len(length(E(graph)))) {
+    if(verbose) alert_info(paste0(i, '...\r'))
+    us = identifiable_sets(graph, jac, edge = which(edges == edge), n = i)
+    if(edge %in% unlist(us)) break
+  }
+  us[map_lgl(seq_len(nrow(us)), ~edge %in% us[.,]),,drop=FALSE]
+}
+
 predicted_f2 = function(graph, a = NULL, e = NULL) {
 
   ge = graph_equations(graph)
-  fun = graph_to_function2(graph, ge)
-  if(is.null(a)) a = runif(numadmix(graph))
+  fun = graph_to_function3(graph, ge)
+  na = numadmix(graph)
+  if(is.null(a)) a = runif(na)
   if(is.null(e)) e = rep(1e-2, length(E(graph))-2*length(a))
   ge$eq %>% select(pop1, pop2) %>% mutate(f2 = fun(c(a,e), na))
 }
 
 predicted_f4 = function(graph, a = NULL, e = NULL) {
 
+  f2 = predicted_f2(graph, a = a, e = e) %>% bind_rows(rename(., pop1=pop2, pop2=pop1))
+  pops = get_leafnames(graph)
+  expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+    filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
+    left_join(f2 %>% rename(pop1 = pop1, pop3 = pop2, f13 = f2)) %>%
+    left_join(f2 %>% rename(pop2 = pop1, pop4 = pop2, f24 = f2)) %>%
+    left_join(f2 %>% rename(pop1 = pop1, pop4 = pop2, f14 = f2)) %>%
+    left_join(f2 %>% rename(pop2 = pop1, pop3 = pop2, f23 = f2)) %>%
+    mutate(f4 = (f14 + f23 - f13 - f24)/2) %>% ungroup %>% suppressMessages
+
 }
 
-gr = function(graph) {
+graph_to_groebner = function(graph) {
 
   require(m2r)
   eq = graph_equations(graph)
@@ -3142,7 +3247,7 @@ find_invariants = function(graph, eps = 1e-7) {
 
   myenv = new.env()
   ge$coding %>% mutate(val = ifelse(type == 'e', 1, ifelse(type == 'a', runif(n()), NA))) %$%
-    map2(value, val, ~assign(.x, .y, myenv)) %>% invisible
+    map2(symbol, val, ~assign(.x, .y, myenv)) %>% invisible
 
   expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
     filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
@@ -3157,7 +3262,43 @@ find_invariants = function(graph, eps = 1e-7) {
 }
 
 
-satisfies_constraint = function(graph, earlier1, earlier2, later1, later2) {
+#' List all f4-statistics which have to be zero
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param eps Used to determine what counts as zero
+#' @return A data frame with all (non-redundant) zero f4-statistics
+#' @examples
+#' \dontrun{
+#' summarize_zerof4(example_igraph)
+#' }
+summarize_zerof4 = function(graph, eps = 1e-7) {
+
+  pp = path_pairs(graph) %>% select(pop1, pop2, edges, admix, lr) %>% mutate(i = 1:n()) %>% filter(pop1 < pop2)
+  pp2 = pp %>% select(-pop1, -pop2, -edges) %>% unnest(admix) %>% mutate(lr = pp %>% unnest(lr) %>% pull(lr))
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  admval = runif(length(adm)) %>% set_names(adm)
+  #ne = length(E(graph)) - 2*length(adm)
+  driftval = runif(length(E(graph))) %>% set_names(attr(E(graph), 'vnames'))
+
+  admixvals = pp2 %>%
+    mutate(aval = ifelse(lr == 0, admval[admix], 1-admval[admix])) %>%
+    group_by(i) %>% summarize(aval = prod(aval), .groups = 'drop')
+
+  f2 = pp %>% left_join(admixvals, by = 'i') %>% mutate(aval = replace_na(aval, 1)) %>% unnest(edges) %>% mutate(eval = driftval[edges]) %>% group_by(pop1, pop2) %>% summarize(f2 = sum(aval * eval), .groups = 'drop') %>% ungroup %>% bind_rows(rename(., pop1 = pop2, pop2 = pop1))
+
+  pops = get_leafnames(graph)
+  expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+    filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
+    left_join(f2 %>% rename(pop1 = pop1, pop3 = pop2, f13 = f2)) %>%
+    left_join(f2 %>% rename(pop2 = pop1, pop4 = pop2, f24 = f2)) %>%
+    left_join(f2 %>% rename(pop1 = pop1, pop4 = pop2, f14 = f2)) %>%
+    left_join(f2 %>% rename(pop2 = pop1, pop3 = pop2, f23 = f2)) %>%
+    mutate(f4 = (f14 + f23 - f13 - f24)/2) %>% ungroup %>% suppressMessages %>%
+    filter(between(f4, -eps, eps)) %>% select(pop1:pop4)
+}
+
+satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 
   root = get_rootname(graph)
   # pe1 = all_simple_paths(graph, 'Russia_Ust_Ishim.DG', root, mode = 'in')
@@ -3165,10 +3306,13 @@ satisfies_constraint = function(graph, earlier1, earlier2, later1, later2) {
   # pl1 = all_simple_paths(graph, 'Mbuti.DG', root, mode = 'in')
   # pl2 = all_simple_paths(graph, 'Vindija.DG', root, mode = 'in')
 
+  if(is.na(earlier2)) earlier2 = names(neighbors(graph, earlier1, mode='in'))
+  if(is.na(later2)) later2 = names(neighbors(graph, later1, mode='in'))
   pe1 = all_simple_paths(graph, earlier1, root, mode = 'in')
   pe2 = all_simple_paths(graph, earlier2, root, mode = 'in')
   pl1 = all_simple_paths(graph, later1, root, mode = 'in')
   pl2 = all_simple_paths(graph, later2, root, mode = 'in')
+  if(length(pe1) == 0 || length(pe2) == 0 || length(pl1) == 0 || length(pl2) == 0) browser()
 
   ppis = expand_grid(expand_grid(pe1, pe2) %>% mutate(i = 1:n()),
                      expand_grid(pl1, pl2) %>% mutate(j = 1:n())) %>% rowwise %>%
@@ -3185,52 +3329,128 @@ satisfies_constraint = function(graph, earlier1, earlier2, later1, later2) {
   res
 }
 
+#' Test f4 constraints on a graph
+#'
+#' This function returns `TRUE` if and only if the admixture graph is compatible with
+#' all event orders listed in event_order
+#' @export
+#' @param graph An admixture graph
+#' @param event_order A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
+#' @param strict What to do in case some events are not determined by the graph.
+#' If `strict = TRUE` (the default), the function will only return `TRUE` if there are no ambiguous constraints.
+#' Otherwise, `TRUE` will be returned as long as no constraint is directly contradicted.
+#' @return `TRUE` if all constraints are satisfied, else `FALSE`
+#' @examples
+#' \dontrun{
+#' # Test whether the split between A and B is earlier than the split between C and D,
+#' #   and whether the split between C and D is earlier than the terminal branch leading to E
+#' constrain_events = tribble(
+#'   ~earlier1, ~earlier2, ~later1, ~later2,
+#'   'A', 'B', 'C', 'D',
+#'   'C', 'D', 'E', NA)
+#' satisfies_eventorder(random_admixturegraph(5, 0), constrain_events)
+#' }
+satisfies_eventorder = function(graph, event_order, strict = TRUE) {
 
-validate_constraints = function(constraints, graph) {
-
-  # constraints is data frame with columns earlier1, earlier2, later1, later2
-  # output adds column 'status'
-
-  constraints %>% rowwise %>% mutate(status = satisfies_constraint(graph, earlier1, earlier2, later1, later2)) %>% ungroup
-
+  if(is.null(event_order)) return(TRUE)
+  status = event_order %>% rowwise %>%
+    mutate(ok = satisfies_oneevent(graph, earlier1, earlier2, later1, later2)) %>%
+    ungroup %>% pull(ok)
+  if(strict) return(isTRUE(all(status)))
+  all(na.omit(status))
 }
 
+#' Test f4 constraints on a graph
+#'
+#' This function returns `TRUE` if and only if the admixture graph is compatible with
+#' the f4-statistics listed in `nonzero_f4` being non-zero
+#' @export
+#' @param graph An admixture graph
+#' @param nonzero_f4 A data frame or matrix with four columns. One row for each f4-statistic which is
+#' observed to be significantly non-zero
+#' @return `TRUE` if all constraints are satisfied, else `FALSE`
+#' @examples
+#' \dontrun{
+#' # Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
+#' constrain_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
+#' satisfies_numadmix(random_admixturegraph(5, 2), constrain_f4)
+#' }
+satisfies_zerof4 = function(graph, nonzero_f4) {
 
-# can delete this one
-edge_poppairs = function(graph) {
-  # lists the two sets of population pairs (up, down) associated with each drift edge
+  if(is.null(nonzero_f4) || nrow(nonzero_f4) == 0) return(TRUE)
+  unexpected_f4 = nonzero_f4 %>% inner_join(zero_f4(graph)) %>% suppressMessages()
+  nrow(unexpected_f4) == 0
+}
 
-  leaves = get_leafnames(graph)
-  root = get_rootname(graph)
+#' List the number of admixture events for each population
+#'
+#' @export
+#' @param graph An admixture graph
+#' @return A data frame with columns `pop` and `nadmix`
+#' @examples
+#' \dontrun{
+#' summarize_numadmix(example_igraph)
+#' }
+summarize_numadmix = function(graph) {
+  # returns a data frame which lists the maximum number of admixture events for each population
+
   adm = names(which(degree(graph, mode = 'in') > 1))
-  internal = setdiff(names(V(graph)), c(leaves, root))
-  internal %>% rlang::set_names() %>% map(~names(subcomponent(graph, ., mode = 'out'))) %>%
-    map(~intersect(., leaves)) %>% keep(~length(.) > 1) %>% enframe('node', 'down') %>%
-    rowwise %>% mutate(up = list(setdiff(leaves, down))) %>% filter(length(up) > 1) %>% ungroup %>% unnest(down) %>% unnest(up)
+  graph %>% get_leafnames %>% set_names %>%
+    map(~all_simple_paths(graph, 'R', ., mode = 'out') %>% map_dbl(~length(intersect(adm, names(.)))) %>% max) %>%
+    unlist %>% enframe('pop', 'nadmix')
 }
 
 
+#' Test admixture constraints on a graph
+#'
+#' This function returns `TRUE` if and only if the admixture graph satisfies all constraints on
+#' the number of admixture events for the populations in `admix_constraints`
+#' @export
+#' @param graph An admixture graph
+#' @param admix_constraints A data frame with columns `pop`, `min`, `max`
+#' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
+#' @examples
+#' \dontrun{
+#' # At least one admixture event for C, and none for D:
+#' constrain_cd = tribble(
+#'   ~pop, ~min, ~max,
+#'   'C', 1, NA,
+#'   'D', 0, NA)
+#' satisfies_numadmix(random_admixturegraph(5, 2), constrain_cd)
+#' }
+satisfies_numadmix = function(graph, admix_constraints) {
+  # admix_constraints is data frame with minimum and maximum admixture for each population
 
-classify_drift = function(graph) {
-
-  leaves = get_leafnames(graph)
-  root = get_rootname(graph)
-  adm = names(which(degree(graph, mode = 'in') > 1))
-  internal = setdiff(names(V(graph)), c(leaves, root))
-
-  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names)
-
-  pairwise = expand_grid(p1 = paths, p2 = paths) %>% rowwise %>% mutate(d1 = list(setdiff(p1, p2)), d2 = list(setdiff(p2, p1)), pop1 = tail(p1, 1), pop2 = tail(p2, 1)) %>% filter(pop1 != pop2) %>% group_by(pop1, pop2) %>% summarize(c1 = list(setdiff(unlist(d1), unlist(d2))), c2 = list(setdiff(unlist(d2), unlist(d1)))) %>% ungroup
-
-  # continue here: not enough clades in g_afr
-
-  driftclass = pairwise %>% expand_grid(int = internal) %>% rowwise %>% mutate(to1 = (int %in% c1)+0, to2 = (int %in% c2)+0, txt = ifelse(to1 & to2, 'both', ifelse(!to1 & !to2, 'neither', ifelse(to1, '1', '2')))) %>% select(-c1, -c2) %>% ungroup
-
-  driftclass %>% left_join(driftclass, by = c('int')) %>% filter(pop1.x != pop1.y, pop1.x != pop2.y, pop2.x != pop1.y) %>% mutate(pos = ifelse(txt.x == 'neither' | txt.y == 'neither', NA, ifelse(txt.x != 'both' & txt.y != 'both' & txt.x == txt.y, TRUE, FALSE)), neg = ifelse(txt.x == 'neither' | txt.y == 'neither', NA, ifelse(txt.x != 'both' & txt.y != 'both' & txt.x != txt.y, TRUE, FALSE))) %>% group_by(pop1.x, pop2.x, pop1.y, pop2.y) %>% summarize(clade = !any((to1.x | to2.x) & (to1.y | to2.y)), pos = all(pos, na.rm=T), neg = all(neg, na.rm=T)) %>% ungroup
-
+  if(is.null(admix_constraints)) return(TRUE)
+  unexpected_admix = admix_constraints %>%
+    left_join(summarize_numadmix(graph), by = 'pop') %>%
+    filter(nadmix < min | nadmix > max)
+  nrow(unexpected_admix) == 0
 }
 
 
+#' Test constraints on a graph
+#'
+#' This function tests whether a graph satisfies a number of different types of constraints
+#' @export
+#' @param graph An admixture graph
+#' @param nonzero_f4 A data frame or matrix with four columns. One row for each f4-statistic which is
+#' observed to be significantly non-zero
+#' @param admix_constraints A data frame with columns `pop`, `min`, `max`
+#' @param event_order A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
+#' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
+#' @seealso \code{\link{satisfies_numadmix}}, \code{\link{satisfies_zerof4}}, \code{\link{satisfies_eventorder}}
+#' \dontrun{
+#' # At least one admixture event for C, and none for D:
+#' constrain_cd = tibble(pop = c('C', 'D'), min = c(1, NA), max = c(NA, 0))
+#' satisfies_numadmix(random_admixturegraph(5, 2), constrain_cd)
+#' }
+satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = NULL, event_order = NULL) {
+
+  satisfies_zerof4(graph, nonzero_f4) &&
+    satisfies_numadmix(graph, admix_constraints) &&
+    satisfies_eventorder(graph, event_order)
+}
 
 
 

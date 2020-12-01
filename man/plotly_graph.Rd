@@ -9,6 +9,7 @@ plotly_graph(
   collapse_threshold = 0,
   fix = FALSE,
   shift_down = TRUE,
+  print_highlow = FALSE,
   highlight_unidentifiable = FALSE
 )
 }

@@ -12,8 +12,12 @@ find_graphs2(
   numadmix = 0,
   stopscore = 0,
   stop_after = NULL,
+  stopafter_noimprovement = 15,
   mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
     flipadmix_random, mutate_n),
+  admix_constraints = NULL,
+  event_order = NULL,
+  reject_f4z = 0,
   verbose = TRUE,
   ...
 )

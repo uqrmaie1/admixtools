@@ -939,6 +939,13 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 }
 
 
+pseudo_dates = function(graph, time = 1) {
+
+  edges = graph %>% as_edgelist()
+  pdat = graph_to_plotdat(edges)$eg
+  bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
+    mutate(y = y - min(y) + 1) %>% distinct %>% deframe %>% multiply_by(time)
+}
 
 
 #' Simulate an admixture graph in msprime
@@ -948,20 +955,21 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 #' @param nsnps The number of SNPs to simulate. All SNPs will be simulated independently of each other.
 #' @param neff Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
 #' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
-#' @param mutation_rate The default is set to a high value to obtain more polymorphic SNPs in order to speed up the simulation.
+#' @param mutation_rate Mutation rate per site per generation. The default is set to a high value (0.001) to obtain more polymorphic SNPs in order to speed up the simulation.
+#' @return The file name and path of the simulation script
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' msprime_sim(results$edges)
 #' }
-msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000, ind_per_pop = 1,
+msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000, ind_per_pop = 1,
                        mutation_rate = 1e-3, time = 1000, run = FALSE, numcores = 1, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
   else if(is.matrix(graph) && ncol(graph) == 2) edges = as_tibble(graph, .name_repair = ~c('from', 'to'))
   else edges = graph
-  pdat = graph_to_plotdat(edges)$eg
+
   edges %<>% add_count(to) %>%
     mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   adm = edges %>% filter(type == 'admix') %>% pull(to)
@@ -972,22 +980,25 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
 
   if(length(time) == 1) {
 
-    dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
-      mutate(y = y - min(y) + 1) %>% distinct %>% deframe
+    dates = pseudo_dates(graph, time)
+    #dates[leaves] = dates[leaves] * 0.5
     if(shorten_admixed_leaves) {
       # simulates the behavior of treemix where drift after admixture is not allowed
       admleaves = edges %>% filter(to %in% leaves, from %in% adm) %>% select(from, to) %>% deframe
       dates[admleaves] = 0.999 * dates[names(admleaves)]
     }
-    edges %<>% mutate(date = dates[edges$to]*time)
+    #edges %<>% mutate(date = dates[edges$to]*time)
+    edges %<>% mutate(date = dates[edges$from])
 
   } else {
 
     edges %<>% left_join(enframe(time, 'from', 'date'), by = 'from')
+    dates = time
 
   }
   edges %<>% mutate(source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
     arrange(date)
+  dates[leaves[1]] = 0
 
   # continue here: popsize controls neff and adm weights?
   if(!'weight' %in% names(edges)) edges %<>% group_by(to) %>%
@@ -995,6 +1006,8 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
   popsize[setdiff(edges$from, edges$to)] = 1
   edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup
+  #date = tibble(to = nodes) %>% left_join(edges %>% select(to, date) %>% distinct, by = 'to') %>% deframe %>% replace_na(0)
+  #date = date - time
 
   out = "import math\nimport numpy\nimport msprime\nimport multiprocessing\n"
 
@@ -1005,6 +1018,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
   out = paste0(out, '\npops = [\n', paste0('  msprime.PopulationConfiguration(initial_size = ', initsize,
                                         ')', c(rep(',', length(nodes)-1), ''),
                                         ' #',(1:length(nodes))-1, ' ', nodes, '\n', collapse = '') ,']\n')
+  out = paste0(out, '\ndate = [', paste0(dates[nodes], collapse = ', '),']\n')
 
   lnum = match(leaves, nodes) - 1
 
@@ -1023,7 +1037,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
 
     indnam = paste(rep(leaves, each = ind_per_pop), seq_len(ind_per_pop), sep = '_')
     out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
-    out = paste0(out, '\n\nsamples = [msprime.Sample(j, 0) for j in [', paste(lnum, collapse = ', '),'] for i in range(',2*ind_per_pop,')]')
+    out = paste0(out, '\n\nsamples = [msprime.Sample(j, max(0, date[j])) for j in [', paste(lnum, collapse = ', '),'] for i in range(',2*ind_per_pop,')]')
   }
 
   out = paste0(out, '\n\nevents = [\n',
@@ -1067,12 +1081,13 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1e3, neff = 1000,
     if(isTRUE(run)) run = 'python'
     system(paste(run, outfilename))
   }
+  tools::file_path_as_absolute(outfilename)
 }
 
 
-f2_from_graph = function(graph, outpref = NULL, nsnps = 1e3, neff = 1000, ind_per_pop = 1,
-                         mutation_rate = 1e-5, time = 1e4, run = 'python',
-                         cleanup = TRUE, blgsize = 0.05, verbose = TRUE) {
+f2_from_simulation = function(graph, outpref = NULL, nsnps = 1000, neff = 1000, ind_per_pop = 1,
+                              mutation_rate = 1e-3, time = 1000, run = 'python',
+                              cleanup = TRUE, blgsize = 0.05, verbose = TRUE) {
 
   if(is.null(outpref)) outpref = tempfile()
   if(verbose) alert_info('Simulating data...\n')

@@ -281,8 +281,7 @@ ui = function(request) {
                                                                               choices = c(`Highlight unidentifiable` = 'highlight_unidentifiable',
                                                                                           `Reorder edges`='reorder_edges',
                                                                                           `Shift edges down`='shift_down',
-                                                                                          `Collapse edges`='collapse_edges',
-                                                                                          `Simplify`='simplify_graph'),
+                                                                                          `Collapse edges`='collapse_edges'),
                                                                               selected = c('shift_down')),
                                                            sliderInput('collapse_threshold', 'Log10 collapse threshold', -6, 2, -3, step = 0.1))),
                                          menuItem('Options', tabName = 'options', expandedName = 'options', id = 'options', icon = icon('cogs'),
@@ -512,7 +511,7 @@ server = function(input, output, session) {
             numadm = numadmix(isolate(global$graph))
           }
           op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
-          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, TRUE, outpop = op)
+          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, F, outpop = op)
         }
 
         #global$qpg_right = qpg_right_fit()
@@ -884,6 +883,7 @@ server = function(input, output, session) {
       edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
     } else {
       edges = graph %>% as_tibble(.name_repair = make.unique)
+      if(nrow(edges) == 0) browser()
       graph %<>% select(1:2) %>% as.matrix %>% graph_from_edgelist()
     }
     names(edges)[1:2] = c('from', 'to')
@@ -1452,7 +1452,8 @@ server = function(input, output, session) {
 
       alert = function(x) shinyalert('Could not insert edge!', as.character(x))
       tryCatch({
-        gnew = admixtools:::insert_admix_old(g, from, to, allow_below_admix = TRUE)
+        #gnew = admixtools:::insert_admix_old(g, from, to, allow_below_admix = TRUE)
+        gnew = admixtools:::insert_admix(g, from, to)
       }, warning = alert, error = alert)
       if(!exists('gnew') || is.null(gnew)) return()
       if(!admixtools:::is_valid(gnew)) {
@@ -1861,10 +1862,6 @@ server = function(input, output, session) {
       ggplot(aes(x=x, xend=xend, y=y, yend=yend, from=from, to=to)) +
       geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
                    arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches'))) +
-      geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
-                size = textsize) +
-      geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
-                                         from = NA, text = 'text'), size = textsize) +
       geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
       annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0, vjust = 1,
                label = scoretext) +
@@ -1885,6 +1882,11 @@ server = function(input, output, session) {
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
       gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2)
     }
+
+    gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
+                size = textsize) +
+              geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
+                                         from = NA, text = 'text'), size = textsize)
 
     print('plotly_graph 4')
     plt = plotly::ggplotly(gg, source = 'src', tooltip=c('text'))

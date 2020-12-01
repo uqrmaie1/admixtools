@@ -169,6 +169,7 @@ arma::cube cpp_mats_to_f2_arr(arma::mat& afmat1, arma::mat& afmat2, arma::mat& c
 NumericVector row_prods(NumericMatrix x) {
   // Stolen from Rfast
   const int n=x.nrow();
+
   NumericVector f(n);
   mat X = mat(x.begin(), n, x.ncol(), false);
   colvec ff(f.begin(),n,false);

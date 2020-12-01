@@ -9,11 +9,6 @@ template:
 
 url: https://uqrmaie1.github.io/admixtools/index.html
 
-articles:
-  - title: Plotting
-    contents:
-    - starts_with("authoring")
-
 reference:
   - title: "ADMIXTOOLS programs"
     contents:

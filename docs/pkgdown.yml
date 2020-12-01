@@ -1,5 +1,5 @@
 pandoc: 2.7.3
-pkgdown: 1.4.1
+pkgdown: 1.6.1
 pkgdown_sha: ~
 articles:
   admixtools: admixtools.html
@@ -9,6 +9,8 @@ articles:
   parallel: parallel.html
   plotting: plotting.html
   resampling: resampling.html
+  simulations: simulations.html
+last_built: 2020-11-30T21:38Z
 urls:
   reference: https://uqrmaie1.github.io/admixtools/index.html/reference
   article: https://uqrmaie1.github.io/admixtools/index.html/articles

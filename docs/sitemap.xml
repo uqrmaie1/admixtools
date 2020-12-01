@@ -19,10 +19,10 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/boo_list.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits2.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits3.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits2.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits4.html</loc>
@@ -124,6 +124,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_graphs.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_graphs2.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_newedges.html</loc>
   </url>
   <url>
@@ -157,7 +160,13 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_addleaf.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_equations.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_flipadmix.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_hash.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_minusone.html</loc>
@@ -178,22 +187,28 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/group_samples.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_igraph.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_edge.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_multi.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_edges.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_old.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_leaf.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/is_valid.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/isomorphism_classes.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/isomorphism_classes2.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/joint_spectrum.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/lazadm.html</loc>
@@ -367,10 +382,16 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/split_mat.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/split_multifurcations.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/spr_all.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/spr_leaves.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_fits.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_triples.html</loc>
@@ -383,6 +404,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/tree_neighbors.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/unidentifiable_edges.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_dot.html</loc>
@@ -410,5 +434,8 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/resampling.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/simulations.html</loc>
   </url>
 </urlset>

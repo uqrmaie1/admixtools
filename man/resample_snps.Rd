@@ -9,15 +9,15 @@
 \alias{qpgraph_resample_snps}
 \title{Run models while leaving out SNP blocks}
 \usage{
-qp3pop_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+qp3pop_resample_snps(f2_blocks, boot = FALSE, ...)
 
-qpdstat_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+qpdstat_resample_snps(f2_blocks, boot = FALSE, ...)
 
-qpwave_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+qpwave_resample_snps(f2_blocks, boot = FALSE, ...)
 
-qpadm_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+qpadm_resample_snps(f2_blocks, boot = FALSE, ...)
 
-qpgraph_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
+qpgraph_resample_snps(f2_blocks, boot = FALSE, ...)
 }
 \arguments{
 \item{f2_blocks}{a 3d array of blocked f2 statistics}
@@ -26,9 +26,9 @@ qpgraph_resample_snps(f2_blocks, boot = FALSE, verbose = TRUE, ...)
 Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
 or equal to the number of blocks if \code{boot} is \code{TRUE}.}
 
-\item{verbose}{print progress updates}
-
 \item{...}{named arguments which are passed to the \code{qp} function.}
+
+\item{verbose}{print progress updates}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs

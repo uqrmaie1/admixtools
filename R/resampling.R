@@ -578,7 +578,8 @@ est_to_boo_dat = function(dat, nboot = 1000) {
 # Returns a function which will repeadetly evaluate `qpfun` on
 # jackknife or bootstrap resamplings of the f2_blocks, returning a nested data frame
 make_resample_snps_fun = function(qpfun) {
-  function(f2_blocks, boot = FALSE, verbose = TRUE, ...) {
+  function(f2_blocks, boot = FALSE, ...) {
+    verbose = TRUE
     if(boot) {
       if(boot == 1) boot = dim(f2_blocks)[3]
       boo = boo_list(f2_blocks, boot)
@@ -591,7 +592,7 @@ make_resample_snps_fun = function(qpfun) {
     if(verbose) alert_info(paste0('Running models...\n'))
     fun = function(x) safely(qpfun)(x, verbose = FALSE, ...)
     tibble(id = seq_len(length(f2dat)), f2dat, sel) %>%
-      mutate(out = furrr::future_map(f2dat, fun, .progress = verbose),
+      mutate(out = furrr::future_map(f2dat, fun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE)),
              result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
       select(-out) %>% unnest_wider(result)
   }
@@ -696,6 +697,17 @@ qpadm_resample_inds = make_resample_inds_fun(function(...) qpadm(..., getcov = F
 qpgraph_resample_inds = make_resample_inds_fun(qpgraph)
 
 
+#' Summarize graph fits
+#'
+#' This function takes the output of \code{\link{qpgraph_resample_snps}} and creates a data frame with summaries of the estimated graph parameters. `weight` has the mean of all fits, while `low` and `high` have lower and upper quantiles.
+#' @export
+#' @param fits A nested data frame where each line is the output of `qpgraph()`
+#' @return A data frame summarizing the fits
+#' @seealso \code{\link{qpgraph_resample_snps}}
+summarize_fits = function(fits, q_low = 0.05, q_high = 0.95) {
+  fits$edges %>% bind_rows(.id = 'i') %>% group_by(from, to) %>%
+    summarize(type = type[1], low = quantile(weight, q_low), high = quantile(weight, q_high), weight = mean(weight))
+}
 
 
 

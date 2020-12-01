@@ -45,7 +45,7 @@ f2_blocks = f2_from_geno(outprefix, verbose = FALSE)
 
 The last two steps can also be combined into one step with the `f2_from_graph()` function.
 ```{r, eval = F}
-f2_blocks = f2_from_graph(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
+f2_blocks = f2_from_simulation(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
 ```
 
 As expected, the graph under which the data were simulated has a very good fit:

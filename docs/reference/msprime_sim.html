@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Generate msprime simulation code from admixture graph — msprime_sim • admixtools</title>
+<title>Simulate an admixture graph in msprime — msprime_sim • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -15,23 +15,29 @@
 <link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
 <link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
 <link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
-<!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<!-- jquery -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/all.min.css" integrity="sha256-nAmazAk6vS34Xqo0BSrTb+abbtFlgsFK7NKSi6o7Y78=" crossorigin="anonymous" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.7.1/css/v4-shims.min.css" integrity="sha256-6qHlizsOWFskGlwVOKuns+D1nB6ssZrHQrNj1wGplHc=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
 <!-- headroom.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/headroom.min.js" integrity="sha256-DJFC1kqIhelURkuza0AvYal5RxMtpzLjFhsnVIeuk+U=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.9.4/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -40,17 +46,17 @@
 
 <!-- docsearch -->
 <script src="../docsearch.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/docsearch.js/2.6.1/docsearch.min.css" integrity="sha256-QOSRU/ra9ActyXkIBbiIB144aDBdtvXBcNc3OTNuX/Q=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/docsearch.js/2.6.3/docsearch.min.css" integrity="sha256-QOSRU/ra9ActyXkIBbiIB144aDBdtvXBcNc3OTNuX/Q=" crossorigin="anonymous" />
 <link href="../docsearch.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
   
   <script src="../extra.js"></script>
-<meta property="og:title" content="Generate msprime simulation code from admixture graph — msprime_sim" />
 
-<meta property="og:description" content="Generate msprime simulation code from admixture graph" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:title" content="Simulate an admixture graph in msprime — msprime_sim" />
+<meta property="og:description" content="Simulate an admixture graph in msprime" />
+
 
 
 
@@ -77,7 +83,7 @@
 
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -134,13 +140,15 @@
     <li>
       <a href="../articles/resampling.html">Standard errors</a>
     </li>
+    <li>
+      <a href="../articles/simulations.html">Simulations</a>
+    </li>
   </ul>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
-  <a href="https://github.com/uqrmaie1/admixtools">
+  <a href="https://github.com/uqrmaie1/admixtools/">
     <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
@@ -164,60 +172,72 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Generate msprime simulation code from admixture graph</h1>
+    <h1>Simulate an admixture graph in msprime</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
     <div class="hidden name"><code>msprime_sim.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    
-    <p>Generate msprime simulation code from admixture graph</p>
-    
+    <p>Simulate an admixture graph in msprime</p>
     </div>
 
-    <pre class="usage"><span class='fu'>msprime_sim</span>(
-  <span class='no'>graph</span>,
-  <span class='kw'>outfilename</span> <span class='kw'>=</span> <span class='st'>"msprime_sim.py"</span>,
-  <span class='kw'>outpref</span> <span class='kw'>=</span> <span class='st'>"msprime_sim"</span>,
-  <span class='kw'>nsnps</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
-  <span class='kw'>neff</span> <span class='kw'>=</span> <span class='fl'>1000</span>,
-  <span class='kw'>ind_per_pop</span> <span class='kw'>=</span> <span class='fl'>1</span>,
-  <span class='kw'>mutation_rate</span> <span class='kw'>=</span> <span class='fl'>1e-05</span>,
-  <span class='kw'>time</span> <span class='kw'>=</span> <span class='fl'>10000</span>,
-  <span class='kw'>run</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>python</span> <span class='kw'>=</span> <span class='st'>"python"</span>
-)</pre>
-    
+    <pre class="usage"><span class='fu'>msprime_sim</span><span class='op'>(</span>
+  <span class='va'>graph</span>,
+  outpref <span class='op'>=</span> <span class='st'>"msprime_sim"</span>,
+  nsnps <span class='op'>=</span> <span class='fl'>1000</span>,
+  neff <span class='op'>=</span> <span class='fl'>1000</span>,
+  ind_per_pop <span class='op'>=</span> <span class='fl'>1</span>,
+  mutation_rate <span class='op'>=</span> <span class='fl'>0.001</span>,
+  time <span class='op'>=</span> <span class='fl'>1000</span>,
+  run <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  numcores <span class='op'>=</span> <span class='fl'>1</span>,
+  shorten_admixed_leaves <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span></pre>
+
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>Graph as <code>igraph</code> object or edge list with columns 'from' and 'to' (optionally 'weight')</p></td>
+      <td><p>Graph as <code>igraph</code> object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.</p></td>
+    </tr>
+    <tr>
+      <th>outpref</th>
+      <td><p>Prefix of output files</p></td>
+    </tr>
+    <tr>
+      <th>nsnps</th>
+      <td><p>The number of SNPs to simulate. All SNPs will be simulated independently of each other.</p></td>
+    </tr>
+    <tr>
+      <th>neff</th>
+      <td><p>Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.</p></td>
+    </tr>
+    <tr>
+      <th>ind_per_pop</th>
+      <td><p>The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.</p></td>
+    </tr>
+    <tr>
+      <th>mutation_rate</th>
+      <td><p>Mutation rate per site per generation. The default is set to a high value (0.001) to obtain more polymorphic SNPs in order to speed up the simulation.</p></td>
     </tr>
     </table>
-    
+
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>msprime python code backbone</p>
-    
+    <p>The file name and path of the simulation script</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='no'>results</span> <span class='kw'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span>(<span class='no'>example_f2_blocks</span>, <span class='no'>example_graph</span>)
-<span class='fu'>msprime_sim</span>(<span class='no'>results</span>$<span class='no'>edges</span>)
-}</div></pre>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>results</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>example_graph</span><span class='op'>)</span>
+<span class='fu'>msprime_sim</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span><span class='op'>)</span>
+<span class='op'>}</span>
+</div></pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
 
@@ -228,7 +248,7 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.4.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

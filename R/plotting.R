@@ -139,7 +139,7 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
     scale_x_continuous(expand = c(0.15, 0.15)) #+ scale_color_manual(values = c('black', 'red', 'blue'))
 
   if(highlight_unidentifiable) {
-    unid = unidentifiable_edges(graph, 2)
+    unid = unidentifiable_edges(graph, 1)
     unid2 = pdat$eg %>% rename(from = name) %>% right_join(unid %>% select(-type), by = c('from', 'to'))
     plt = plt + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2,
                              arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
@@ -705,7 +705,9 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @return A plotly object
 #' @examples
 #' plotly_graph(example_graph)
-plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE, highlight_unidentifiable = FALSE) {
+plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE,
+                        print_highlow = FALSE, highlight_unidentifiable = FALSE) {
+
 
   if(class(graph)[1] == 'igraph') {
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -736,11 +738,16 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
       eg = fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
 
-  if('weight' %in% names(edges) && TRUE) {
+  if('weight' %in% names(edges)) {
     edgemul = 1000
     fa = function(x) paste0(round(x*100), '%')
     fe = function(x) round(x*edgemul)
     edges$label = ifelse(edges$type == 'admix', fa(edges$weight), fe(edges$weight))
+    if(print_highlow) {
+      edges %<>% mutate(label = ifelse(is.na(low), label, ifelse(type == 'admix',
+                                paste(label, paste0('[', fa(low), '-', fa(high), ']'), sep = '\n'),
+                                paste(label, paste0('[', fe(low), '-', fe(high), ']'), sep = '\n'))))
+    }
     # if(!is.null(qpgraph_ranges)) {
     #   edges %<>% left_join(qpgraph_ranges, by = c('from', 'to')) %>%
     #     mutate(label = ifelse(type == 'admix',
@@ -761,15 +768,11 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   segtext = "ifelse(indegree == 1, to, from)"
   segtext = "paste(from, to, sep = ' -> ')"
 
-    gg = suppressWarnings({
-      eg %>% mutate(rownum = 1:n()) %>%
+  suppressWarnings({
+    gg = eg %>% mutate(rownum = 1:n()) %>%
     ggplot(aes(x = x, xend = xend, y = y, yend = yend, from = from, to = to)) +
     geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
                  arrow=arrow(type = 'closed', angle = 10, length = unit(0.15, 'inches'))) +
-    geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
-              size = textsize) +
-    geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
-                                       from = NA), size = textsize) +
     geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
     theme(panel.background = element_blank(),
           axis.line = element_blank(),
@@ -780,14 +783,18 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     scale_linetype_manual(values = c(admix=3, normal=1)) +
     ggtitle('') +
     scale_x_continuous(expand = c(0.1, 0.1))
-})
+
     if(highlight_unidentifiable) {
-      unid = unidentifiable_edges(graph, 2)
+      unid = unidentifiable_edges(graph, 1)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
       gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', data = unid2, size = 1)
     }
+    gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
+                            size = textsize) +
+      geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)', from = NA),
+                        size = textsize, nudge_y = -0.1)
+  })
   plt = plotly::ggplotly(gg, tooltip=c('text'))
   plt
-
 }
 
