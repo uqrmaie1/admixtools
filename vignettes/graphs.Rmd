@@ -440,13 +440,14 @@ Often there are specific features of an admixture graph that are of primary inte
 
 *ADMIXTOOLS 2* offers a number of functions that can summarize graphs by listing their features, as well as functions that can be used to test whether graphs exhibits specific features. This is useful in several contexts, for example it can constrain the search space for finding well fitting graphs, by not considering graphs with specific properties.
 
-At the moment there are three types of features or constraints, and for each there is a function for listing the graph features, and for testing whether a graph meets certain constraints.
+At the moment there are three types of features or constraints, and for each there is a function for listing the graph features, and a function for testing whether a graph meets certain constraints.
 
 | Feature / Constraint | Summarize graph | Test graph |
 | ---------------------|-----------------|------------|
 | Number of admixture events | `summarize_numadmix()` | `satisfies_numadmix()` |
 | Order of events | `summarize_eventorder()` | `satisfies_eventorder()` |
-| Non-zero f4 | `summarize_zerof4()` | `satisfies_zerof4()` |
+| Zero f4 | `summarize_zerof4()` | `satisfies_zerof4()` |
+
 
 ### Constraining the number of admixture events
 
@@ -456,7 +457,7 @@ To put constraints on the number of admixtures for some of our populations, we c
 constrain_cd = tribble(
   ~pop, ~min, ~max,
   'C', 1, NA,
-  'D', 0, NA)
+  'D', NA, 0)
 ```
 
 This can be used to test whether a graph meets these constraints:

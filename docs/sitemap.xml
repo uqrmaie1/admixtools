@@ -373,6 +373,18 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/run_shiny_admixtools.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_constraints.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_eventorder.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_numadmix.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_zerof4.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/shortest_unique_prefixes.html</loc>
   </url>
   <url>
@@ -391,10 +403,19 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/spr_leaves.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_eventorder.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_fits.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_numadmix.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_triples.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_zerof4.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/swap_leaves.html</loc>

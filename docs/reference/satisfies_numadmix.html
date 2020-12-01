@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Generate a random admixture graph — random_admixturegraph • admixtools</title>
+<title>Test admixture constraints on a graph — satisfies_numadmix • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,8 +54,9 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Generate a random admixture graph — random_admixturegraph" />
-<meta property="og:description" content="This function randomly generates an admixture graph for a given set of leaf nodes" />
+<meta property="og:title" content="Test admixture constraints on a graph — satisfies_numadmix" />
+<meta property="og:description" content="This function returns TRUE if and only if the admixture graph satisfies all constraints on
+the number of admixture events for the populations in admix_constraints" />
 
 
 
@@ -172,52 +173,45 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Generate a random admixture graph</h1>
+    <h1>Test admixture constraints on a graph</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
-    <div class="hidden name"><code>random_admixturegraph.Rd</code></div>
+    <div class="hidden name"><code>satisfies_numadmix.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This function randomly generates an admixture graph for a given set of leaf nodes</p>
+    <p>This function returns <code>TRUE</code> if and only if the admixture graph satisfies all constraints on
+the number of admixture events for the populations in <code>admix_constraints</code></p>
     </div>
 
-    <pre class="usage"><span class='fu'>random_admixturegraph</span><span class='op'>(</span>
-  <span class='va'>leaves</span>,
-  numadmix <span class='op'>=</span> <span class='fl'>0</span>,
-  simple <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  outpop <span class='op'>=</span> <span class='cn'>NULL</span>,
-  nonzero_f4 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  admix_constraints <span class='op'>=</span> <span class='cn'>NULL</span>,
-  event_order <span class='op'>=</span> <span class='cn'>NULL</span>,
-  ntry <span class='op'>=</span> <span class='fl'>100</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>satisfies_numadmix</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>admix_constraints</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>leaves</th>
-      <td><p>Names of the leaf nodes, or a number specifying how many leaf nodes there should be</p></td>
+      <th>graph</th>
+      <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>numadmix</th>
-      <td><p>Number of admixture events</p></td>
-    </tr>
-    <tr>
-      <th>simple</th>
-      <td><p>Should edges leading to admixture nodes consist of separate admix edges and normal edges</p></td>
-    </tr>
-    <tr>
-      <th>outpop</th>
-      <td><p>Outgroup population</p></td>
+      <th>admix_constraints</th>
+      <td><p>A data frame with columns <code>pop</code>, <code>min</code>, <code>max</code></p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p><code>TRUE</code> if all admixture constraints are satisfied, else <code>FALSE</code></p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='va'>rand_graph</span> <span class='op'>=</span> <span class='fu'>random_admixturegraph</span><span class='op'>(</span><span class='fl'>10</span>, numadmix <span class='op'>=</span> <span class='fl'>5</span><span class='op'>)</span>
-<span class='fu'><a href='plot_graph.html'>plot_graph</a></span><span class='op'>(</span><span class='va'>rand_graph</span><span class='op'>)</span>
-</div><div class='img'><img src='random_admixturegraph-1.png' alt='' width='700' height='433' /></div></pre>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='co'># At least one admixture event for C, and none for D:</span>
+<span class='va'>constrain_cd</span> <span class='op'>=</span> <span class='fu'>tribble</span><span class='op'>(</span>
+  <span class='op'>~</span><span class='va'>pop</span>, <span class='op'>~</span><span class='va'>min</span>, <span class='op'>~</span><span class='va'>max</span>,
+  <span class='st'>'C'</span>, <span class='fl'>1</span>, <span class='cn'>NA</span>,
+  <span class='st'>'D'</span>, <span class='cn'>NA</span>, <span class='fl'>0</span><span class='op'>)</span>
+<span class='fu'>satisfies_numadmix</span><span class='op'>(</span><span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>)</span>, <span class='va'>constrain_cd</span><span class='op'>)</span>
+<span class='op'>}</span>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

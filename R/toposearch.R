@@ -3415,7 +3415,7 @@ summarize_numadmix = function(graph) {
 #' constrain_cd = tribble(
 #'   ~pop, ~min, ~max,
 #'   'C', 1, NA,
-#'   'D', 0, NA)
+#'   'D', NA, 0)
 #' satisfies_numadmix(random_admixturegraph(5, 2), constrain_cd)
 #' }
 satisfies_numadmix = function(graph, admix_constraints) {
