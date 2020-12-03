@@ -2,18 +2,18 @@
 % Please edit documentation in R/qpadm.R
 \name{qpadm_rotate}
 \alias{qpadm_rotate}
-\title{Compute all pairwise qpadm p-values}
+\title{Compute p-values for many qpadm models}
 \usage{
-qpadm_rotate(f2_blocks, left, right, target, verbose = TRUE)
+qpadm_rotate(f2_blocks, leftright, target, rightfix = NULL, verbose = TRUE)
 }
 \arguments{
 \item{f2_blocks}{3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
 
-\item{left}{Left populations}
-
-\item{right}{Right populations}
+\item{leftright}{Populations which will be distributed between left and right}
 
 \item{target}{Target population}
+
+\item{rightfix}{Populations which will be on the right side in all models}
 
 \item{verbose}{Print progress updates}
 }
@@ -21,5 +21,23 @@ qpadm_rotate(f2_blocks, left, right, target, verbose = TRUE)
 A data frame with Chi-squared statistics and p-values for each population combination
 }
 \description{
-For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
+This functions evaluates many qpadm models simultaneously by keeping the target population
+and the \code{rightfix} populations fixed, and distributing the \code{leftright} populations by keeping some
+in the set of left population and adding the remaining populations to the right populations.
+(See details for an example of how models are generated)
+}
+\details{
+When \code{leftright} is L1, L2, L3, L4, \code{rightfix} is R, and \code{target} is T,
+the following models will be genrated: \cr
+left / right / target \cr
+L1 / L2, L3, L4, R / T \cr
+L2 / L1, L3, L4, R / T \cr
+L3 / L1, L2, L4, R / T \cr
+L4 / L1, L2, L3, R / T \cr
+L1, L2 / L3, L4, R / T \cr
+L1, L3 / L2, L4, R / T \cr
+L1, L4 / L2, L3, R / T \cr
+L2, L3 / L1, L4, R / T \cr
+L2, L4 / L1, L3, R / T \cr
+L3, L4 / L1, L2, R / T \cr
 }

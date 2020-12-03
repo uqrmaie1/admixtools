@@ -91,9 +91,6 @@
     <li>
       <a href="articles/resampling.html">Standard errors</a>
     </li>
-    <li>
-      <a href="articles/simulations.html">Simulations</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -188,7 +185,7 @@
 <code class="sourceCode R"><span class="va">genotype_data</span> <span class="op">=</span> <span class="st">"/my/geno/prefix"</span>
 <span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">genotype_data</span>, <span class="va">example_graph</span><span class="op">)</span>
 <span class="va">fit</span><span class="op">$</span><span class="va">score</span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="reference/plot_graph.html">plot_graph</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">edges</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/graph1.png" alt="example graph"> Clearly not a historically accurate model, but it gets the idea across.</p>
@@ -208,29 +205,29 @@
 <span class="va">target</span> <span class="op">=</span> <span class="st">"Denisova.DG"</span></code></pre></div>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="reference/qpadm.html">qpadm</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">left</span>, <span class="va">right</span>, <span class="va">target</span><span class="op">)</span><span class="op">$</span><span class="va">weights</span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co">#&gt; # A tibble: 2 x 5</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a><span class="co">#&gt;   target      left                 weight    se     z</span></span>
-<span id="cb11-3"><a href="#cb11-3"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb11-4"><a href="#cb11-4"></a><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13</span></span>
-<span id="cb11-5"><a href="#cb11-5"></a><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 5</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   target      left                 weight    se     z</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08</span></span></code></pre></div>
 <p><br></p>
 <p>Or to get <em>f</em><sub>4</sub>-statistics:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="reference/qpdstat.html">f4</a></span><span class="op">(</span><span class="va">f2_blocks</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co">#&gt; # A tibble: 105 x 8</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="co">#&gt;    pop1        pop2         pop3    pop4            est      se      z         p</span></span>
-<span id="cb13-3"><a href="#cb13-3"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb13-4"><a href="#cb13-4"></a><span class="co">#&gt;  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229</span></span>
-<span id="cb13-5"><a href="#cb13-5"></a><span class="co">#&gt;  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277</span></span>
-<span id="cb13-6"><a href="#cb13-6"></a><span class="co">#&gt;  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0.       </span></span>
-<span id="cb13-7"><a href="#cb13-7"></a><span class="co">#&gt;  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152</span></span>
-<span id="cb13-8"><a href="#cb13-8"></a><span class="co">#&gt;  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254</span></span>
-<span id="cb13-9"><a href="#cb13-9"></a><span class="co">#&gt;  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0.       </span></span>
-<span id="cb13-10"><a href="#cb13-10"></a><span class="co">#&gt;  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164</span></span>
-<span id="cb13-11"><a href="#cb13-11"></a><span class="co">#&gt;  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229</span></span>
-<span id="cb13-12"><a href="#cb13-12"></a><span class="co">#&gt;  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0.       </span></span>
-<span id="cb13-13"><a href="#cb13-13"></a><span class="co">#&gt; 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0.       </span></span>
-<span id="cb13-14"><a href="#cb13-14"></a><span class="co">#&gt; # … with 95 more rows</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 105 x 8</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    pop1        pop2         pop3    pop4            est      se      z         p</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0.       </span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0.       </span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0.       </span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0.       </span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 95 more rows</span></span></code></pre></div>
 </div>
 <div id="interactive-browser-app" class="section level2">
 <h2 class="hasAnchor">

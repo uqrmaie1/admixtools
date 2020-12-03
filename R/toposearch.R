@@ -2464,6 +2464,15 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
 #' \item \code{\link{mutate_n}}: Apply `n` of the mutation functions in this list to a graph (defaults to 2).
 #' }
+#' @param opt_worst_residual Optimize for lowest worst residual instead of best score. `FALSE` by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).
+#' @param plusminus_generations If the best score does not improve after `plusminus_generations` generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.
+#' @param admix_constraints A data frame with constraints on the number of admixture events for each population.
+#' See \code{\link{satisfies_numadmix}}
+#' As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.
+#' @param event_constraints A data frame with constraints on the order of events in an admixture graph.
+#' See \code{\link{satisfies_eventorder}}
+#' As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.
+#' @param reject_f4z If this is a number greater than zero, all f4-statistics with `z > reject_f4z` will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.
 #' @param verbose Print progress updates
 #' @param ... Additional arguments passed to \code{\link{qpgraph}}
 #' @return A nested data frame with one model per line
@@ -2481,20 +2490,29 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
 #' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
-find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
-                        stopafter_noimprovement = 15,
+find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
+                        stopafter_noimprovement = 15, initgraph = NULL, outpop = NULL,
                         mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
-                        admix_constraints = NULL, event_order = NULL, reject_f4z = 0,
+                        opt_worst_residual = FALSE, plusminus_generations = 5,
+                        admix_constraints = NULL, event_constraints = NULL, reject_f4z = 0,
                         verbose = TRUE, ...) {
-
 
   if(is.null(initgraph)) {
     pops = dimnames(f2_blocks)[[1]]
-    graph = random_admixturegraph(pops, numadmix)
+    graph = random_admixturegraph(pops, numadmix, outpop = outpop)
   } else {
     graph = initgraph
   }
-  qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
+  if(opt_worst_residual) {
+    qpgfun = function(graph, ...) {
+      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = TRUE, ...)
+      res$score = res$worst_residual
+      res$worst_residual = res$f4 = NULL
+      res
+      }
+  } else {
+    qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
+  }
   #qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
   stop_at = Sys.time() + stop_after
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
@@ -2521,7 +2539,7 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
   stdat = st_to_dat(st)
   tm = Sys.time()
   nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
-  allzerof4ok = FALSE
+  allzerof4ok = admixok = eventsok = FALSE
 
   for(i in seq_len(numgen)) {
 
@@ -2545,8 +2563,16 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
       allzerof4ok = TRUE
       alert_info('All zero f4 ok!\n')
     }
+    if(!admixok && !is.null(admix_constraints) && satisfies_numadmix(graph, admix_constraints)) {
+      admixok = TRUE
+      alert_info('Admix constraints ok!\n')
+    }
+    if(!eventsok && !is.null(event_constraints) && satisfies_eventorder(graph, event_constraints)) {
+      eventsok = TRUE
+      alert_info('Event constraints ok!\n')
+    }
 
-    if(gimp > 0 && gimp %% 5 == 0) {
+    if(gimp > 0 && gimp %% plusminus_generations == 0) {
 
       graph = models %>% slice_min(score, with_ties = FALSE) %>% pull(g) %>% pluck(1)
       newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10) %>%
@@ -2584,9 +2610,11 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
         newmod %<>% bind_rows(randmut)
       }
       nzf4 = if(allzerof4ok) nonzero_f4 else NULL
-      print(nrow(newmod))
-      newmod %<>% filter(map_lgl(g, ~satisfies_constraints(., nzf4, admix_constraints, event_order)))
-      print(nrow(newmod))
+      admixc = if(admixok) admix_constraints else NULL
+      eventc = if(eventsok) event_constraints else NULL
+      #print(nrow(newmod))
+      newmod %<>% filter(map_lgl(g, ~satisfies_constraints(., nzf4, admixc, eventc)))
+      #print(nrow(newmod))
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
         filter(!duplicated(hash), !hash %in% models$hash)
@@ -2632,8 +2660,8 @@ find_graphs2 = function(f2_blocks, initgraph = NULL, numgen = 1, numgraphs = 10,
 
   }
 
-  #if(verbose) alert_info(paste0(i, ': ', round(models$score[[1]], 3), '\n'))
-  namedList(models, stdat)
+  #namedList(models, stdat)
+  models
 }
 
 st_to_dat = function(st) {
@@ -3064,13 +3092,13 @@ graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
   a = names(which(degree(graph, mode = 'in') > 1))
   f = apply(combn(sort(leaves), 2), 2, paste, collapse = ' ')
   if(substitute) {
-    avars = paste0(nam[1], seq_along(a))[seq_along(a)] %>% set_names(a)
-    evars = paste0(nam[2], seq_along(e)) %>% set_names(e)
-    fvars = paste0(nam[3], seq_len(choose(length(leaves), 2))) %>% set_names(f)
+    avars = paste0(nam[1], seq_along(a))[seq_along(a)] %>% rlang::set_names(a)
+    evars = paste0(nam[2], seq_along(e)) %>% rlang::set_names(e)
+    fvars = paste0(nam[3], seq_len(choose(length(leaves), 2))) %>% rlang::set_names(f)
   } else {
-    evars = e %>% set_names(e)
-    avars = a %>% set_names(a)
-    fvars = f %>% set_names(f)
+    evars = e %>% paste0('`',. ,'`') %>% rlang::set_names(e)
+    avars = (a %>% paste0('`',. ,'`'))[seq_along(a)] %>% rlang::set_names(a)
+    fvars = f %>% paste0('`',. ,'`') %>% rlang::set_names(f)
   }
   coding = map2(list(avars, evars, fvars), nam, ~enframe(.x, 'edge', 'symbol') %>% mutate(type = .y)) %>% bind_rows
 
@@ -3130,18 +3158,52 @@ graph_to_function3 = function(graph, ge = NULL) {
     pp %>% left_join(admixvals, by = 'i') %>% mutate(aval = replace_na(aval, 1)) %>% unnest(edges) %>% left_join(edat, by = 'edges') %>% group_by(pop1, pop2) %>% summarize(f2pred = sum(aval * eval), .groups = 'drop') %>% ungroup %>% pull(f2pred)
 
   }
+}
 
+#' Make a function representing a graph
+#'
+#' This function takes an igraph object and turns it into a function that takes edge weights as input,
+#' and outputs the expected f2-statistics.
+#' @export
+#' @param graph An admixture graph
+#' @param admix_default The default weights for admixture edges
+#' @param drift_default The default weights for drift edges
+#' @return A function mapping edge weights to f2-statistics
+#' @examples
+#' \dontrun{
+#' mygraph = graph_f2_function(example_igraph)
+#' mygraph(N3N8 = 0.1, `N2N1|Vindija.DG` = 0.4)
+#' }
+graph_f2_function = function(graph, admix_default = 0.5, drift_default = 0.01) {
+
+  ge = graph_equations(graph, substitute = FALSE)
+  body1 = ge$equations$equation %>% paste(collapse = ', ') %>% paste('dat <- c(', ., '); ') %>% rlang::parse_expr()
+  body2 = rlang::quo(d2 <- ge$coding %>% filter(type == 'f') %>% select(edge) %>% separate(edge, c('pop1', 'pop2'), ' '))
+  body3 = rlang::expr(mutate(d2, f2 = dat))
+  body = rlang::expr({!!body1; !!body2; !!body3})
+
+  args = ge$coding %>% filter(type != 'f') %>%
+    transmute(edge, val = ifelse(type == 'a', admix_default, drift_default)) %>%
+    deframe %>% as.list
+  rlang::eval_tidy(call("function", as.pairlist(args), body), env = parent.frame())
 }
 
 
-graph_jacobian = function(graph, ge = NULL) {
+
+graph_jacobian = function(graph, ge = NULL, args = NULL) {
 
   if(is.null(ge)) ge = graph_equations(graph)
-  fun = graph_to_function1(graph, ge)
-  na = numadmix(graph)
-  ne = length(E(graph)) - 2*na
-  jac = numDeriv::jacobian(fun, c(runif(na), rep(1,ne)), na = na)
-  colnames(jac) = ge$coding %>% filter(type != 'f') %>% pull(edge)
+  if(is.null(args)) {
+    na = numadmix(graph)
+    ne = length(E(graph)) - 2*na
+    args = c(runif(na), rep(1,ne))
+  }
+  symb = ge$coding %>% filter(type != 'f') %>% pull(symbol)
+
+  jac = ge$equations$equation %>%
+    map(~paste0('~', .) %>% as.formula %>% deriv(symb, symb) %>%
+          exec(!!!args) %>% attr('gradient')) %>%
+    do.call(rbind, .)
   rownames(jac) = paste(ge$equations$pop1, ge$equations$pop2)
   jac
 }
@@ -3153,9 +3215,8 @@ graph_jacobian = function(graph, ge = NULL) {
 #' to find well fitting admixturegraphs.
 #' @export
 #' @param graph An admixture graph
-#' @param gtof which version of `graph_to_function` to use
 #' @return A data frame with all unidentifiable graph parameters
-unidentifiable_edges = function(graph, gtof = 1) {
+unidentifiable_edges = function(graph) {
 
   ge = graph_equations(graph)
   jac = graph_jacobian(graph, ge)
@@ -3348,12 +3409,12 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 #'   ~earlier1, ~earlier2, ~later1, ~later2,
 #'   'A', 'B', 'C', 'D',
 #'   'C', 'D', 'E', NA)
-#' satisfies_eventorder(random_admixturegraph(5, 0), constrain_events)
+#' satisfies_eventorder(random_admixturegraph(5, 0), eventorder = constrain_events)
 #' }
-satisfies_eventorder = function(graph, event_order, strict = TRUE) {
+satisfies_eventorder = function(graph, eventorder, strict = TRUE) {
 
-  if(is.null(event_order)) return(TRUE)
-  status = event_order %>% rowwise %>%
+  if(is.null(eventorder)) return(TRUE)
+  status = eventorder %>% rowwise %>%
     mutate(ok = satisfies_oneevent(graph, earlier1, earlier2, later1, later2)) %>%
     ungroup %>% pull(ok)
   if(strict) return(isTRUE(all(status)))
@@ -3373,7 +3434,7 @@ satisfies_eventorder = function(graph, event_order, strict = TRUE) {
 #' \dontrun{
 #' # Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
 #' constrain_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
-#' satisfies_numadmix(random_admixturegraph(5, 2), constrain_f4)
+#' satisfies_zerof4(random_admixturegraph(5, 2), constrain_f4)
 #' }
 satisfies_zerof4 = function(graph, nonzero_f4) {
 

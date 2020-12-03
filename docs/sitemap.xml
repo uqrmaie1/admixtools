@@ -28,6 +28,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits4.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/count_snps.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/decomposed_tree_neighbors.html</loc>
   </url>
   <url>
@@ -109,6 +112,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_precomp.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2dat_f4dat.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_f2.html</loc>
   </url>
   <url>
@@ -161,6 +167,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_equations.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_f2_function.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_flipadmix.html</loc>
@@ -455,8 +464,5 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/resampling.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/simulations.html</loc>
   </url>
 </urlset>

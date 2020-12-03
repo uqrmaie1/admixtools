@@ -88,9 +88,6 @@
     <li>
       <a href="../articles/resampling.html">Standard errors</a>
     </li>
-    <li>
-      <a href="../articles/simulations.html">Simulations</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -117,14 +114,14 @@
 
       
 
-      </header><script src="parallel_files/accessible-code-block-0.0.1/empty-anchor.js"></script><link href="parallel_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
+      </header><script src="parallel_files/header-attrs-2.5/header-attrs.js"></script><link href="parallel_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
 <script src="parallel_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Parallelization</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2020-11-30</h4>
+            <h4 class="date">2020-12-03</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/parallel.Rmd"><code>vignettes/parallel.Rmd</code></a></small>
       <div class="hidden name"><code>parallel.Rmd</code></div>
@@ -169,7 +166,7 @@
 
 <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">saveRDS</a></span><span class="op">(</span><span class="va">opt_results</span>, file<span class="op">=</span><span class="st">'opt_results.rds'</span><span class="op">)</span></code></pre></div>
 <p>It could be in a file called <code>opt_graphs.Rscript</code> and be run like this, or submitted as a job.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>Rscript opt_graphs.Rscript</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Rscript opt_graphs.Rscript</span></code></pre></div>
 <p>It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It’s probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.</p>
 </div>
   </div>

@@ -153,11 +153,19 @@ apply(f2_blocks, 1:2, mean)   # average across all blocks
 f2_blocks[pop1, pop2, ]       # f2(pop1, pop2) for all blocks
 ```
 
-The names along the 3rd dimension contain the SNP block lengths: 
+The names along the 3rd dimension contain the SNP block lengths:
+
 ```{r}
 block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 head(block_lengths)
 ```
+
+To see the total number of SNPs across all blocks, you can use `count_snps()`
+
+```{r}
+count_snps(f2_blocks)
+```
+
 
 If you want to try any of this without extracting and loading your own $f_2$-statistics, you can instead use `example_f2_blocks` which becomes available as you load `admixtools`.
 
@@ -296,13 +304,13 @@ qpwave_pairs(example_f2_blocks, left = c(target, left), right = right)
 
 #### Rotating outgroups
 
-`qpadm_rotate()` tests many `qpadm()` models at a time. For each model, the `left` populations will be split into two groups: The first group will make up the actual `left` populations passed to `qpadm()`, while the second group will be added to the `right` populations.
+`qpadm_rotate()` tests many `qpadm()` models at a time. For each model, the `leftright` populations will be split into two groups: The first group will be the `left` populations passed to `qpadm()`, while the second group will be added to `rightfix` and become the set of right populations.
 
 ```{r, eval = FALSE}
-qpadm_rotate(f2_blocks, left = pops[3:7], right = pops[1:2], target = pops[1])
+qpadm_rotate(f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
 ```
 ```{r, echo = FALSE}
-qpadm_rotate(example_f2_blocks, left = pops[3:7], right = pops[1:2], target = pops[1])
+qpadm_rotate(example_f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
 ```
 
 

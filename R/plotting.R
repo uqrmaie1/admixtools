@@ -139,7 +139,7 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
     scale_x_continuous(expand = c(0.15, 0.15)) #+ scale_color_manual(values = c('black', 'red', 'blue'))
 
   if(highlight_unidentifiable) {
-    unid = unidentifiable_edges(graph, 1)
+    unid = unidentifiable_edges(graph)
     unid2 = pdat$eg %>% rename(from = name) %>% right_join(unid %>% select(-type), by = c('from', 'to'))
     plt = plt + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2,
                              arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
@@ -785,7 +785,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     scale_x_continuous(expand = c(0.1, 0.1))
 
     if(highlight_unidentifiable) {
-      unid = unidentifiable_edges(graph, 1)
+      unid = unidentifiable_edges(graph)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
       gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', data = unid2, size = 1)
     }

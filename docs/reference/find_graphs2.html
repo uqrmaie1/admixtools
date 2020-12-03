@@ -141,9 +141,6 @@ to find well fitting admixturegraphs." />
     <li>
       <a href="../articles/resampling.html">Standard errors</a>
     </li>
-    <li>
-      <a href="../articles/simulations.html">Simulations</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -185,17 +182,20 @@ to find well fitting admixturegraphs.</p>
 
     <pre class="usage"><span class='fu'>find_graphs2</span><span class='op'>(</span>
   <span class='va'>f2_blocks</span>,
-  initgraph <span class='op'>=</span> <span class='cn'>NULL</span>,
   numgen <span class='op'>=</span> <span class='fl'>1</span>,
   numgraphs <span class='op'>=</span> <span class='fl'>10</span>,
   numadmix <span class='op'>=</span> <span class='fl'>0</span>,
   stopscore <span class='op'>=</span> <span class='fl'>0</span>,
   stop_after <span class='op'>=</span> <span class='cn'>NULL</span>,
   stopafter_noimprovement <span class='op'>=</span> <span class='fl'>15</span>,
+  initgraph <span class='op'>=</span> <span class='cn'>NULL</span>,
+  outpop <span class='op'>=</span> <span class='cn'>NULL</span>,
   mutfuns <span class='op'>=</span> <span class='fu'>namedList</span><span class='op'>(</span><span class='va'>spr_leaves</span>, <span class='va'>spr_all</span>, <span class='va'>swap_leaves</span>, <span class='va'>move_admixedge_once</span>,
     <span class='va'>flipadmix_random</span>, <span class='va'>mutate_n</span><span class='op'>)</span>,
+  opt_worst_residual <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  plusminus_generations <span class='op'>=</span> <span class='fl'>5</span>,
   admix_constraints <span class='op'>=</span> <span class='cn'>NULL</span>,
-  event_order <span class='op'>=</span> <span class='cn'>NULL</span>,
+  event_constraints <span class='op'>=</span> <span class='cn'>NULL</span>,
   reject_f4z <span class='op'>=</span> <span class='fl'>0</span>,
   verbose <span class='op'>=</span> <span class='cn'>TRUE</span>,
   <span class='va'>...</span>
@@ -232,6 +232,30 @@ to a random other edge in the graph, keeping the number of admixture nodes const
 <li><p><code><a href='flipadmix_random.html'>flipadmix_random</a></code>: Flips the direction of an admixture edge (if possible).</p></li>
 <li><p><code><a href='mutate_n.html'>mutate_n</a></code>: Apply <code>n</code> of the mutation functions in this list to a graph (defaults to 2).</p></li>
 </ul></td>
+    </tr>
+    <tr>
+      <th>opt_worst_residual</th>
+      <td><p>Optimize for lowest worst residual instead of best score. <code>FALSE</code> by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).</p></td>
+    </tr>
+    <tr>
+      <th>plusminus_generations</th>
+      <td><p>If the best score does not improve after <code>plusminus_generations</code> generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.</p></td>
+    </tr>
+    <tr>
+      <th>admix_constraints</th>
+      <td><p>A data frame with constraints on the number of admixture events for each population.
+See <code><a href='satisfies_numadmix.html'>satisfies_numadmix</a></code>
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.</p></td>
+    </tr>
+    <tr>
+      <th>event_constraints</th>
+      <td><p>A data frame with constraints on the order of events in an admixture graph.
+See <code><a href='satisfies_eventorder.html'>satisfies_eventorder</a></code>
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.</p></td>
+    </tr>
+    <tr>
+      <th>reject_f4z</th>
+      <td><p>If this is a number greater than zero, all f4-statistics with <code>z &gt; reject_f4z</code> will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

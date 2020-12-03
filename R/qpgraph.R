@@ -126,7 +126,7 @@ optimweightsfun = function(weights, args) {
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
-  get_score(f3_fit, f3_est, ppinv)
+  qpgraph_score(f3_fit, f3_est, ppinv)
 }
 
 
@@ -148,13 +148,13 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudg
   else solve(cc, q1)/sc
 }
 
-get_score = function(f3_fit, f3_est, ppinv) {
+qpgraph_score = function(f3_fit, f3_est, ppinv = diag(length(f3_fit))) {
   res = f3_fit - f3_est
   lik = t(res) %*% ppinv %*% res
   lik[1,1]
 }
 
-get_score_treemix = function(f3_fit, f3_est, ppinv) {
+treemix_score = function(f3_fit, f3_est, ppinv) {
   res = f3_fit - f3_est
   se = sqrt(diag(solve(ppinv)))
   sum(res^2/(2*se^2) + log(se * sqrt(2*pi)))
@@ -327,11 +327,11 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = diag, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
-  score = get_score(f3_fit, f3_est, ppinv)
+  score = qpgraph_score(f3_fit, f3_est, ppinv)
   if(!is.null(f2_blocks_test)) {
     precomp_test = qpgraph_precompute_f3(f2_blocks_test, pops, lambdascale = lambdascale, boot = boot,
                                          seed = seed, diag_f3 = diag_f3, lsqmode = lsqmode)
-    score_test = get_score(f3_fit, precomp_test$f3_est, ppinv)
+    score_test = qpgraph_score(f3_fit, precomp_test$f3_est, ppinv)
   }
 
   # if(constrained) weight[normedges] = pmax(0, branch_lengths)
@@ -351,6 +351,8 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   }
   out
 }
+
+
 
 
 
@@ -475,7 +477,7 @@ qpgraph_anorexic = function(f3precomp, graph, diag = 1e-4,
                                     lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)),
                                     fudge = diag, constrained = TRUE)
   f3_fit = ppwts_2d %*% branch_lengths
-  score = get_score(f3_fit, f3_est, ppinv)
+  score = qpgraph_score(f3_fit, f3_est, ppinv)
 
   edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>%
     mutate(type = 'edge', weight = c(branch_lengths))
@@ -697,8 +699,8 @@ compare_fits4 = function(fit1, fit2, f2_blocks, f2_blocks_test, boot = FALSE, se
   f3_fit = fit1$f3 %>%
     left_join(fit2$f3 %>% bind_rows(rename(., pop2=pop3, pop3=pop2) %>% filter(pop2 != pop3)),
               by = c('pop1', 'pop2', 'pop3'))
-  scores1 = map_dbl(1:dim(f2_blocks_test)[3], ~get_score(f3_fit$fit.x, f3_test[,.], ppinv))
-  scores2 = map_dbl(1:dim(f2_blocks_test)[3], ~get_score(f3_fit$fit.y, f3_test[,.], ppinv))
+  scores1 = map_dbl(1:dim(f2_blocks_test)[3], ~qpgraph_score(f3_fit$fit.x, f3_test[,.], ppinv))
+  scores2 = map_dbl(1:dim(f2_blocks_test)[3], ~qpgraph_score(f3_fit$fit.y, f3_test[,.], ppinv))
 
   scorediff = na.omit(scores1 - scores2)
   stats = matstatfun(t(scorediff), rep(1, length(scorediff)))

@@ -4,12 +4,10 @@
 \alias{unidentifiable_edges}
 \title{Find all unidentifiable edges}
 \usage{
-unidentifiable_edges(graph, gtof = 1)
+unidentifiable_edges(graph)
 }
 \arguments{
 \item{graph}{An admixture graph}
-
-\item{gtof}{which version of \code{graph_to_function} to use}
 }
 \value{
 A data frame with all unidentifiable graph parameters

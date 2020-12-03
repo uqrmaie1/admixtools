@@ -15,7 +15,7 @@ vignette: >
 
 **Under construction**
 
-Admixture graphs are models of the demographic history of a set of populations. *f*-statistics can be used to evaluate how well a specific admixture graph fits the data, and to estimate the drift lengths and admixture graphs in an admixture graph.
+Admixture graphs are models of the demographic history of a set of populations. *f*-statistics can be used to evaluate how well a specific admixture graph fits the data, and to estimate the drift lengths and admixture weights in a graph.
 
 *ADMIXTOOLS 2* makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in several ways. You can either modify them manually, one edge or one node at a time, or automatically, by generating all possible variations of a certain type (for example all graphs that result from adding one admixture edge to the current graph).
 
@@ -30,7 +30,7 @@ library(admixtools)
 
 ## *f*-statistics and admixture graphs
 
-### f4
+### f4 and graphs
 
 Single $f_4$-statistics and *D*-statistics tell us what an admixture graph for four populations could look like. Let's say we have four populations with these $f_4$- or *D*-statistics (Note that all other possible $f_4$-statistics can be computed from these two.):
 
@@ -65,7 +65,7 @@ This simple example demonstrates that
 
 The example also shows that *f*-statistics cannot tell us where the root of a graph should be. For that it helps to include an outgroup in the graph so we know that the root is at the correct position.
 
-### f2
+### Graph f2 equations
 
 In any admixture graph, $f_2$ of two populations is simply the sum of all path lengths that lie between the populations. For example, in the two graphs above, $f_2(C, D) = n2|C + n2|D$, where $n2|C$ is the edge going from $n2$ to $C$.
 
@@ -91,23 +91,56 @@ To go from $A$ to $C$, there are now two paths: A short path through the right a
 
 ```{r}
 graph_equations(g, substitute = FALSE)$equations %>%
-  filter(pop1 == 'A', pop2 == 'C') %>% as.matrix
+  filter(pop1 == 'A', pop2 == 'C') %>% pull(equation)
 ```
 
 $a$ is the proportion of admixture coming through the left admixture edge, and $1-a$ is the proportion coming from the right.
 
-### f4 ratios
+
+### Graph as a function
+
+Another way to think about the equations describing a graph is that they represent an admixture graph as a function which maps drift and admixture weights to a set of *f*-statistics. This is a function in the sense that every combination of weights is mapped to exactly one set of *f*-statistics. We can turn a graph object to a function and see how different edge weights lead to different *f*-statistics. 
+
+```{r}
+my_graph_function = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
+my_graph_function(`a|A` = 0) %>% head
+my_graph_function(`a|A` = 0.2) %>% head
+```
+
+Similarly, we can see how $f_4$-statistics are affected by changing one of the drift weights:
+
+```{r}
+my_graph_function(`a|A` = 0) %>% f2dat_f4dat() %>% head
+my_graph_function(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
+```
+
+
+Usually we observe *f*-statistics and want to estimate drift and admixture weights. That's the inverse of the function above, and it is what `qpgraph()` does.
+
+
+### f4 ratio test
+
+```{r}
+g %>% plotly_graph
+```
+
 
 The graph above illustrates nicely how the $f_4$-ratio test can be used to estimate admixture weights. This test estimates an admixture weight $a$ as the ratio of two $f_4$-statistics, in this case $a = \frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$. $f_4(O,B;C,D)$ is exactly equal to the distance between $n1$ and $n2$, the left blue edge. That's because $O$ and $C$ form a clade relative to $B$ and $D$, and this edge is the only connection between the two clades. (They are not clades in the usual sense of the word, but in the sense that there is no overlap between the paths from $O$ to $C$ and the paths from $B$ to $D$.)
 At the same time, $f_4(O,B;C,A)$ is the intersection of paths going from $O$ to $C$, and from $B$ to $A$. Now there are two paths going from $B$ to $A$: A short one through the left, and a long one through the right admixture edge. Along the short path going to $A$ from the left, there is no intersection with the path from $O$ to $C$, so the component of $f_4(O,B;C,A)$ going through that path is zero. This means that all if $f_4(O,B;C,A)$ is not equal to zero, it is only due to the long path from $B$ to $A$. Along that path, the intersection  with $O$ to $C$ is exactly the left blue edge again. We now have two expressions for the length of that path: The first expression is $f_4(O,B;C,D)$, and the second expression is $a \times f_4(O,B;C,A)$, and so we can estimate $a$ as $\frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$.
 
 For more complex graphs, drift lengths and admixture weights can be estimated in just the same way, although it is not always possible to express each estimated parameter as a simple ratio of two *f*-statistics. However, even without such simple expression, it is usually possible estimate graph parameters by numerically finding solutions to the system of graph equations. `qpgraph()` is doing just that: It finds the drift and admixture weights for a given graph which minimize the squared difference between the observed and the expected *f*-statistics.
 
-### f3
+### Why f3?
 
-For historical reasons `qpgraph()` uses $f_3$ rather than $f_2$-statistics when evaluating graphs. This doesn't really make a difference since $f_3$- and $f_4$-statistics are just sums of $f_2$-statistics, which means that a graph equations system written in terms of $f_2$-statistics can be transformed into an equation system written in terms of $f_3$-statistics through the identity $f_3(A; B, C) = \frac{1}{2} (f_2(A,B)+f_2(A,C)-f_2(B,C))$. There are more possible $f_3$- than $f_2$-statistics, but fixing any one population $A$, and computing all possible $f_3$-statistics $f_3(A; X_1, X_2)$, where $X_1$ and $X_2$ are all pairs of other populations, results in a system of equations of $f_3$-statistics with the exact same information as the system of equations of $f_2$-statistics.
+(See also [this section](graphs.html#fitting-a-single-admixture-graph-1))
 
-The interpretation of $f_2$-statistics in a graph is simply the total path length between any two populations. The interpretation of $f_3$-statistics for some fixed population $A$ and a pair of populations $X_1$ and $X_2$ is that $f_3(A; X_1, X_2)$ is the distance between $A$ and the point where $X_1$ splits from $X_2$. If there are admixture events and this point is not unique, one can imagine splitting the graph at each admixture node, which results in a set of trees. $f_3(A; X_1, X_2)$ is then a weighted average of the distances between $A$ and split points between $X_1$ and $X_2$ across all trees, with the weights given by the weights of all admixture edges along the path from $X_1$ to $X_2$.
+`qpgraph()` uses $f_3$- rather than $f_2$-statistics for modeling graphs. $f_3$- and $f_4$-statistics are just sums of $f_2$-statistics, in particular
+
+$$f_3(A; B, C) = \frac{1}{2} (f_2(A,B)+f_2(A,C)-f_2(B,C))$$
+
+This raises the question whether it makes a difference to express a graph in terms of equations for $f_2$-statistics or equations for $f_3$-statistics. If there is an exact solution for one of the ($f_2$ or $f_3$) equation system, it is also a solution for the other equation system. In a case like that, the choice of *f*-statistics used does not make a difference.
+
+In practice, however, there usually is no exact solution for a given graph and set of *f*-statistics. Instead, `qpgraph()` estimates weights which minimize the sum of squared differences between the expected and the observed *f*-statistics, and this difference is usually greater than zero. In that case, an equation system of $f_2$-statistics can lead to different weight estimates than an equation system of $f_3$-statistics. In particular, using $f_3$-statistics will give more importance to the internal edges of the admixture graph, rather than the terminal edges leading to the leaf nodes. That's because each $f_2$-statistic can be thought of as the distance between two leaf nodes, while most $f_3$-statistics (all except the ones of the form $f_3(A; B, B)$) can be thought of as the distance between one leaf node (ideally an outgroup) and some internal node (the split point of the other two populations, in the simplest case without admixture).
 
 
 ### Identifiability
@@ -366,7 +399,6 @@ It can take a while until `find_graphs()` finds graphs with good fits. To speed 
 ### Constraining the search space
 
 
-
 ## Comparing the fits of different graphs
 
 If two different graphs model the same populations and the second graph has a better likelihood score than the first one, it suggests that the second graph is a better representation of the actual demographic history. That's generally true, but there are two complications:
@@ -444,12 +476,12 @@ At the moment there are three types of features or constraints, and for each the
 
 | Feature / Constraint | Summarize graph | Test graph |
 | ---------------------|-----------------|------------|
-| Number of admixture events | `summarize_numadmix()` | `satisfies_numadmix()` |
+| Number of admixing sources | `summarize_numadmix()` | `satisfies_numadmix()` |
 | Order of events | `summarize_eventorder()` | `satisfies_eventorder()` |
 | Zero f4 | `summarize_zerof4()` | `satisfies_zerof4()` |
 
 
-### Constraining the number of admixture events
+### Number of admixing sources
 
 To put constraints on the number of admixtures for some of our populations, we can create a data frame with columns `pop`, `min`, `max`. The following example shows how to specify that population *C* should have at least one admixture event, while *D* should be unadmixed:
 
@@ -474,6 +506,12 @@ graphlist = rerun(10, random_admixturegraph(5, 2))
 graphlist2 = graphlist %>% keep(~satisfies_numadmix(., constrain_cd))
 ```
 
+And if we want to filter the output of `find_graphs()`, we could do it with this expresession:
+
+```{r, eval = FALSE}
+results_filtered = results %>% rowwise %>%
+  filter(satisfies_numadmix(igraph, constrain_cd)) %>% ungroup
+```
 
 We can also generate a random graph that satisfies these constraints:
 
@@ -482,11 +520,29 @@ random_admixturegraph(5, 2, admix_constraints = constrain_cd) %>% plotly_graph
 ```
 
 
-### Constraining the order of events
+### Order of events
+
+We can test whether one population split occurs before another one, and whether a leaf population branches off before or after a split event. The following example shows how we can specify that the split between $A$ and $B$ should occur before the split between $C$ and $D$, and further that the split between $C$ and $D$ should occur before the branching off of $E$.
+
+```{r}
+events = tribble(
+  ~earlier1, ~earlier2, ~later1, ~later2,
+  'A', 'B', 'C', 'D',
+  'C', 'D', 'E', NA)
+satisfies_eventorder(g, eventorder = events)
+```
+
+Filtering lists of graphs and generating random graphs meeting these constraints work analogously to the example above.
 
 
-### Constraining which f4-statistics can be non-zero
+### Non-zero f4-statistics
 
+Finally, we can test whether a set of $f_4$-statistics is zero in a graph.
+
+```{r, eval = FALSE}
+sigf4 = f4(f2_blocks) %>% filter(abs(z) > 5) %>% select(pop1:pop4)
+satisfies_zerof4(g, nonzero_f4 = sigf4)
+```
 
 
 <!-- For any set of populations there may be many graphs which can explain the data about equally well, with no significant difference in likelihood scores. Rather than declaring one of these models as the correct model, it may be more useful to find features that are shared between all models with good fits. The following function attempts to find such features by summarizing a set of graphs. It counts how often each population triple occurs in which configuration across all graphs. -->
@@ -515,6 +571,86 @@ random_admixturegraph(5, 2, admix_constraints = constrain_cd) %>% plotly_graph
 <!-- * `topos`: The number of times each topology was observed -->
 
 <!-- <br> -->
+
+
+## Simulating genetic data
+
+
+*ADMIXTOOLS 2* makes it easy to simulate genetic data under a given admixture graph with the help of [msprime](https://msprime.readthedocs.io/en/stable/). This requires a python installation with the *msprime* module.
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(admixtools)
+```
+
+```{r}
+set.seed(1234)
+g = random_admixturegraph(6, 2, outpop = 'A')
+plotly_graph(g)
+```
+
+```{r, eval = F}
+outprefix = '/my/outdir/prefix'
+msprime_sim(g, outprefix, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
+```
+
+```{r, echo = F, eval = T}
+outprefix = '~/Downloads/msprime_markdown'
+```
+```{r, echo = F, eval = F}
+msprime_sim(g, outprefix, nsnps = 1e5, ind_per_pop = 100, run = '/Users/robert/anaconda2/bin/python', numcores = 8)
+```
+
+```{r}
+f2_blocks = f2_from_geno(outprefix, verbose = FALSE)
+```
+
+The last two steps can also be combined into one step with the `f2_from_graph()` function.
+```{r, eval = F}
+f2_blocks = f2_from_simulation(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
+```
+
+As expected, the graph under which the data were simulated has a very good fit:
+
+```{r}
+qpgraph(f2_blocks, g)$score
+```
+
+An admixture graph only captures some of the parameters which determine the full demographic history (particularly when is hasn't been fitted and there is just a topology). Therefore, some assumptions are being made when simulations are generated by `msprime_sim()`:
+
+* Effective population size and mutation rates are constant
+* Time points of branch splits and admixture events are proportional to the position on the y-axis of the graph representation created by `plotly_graph()`
+* All admixture proportions are in 30/70 proportions
+* All SNPs are independent. This is achieved by simulating a single SNP at a time, and is justified by the fact that the block-jackknife/bootstrap method which is used throughout *ADMIXTOOLS 2* adequately controls for the effects of linked SNPs.
+
+Some of these assumptions are not realistic and are only here for convenience and to reduce the simulation run time. Feel free to e-mail me suggestions for more sensible defaults.
+
+
+If you want to override any of the default assumptions, you can do so in three ways:
+
+1. By supplying a fitted graph to the `msprime_sim()` function
+  
+    In this case, admixture weights of the fitted graph will be directly translated into simulated admixture proportions. Fitted drift lengths represent an unknown combination of time and effective population size. `msprime_sim()` will simulated fitted drift lengths by adjusting effective population sizes of the relevant populations.
+  
+2. By adjusting the `neff`, `time`, or `ind_per_pop` parameters of the `msprime_sim()` function
+
+    As in this example:
+  
+    ```{r, eval = F}
+    msprime_sim(g, outprefix, nsnps = 1e5,
+                # neff should be specified for all nodes
+                neff = c(R = 1e4, Rr = 1000, A = 10, B = 100, C = 1000, ...),
+                # time in generations (not years) should be specified for all nodes
+                time = c(R = 10000, Rr = 9000, A = 2000, B = 0, C = 100, ...),
+                # ind_per_pop should be specified for all leaf nodes
+                ind_per_pop = c(A = 10, B = 100, D = 10, ...)
+                )
+    ```
+
+3. By manually modifying the msprime simulation python script.
+
+    `msprime_sim()` will create a file `[outprefix].py` which may need to be modified before running the simulation.
+
 
 
 

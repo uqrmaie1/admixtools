@@ -742,29 +742,48 @@ qpwave_pairs = function(f2_data, left, right) {
 
 
 
-#' Compute all pairwise qpadm p-values
+#' Compute p-values for many qpadm models
 #'
-#' For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed
+#' This functions evaluates many qpadm models simultaneously by keeping the target population
+#' and the `rightfix` populations fixed, and distributing the `leftright` populations by keeping some
+#' in the set of left population and adding the remaining populations to the right populations.
+#' (See details for an example of how models are generated)
 #' @export
 #' @param f2_blocks 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.
-#' @param left Left populations
-#' @param right Right populations
+#' @param leftright Populations which will be distributed between left and right
+#' @param rightfix Populations which will be on the right side in all models
 #' @param target Target population
 #' @param verbose Print progress updates
-#' @return A data frame with Chi-squared statistics and p-values for each population combination
-qpadm_rotate = function(f2_blocks, left, right, target, verbose = TRUE) {
+#' @details When `leftright` is L1, L2, L3, L4, `rightfix` is R, and `target` is T,
+#' the following models will be genrated: \cr
 
-  lr = all_lr2(left, length(right))
+#' left / right / target \cr
+#' L1 / L2, L3, L4, R / T \cr
+#' L2 / L1, L3, L4, R / T \cr
+#' L3 / L1, L2, L4, R / T \cr
+#' L4 / L1, L2, L3, R / T \cr
+#' L1, L2 / L3, L4, R / T \cr
+#' L1, L3 / L2, L4, R / T \cr
+#' L1, L4 / L2, L3, R / T \cr
+#' L2, L3 / L1, L4, R / T \cr
+#' L2, L4 / L1, L3, R / T \cr
+#' L3, L4 / L1, L2, R / T \cr
+#'
+#' @return A data frame with Chi-squared statistics and p-values for each population combination
+qpadm_rotate = function(f2_blocks, leftright, target, rightfix = NULL, verbose = TRUE) {
+
+  lr = all_lr2(leftright, length(rightfix))
   if(verbose) alert_info(paste0('Evaluating ', length(lr[[1]]), ' models...\n'))
-  qpadm_eval_rotate(f2_blocks, target, lr, right, verbose = verbose)
+  qpadm_eval_rotate(f2_blocks, target, lr, rightfix, verbose = verbose)
 
 }
 
 qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, verbose = TRUE) {
   leftright_dat %>%
     as_tibble %>%
-    mutate(res = map2(left, right, ~qpadm_p(f2_blocks, .x, c(.y, rightfix), target),
-                                    .progress = verbose)) %>%
+    rowwise %>% mutate(right = list(c(right, rightfix))) %>% ungroup %>%
+    mutate(res = furrr::future_map2(left, right, ~qpadm_p(f2_blocks, .x, .y, target),
+                                    .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) #%>%
   #mutate(chisq = map(rankdrop, 'chisq') %>% map_dbl(1)) %>%
   #arrange(chisq)

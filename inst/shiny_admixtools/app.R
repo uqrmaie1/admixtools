@@ -511,7 +511,7 @@ server = function(input, output, session) {
             numadm = numadmix(isolate(global$graph))
           }
           op = if(is.null(input$outpop) || input$outpop == '< undefined >') NULL else input$outpop
-          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, F, outpop = op)
+          global$graph = random_admixturegraph(na.omit(names(global$poplist)), numadm, TRUE, outpop = op)
         }
 
         #global$qpg_right = qpg_right_fit()
@@ -1445,15 +1445,14 @@ server = function(input, output, session) {
       shinyjs::disable('delete_edge')
 
     } else if(length(eg) == 2) {
-
-      from = eg[[1]][2]
-      to = eg[[2]][2]
-      print(paste(from, to))
+      #from = eg[[1]][2]
+      #to = eg[[2]][2]
+      #print(paste(from, to))
 
       alert = function(x) shinyalert('Could not insert edge!', as.character(x))
       tryCatch({
         #gnew = admixtools:::insert_admix_old(g, from, to, allow_below_admix = TRUE)
-        gnew = admixtools:::insert_admix(g, from, to)
+        gnew = admixtools:::insert_admix(g, eg[[1]][1], eg[[1]][2], eg[[2]][1], eg[[2]][2])
       }, warning = alert, error = alert)
       if(!exists('gnew') || is.null(gnew)) return()
       if(!admixtools:::is_valid(gnew)) {
@@ -1878,7 +1877,7 @@ server = function(input, output, session) {
       scale_x_continuous(expand = c(0.1, 0.1))
 
     if('highlight_unidentifiable' %in% input$plotopt) {
-      unid = admixtools:::unidentifiable_edges(global$graph, 2)
+      unid = unidentifiable_edges(global$graph)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
       gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2)
     }

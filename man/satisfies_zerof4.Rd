@@ -23,6 +23,6 @@ the f4-statistics listed in \code{nonzero_f4} being non-zero
 \dontrun{
 # Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
 constrain_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
-satisfies_numadmix(random_admixturegraph(5, 2), constrain_f4)
+satisfies_zerof4(random_admixturegraph(5, 2), constrain_f4)
 }
 }

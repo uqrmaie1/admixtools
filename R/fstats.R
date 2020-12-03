@@ -471,11 +471,31 @@ joint_spectrum = function(afs, ...) {
     left_join(obs, by = 'pattern')
 }
 
-combine_spectra = function(spectra) {
+#' Turn f2 data to f4 data
+#'
+#' @export
+#' @param f2dat A data frame of f2-statistics with columns `pop1`, `pop2`, `f2`
+#' @return A data frame with f4-statistics
+f2dat_f4dat = function(f2dat) {
 
-
+  pops = unique(c(f2dat$pop1, f2dat$pop2))
+  f2dat %<>% bind_rows(rename(., pop1=pop2, pop2=pop1)) %>% bind_rows(tibble(pop1 = pops, pop2 = pops, f2 = 0))
+  expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+    #filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
+    filter(pop1 != pop2, pop3 != pop4) %>%
+    left_join(f2dat %>% rename(pop1 = pop1, pop3 = pop2, f13 = f2)) %>%
+    left_join(f2dat %>% rename(pop2 = pop1, pop4 = pop2, f24 = f2)) %>%
+    left_join(f2dat %>% rename(pop1 = pop1, pop4 = pop2, f14 = f2)) %>%
+    left_join(f2dat %>% rename(pop2 = pop1, pop3 = pop2, f23 = f2)) %>%
+    mutate(f4 = (f14 + f23 - f13 - f24)/2) %>% ungroup %>% select(pop1:pop4, f4) %>% suppressMessages
 }
 
-
-
-
+#' Count SNPs in an array of per block f2-statistics
+#'
+#' This function adds up all block lengths, which are stored in the names along the third dimension of the array
+#' @export
+#' @param f2_blocks A 3d array of per block f2-statistics
+#' @return The total number of SNPs across all blocks
+count_snps = function(f2_blocks) {
+  sum(parse_number(dimnames(f2_blocks)[[3]]))
+}

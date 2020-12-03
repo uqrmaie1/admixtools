@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Compute all pairwise qpadm p-values — qpadm_rotate • admixtools</title>
+<title>Compute p-values for many qpadm models — qpadm_rotate • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,8 +54,11 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Compute all pairwise qpadm p-values — qpadm_rotate" />
-<meta property="og:description" content="For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed" />
+<meta property="og:title" content="Compute p-values for many qpadm models — qpadm_rotate" />
+<meta property="og:description" content="This functions evaluates many qpadm models simultaneously by keeping the target population
+and the rightfix populations fixed, and distributing the leftright populations by keeping some
+in the set of left population and adding the remaining populations to the right populations.
+(See details for an example of how models are generated)" />
 
 
 
@@ -140,9 +143,6 @@
     <li>
       <a href="../articles/resampling.html">Standard errors</a>
     </li>
-    <li>
-      <a href="../articles/simulations.html">Simulations</a>
-    </li>
   </ul>
 </li>
       </ul>
@@ -172,16 +172,19 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Compute all pairwise qpadm p-values</h1>
+    <h1>Compute p-values for many qpadm models</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/qpadm.R'><code>R/qpadm.R</code></a></small>
     <div class="hidden name"><code>qpadm_rotate.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>For all pairs of left populations qpadm Chi-squared statistics and p-values will be computed</p>
+    <p>This functions evaluates many qpadm models simultaneously by keeping the target population
+and the <code>rightfix</code> populations fixed, and distributing the <code>leftright</code> populations by keeping some
+in the set of left population and adding the remaining populations to the right populations.
+(See details for an example of how models are generated)</p>
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_rotate</span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='va'>left</span>, <span class='va'>right</span>, <span class='va'>target</span>, verbose <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>qpadm_rotate</span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='va'>leftright</span>, <span class='va'>target</span>, rightfix <span class='op'>=</span> <span class='cn'>NULL</span>, verbose <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -191,16 +194,16 @@
       <td><p>3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code>.</p></td>
     </tr>
     <tr>
-      <th>left</th>
-      <td><p>Left populations</p></td>
-    </tr>
-    <tr>
-      <th>right</th>
-      <td><p>Right populations</p></td>
+      <th>leftright</th>
+      <td><p>Populations which will be distributed between left and right</p></td>
     </tr>
     <tr>
       <th>target</th>
       <td><p>Target population</p></td>
+    </tr>
+    <tr>
+      <th>rightfix</th>
+      <td><p>Populations which will be on the right side in all models</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -211,6 +214,21 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>A data frame with Chi-squared statistics and p-values for each population combination</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>When <code>leftright</code> is L1, L2, L3, L4, <code>rightfix</code> is R, and <code>target</code> is T,
+the following models will be genrated: <br />
+left / right / target <br />
+L1 / L2, L3, L4, R / T <br />
+L2 / L1, L3, L4, R / T <br />
+L3 / L1, L2, L4, R / T <br />
+L4 / L1, L2, L3, R / T <br />
+L1, L2 / L3, L4, R / T <br />
+L1, L3 / L2, L4, R / T <br />
+L1, L4 / L2, L3, R / T <br />
+L2, L3 / L1, L4, R / T <br />
+L2, L4 / L1, L3, R / T <br />
+L3, L4 / L1, L2, R / T <br /></p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

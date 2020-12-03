@@ -6,17 +6,20 @@
 \usage{
 find_graphs2(
   f2_blocks,
-  initgraph = NULL,
   numgen = 1,
   numgraphs = 10,
   numadmix = 0,
   stopscore = 0,
   stop_after = NULL,
   stopafter_noimprovement = 15,
+  initgraph = NULL,
+  outpop = NULL,
   mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
     flipadmix_random, mutate_n),
+  opt_worst_residual = FALSE,
+  plusminus_generations = 5,
   admix_constraints = NULL,
-  event_order = NULL,
+  event_constraints = NULL,
   reject_f4z = 0,
   verbose = TRUE,
   ...
@@ -42,6 +45,20 @@ to a random other edge in the graph, keeping the number of admixture nodes const
 \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
 \item \code{\link{mutate_n}}: Apply \code{n} of the mutation functions in this list to a graph (defaults to 2).
 }}
+
+\item{opt_worst_residual}{Optimize for lowest worst residual instead of best score. \code{FALSE} by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).}
+
+\item{plusminus_generations}{If the best score does not improve after \code{plusminus_generations} generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.}
+
+\item{admix_constraints}{A data frame with constraints on the number of admixture events for each population.
+See \code{\link{satisfies_numadmix}}
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.}
+
+\item{event_constraints}{A data frame with constraints on the order of events in an admixture graph.
+See \code{\link{satisfies_eventorder}}
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.}
+
+\item{reject_f4z}{If this is a number greater than zero, all f4-statistics with \code{z > reject_f4z} will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.}
 
 \item{verbose}{Print progress updates}
 
