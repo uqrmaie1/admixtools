@@ -28,7 +28,7 @@ library(admixtools)
 ```
 
 
-## *f*-statistics and admixture graphs
+## Background and theory
 
 ### f4 and graphs
 
@@ -75,7 +75,7 @@ More generally, an admixture graph can be described by a set of equations which 
 graph_equations(g, substitute = FALSE)$equations
 ```
 
-These equations tell us that the expected $f_2$-statistics for each pair is the sum of all edges that separate these two populations. In graphs with admixture, some population pairs will be connected through more than a single path. For those population pairs the expected $f_2$ will be a weighted sum of all paths connecting the two populations, with the weights given by the relative ancestry proportions.
+These equations tell us that the expected $f_2$-statistics for each pair is the sum of all edges that separate these two populations. In graphs with admixture, some population pairs will be connected through two or more paths. For those population pairs the expected $f_2$ will be a weighted sum of all paths connecting the two populations, with the weights given by the relative ancestry proportions.
 
 
 Here is a simple graph with one admixture event:
@@ -102,20 +102,20 @@ $a$ is the proportion of admixture coming through the left admixture edge, and $
 Another way to think about the equations describing a graph is that they represent an admixture graph as a function which maps drift and admixture weights to a set of *f*-statistics. This is a function in the sense that every combination of weights is mapped to exactly one set of *f*-statistics. We can turn a graph object to a function and see how different edge weights lead to different *f*-statistics. 
 
 ```{r}
-my_graph_function = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
-my_graph_function(`a|A` = 0) %>% head
-my_graph_function(`a|A` = 0.2) %>% head
+mygraph = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
+mygraph(`a|A` = 0) %>% head
+mygraph(`a|A` = 0.2) %>% head
 ```
 
 Similarly, we can see how $f_4$-statistics are affected by changing one of the drift weights:
 
 ```{r}
-my_graph_function(`a|A` = 0) %>% f2dat_f4dat() %>% head
-my_graph_function(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
+mygraph(`a|A` = 0) %>% f2dat_f4dat() %>% head
+mygraph(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
 ```
 
 
-Usually we observe *f*-statistics and want to estimate drift and admixture weights. That's the inverse of the function above, and it is what `qpgraph()` does.
+Usually we observe *f*-statistics and want to estimate drift and admixture weights. That's the inverse of the function above, and that's what `qpgraph()` does.
 
 
 ### f4 ratio test
@@ -163,48 +163,58 @@ unidentifiable_edges(g)
 
 In this graph, all of the drift lengths and admixture weights are unidentifiable.
 
-The unidentifiable edges can also be highlighted in the plot, here shown for the more complex example:
+
+To see what this means in practice, we simulate data under this admixture graph, and the test whether we can recover the correct parameters:
+
+```{r, eval = FALSE, echo = FALSE}
+example_f2sim1 = f2_from_simulation(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python')
+dates = pseudo_dates(g, 1000)
+dates['C'] = 0
+example_f2sim2 = f2_from_simulation(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python', time = dates)
+```
+
+
+Not providing any additional simulation parameters will default to all drift edges being of equal length (except the one going to the outgroup), and all admixture nodes to be in 50/50 proportions.
+
+```{r, eval = FALSE, echo = TRUE}
+example_f2sim1 = f2_from_simulation(g, nsnps = 1e5)
+```
+```{r}
+qpgraph(example_f2sim1, g)$edges %>% plotly_graph(fix = TRUE)
+```
+
+In this case, `qpgraph()` seems to be able to recover most parameters very well (the weights are 50/50).
+However, this is because of the symmetry of this graph. Let's see what happens if we break the symmetry by setting the date of population *C* to zero (close to the bottom of the plot):
+
+```{r, eval = FALSE, echo = TRUE}
+dates = pseudo_dates(g, 1000)
+dates['C'] = 0
+example_f2sim2 = f2_from_simulation(g, nsnps = 1e5, time = dates)
+```
+
+```{r}
+qpgraph(example_f2sim2, g)$edges %>% plotly_graph(fix = TRUE)
+```
+
+Now the estimated admixture weights are very far from the simulated 50/50 proportions. If we ran similar simulations for the graph from before which includes a fifth population *E*, so that all edges are identifiable, we would see that the admixture proportion estimates are not affected by changing the date of any node.
+
+
+Unidentifiable edges can be highlighted when plotting a graph, here shown for a more complex example:
 
 ```{r}
 example_igraph %>% plotly_graph(highlight_unidentifiable = TRUE)
 ```
 
-This highlights two interesting facts:
+Two patterns in here are very common:
 
-1. The two edges connected root are not identifiable: We can estimate how much drift has occured on these two edges in combination, but it is not possible to attribute it to either of the two edges. The penalization terms that are used during the fitting of admixture graphs will ensure that both edges are always estimated to be of the same length.
+1. The two edges connected root are not identifiable. We can estimate how much drift has occurred on these two edges in combination, but it is not possible to attribute it to either of the two edges. The penalization terms that are used during the fitting of admixture graphs will ensure that both edges are always estimated to be of the same length.
 
 2. The drift edges directly adjacent to a admixture edge can not all be estimated at the same time.
 
 
-To see what this means in practice, we simulate data under this admixture graph, and the test whether we can recover the correct parameters:
+If a graph has non-identifiable edges, it means that the estimated values for those edges should be treated with caution. However, the graph itself can still be a valid model. In particular, the fit of the graph (likelihood score or worst residual) will not be meaningfully affected by the presence of non-identifiable edges. And while unidentifiable edges
 
-```{r, eval = FALSE, echo = FALSE}
-f2sim = admixtools:::f2_from_simulation(example_igraph, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python')
-```
-```{r, eval = TRUE, echo = FALSE}
-f2sim = example_f2sim
-f2sim2 = example_f2sim2
-```
-```{r, eval = FALSE, echo = TRUE}
-f2sim = f2_from_simulation(example_igraph)
-```
-
-Without specifying any parameters in this simulation, the amount of drift happening along each edge will be directly proportional to the distance it covers along the y-axis, and each admixture event will be in 30/70 proportions.
-
-Now we can test which edges are estimated accurately:
-
-```{r}
-qpgraph(f2sim, example_igraph)$edges %>%
-  plotly_graph(highlight_unidentifiable = TRUE)
-```
-
-The estimated amount of drift should be very similar on all the identifiable edges, but the estimates are off for some of the unidentifiable edges. In this case, all three 30/70 admixture proportions are accurately recovered, but this is just a consequence of simulating equal amounts of drift along each edge. When simulating different amounts of drift, but still keeping all three 30/70 admixture proportions, it becomes clear that only the identifiable admixture weights at node N2N4 are estimated accurately:
-
-```{r}
-qpgraph(f2sim2, example_igraph)$edges %>% plotly_graph(highlight_unidentifiable = TRUE)
-```
-
-If a graph has non-identifiable edges, it means that the estimated values for those edges should be treated with caution. However, the graph itself can still be a valid model. In particular, the fit of the graph (likelihood score or worst residual) will not be meaningfully affected by the presence of non-identifiable edges.
+Even if all edges in a graph are identifiable, some estimated parameters may not be robust, for example if they rely on precise estimates of short edges in the graph. In this case, [bootstrap confidence intervals](graphs.html#bootstrap-resampled-graph-fits-1) can be used to find out how robust the parameter estimates are.  
 
 
 ## Graphs in *ADMIXTOOLS 2*
@@ -258,7 +268,7 @@ To load an existing graph, use `parse_qpgraph_graphfile()` if it's in the origin
 Admixture graphs can be modified using the following functions:
 
 ```{r, eval = FALSE}
-insert_edge(example_igraph, from = "N2N1|Vindija.DG", to = "N3N1|Denisova.DG")
+insert_admix(example_igraph, from = "N2N1|Vindija.DG", to = "N3N1|Denisova.DG")
 delete_admix(example_igraph, from = "N2N2", to = "N2N4")
 insert_leaf(example_igraph, "newpop", from = "N4N", to = "Switzerland_Bichon.SG")
 delete_leaf(example_igraph, "Switzerland_Bichon.SG")
@@ -354,7 +364,28 @@ The other regularization term is added to the diagonal elements of the $f_3$ cov
 
 The regularization terms affect the likelihood score, so they should be kept constant whenever fits of different graphs are compared to each other.
 
+
 ### Edge constraints
+
+When fitting an admixture graph, we search for admixture and drift weights which minimize the sum of squared differences between expected and observed *f*-statistics. Usually the drift edges are constrained to be non-negative, and the admixture weights are constrained to be between zero and one, and to add up to one at each admixture node.
+
+It is possible to fit a graph without these constraints, by setting `constrained = FALSE` in `qpgraph()`.
+
+```{r}
+qpgraph(example_f2_blocks, example_igraph, constrained = FALSE)$edges %>%
+  plotly_graph
+```
+
+Negative drift lengths or admixture weights are difficult to interpret, but they are used by `find_graphs()` for more efficiently searching the space of graph topologies.
+
+What's often more useful in practice is to put additional constraints on some edges, for example requiring at least a certain amount of admixture from a source, or restricting how much drift can occur on a particular edge. We can do this by passing a graph in data frame format with columns `lower` and `upper` to `qpgraph()`.
+
+In this example one admixture edge is constrained to be exactly 0.3 by setting both its lower and its upper bound:
+
+```{r}
+example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower) %>%
+  qpgraph(example_f2_blocks, .) %$% edges %>% plotly_graph
+```
 
 
 ## Automatic graph optimization
@@ -483,6 +514,13 @@ At the moment there are three types of features or constraints, and for each the
 
 ### Number of admixing sources
 
+We can summarize the total number of admixing sources for each population in a graph:
+
+```{r}
+summarize_numadmix(example_igraph)
+```
+
+
 To put constraints on the number of admixtures for some of our populations, we can create a data frame with columns `pop`, `min`, `max`. The following example shows how to specify that population *C* should have at least one admixture event, while *D* should be unadmixed:
 
 ```{r}
@@ -532,7 +570,7 @@ events = tribble(
 satisfies_eventorder(g, eventorder = events)
 ```
 
-Filtering lists of graphs and generating random graphs meeting these constraints work analogously to the example above.
+Filtering lists of graphs and generating random graphs meeting these constraints work analogously to the examples above for the number of admixing sources.
 
 
 ### Non-zero f4-statistics

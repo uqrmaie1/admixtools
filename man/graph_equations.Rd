@@ -4,7 +4,12 @@
 \alias{graph_equations}
 \title{Find well fitting admixture graphs}
 \usage{
-graph_equations(graph, substitute = TRUE, nam = c("a", "e", "f"))
+graph_equations(
+  graph,
+  substitute = TRUE,
+  nam = c("a", "e", "f"),
+  return_everything = FALSE
+)
 }
 \arguments{
 \item{graph}{An admixture graph}

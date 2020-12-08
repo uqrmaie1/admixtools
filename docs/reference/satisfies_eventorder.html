@@ -180,7 +180,7 @@ all event orders listed in event_order" />
 all event orders listed in event_order</p>
     </div>
 
-    <pre class="usage"><span class='fu'>satisfies_eventorder</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>event_order</span>, strict <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>satisfies_eventorder</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>eventorder</span>, strict <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -190,14 +190,14 @@ all event orders listed in event_order</p>
       <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>event_order</th>
-      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code></p></td>
-    </tr>
-    <tr>
       <th>strict</th>
       <td><p>What to do in case some events are not determined by the graph.
 If <code>strict = TRUE</code> (the default), the function will only return <code>TRUE</code> if there are no ambiguous constraints.
 Otherwise, <code>TRUE</code> will be returned as long as no constraint is directly contradicted.</p></td>
+    </tr>
+    <tr>
+      <th>event_order</th>
+      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code></p></td>
     </tr>
     </table>
 
@@ -213,7 +213,7 @@ Otherwise, <code>TRUE</code> will be returned as long as no constraint is direct
   <span class='op'>~</span><span class='va'>earlier1</span>, <span class='op'>~</span><span class='va'>earlier2</span>, <span class='op'>~</span><span class='va'>later1</span>, <span class='op'>~</span><span class='va'>later2</span>,
   <span class='st'>'A'</span>, <span class='st'>'B'</span>, <span class='st'>'C'</span>, <span class='st'>'D'</span>,
   <span class='st'>'C'</span>, <span class='st'>'D'</span>, <span class='st'>'E'</span>, <span class='cn'>NA</span><span class='op'>)</span>
-<span class='fu'>satisfies_eventorder</span><span class='op'>(</span><span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>0</span><span class='op'>)</span>, <span class='va'>constrain_events</span><span class='op'>)</span>
+<span class='fu'>satisfies_eventorder</span><span class='op'>(</span><span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>0</span><span class='op'>)</span>, eventorder <span class='op'>=</span> <span class='va'>constrain_events</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

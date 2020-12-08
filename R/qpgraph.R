@@ -258,9 +258,20 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
   } else {
+    if(is.data.frame(data)) {
+      # should not be used for real applications; sets f3 covariance matrix to identity matrix
+      f2mat = data %>% select(1:3) %>% set_colnames(c('pop1', 'pop2', 'f2')) %>% bind_rows(rename(., pop1=pop2,pop2=pop1)) %>% bind_rows(tibble(pop1=pops,pop2=pops,f2=0)) %>% arrange(pop1,pop2) %>% pivot_wider(names_from=pop2, values_from=f2) %>% column_to_rownames('pop1') %>% as.matrix
+      f2mat = f2mat[pops,pops]
+      precomp = list()
+      f3mat = (t(t(-f2mat + f2mat[,1])+f2mat[,1])/2)[-1,-1]
+      precomp$f3_est = c(f3mat[!upper.tri(f3mat)])
+      precomp$ppinv = diag(choose(length(pops), 2))
+      precomp$f3out = data %>% transmute(pop1,pop2,est=f2,se=1)
+    } else {
     f2_blocks = get_f2(data, pops, afprod = FALSE, verbose = verbose)
     precomp = qpgraph_precompute_f3(f2_blocks, pops, f3basepop = f3basepop, lambdascale = lambdascale, boot = boot,
                                     seed = seed, diag_f3 = diag_f3, lsqmode = lsqmode)
+    }
     baseind = if(is.null(f3basepop)) 1 else which(pops == f3basepop)
   }
   stopifnot(all(!is.na(precomp$ppinv)))
@@ -291,8 +302,8 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   if(nadmix > 0) {
     if(!is.null(seed)) set.seed(seed)
     if('lower' %in% names(edges)) {
-      alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]]), 0)
-      aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]]), 1)
+      alower = replace_na(pmax(edges$lower[admixedgesfull[1,]], 1-edges$upper[admixedgesfull[2,]], na.rm=T), 0)
+      aupper = replace_na(pmin(edges$upper[admixedgesfull[1,]], 1-edges$lower[admixedgesfull[2,]], na.rm=T), 1)
       aupper = pmin(1, aupper) + 1e-9
     } else if(constrained) {
       alower = rep(0, nadmix)

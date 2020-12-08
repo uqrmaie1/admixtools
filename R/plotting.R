@@ -712,7 +712,8 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   if(class(graph)[1] == 'igraph') {
     edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
   } else {
-    edges = graph %>% as_tibble
+    if(is.null(colnames(graph))) colnames(graph) = paste0('V', seq_len(ncol(graph)))
+    edges = graph %>% as_tibble()
     names(edges)[1:2] = c('from', 'to')
     graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
   }

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find well fitting admixture graphs — graph_equations • admixtools</title>
+<title>Get pseudo dates for graph nodes — pseudo_dates • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,9 +54,8 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Find well fitting admixture graphs — graph_equations" />
-<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations
-to find well fitting admixturegraphs." />
+<meta property="og:title" content="Get pseudo dates for graph nodes — pseudo_dates" />
+<meta property="og:description" content="This function assigns a date to each node in an admixture graph and is used in msprime_sim. The date will correspond to the y-coordinate of each node used for plotting in plotly_graph. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by get_leafnames() will be set to 0." />
 
 
 
@@ -170,22 +169,16 @@ to find well fitting admixturegraphs." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Find well fitting admixture graphs</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
-    <div class="hidden name"><code>graph_equations.Rd</code></div>
+    <h1>Get pseudo dates for graph nodes</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
+    <div class="hidden name"><code>pseudo_dates.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations
-to find well fitting admixturegraphs.</p>
+    <p>This function assigns a date to each node in an admixture graph and is used in <code><a href='msprime_sim.html'>msprime_sim</a></code>. The date will correspond to the y-coordinate of each node used for plotting in <code><a href='plotly_graph.html'>plotly_graph</a></code>. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by <code><a href='get_leafnames.html'>get_leafnames()</a></code> will be set to 0.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>graph_equations</span><span class='op'>(</span>
-  <span class='va'>graph</span>,
-  substitute <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  nam <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"a"</span>, <span class='st'>"e"</span>, <span class='st'>"f"</span><span class='op'>)</span>,
-  return_everything <span class='op'>=</span> <span class='cn'>FALSE</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>pseudo_dates</span><span class='op'>(</span><span class='va'>graph</span>, time <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -195,18 +188,14 @@ to find well fitting admixturegraphs.</p>
       <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>substitute</th>
-      <td><p>Should edge names be represented by shorter symbols?</p></td>
-    </tr>
-    <tr>
-      <th>nam</th>
-      <td><p>Symbols used to shorten edge names</p></td>
+      <th>time</th>
+      <td><p>Scalar by which y-coordinate values will be multiplied to get dates</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A list with two data frames: <code>equations</code> holds the equtions for all f2-statistics; <code>coding</code> has the mapping from edge names to edge symbols, which is used when <code>substitute = TRUE</code></p>
+    <p>A named vector with pseudo dates for each graph node</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

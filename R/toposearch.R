@@ -3084,7 +3084,7 @@ path_pairs = function(graph) {
 #' @param substitute Should edge names be represented by shorter symbols?
 #' @param nam Symbols used to shorten edge names
 #' @return A list with two data frames: `equations` holds the equtions for all f2-statistics; `coding` has the mapping from edge names to edge symbols, which is used when `substitute = TRUE`
-graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
+graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f'), return_everything = FALSE) {
 
   pp = path_pairs(graph)
   leaves = get_leafnames(graph)
@@ -3110,7 +3110,8 @@ graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f')) {
            fvar = fvars[paste(pop1, pop2)]) %>%
     group_by(pop1, pop2) %>%
     summarize(equation = paste0(eq, collapse = ' + '), fvar = fvar[1], res = sum(res)) %>% ungroup %>%
-    mutate(eq2 = paste0('(', equation, ')*2^10 - ', res*2^10)) %>% select(pop1, pop2, equation) %>% suppressMessages
+    mutate(eq2 = paste0('(', equation, ')*2^10 - ', res*2^10)) %>% suppressMessages
+  if(!return_everything) eq %<>% select(pop1, pop2, equation)
 
   list(equations = eq, coding = coding)
 }
@@ -3287,13 +3288,13 @@ predicted_f4 = function(graph, a = NULL, e = NULL) {
 graph_to_groebner = function(graph) {
 
   require(m2r)
-  eq = graph_equations(graph)
+  ge = graph_equations(graph, return_everything = TRUE)
   #vrs = eq %>% str_replace_all('[\\*\\+\\(\\)]', ' ') %>% str_replace_all('1-', '') %>% str_replace_all('-', '') %>%
   #  str_squish() %>% str_split(' ') %>% unlist %>% unique
   m2r::stop_m2()
-  rng = m2r::ring_.(eq$coding$symbol, coefring = "QQ")
+  rng = m2r::ring_.(ge$coding$symbol, coefring = "QQ")
 
-  out = m2r::gb_(eq$eq$eq2)
+  out = m2r::gb_(ge$equations$eq2 %>% str_replace_all(' ', ''))
   m2r::stop_m2()
   out
 }
@@ -3439,7 +3440,7 @@ satisfies_eventorder = function(graph, eventorder, strict = TRUE) {
 satisfies_zerof4 = function(graph, nonzero_f4) {
 
   if(is.null(nonzero_f4) || nrow(nonzero_f4) == 0) return(TRUE)
-  unexpected_f4 = nonzero_f4 %>% inner_join(zero_f4(graph)) %>% suppressMessages()
+  unexpected_f4 = nonzero_f4 %>% inner_join(summarize_zerof4(graph)) %>% suppressMessages()
   nrow(unexpected_f4) == 0
 }
 
@@ -3483,6 +3484,8 @@ satisfies_numadmix = function(graph, admix_constraints) {
   # admix_constraints is data frame with minimum and maximum admixture for each population
 
   if(is.null(admix_constraints)) return(TRUE)
+  if(length(setdiff(c('min', 'max', 'pop'), names(admix_constraints))) > 0)
+    stop("'admix_constraints' should have columns 'pop', 'min', 'max'!")
   unexpected_admix = admix_constraints %>%
     left_join(summarize_numadmix(graph), by = 'pop') %>%
     filter(nadmix < min | nadmix > max)
@@ -3513,5 +3516,18 @@ satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = N
     satisfies_eventorder(graph, event_order)
 }
 
+
+is_clade = function(geno, pops1, pops2, i1=1, i2=1, perm=100) {
+
+  g1 = geno[,pops1[-i1]]-geno[,pops1[i1]]
+  g2 = geno[,pops2[-i2]]-geno[,pops2[i2]]
+  #cancor(g1, g2)$Summary
+  obs = cancor(g1, g2)$cor[1]
+  expected = c()
+  for(i in seq_len(perm)) {
+    expected[i] = cancor(g1, g2[sample(seq_len(nrow(g2))),])$cor[1]
+  }
+  pmax(1/perm, mean(expected > obs))
+}
 
 
