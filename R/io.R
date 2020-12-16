@@ -238,6 +238,7 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
 #' @export
 #' @param pref Prefix of the packedancestrymap files
 #' @param inds Individuals for which data should be read. Defaults to all individuals
+#' @param pops Populations for which data should be read. Cannot be provided together with 'inds'
 #' @param first Index of first SNP to read
 #' @param last Index of last SNP to read
 #' @param transpose Transpose genotype matrix (default is `snps` x `individuals`)
@@ -248,7 +249,7 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
+read_packedancestrymap = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf,
                                   transpose = FALSE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # inds: optional vector of individual IDs
@@ -259,6 +260,10 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
+  if(!is.null(pops)) {
+    if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
+    inds = indfile %>% filter(X3 %in% pops) %>% pull(X1)
+  }
 
   indfile$.keep = indfile$X1
   if(!is.null(inds)) {
@@ -313,7 +318,6 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #' Read genotype data from *EIGENSTRAT* files
 #'
 #' @export
-#' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @inheritParams read_packedancestrymap
 #' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
@@ -321,7 +325,7 @@ read_packedancestrymap = function(pref, inds = NULL, first = 1, last = Inf,
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_eigenstrat = function(pref, inds = NULL, first = 1, last = Inf, transpose = FALSE, verbose = TRUE) {
+read_eigenstrat = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf, transpose = FALSE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
@@ -329,6 +333,11 @@ read_eigenstrat = function(pref, inds = NULL, first = 1, last = Inf, transpose =
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
   indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
   snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  if(!is.null(pops)) {
+    if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
+    inds = indfile %>% filter(X3 %in% pops) %>% pull(X1)
+  }
+
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
   indfile$X3 = indfile$X1
@@ -537,9 +546,10 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' Read genotype data from `PLINK` files
 #'
 #' See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated `R` package for
-#' reading and writing `PLINK` files.
+#' reading and writing `PLINK` files. This function is based on a similar function in the `plink2R` package.
 #' @export
 #' @param inds Individuals for which data should be read. Defaults to all individuals
+#' @param pops Populations for which data should be read. Cannot be provided together with 'inds'
 #' @inheritParams packedancestrymap_to_afs
 #' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
 #' @examples
@@ -547,7 +557,7 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' samples = c('Ind1', 'Ind2', 'Ind3')
 #' geno = read_packedancestrymap(prefix, samples)
 #' }
-read_plink = function(pref, inds = NULL, verbose = FALSE) {
+read_plink = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
   # This is based on Gad Abraham's "plink2R" package, but genotypes are m x n, not n x m
   if(verbose) alert_info('Reading PLINK files...\n')
 
@@ -557,6 +567,11 @@ read_plink = function(pref, inds = NULL, verbose = FALSE) {
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
   bim = read_table2(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
   fam = read_table2(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+
+  if(!is.null(pops)) {
+    if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
+    inds = fam %>% filter(X1 %in% pops) %>% pull(X2)
+  }
   if(is.null(inds)) inds = fam[[2]]
   indvec = pop_indices(fam, pops = NULL, inds = inds)
   indvec2 = which(indvec > 0)

@@ -7,6 +7,7 @@
 read_eigenstrat(
   pref,
   inds = NULL,
+  pops = NULL,
   first = 1,
   last = Inf,
   transpose = FALSE,
@@ -17,6 +18,8 @@ read_eigenstrat(
 \item{pref}{Prefix of the packedancestrymap files}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
+
+\item{pops}{Populations for which data should be read. Cannot be provided together with 'inds'}
 
 \item{first}{Index of first SNP to read}
 

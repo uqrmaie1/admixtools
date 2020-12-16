@@ -4,12 +4,14 @@
 \alias{read_plink}
 \title{Read genotype data from \code{PLINK} files}
 \usage{
-read_plink(pref, inds = NULL, verbose = FALSE)
+read_plink(pref, inds = NULL, pops = NULL, verbose = FALSE)
 }
 \arguments{
 \item{pref}{Prefix of packedancestrymap files (files have to end in \code{.geno}, \code{.ind}, \code{.snp})}
 
 \item{inds}{Individuals for which data should be read. Defaults to all individuals}
+
+\item{pops}{Populations for which data should be read. Cannot be provided together with 'inds'}
 
 \item{verbose}{Print progress updates}
 }
@@ -18,7 +20,7 @@ A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} 
 }
 \description{
 See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated \code{R} package for
-reading and writing \code{PLINK} files.
+reading and writing \code{PLINK} files. This function is based on a similar function in the \code{plink2R} package.
 }
 \examples{
 \dontrun{

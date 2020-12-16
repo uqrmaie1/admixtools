@@ -1792,9 +1792,9 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   newleaves = setdiff(get_leafnames(graph), leaves)
   while(length(newleaves) > 0) {
     g = graph %>% igraph::delete_vertices(newleaves) %>% simplify_graph()
-    if(!is_valid(g)) browser()
+    #if(!is_valid(g)) browser()
     newleaves = setdiff(get_leafnames(g), leaves)
-    if(length(setdiff(leaves, get_leafnames(g))) > 0) browser()
+    #if(length(setdiff(leaves, get_leafnames(g))) > 0) browser()
     graph = g
   }
   if(desimplify) graph %<>% desimplify_graph
@@ -2300,7 +2300,8 @@ graph_to_triplesig = function(graph) {
 # triples don't uniquely identify graphs
 
 
-eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, nonzero_f4 = NULL, admix_constraints = NULL,
+                           event_order = NULL, verbose = TRUE) {
 
   newgraphs = tibble(graph = graph_plusn(list(graph), n = n, ntry = ntry))
   num = nrow(newgraphs)
@@ -2308,30 +2309,40 @@ eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
   newgraphs %>%
+    rowwise %>%
+    filter(satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
+                                 event_order = event_order)) %>% ungroup %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
   #%>% select(source_from, source_to, dest_from, dest_to, graph, score)
 }
 
-eval_minusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+eval_minusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, nonzero_f4 = NULL,
+                            admix_constraints = NULL, event_order = NULL, verbose = TRUE) {
 
   newgraphs = tibble(graph = graph_minusn(list(graph), n = n, ntry = ntry))
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
   newgraphs %>%
+    rowwise %>%
+    filter(satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
+                                 event_order = event_order)) %>% ungroup %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
 }
 
-eval_plusminusn = function(graph, qpgfun, n = 1, ntry = Inf, verbose = TRUE) {
+eval_plusminusn = function(graph, qpgfun, n = 1, ntry = Inf, nonzero_f4 = NULL,
+                           admix_constraints = NULL, event_order = NULL, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Adding ', n, ' edge(s)...\n'))
-  plus = eval_plusnadmix(graph, qpgfun, n = n, ntry = ntry, verbose = verbose)
+  plus = eval_plusnadmix(graph, qpgfun, n = n, ntry = ntry, nonzero_f4 = nonzero_f4,
+                         admix_constraints = admix_constraints, event_order = event_order, verbose = verbose)
   if(verbose) alert_info(paste0('Best score: ', round(plus$score[[1]], 3), '\n'))
 
   if(verbose) alert_info(paste0('Removing ', n, ' edge(s)...\n'))
   plus %>% slice_min(score, with_ties = FALSE) %>% pull(graph) %>% pluck(1) %>%
-    eval_minusnadmix(qpgfun, n = n, ntry = Inf, verbose = verbose)
+    eval_minusnadmix(qpgfun, n = n, ntry = Inf, nonzero_f4 = nonzero_f4,
+                     admix_constraints = admix_constraints, event_order = event_order, verbose = verbose)
 }
 
 
@@ -2540,6 +2551,7 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
   tm = Sys.time()
   nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
   allzerof4ok = admixok = eventsok = FALSE
+  nzf4 = admixc = eventc = NULL
 
   for(i in seq_len(numgen)) {
 
@@ -2559,23 +2571,26 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
     if(any(duplicated(models$hash))) browser()
     models %<>% rows_update(sel %>% mutate(expanded = TRUE), by = 'hash')
     graph = sel$g[[1]]
-    if(!allzerof4ok && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)){
-      allzerof4ok = TRUE
+
+    if(is.null(nzf4) && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)) {
+      nzf4 = nonzero_f4
       alert_info('All zero f4 ok!\n')
     }
-    if(!admixok && !is.null(admix_constraints) && satisfies_numadmix(graph, admix_constraints)) {
-      admixok = TRUE
+    if(is.null(admixc) && !is.null(admix_constraints) && satisfies_numadmix(graph, admix_constraints)) {
+      admixc = admix_constraints
       alert_info('Admix constraints ok!\n')
     }
-    if(!eventsok && !is.null(event_constraints) && satisfies_eventorder(graph, event_constraints)) {
-      eventsok = TRUE
+    if(is.null(eventc) && !is.null(event_constraints) && satisfies_eventorder(graph, event_constraints)) {
+      eventc = event_constraints
       alert_info('Event constraints ok!\n')
     }
 
     if(gimp > 0 && gimp %% plusminus_generations == 0) {
 
       graph = models %>% slice_min(score, with_ties = FALSE) %>% pull(g) %>% pluck(1)
-      newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10) %>%
+      newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10,
+                               nonzero_f4 = nzf4, admix_constraints = admixc,
+                               event_order = eventc) %>%
         mutate(hash = map_chr(graph, graph_hash)) %>%
         slice_min(score, with_ties = FALSE) %>%
         transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = 'plusminusn')
@@ -2609,11 +2624,9 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
           rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
         newmod %<>% bind_rows(randmut)
       }
-      nzf4 = if(allzerof4ok) nonzero_f4 else NULL
-      admixc = if(admixok) admix_constraints else NULL
-      eventc = if(eventsok) event_constraints else NULL
+
       #print(nrow(newmod))
-      newmod %<>% filter(map_lgl(g, ~satisfies_constraints(., nzf4, admixc, eventc)))
+      newmod %<>% rowwise %>% filter(satisfies_constraints(g, nzf4, admixc, eventc)) %>% ungroup
       #print(nrow(newmod))
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
@@ -2897,8 +2910,24 @@ unadmixed = function(graph) {
   graph %>% count_admix %>% filter(nadmix == 0) %>% pull(pop)
 }
 
-find_proxies = function(graph) {
 
+#' Assign proxy populations to admixed populations
+#'
+#' @export
+#' @param graph An admixture graph in igraph format, or as edge list with column `weight`
+#' @return A data frame with columns `pop`, `nadmix`, `proxy`, `nproxies` (and `weight`)
+#' @examples
+#' \dontrun{
+#' summarize_proxies(example_igraph)
+#' }
+summarize_proxies = function(graph) {
+
+  if('data.frame' %in% class(graph)) {
+    edges = graph
+    graph %<>% edges_to_igraph()
+  } else {
+    edges = NULL
+  }
   leaves = get_leafnames(graph)
   admnodes = names(which(degree(graph, mode = 'in') > 1))
   admparents = map(admnodes, ~names(neighbors(graph, ., mode = 'in'))) %>% do.call(rbind, .)
@@ -2927,17 +2956,26 @@ find_proxies = function(graph) {
   admkeys = tibble(admnodes,
                    left = map(1:nrow(admparents), ~find_keys(graph, admparents[.,1], admparents[.,2])),
                    right = map(1:nrow(admparents), ~find_keys(graph, admparents[.,2], admparents[.,1])))
-  lastadm = map(leaves, ~intersect(names(subcomponent(graph, .x, mode = 'in')), admnodes)) %>% set_names(leaves) %>% discard(~length(.) == 0) %>% map(~head(., 1)) %>% unlist %>% enframe('pop', 'admnodes')
+  if(!is.null(edges)) {
+    admkeys %<>% left_join(edges %>% filter(type == 'admix', from %in% admparents[,1]) %>%
+                             transmute(admnodes = to, wl = weight), by = 'admnodes') %>%
+      mutate(wr = 1-wl)
+  } else {
+    admkeys %<>% mutate(wl = 0, wr = 0)
+  }
+  lastadm = map(leaves, ~intersect(names(subcomponent(graph, .x, mode = 'in')), admnodes)) %>%
+    set_names(leaves) %>% discard(~length(.) == 0) %>% map(~head(., 1)) %>% unlist %>% enframe('pop', 'admnodes')
 
-  proxies = lastadm %>% left_join(admkeys, by = 'admnodes') %>% rowwise %>%
-    transmute(pop, proxy = list(sort(unique(c(left, right)))), nproxies = length(proxy)) %>% ungroup %>% unnest(proxy)
-  graph %>% count_admix %>% filter(nadmix > 0) %>% left_join(proxies, by = 'pop') %>% select(pop, nadmix, nproxies, proxy)
+  proxies = lastadm %>% left_join(admkeys %>% transmute(admnodes, proxy = left, weight = wl), by = 'admnodes') %>% unnest(proxy) %>% bind_rows(lastadm %>% left_join(admkeys %>% transmute(admnodes, proxy = right, weight = wr), by = 'admnodes') %>% unnest(proxy)) %>%
+    select(-admnodes) %>% add_count(pop, name = 'nproxies')
+  if(is.null(edges)) proxies %<>% select(-weight)
+  graph %>% count_admix %>% filter(nadmix > 0) %>% left_join(proxies, by = 'pop')
 }
 
 
 summarize_graphlist = function(graphlist) {
 
-  graphlist %>% map(find_proxies) %>% bind_rows(.id = 'g') %>%
+  graphlist %>% map(summarize_proxies) %>% bind_rows(.id = 'g') %>%
     group_by(pop) %>% add_count(proxy) %>%
     group_by(pop, proxy) %>%
     summarize(nadmix = mean(nadmix), nproxies = mean(nproxies), n = mean(n)) %>%
@@ -2951,7 +2989,7 @@ proxypred = function(sim, graphlist, auc = FALSE) {
   pops = get_leafnames(sim)
 
   out = expand_grid(pop = pops, proxy = pops) %>% filter(pop != proxy) %>%
-    left_join(find_proxies(sim), by = c('pop', 'proxy')) %>%
+    left_join(summarize_proxies(sim), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs = !is.na(nadmix)) %>%
     left_join(summarize_graphlist(graphlist), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs, pred = replace_na(frac, 0))
@@ -3422,6 +3460,25 @@ satisfies_eventorder = function(graph, eventorder, strict = TRUE) {
   all(na.omit(status))
 }
 
+frac_eventorder = function(graph, eventorder, strict = TRUE) {
+
+  if(is.null(eventorder)) return(TRUE)
+  status = eventorder %>% rowwise %>%
+    mutate(ok = satisfies_oneevent(graph, earlier1, earlier2, later1, later2)) %>%
+    ungroup %>% pull(ok)
+  if(strict) return(mean(!is.na(status)))
+  mean(status, na.rm=T)
+}
+
+
+which_eventorder = function(graph, eventorder, strict = TRUE) {
+
+  eventorder %>% rowwise %>%
+    mutate(status = satisfies_oneevent(graph, earlier1, earlier2, later1, later2)) %>%
+    ungroup
+}
+
+
 #' Test f4 constraints on a graph
 #'
 #' This function returns `TRUE` if and only if the admixture graph is compatible with
@@ -3514,6 +3571,27 @@ satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = N
   satisfies_zerof4(graph, nonzero_f4) &&
     satisfies_numadmix(graph, admix_constraints) &&
     satisfies_eventorder(graph, event_order)
+}
+
+
+#' Test if a tree is part of a graph
+#'
+#' This function tests whether a tree is part of a graph. This is useful for testing whether a Y-chromosome tree is consistent with an autosomal admixture graph. Leaf node names matter, but internal node names are ignored.
+#' @export
+#' @param tree An admixture graph without admixture event
+#' @param graph An admixture graph
+#' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
+#' \dontrun{
+#' tree = graph_splittrees(example_igraph) %>% pull(graph) %>% pluck(1)
+#' tree_in_graph(tree, example_igraph)
+#' }
+tree_in_graph = function(tree, graph) {
+  # returns TRUE if tree is in graph
+
+  treehash = graph_hash(tree)
+  splithashes = graph_splittrees(graph) %>% rowwise %>%
+    mutate(hash = graph_hash(graph)) %>% pull(hash)
+  treehash %in% splithashes
 }
 
 
