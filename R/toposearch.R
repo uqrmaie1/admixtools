@@ -2955,9 +2955,13 @@ summarize_proxies = function(graph) {
   }
   admkeys = tibble(admnodes,
                    left = map(1:nrow(admparents), ~find_keys(graph, admparents[.,1], admparents[.,2])),
-                   right = map(1:nrow(admparents), ~find_keys(graph, admparents[.,2], admparents[.,1])))
+                   right = map(1:nrow(admparents), ~find_keys(graph, admparents[.,2], admparents[.,1]))) %>%
+    rowwise %>%
+    mutate(is = list(intersect(left, right)), left = list(setdiff(left, is)), right = list(setdiff(right, is)),
+           left = list(ifelse(length(left) == 0, NA, left)), right = list(ifelse(length(right) == 0, NA, right))) %>%
+    select(-is) %>% ungroup
   if(!is.null(edges)) {
-    admkeys %<>% left_join(edges %>% filter(type == 'admix', from %in% admparents[,1]) %>%
+    admkeys %<>% left_join(edges %>% filter(type == 'admix', !duplicated(to)) %>%
                              transmute(admnodes = to, wl = weight), by = 'admnodes') %>%
       mutate(wr = 1-wl)
   } else {

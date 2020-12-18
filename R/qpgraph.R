@@ -144,7 +144,7 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudg
   sc = sqrt(diag(cc))
   q1 = (pppp %*% f3_est)[,1]/sc
   cc = cc/tcrossprod(sc)
-  if(constrained) qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower, -upper))/sc
+  if(constrained) qpsolve(cc, q1, cbind(diag(nc), -diag(nc)), c(lower*sc, -upper*sc))/sc
   else solve(cc, q1)/sc
 }
 

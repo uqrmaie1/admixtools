@@ -1187,9 +1187,101 @@ parse_treemix = function(stem, split = FALSE) {
 }
 
 
+sfs2 = function(afs) {
+
+  popcounts = apply(afs$counts, 2, max)
+  obs = (afs$afs * afs$counts) %>% as_tibble() %>% group_by_all %>% count %>% ungroup
+  expand_grid(!!!popcounts %>% map(~0:.)) %>% left_join(obs) %>% mutate(n = replace_na(n, 0)) %>% suppressMessages()
+}
+
+write_fastsimcoal_obs = function(afs, popcounts, outfile = stdout()) {
+
+  popcounts = apply(afs$counts, 2, max)
+  out = "1 observations. No. of demes and sample sizes are on next line\n"
+  out %<>% paste0(length(popcounts), '\t', paste(popcounts, collapse = '\t'), '\n')
+  out %<>% paste0(paste(sfs2(afs) %>% pull(n), collapse = '\t'))
+
+  writeLines(out, outfile)
+}
+
+
+write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
+
+  tm = 1000
+  pops = get_leafnames(graph)
+  nodes = names(V(graph))
+  npop = length(pops)
+  nnode = length(nodes)
+  dates = pseudo_dates(graph) %>% enframe('node', 'date')
+  edges = graph %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>% mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n) %>% left_join(dates %>% transmute(from = node, fromdate = date)) %>% left_join(dates %>% transmute(to = node, todate = date)) %>% suppressMessages() %>%
+    mutate(weight = ifelse(type == 'admix' & !duplicated(to), 0.5, 1)) %>%
+    mutate(time = ifelse(type == 'admix', fromdate, fromdate)*tm, source = match(to, nodes)-1, sink = match(from, nodes)-1, migrants = weight, size = 1, gr = 0, migmat = 0,
+           epar = ifelse(type == 'admix', paste0('T_', from, '$'), paste0('T_', from, '$')),
+           epar2 = paste0('T_', to, '$'),
+           rule = ifelse(to %in% pops, '', paste0(epar2, ' <= ', epar))) %>% arrange(time)
+  nedge = nrow(edges)
+
+
+  if(tpl) {
+    nadm = edges %>% filter(migrants < 1) %>% nrow
+    apar = paste0('A', seq_len(nadm), '$')
+    edges$migrants[edges$migrants < 1] = apar
+    edges$time = edges$epar
+
+    est = "// Priors and rules file
+  // *********************
+
+  [PARAMETERS]
+  //#isInt? #name   #dist.#min  #max
+  //all Ns are in number of haploid individuals\n"
+
+    apars = paste0('0\t', apar, '\tunif\t0\t1\toutput', collapse = '\n')
+    epars = paste0('1\t', unique(edges$epar), '\tlogunif\t10\t100000\toutput', collapse = '\n')
+
+    est %<>% paste0(epars, '\n')
+    est %<>% paste0(apars, '\n')
+    est %<>% paste0("\n[RULES]\n")
+    est %<>% paste0(paste0(unique(edges$rule), collapse = '\n'))
+    est %<>% paste0("\n\n[COMPLEX PARAMETERS]\n")
+
+    writeLines(est, paste0(outpref, '.est'))
+
+  }
+
+  events = edges %$% paste(time, source, sink, migrants, size, gr, migmat) %>% paste(collapse = '\n')
+
+  out = "//Number of population samples (demes)\n"
+  out %<>% paste0(nnode)
+  out %<>% paste0('\n//Population effective sizes (number of genes)\n')
+  out %<>% paste0(paste0(rep(10000, nnode), collapse = '\n'))
+  out %<>% paste0('\n//Sample sizes\n')
+  out %<>% paste0(paste0(ifelse(nodes %in% pops, 2, 0), collapse = '\n'))
+  out %<>% paste0('\n//Growth rates: negative growth implies population expansion\n')
+  out %<>% paste0(paste0(rep(0, nnode), collapse = '\n'))
+  out %<>% paste0('\n//Number of migration matrices : 0 implies no migration between demes\n')
+  out %<>% paste0(0)
+  out %<>% paste0('\n//historical event: time, source, sink, migrants, new size, new growth rate, migr. matrix 4 historical event\n')
+  out %<>% paste0(nedge, ' historical event\n')
+  out %<>% paste0(events)
+  out %<>% paste0('\n//Number of independent loci [chromosome]\n')
+  out %<>% paste0('1 0')
+  out %<>% paste0('\n//Per chromosome: Number of linkage blocks\n')
+  out %<>% paste0('1')
+  out %<>% paste0('\n//per Block: data type, num loci, rec. rate and mut rate + optional parameters\n')
+  out %<>% paste0('FREQ 10000000 0.00000001 0.00000002\n')
+  #out %<>% paste0('DNA 10000000 0.00000001 0.00000002 0.33\n')
+  #out %<>% paste0('STANDARD 10000000 0.00000001 0.00000002\n')
+
+  writeLines(out, paste0(outpref, if(tpl) '.tpl' else '.par'))
+}
 
 
 
+
+write_fastsimcoal_tpl = function(outfile = stdout()) {
+
+
+}
 
 
 
