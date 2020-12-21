@@ -977,7 +977,7 @@ pseudo_dates = function(graph, time = 1) {
 #' msprime_sim(results$edges)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000, ind_per_pop = 1,
-                       mutation_rate = 1e-3, time = 1000, admix_default = 0.5, run = FALSE, numcores = 1, shorten_admixed_leaves = FALSE) {
+                       mutation_rate = 1e-3, time = 1000, admix_default = 0.5, run = FALSE, numcores = NULL, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   if('igraph' %in% class(graph)) edges = as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
@@ -1068,6 +1068,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
                "\n  else:",
                "\n    return numpy.zeros(len(samples)//2, 'int')")
 
+  if(is.null(numcores)) numcores = 100
   out = paste0(out, "\n\np = multiprocessing.Pool(int(min(multiprocessing.cpu_count(),", numcores,")))")
   out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")
 
@@ -1186,20 +1187,35 @@ parse_treemix = function(stem, split = FALSE) {
   edges %>% as.matrix %>% graph_from_edgelist()
 }
 
+#' Joint site frequency spectrum
+#'
+#' This function computes the joint site frequency spectrum from genotype files or allele frequency and count matrices.
+#' The joint site frequency spectrum lists how often each combination of haplotypes is observed.
+#' The number of combinations is equal to the product of one plus the number of haplotypes in each population.
+#' For example, five populations with a single diploid individual each have 3^5 possible combinations.
+#' @export
+#' @param afs A named list of length two where the first element (`afs`) contains the allele frequency matrix,
+#' and the second element (`counts`) contains the allele count matrix.
+#' @param pref Instead of `afs`, the prefix of genotype files can be provided.
+#' @return A data frame with the number of times each possible combination of allele counts is observed.
+joint_sfs = function(afs, pref = NULL) {
 
-sfs2 = function(afs) {
-
+  if(!is.null(pref)) {
+    if(!is.null(afs)) stop("'afs' and 'pref' can't be provided at the same time!")
+    afs = geno_to_afs(pref)
+  }
   popcounts = apply(afs$counts, 2, max)
   obs = (afs$afs * afs$counts) %>% as_tibble() %>% group_by_all %>% count %>% ungroup
   expand_grid(!!!popcounts %>% map(~0:.)) %>% left_join(obs) %>% mutate(n = replace_na(n, 0)) %>% suppressMessages()
 }
 
-write_fastsimcoal_obs = function(afs, popcounts, outfile = stdout()) {
+
+write_fastsimcoal_obs = function(afs, outfile = stdout()) {
 
   popcounts = apply(afs$counts, 2, max)
   out = "1 observations. No. of demes and sample sizes are on next line\n"
   out %<>% paste0(length(popcounts), '\t', paste(popcounts, collapse = '\t'), '\n')
-  out %<>% paste0(paste(sfs2(afs) %>% pull(n), collapse = '\t'))
+  out %<>% paste0(paste(admixtools:::joint_sfs(afs) %>% pull(n), collapse = '\t'))
 
   writeLines(out, outfile)
 }
@@ -1224,7 +1240,7 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
 
   if(tpl) {
     nadm = edges %>% filter(migrants < 1) %>% nrow
-    apar = paste0('A', seq_len(nadm), '$')
+    apar = paste0('A', seq_len(nadm), '$')[seq_len(nadm)]
     edges$migrants[edges$migrants < 1] = apar
     edges$time = edges$epar
 
@@ -1239,7 +1255,7 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
     epars = paste0('1\t', unique(edges$epar), '\tlogunif\t10\t100000\toutput', collapse = '\n')
 
     est %<>% paste0(epars, '\n')
-    est %<>% paste0(apars, '\n')
+    if(length(apars) > 0) est %<>% paste0(apars, '\n')
     est %<>% paste0("\n[RULES]\n")
     est %<>% paste0(paste0(unique(edges$rule), collapse = '\n'))
     est %<>% paste0("\n\n[COMPLEX PARAMETERS]\n")
@@ -1282,6 +1298,8 @@ write_fastsimcoal_tpl = function(outfile = stdout()) {
 
 
 }
+
+
 
 
 

@@ -14,7 +14,7 @@ msprime_sim(
   time = 1000,
   admix_default = 0.5,
   run = FALSE,
-  numcores = 1,
+  numcores = NULL,
   shorten_admixed_leaves = FALSE
 )
 }

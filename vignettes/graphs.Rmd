@@ -15,11 +15,16 @@ vignette: >
 
 **Under construction**
 
-Admixture graphs are models of the demographic history of a set of populations. *f*-statistics can be used to evaluate how well a specific admixture graph fits the data, and to estimate the drift lengths and admixture weights in a graph.
+Admixture graphs are models of the demographic history of a set of individuals or populations. Genetic data, in particular *f*-statistics, are informative about the topology (the shape) and the parameters (drift and admixture weights) of a graph, which allows us to favor some models and to reject others.
 
-*ADMIXTOOLS 2* makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in several ways. You can either modify them manually, one edge or one node at a time, or automatically, by generating all possible variations of a certain type (for example all graphs that result from adding one admixture edge to the current graph).
+*ADMIXTOOLS 2* makes it easy to work with admixture graphs. It allows you to read and write them in a number of different formats, create them from scratch, and modify them in a number of ways.
 
-The purpose of all this is to find well fitting models, and to find out which models are not compatible with the data. This is further simplified by `find_graphs()`, a function which automatically finds well fitting graphs by repeatedly selecting the best among a set of randomly modified graphs. *ADMIXTOOLS 2* also introduces a method for testing whether one admixture graph fits the data significantly better than another.
+`qpgraph()` evaluates a single graph by finding the best combination of weights for a specific topology.
+`find_graphs()` tries to find the best fitting graph topologies for a set of *f*-statistics.
+
+In addition to that there are a number of functions for exploring the topological neighborhood of a graph, to test whether the fits of two graphs are significantly different from one another, and to simulate data under any admixture graph.
+
+
 
 ```{r, warning = FALSE, message = FALSE}
 library(magrittr)
@@ -29,6 +34,8 @@ library(admixtools)
 
 
 ## Background and theory
+
+This section is about the relation between admixture graphs and *f*-statistics and assumes that you are familiar with [*f*-statistics](fstats.html).
 
 ### f4 and graphs
 
@@ -99,23 +106,24 @@ $a$ is the proportion of admixture coming through the left admixture edge, and $
 
 ### Graph as a function
 
-Another way to think about the equations describing a graph is that they represent an admixture graph as a function which maps drift and admixture weights to a set of *f*-statistics. This is a function in the sense that every combination of weights is mapped to exactly one set of *f*-statistics. We can turn a graph object to a function and see how different edge weights lead to different *f*-statistics. 
+An admixture graph can be seen as a function which maps drift and admixture weights to a set of *f*-statistics. How it does that depends on its topology which is captured by its equation system.
+We can create this function for any given graph, and use it see how different edge weights lead to different *f*-statistics. 
 
 ```{r}
-mygraph = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
-mygraph(`a|A` = 0) %>% head
-mygraph(`a|A` = 0.2) %>% head
+g_to_f2 = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
+g_to_f2(`a|A` = 0) %>% head
+g_to_f2(`a|A` = 0.2) %>% head
 ```
 
 Similarly, we can see how $f_4$-statistics are affected by changing one of the drift weights:
 
 ```{r}
-mygraph(`a|A` = 0) %>% f2dat_f4dat() %>% head
-mygraph(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
+g_to_f2(`a|A` = 0) %>% f2dat_f4dat() %>% head
+g_to_f2(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
 ```
 
 
-Usually we observe *f*-statistics and want to estimate drift and admixture weights. That's the inverse of the function above, and that's what `qpgraph()` does.
+Usually we are interested in the inverse of this function: We estimate *f*-statistics from genetic data and use them to estimate drift and admixture weights. This is what `qpgraph()` does.
 
 
 ### f4 ratio test
@@ -145,7 +153,9 @@ In practice, however, there usually is no exact solution for a given graph and s
 
 ### Identifiability
 
-Each admixture graph can be described by an equation system which relates drift lengths and admixture weights to *f*-statistics. However, it is not always possible to estimate all graph parameters at the same time. Consider the following graph, which differs from the earlier graph only in that population $B$ is missing:
+Each admixture graph can be described by an equation system which relates drift and admixture weights to *f*-statistics. This equation system may be unidentifiable, which means it is not possible to estimate all the weights at the same time. (In practice we will still get estimates for these weights because of the regularization terms; but these estimates don't mean much.)
+
+Consider the following graph, which differs from the earlier graph only in that population $B$ is missing:
 
 ```{r}
 g = matrix(c('R', 'O', 'R', 'n1', 'n1', 'n4', 'n1', 'n3',
@@ -153,7 +163,7 @@ g = matrix(c('R', 'O', 'R', 'n1', 'n1', 'n4', 'n1', 'n3',
   edges_to_igraph()
 g %>% plotly_graph(fix = TRUE)
 ```
-In contrast to the similar earlier example, there is now no $f_4$-statistic with which we can estimate the length of an internal edge, because in this graph, no two population pairs form a clade with each other.
+In contrast to the similar example from before, we now have no $f_4$-statistic which can be interpreted as the length of an internal edge, because in this graph, no two population pairs form a clade with each other.
 
 *ADMIXTOOLS 2* can tell us for any admixture graph what the unidentifiable edges are:
 
@@ -212,9 +222,57 @@ Two patterns in here are very common:
 2. The drift edges directly adjacent to a admixture edge can not all be estimated at the same time.
 
 
-If a graph has non-identifiable edges, it means that the estimated values for those edges should be treated with caution. However, the graph itself can still be a valid model. In particular, the fit of the graph (likelihood score or worst residual) will not be meaningfully affected by the presence of non-identifiable edges. And while unidentifiable edges
+If a graph has non-identifiable edges, it means that the estimated values for those edges should be treated with caution. However, the graph itself can still be a valid model. In particular, the fit of the graph (likelihood score or worst residual) will not be meaningfully affected by the presence of non-identifiable edges.
 
 Even if all edges in a graph are identifiable, some estimated parameters may not be robust, for example if they rely on precise estimates of short edges in the graph. In this case, [bootstrap confidence intervals](graphs.html#bootstrap-resampled-graph-fits-1) can be used to find out how robust the parameter estimates are.  
+
+
+
+### f-statistics vs SFS
+
+*f*-statistics only use a subset of the information contained in genetic data. They reduce the data to a single estimate of genetic distance for each population pair. Additional information relevant for demographic history which is *not* utilized by *f*-statistics includes the joint distribution of allele counts across populations (joint site frequency spectrum, SFS), and patterns of linkage disequilibrium.
+
+Methods based on the joint site frequency spectrum have the advantage that they can distinguish some models which cannot be distinguished using *f*-statistics alone. At the same time, the greater complexity of SFS based methods makes them slower and less robust.
+
+Drift and admixture weights are the only parameters for modeling admixture graphs using *f*-statistics. In contrast, SFS-based methods break genetic drift apart into components for effective population size, time, and mutation rate. This makes them more powerful, but also less robust.
+
+
+The following three graphs cannot be distinguished using only *f*-statistics:
+
+:::::: {style="display: flex"}
+
+::: {style="width: 33%"}
+
+```{r, echo = F, out.width="100%"}
+matrix(c('R', 'A', 'R', 'n0', 'n', 'C', 'n', 'D', 'n0', 'n', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
+```
+
+:::
+
+::: {style="width: 33%"}
+
+```{r, echo = F, out.width="100%"}
+matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'C', 'n1', 'n2', 'n2', 'D', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
+```
+
+:::
+
+::: {style="width: 33%"}
+
+```{r, echo = F, out.width="100%"}
+matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'n3', 'n3', 'C', 'n1', 'n2',
+         'n2', 'n4', 'n4', 'D', 'n2', 'n4', 'n3', 'n4', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
+```
+
+:::
+
+::::
+
+For any set of $f$-statistics, the fit of one of these graphs is the same as the fit of the other two. With site frequency spectra, these models would result in different fits and could possibly be distinguished. (However, even with perfect data, [not all possible demographic histories can be distinguished using site frequency spectra](https://www.sciencedirect.com/science/article/pii/S0040580908000038?casa_token=FYR8i8ICeB4AAAAA:oDtrv_MIgl-Vxys3LYBr0AdpebGbZMjALDWjjy7DqIuQtFSgBYitOY3ww_81awP3YvTelkX_))
+
+On the other hand, this example shows that even though admixture graphs have only pulse admixture events and no continues admixture or split events, the fit of these highly discretized models is identical to a much larger class of models with continuous admixture and population splits.
+
+
 
 
 ## Graphs in *ADMIXTOOLS 2*
@@ -283,58 +341,23 @@ Below you can see how a new admixture edge is added to a graph:
 ![](../man/figures/shinyapp1.gif)
 
 
-### Semi-automated graph exploration
+## Fitting a single graph
 
-Rather than modifying admixture graphs manually and only testing a small number of models, you can start with a graph and let *ADMIXTOOLS 2* generate and evaluate graphs for you.
+`qpgraph()` tries to find the admixture- and drift-edge weights for a given graph topology which are most consistent with the observed $f$-statistics. It takes a $f$-statistics and a graph as input, and returns the best likelihood score it could find, as well as the corresponding weights. 
 
-The following functions take a graph and return lists of new, similar graphs:
+### Initial weights
 
-```{r, eval = FALSE}
-newgraphs = graph_plusone(example_graph)
-newgraphs = graph_minusone(example_graph)
-newgraphs = graph_minusplus(example_graph)
-newgraphs = graph_flipadmix(example_graph)
-newgraphs = graph_splittrees(example_graph)
-```
-```{r, echo = FALSE}
-newgraphs = graph_splittrees(example_graph)
-```
-
-To evaluate the new graphs, type:
-
-```{r, eval = FALSE}
-newgraphs %>%
-  rowwise %>%
-  mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
-  unnest_wider(res) %>%
-  arrange(score)
-```
-
-or, if you want to [parallelize](parallel.html) this,
-
-```{r}
-newgraphs %>%
-  mutate(res = furrr::future_map(graph, ~qpgraph(example_f2_blocks, .))) %>%
-  unnest_wider(res) %>%
-  arrange(score)
-```
-
-
-## Fitting a single admixture graph
-
-### Edge weight optimization
-
-`qpgraph()` tries to find the admixture- and drift-edge weights for a given graph topology which are most consistent with the observed $f_3$-statistics. The optimization of admixture weights requires initial values for these weights. Occasionally, the initial values have an effect on the final weight estimates because the optimization gets stuck in a local optimum. To avoid this, the `qpgraph()` weight optimization is repeated with different randomly chosen combinations of starting weights, and the final likelihood score represents the best score out of all tries. By default, 10 different random combinations of starting weights are evaluated. Decreasing this number can speed up `qpgraph()`, and increasing it can reduce the risk of missing the global optimum.
+The optimization of admixture weights requires initial values for the weights. Occasionally, the initial values have an effect on the final weight estimates because the optimization gets stuck in a local optimum. To avoid this, the `qpgraph()` weight optimization is repeated with different randomly chosen combinations of starting weights, and the final likelihood score represents the best score out of all tries. By default, 10 different random combinations of starting weights are evaluated. Decreasing this number can speed up `qpgraph()`, and increasing it can reduce the risk of missing the global optimum.
 
 To get a better sense of how stable the edge weight optimization is, it makes sense to inspect the `opt` output of `qpgraph()`. This data frame contains all random initial weight combinations, as well as the optimized weights, final scores (`value`) and additional information about the optimization generated by the `optim()` function.
 
-In this example, the optimization is very stable, and the initial values do not affect the estimated weights or the score:
+In this example, the optimization is very stable, and the initial values do not affect the estimated weights (columns `p1` to `p3`) or the score (column `value`):
 
 ```{r}
 example_winner$opt[[1]]
 ```
 
-Here, the optimization depends a bit more on the initial weights:
+Here, the optimization depends a bit more on the initial weights, and the weights for the admixture nodes `N3N4` and `N3N8` can not be estimated robustly (because they are not identifiable in this graph):
 
 ```{r}
 example_qpgraph_ref_results$opt
@@ -378,7 +401,7 @@ qpgraph(example_f2_blocks, example_igraph, constrained = FALSE)$edges %>%
 
 Negative drift lengths or admixture weights are difficult to interpret, but they are used by `find_graphs()` for more efficiently searching the space of graph topologies.
 
-What's often more useful in practice is to put additional constraints on some edges, for example requiring at least a certain amount of admixture from a source, or restricting how much drift can occur on a particular edge. We can do this by passing a graph in data frame format with columns `lower` and `upper` to `qpgraph()`.
+What's often more useful in practice is to put additional constraints on some edges, for example requiring at least a certain amount of admixture from a source, or restricting how much drift can occur on a particular edge. We can do this by passing a graph in data frame format with columns `lower` and `upper` to `qpgraph()`. (Note the difference between the columns `lower` and `upper`, which will constrain the fit of a graph when used as input to `qpgraph()`, and the columns `low` and `high`, which are generated in the output and report the lowest and highest weights for different initial values!)
 
 In this example one admixture edge is constrained to be exactly 0.3 by setting both its lower and its upper bound:
 
@@ -388,9 +411,13 @@ example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower)
 ```
 
 
-## Automatic graph optimization
+## Exploring different graphs
 
-An advantage of being able to quickly evaluate a single model using precomputed *f*-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits.
+An advantage of being able to quickly evaluate a single model using precomputed *f*-statistics is that we can evaluate many different graphs in order to find graph topologies with good fits. This can either be done in a fully automated way (similar to TreeMix) or in a semi-automated way, similar for example to the admixture graph R package.
+
+
+### Fully automated graph exploration
+
 
 <br>
 
@@ -427,7 +454,47 @@ It can take a while until `find_graphs()` finds graphs with good fits. To speed 
 
 <br>
 
-### Constraining the search space
+#### Constraining the search space
+
+Sometimes it is useful to not search for any graphs that fit the data, but to incorporate prior knowledge by constraining the set of graphs that should be considered. This can be done by passing additional arguments to `find_graphs()`, which end in `_constraints`. More on this [here](#summarizing-graphs-1).
+
+
+### Semi-automated graph exploration
+
+Rather than modifying admixture graphs manually and only testing a small number of models, you can start with a graph and let *ADMIXTOOLS 2* generate and evaluate graphs for you.
+
+The following functions take a graph and return lists of new, similar graphs:
+
+```{r, eval = FALSE}
+newgraphs = graph_plusone(example_graph)
+newgraphs = graph_minusone(example_graph)
+newgraphs = graph_minusplus(example_graph)
+newgraphs = graph_flipadmix(example_graph)
+newgraphs = graph_splittrees(example_graph)
+```
+```{r, echo = FALSE}
+newgraphs = graph_splittrees(example_igraph)
+```
+
+To evaluate the new graphs, type:
+
+```{r, eval = FALSE}
+newgraphs %>%
+  rowwise %>%
+  mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
+  unnest_wider(res) %>%
+  arrange(score)
+```
+
+or, if you want to [parallelize](parallel.html) this,
+
+```{r}
+newgraphs %>%
+  mutate(res = furrr::future_map(graph, ~qpgraph(example_f2_blocks, .))) %>%
+  unnest_wider(res) %>%
+  arrange(score)
+```
+
 
 
 ## Comparing the fits of different graphs
@@ -611,10 +678,15 @@ satisfies_zerof4(g, nonzero_f4 = sigf4)
 <!-- <br> -->
 
 
-## Simulating genetic data
+
+## Simulating under an admixture graph
 
 
-*ADMIXTOOLS 2* makes it easy to simulate genetic data under a given admixture graph with the help of [msprime](https://msprime.readthedocs.io/en/stable/). This requires a python installation with the *msprime* module.
+*ADMIXTOOLS 2* makes it easy to simulate genetic data under a given admixture graph with the help of [msprime](https://msprime.readthedocs.io/en/stable/).
+
+### msprime
+
+In order for this to work, you need a python installation with the *msprime* module.
 
 ```{r, warning=FALSE, message=FALSE}
 library(tidyverse)
@@ -643,7 +715,7 @@ msprime_sim(g, outprefix, nsnps = 1e5, ind_per_pop = 100, run = '/Users/robert/a
 f2_blocks = f2_from_geno(outprefix, verbose = FALSE)
 ```
 
-The last two steps can also be combined into one step with the `f2_from_graph()` function.
+The last two steps can also be combined into one step with the `f2_from_simulation()` function.
 ```{r, eval = F}
 f2_blocks = f2_from_simulation(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
 ```
@@ -689,6 +761,8 @@ If you want to override any of the default assumptions, you can do so in three w
 
     `msprime_sim()` will create a file `[outprefix].py` which may need to be modified before running the simulation.
 
+
+### fastsimcoal2
 
 
 

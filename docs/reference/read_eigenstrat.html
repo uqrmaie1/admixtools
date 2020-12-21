@@ -181,6 +181,7 @@
     <pre class="usage"><span class='fu'>read_eigenstrat</span><span class='op'>(</span>
   <span class='va'>pref</span>,
   inds <span class='op'>=</span> <span class='cn'>NULL</span>,
+  pops <span class='op'>=</span> <span class='cn'>NULL</span>,
   first <span class='op'>=</span> <span class='fl'>1</span>,
   last <span class='op'>=</span> <span class='cn'>Inf</span>,
   transpose <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -197,6 +198,10 @@
     <tr>
       <th>inds</th>
       <td><p>Individuals for which data should be read. Defaults to all individuals</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>Populations for which data should be read. Cannot be provided together with 'inds'</p></td>
     </tr>
     <tr>
       <th>first</th>

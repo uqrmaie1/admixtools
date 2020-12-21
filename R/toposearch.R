@@ -2502,7 +2502,7 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
 find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
-                        stopafter_noimprovement = 15, initgraph = NULL, outpop = NULL,
+                        stopafter_noimprovement = 15, traceback_gen = 10, initgraph = NULL, outpop = NULL,
                         mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
                         opt_worst_residual = FALSE, plusminus_generations = 5,
                         admix_constraints = NULL, event_constraints = NULL, reject_f4z = 0,
@@ -2537,7 +2537,7 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
     transmute(gen2 = 0, hash, g, edges, score, expanded = FALSE)
   best = besthist = models$score
   bestmut = 'none'
-  gimp = 0
+  gimp = numtraceback = 0
   st = data.tree::Node$new('R')
   st$AddChild(models$hash,
               gen2 = 0,
@@ -2550,8 +2550,7 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
   stdat = st_to_dat(st)
   tm = Sys.time()
   nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
-  allzerof4ok = admixok = eventsok = FALSE
-  nzf4 = admixc = eventc = NULL
+  nzf4 = admixc = eventc = lasttracebacklevel = NULL
 
   for(i in seq_len(numgen)) {
 
@@ -2560,7 +2559,21 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
       alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
       msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
     }
-    newgraph = pick_graph(stdat, verbose = verbose > 2)
+    #if(i == 20) browser()
+    #newgraph = pick_graph(stdat, verbose = verbose > 2)
+    if(gimp > traceback_gen*(numtraceback+1)) {
+      if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level
+      else lasttracebacklevel = lasttracebacklevel - 1
+      numtraceback = numtraceback + 1
+      data.tree::Prune(st, function(x) x$level < lasttracebacklevel)
+      st$Do(function(x) x$closed = x$level >= lasttracebacklevel)
+      stdat = st %>% st_to_dat
+      gimp = 0
+      if(verbose) alert_info(paste0('Traceback to level ', lasttracebacklevel))
+    }
+    newgraph = stdat %>% filter(!isTRUE(closed)) %>% slice_min(score, with_ties = FALSE)
+    if(nrow(newgraph) == 0) newgraph = stdat %>% slice_min(score, with_ties = FALSE)
+
     if(verbose > 1) {
       msg %<>% paste0(newgraph %$% paste0(' ', round(score, 2), ' ', round(score/best, 2),'\tg ',gen2, ' ', gimp, '\tcnt ',cntm_1,' ',cntm_5, '\ttime '), round(as.numeric(Sys.time()-tm), 1), '\t', bestmut)
       tm = Sys.time()
@@ -2689,7 +2702,7 @@ st_to_dat = function(st) {
   st$Do(fp_5)
   st$Do(fimp)
 
-  as.data.frame(st, NULL, T, 'name', 'score', 'scbest', 'gimp', 'scp_1', 'scp_5', 'scm_1', 'scm_5', 'height', 'level', 'totalCount', 'cntm_1', 'cntm_5', 'gen2') %>%
+  as.data.frame(st, NULL, T, 'name', 'score', 'scbest', 'gimp', 'scp_1', 'scp_5', 'scm_1', 'scm_5', 'height', 'level', 'totalCount', 'cntm_1', 'cntm_5', 'gen2', 'closed') %>%
     as_tibble %>% rename(hash = name) %>% select(-1)
 }
 
@@ -2722,7 +2735,19 @@ pick_graph = function(stdat, minprob = 0.5, cnt1 = 10, cnt5 = 30, pen1 = 1.2, pe
   out
 }
 
+pick_graph2 = function(stdat, lasttracebacklevel, tracebackafter = 4, verbose = FALSE) {
 
+  sel = stdat %>% slice_min(score, with_ties = FALSE)
+  lastimp = max(stdat$gen2, na.rm = TRUE) - sel$gen2
+  if(sel$totalCount[[1]] == 1 || lastimp < tracebackafter) {
+    return(sel)
+  }
+  if(is.null(lasttracebacklevel)) lasttracebacklevel = max(stdat$level)
+  sel = stdat %>% filter(level < lasttracebacklevel, height == 1) %>% slice_max(level) %>% slice_min(score, with_ties = FALSE)
+  if(nrow(sel) == 0) browser()
+  if(verbose) print(sel)
+  sel
+}
 
 swap_negdrift = function(graph, from, to) {
   # from, to are vectors of edges to be swapped

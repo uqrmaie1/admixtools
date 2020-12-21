@@ -56,7 +56,7 @@
 
 <meta property="og:title" content="Read genotype data from PLINK files — read_plink" />
 <meta property="og:description" content="See genio for a dedicated R package for
-reading and writing PLINK files." />
+reading and writing PLINK files. This function is based on a similar function in the plink2R package." />
 
 
 
@@ -177,10 +177,10 @@ reading and writing PLINK files." />
 
     <div class="ref-description">
     <p>See <a href='https://www.rdocumentation.org/packages/genio'>genio</a> for a dedicated <code>R</code> package for
-reading and writing <code>PLINK</code> files.</p>
+reading and writing <code>PLINK</code> files. This function is based on a similar function in the <code>plink2R</code> package.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>read_plink</span><span class='op'>(</span><span class='va'>pref</span>, inds <span class='op'>=</span> <span class='cn'>NULL</span>, verbose <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>read_plink</span><span class='op'>(</span><span class='va'>pref</span>, inds <span class='op'>=</span> <span class='cn'>NULL</span>, pops <span class='op'>=</span> <span class='cn'>NULL</span>, verbose <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -192,6 +192,10 @@ reading and writing <code>PLINK</code> files.</p>
     <tr>
       <th>inds</th>
       <td><p>Individuals for which data should be read. Defaults to all individuals</p></td>
+    </tr>
+    <tr>
+      <th>pops</th>
+      <td><p>Populations for which data should be read. Cannot be provided together with 'inds'</p></td>
     </tr>
     <tr>
       <th>verbose</th>
