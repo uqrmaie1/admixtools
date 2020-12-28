@@ -200,7 +200,7 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = TRUE, outpop = N
       random_newick(outpop = outpop) %>%
       newick_to_edges %>%
       graph_from_edgelist %>%
-      insert_admix_multi(numadmix)
+      insert_admix_n(numadmix)
     if(all(map_lgl(list(nonzero_f4, admix_constraints, event_order), is.null)) ||
        satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
                              event_order = event_order)) break
@@ -678,9 +678,16 @@ insert_admix_random = function(graph, nadmix) {
 #' @param dest_to Child node of the destination edge
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
 #' @return Adxmiture graph with inserted edge
-#' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_multi}}
+#' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_n}}
 insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL, substitute = FALSE) {
   # assumes graph is simplified
+
+  if(length(source_to) > 1) {
+    n = length(source_to)
+    f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y], substitute = substitute)
+    graph = source_to %>% length %>% seq_len %>% reduce(f, .init = graph)
+    return(graph)
+  }
 
   leaves = sort(get_leafnames(graph))
   nodes = names(V(graph))
@@ -717,7 +724,7 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
 #' @return Admixture graph with inserted edges
 #' @seealso \code{\link{insert_admix}} \code{\link{delete_admix}}
-insert_admix_multi = function(graph, n = 1, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL, substitute = FALSE) {
+insert_admix_n = function(graph, n = 1) {
 
   # if(all(map_lgl(list(source_from, source_to, dest_from, dest_to), is.null))) {
   #   f = function(x, y) insert_admix(x)
@@ -731,8 +738,7 @@ insert_admix_multi = function(graph, n = 1, source_from = NULL, source_to = NULL
   #   n = length(source_from)
   #   f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y])
   # }
-  if(!all(map_lgl(list(source_from, source_to, dest_from, dest_to), is.null))) n = length(source_to)
-  f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y], substitute = substitute)
+  f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y], substitute = TRUE)
   seq_len(n) %>% reduce(f, .init = graph)
 }
 
@@ -791,7 +797,7 @@ admixturegraph_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outg
   spl = split_graph(graph)
   graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves, fix_outgroup = fix_outgroup)
   #graph = insert_admix_old(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
-  graph = insert_admix_multi(graph, source_to = spl$fromnodes, dest_to = spl$tonodes, substitute = TRUE)
+  graph = insert_admix(graph, source_to = spl$fromnodes, dest_to = spl$tonodes, substitute = TRUE)
   stopifnot(is_valid(graph))
   if(desimplify) graph = desimplify_graph(graph)
   graph
@@ -2450,7 +2456,7 @@ rearrange_negadmix3 = function(graph, from, to) {
   if(!isTRUE(all.equal(leaves, leaves2)) || !is_valid(newgraph)) return(NULL)
   nold = numadmix(graph)
   nnew = numadmix(newgraph)
-  if(nnew < nold) newgraph %<>% insert_admix_multi(nold - nnew)
+  if(nnew < nold) newgraph %<>% insert_admix_n(nold - nnew)
   if(is_valid(newgraph)) return(newgraph)
 }
 
@@ -2562,7 +2568,7 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
     #if(i == 20) browser()
     #newgraph = pick_graph(stdat, verbose = verbose > 2)
     if(gimp > traceback_gen*(numtraceback+1)) {
-      if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level
+      if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level-round(traceback_gen/2)
       else lasttracebacklevel = lasttracebacklevel - 1
       numtraceback = numtraceback + 1
       data.tree::Prune(st, function(x) x$level < lasttracebacklevel)

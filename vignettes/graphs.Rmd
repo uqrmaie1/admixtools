@@ -32,51 +32,34 @@ library(tidyverse)
 library(admixtools)
 ```
 
+<br>
 
 ## Background and theory
 
 This section is about the relation between admixture graphs and *f*-statistics and assumes that you are familiar with [*f*-statistics](fstats.html).
 
-### f4 and graphs
 
-Single $f_4$-statistics and *D*-statistics tell us what an admixture graph for four populations could look like. Let's say we have four populations with these $f_4$- or *D*-statistics (Note that all other possible $f_4$-statistics can be computed from these two.):
+### Graphs and f2
 
-$$f_4(A,B; C,D) = 0$$
-$$f_4(A,C; B,D) = 0.1$$
+Admixture graphs tell us how the genetic drift that separates two populations ($f_2$) can be decomposed into segments that are unique to single populations, and segments that are shared between multiple populations.
 
-$f_4(A,B; C,D) = 0$ suggests that $A$ and $B$ form a clade relative to $C$ and $D$, and a significantly positive value for $f_4(A,C; B,D)$ suggests that there is some amount of genetic drift shared between $A$ and $B$ that is not shared by $C$ and $D$ (If $f_4(A,C; B,D)$ were also zero, it would suggest a star phylogeny). The admixture graph connecting the four populations could therefore look like this:
+For example, in the graph below, the path between $C$ and $D$ is composed of only two segments (one unique to $C$ and one unique to $D$), while the path between $B$ and $D$ is composed of three segments, and the middle segment is shared with other population pairs.
 
 ```{r}
-g = matrix(c('R', 'n1', 'R', 'n2', 'n1', 'A',
-             'n1', 'B', 'n2', 'C', 'n2', 'D'), , 2, byrow = T) %>%
+g = matrix(c('R', 'R', 'n1', 'n1', 'n2', 'n2',
+             'A', 'n1', 'B', 'n2', 'C',  'D'), , 2) %>%
   edges_to_igraph()
 g %>% plotly_graph
 ```
 
-The distance between the internal nodes $n1$ and $n2$ is given by $f_4(A,C; B,D) = 0.1$.
+This can be expressed in the following equations:
 
-An equally plausible admixture graph for this scenario is one in which $A$ and $B$ are not a clade in the strict sense, but in the sense that there is no overlap between the path from $A$ and $B$ and the path from $C$ and $D$.
+$$f_2(C, D) = n2|C + n2|D$$
+$$f_2(B, D) = n1|B + n1|n2 + n2|D$$
 
-```{r}
-g = matrix(c('R', 'A', 'R', 'n1', 'n1', 'B',
-             'n1', 'n2', 'n2', 'C', 'n2', 'D'), , 2, byrow = T) %>%
-  edges_to_igraph()
-g %>% plotly_graph
-```
+($x|y$ is the edge going from $x$ to $y$)
 
-This simple example demonstrates that
-
-* *f*-statistics can be used to find plausible admixture graphs
-* multiple different admixture graphs can fit the data equally well, and that
-* both the topology, and the parameters of an admixture graph can be estimated with *f*-statistics
-
-The example also shows that *f*-statistics cannot tell us where the root of a graph should be. For that it helps to include an outgroup in the graph so we know that the root is at the correct position.
-
-### Graph f2 equations
-
-In any admixture graph, $f_2$ of two populations is simply the sum of all path lengths that lie between the populations. For example, in the two graphs above, $f_2(C, D) = n2|C + n2|D$, where $n2|C$ is the edge going from $n2$ to $C$.
-
-More generally, an admixture graph can be described by a set of equations which relate edges of the graph to *f*-statistics. There are $\frac{k(k-1)}{2}$ equations for the $f_2$-statistics of all population pairs ($k$ is the number of populations):
+There are $\frac{k(k-1)}{2}$ equations for the $f_2$-statistics of all population pairs ($k$ is the number of populations):
 
 ```{r}
 graph_equations(g, substitute = FALSE)$equations
@@ -104,10 +87,63 @@ graph_equations(g, substitute = FALSE)$equations %>%
 $a$ is the proportion of admixture coming through the left admixture edge, and $1-a$ is the proportion coming from the right.
 
 
+### Graphs and f4
+
+While $f_2$ can be seen as the basic building block of other *f*-statistics, it is less widely used than $f_4$ and *D*-statistics. The next example shows how admixture graphs are related to $f_4$.
+
+Let's say we have four populations with these $f_4$- or *D*-statistics (all other possible $f_4$-statistics can be computed from these two, which is why they are not also listed here):
+
+$$f_4(A,B; C,D) = 0$$
+$$f_4(A,C; B,D) = 0.1$$
+
+$f_4(A,B; C,D) = 0$ suggests that $A$ and $B$ form a clade relative to $C$ and $D$, and a significantly positive value for $f_4(A,C; B,D)$ suggests that there is some amount of genetic drift shared between $A$ and $B$ that is not shared by $C$ and $D$ (If $f_4(A,C; B,D)$ were also zero, it would suggest a star phylogeny). The admixture graph connecting the four populations could therefore look like this:
+
+```{r}
+g = matrix(c('R', 'n1', 'R', 'n2', 'n1', 'A',
+             'n1', 'B', 'n2', 'C', 'n2', 'D'), , 2, byrow = T) %>%
+  edges_to_igraph()
+g %>% plotly_graph
+```
+
+The distance between the internal nodes $n1$ and $n2$ is given by $f_4(A,C; B,D) = 0.1$.
+
+An equally plausible admixture graph for this scenario is one in which $A$ and $B$ are not a clade in the strict sense, but in the sense that there is no overlap between the path from $A$ and $B$ and the path from $C$ and $D$.
+
+```{r}
+g = matrix(c('R', 'R', 'n1', 'n1', 'n2', 'n2',
+             'A', 'n1', 'B', 'n2', 'C',  'D'), , 2) %>%
+  edges_to_igraph()
+g %>% plotly_graph
+```
+
+This example demonstrates that
+
+* *f*-statistics can be used to find plausible admixture graphs
+* multiple different admixture graphs can fit the data equally well
+* both the topology, and the parameters of an admixture graph can be estimated with *f*-statistics
+
+The example also shows that *f*-statistics cannot tell us where the root of a graph should be. For that it helps to include an outgroup in the graph so we know that the root is at the correct position.
+
+
+
+
+### f4 ratio test
+
+```{r}
+g %>% plotly_graph
+```
+
+
+The graph above illustrates nicely how the $f_4$-ratio test can be used to estimate admixture weights. This test estimates an admixture weight $a$ as the ratio of two $f_4$-statistics, in this case $a = \frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$. $f_4(O,B;C,D)$ is exactly equal to the distance between $n1$ and $n2$, the left blue edge. That's because $O$ and $C$ form a clade relative to $B$ and $D$, and this edge is the only connection between the two clades. (They are not clades in the usual sense of the word, but in the sense that there is no overlap between the paths from $O$ to $C$ and the paths from $B$ to $D$.)
+At the same time, $f_4(O,B;C,A)$ is the intersection of paths going from $O$ to $C$, and from $B$ to $A$. Now there are two paths going from $B$ to $A$: A short one through the left, and a long one through the right admixture edge. Along the short path going to $A$ from the left, there is no intersection with the path from $O$ to $C$, so the component of $f_4(O,B;C,A)$ going through that path is zero. This means that all if $f_4(O,B;C,A)$ is not equal to zero, it is only due to the long path from $B$ to $A$. Along that path, the intersection  with $O$ to $C$ is exactly the left blue edge again. We now have two expressions for the length of that path: The first expression is $f_4(O,B;C,D)$, and the second expression is $a \times f_4(O,B;C,A)$, and so we can estimate $a$ as $\frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$.
+
+For more complex graphs, drift lengths and admixture weights can be estimated in just the same way, although it is not always possible to express each estimated parameter as a simple ratio of two *f*-statistics. However, even without such simple expression, it is usually possible estimate graph parameters by numerically finding solutions to the system of graph equations. `qpgraph()` is doing just that: It finds the drift and admixture weights for a given graph which minimize the squared difference between the observed and the expected *f*-statistics.
+
+
 ### Graph as a function
 
-An admixture graph can be seen as a function which maps drift and admixture weights to a set of *f*-statistics. How it does that depends on its topology which is captured by its equation system.
-We can create this function for any given graph, and use it see how different edge weights lead to different *f*-statistics. 
+An admixture graph can be seen as a function which maps drift and admixture weights to *f*-statistics, using the equations that describe the graph topology.
+We can create this function for any graph, and use this function to see how changing specific edge weights changes *f*-statistics. 
 
 ```{r}
 g_to_f2 = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
@@ -126,18 +162,6 @@ g_to_f2(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
 Usually we are interested in the inverse of this function: We estimate *f*-statistics from genetic data and use them to estimate drift and admixture weights. This is what `qpgraph()` does.
 
 
-### f4 ratio test
-
-```{r}
-g %>% plotly_graph
-```
-
-
-The graph above illustrates nicely how the $f_4$-ratio test can be used to estimate admixture weights. This test estimates an admixture weight $a$ as the ratio of two $f_4$-statistics, in this case $a = \frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$. $f_4(O,B;C,D)$ is exactly equal to the distance between $n1$ and $n2$, the left blue edge. That's because $O$ and $C$ form a clade relative to $B$ and $D$, and this edge is the only connection between the two clades. (They are not clades in the usual sense of the word, but in the sense that there is no overlap between the paths from $O$ to $C$ and the paths from $B$ to $D$.)
-At the same time, $f_4(O,B;C,A)$ is the intersection of paths going from $O$ to $C$, and from $B$ to $A$. Now there are two paths going from $B$ to $A$: A short one through the left, and a long one through the right admixture edge. Along the short path going to $A$ from the left, there is no intersection with the path from $O$ to $C$, so the component of $f_4(O,B;C,A)$ going through that path is zero. This means that all if $f_4(O,B;C,A)$ is not equal to zero, it is only due to the long path from $B$ to $A$. Along that path, the intersection  with $O$ to $C$ is exactly the left blue edge again. We now have two expressions for the length of that path: The first expression is $f_4(O,B;C,D)$, and the second expression is $a \times f_4(O,B;C,A)$, and so we can estimate $a$ as $\frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$.
-
-For more complex graphs, drift lengths and admixture weights can be estimated in just the same way, although it is not always possible to express each estimated parameter as a simple ratio of two *f*-statistics. However, even without such simple expression, it is usually possible estimate graph parameters by numerically finding solutions to the system of graph equations. `qpgraph()` is doing just that: It finds the drift and admixture weights for a given graph which minimize the squared difference between the observed and the expected *f*-statistics.
-
 ### Why f3?
 
 (See also [this section](graphs.html#fitting-a-single-admixture-graph-1))
@@ -153,7 +177,7 @@ In practice, however, there usually is no exact solution for a given graph and s
 
 ### Identifiability
 
-Each admixture graph can be described by an equation system which relates drift and admixture weights to *f*-statistics. This equation system may be unidentifiable, which means it is not possible to estimate all the weights at the same time. (In practice we will still get estimates for these weights because of the regularization terms; but these estimates don't mean much.)
+Each admixture graph can be described by an equation system which relates drift and admixture weights to *f*-statistics. This equation system may be unidentifiable, which means it is not possible to estimate all the weights at the same time. (In practice we will still get estimates for unidentifiable weights because of the regularization terms, but these estimates are often completely arbitrary.)
 
 Consider the following graph, which differs from the earlier graph only in that population $B$ is missing:
 
@@ -252,7 +276,8 @@ matrix(c('R', 'A', 'R', 'n0', 'n', 'C', 'n', 'D', 'n0', 'n', 'n0', 'B'), , 2, by
 ::: {style="width: 33%"}
 
 ```{r, echo = F, out.width="100%"}
-matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'C', 'n1', 'n2', 'n2', 'D', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
+matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'nb',  'n', 'n1', 'nb', 'n2', 'n1', 'n1b',
+         'n1', 'C', 'n1b', 'n2', 'n2', 'D', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
 ```
 
 :::
@@ -260,8 +285,8 @@ matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'C', 'n1', 
 ::: {style="width: 33%"}
 
 ```{r, echo = F, out.width="100%"}
-matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'n3', 'n3', 'C', 'n1', 'n2',
-         'n2', 'n4', 'n4', 'D', 'n2', 'n4', 'n3', 'n4', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
+matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'nb', 'nb', 'n2', 'n1', 'n3', 'n3', 'C', 'n1', 'n1b', 'n1b', 'n2',
+         'n2', 'n2b', 'n4', 'D', 'n2b', 'n4', 'n3', 'n3b', 'n3b', 'n4', 'n0', 'B'), , 2, byrow = T) %>% plotly_graph
 ```
 
 :::
@@ -270,9 +295,9 @@ matrix(c('R', 'A', 'R', 'n0', 'n0', 'n', 'n', 'n1', 'n', 'n2', 'n1', 'n3', 'n3',
 
 For any set of $f$-statistics, the fit of one of these graphs is the same as the fit of the other two. With site frequency spectra, these models would result in different fits and could possibly be distinguished. (However, even with perfect data, [not all possible demographic histories can be distinguished using site frequency spectra](https://www.sciencedirect.com/science/article/pii/S0040580908000038?casa_token=FYR8i8ICeB4AAAAA:oDtrv_MIgl-Vxys3LYBr0AdpebGbZMjALDWjjy7DqIuQtFSgBYitOY3ww_81awP3YvTelkX_))
 
-On the other hand, this example shows that even though admixture graphs have only pulse admixture events and no continues admixture or split events, the fit of these highly discretized models is identical to a much larger class of models with continuous admixture and population splits.
+This apparent limitation of fitting admixture graphs with $f$-statistics has an upside as well. Admixture graphs look as if they are limited to only pulse admixture events and can not deal with continues admixture or split events. But the fit of these highly discretized models using $f$-statistics is identical to the fits of a much larger class of models with continuous admixture and population splits. Basically, every internal node can be thought of as a stand-in for an arbitrarily complex relationship among its three adjacent edges.
 
-
+<br>
 
 
 ## Graphs in *ADMIXTOOLS 2*
@@ -294,19 +319,19 @@ A valid admixture graph in *ADMIXTOOLS 2* has to satisfy a number of conditions:
 1. It has to be a [directed, acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
 2. All nodes have to be connected and there can't be any duplicated edges
 3. No node should have more than two incoming or outgoing edges
-4. Each terminal node should have only one incoming edge
+4. Every population for which we have data should be a terminal node with only one incoming edge
 
 The function `is_valid()` tests whether a graph satisfies these conditions.
 
 The third condition prohibits so-called multifurcations, or politomies. The function `split_multifurcations()` turns a graph with multifurcations into a graph without multifurcations. At the same time, it constrains the newly introduced edges to be near zero, so that while fitting the graph, the multifurcations will be respected.
 
-The last condition ensures that each terminal population can have drift which is shared with no other population.
+The last condition ensures that each observed population can have drift which is shared with no other population. This means that no observed population is a direct ancestor of any other population, and it is the reason why random error in the genotypes of any population does not lead to bias.
 
 
 
 ### Creating and loading admixture graphs
 
-The examples above show how admixture graphs can be created from scratch in R: You create a two column matrix where each row represents and edge, with the first column the origin, and the second column the destination. 
+The examples above have already demonstrated how admixture graphs can be created from scratch in R: By creating a two column matrix where each row represents and edge, with the first column the origin, and the second column the destination. 
 
 You can also generate random graphs with your choice of population labels and a set number of admixture events:
 
@@ -340,6 +365,7 @@ Below you can see how a new admixture edge is added to a graph:
 
 ![](../man/figures/shinyapp1.gif)
 
+<br>
 
 ## Fitting a single graph
 
@@ -410,6 +436,7 @@ example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower)
   qpgraph(example_f2_blocks, .) %$% edges %>% plotly_graph
 ```
 
+<br>
 
 ## Exploring different graphs
 
@@ -495,7 +522,7 @@ newgraphs %>%
   arrange(score)
 ```
 
-
+<br>
 
 ## Comparing the fits of different graphs
 
@@ -561,6 +588,7 @@ fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
 example_fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
 ```
 
+<br>
 
 ## Summarizing graphs
 
@@ -678,6 +706,7 @@ satisfies_zerof4(g, nonzero_f4 = sigf4)
 <!-- <br> -->
 
 
+<br>
 
 ## Simulating under an admixture graph
 
@@ -765,6 +794,7 @@ If you want to override any of the default assumptions, you can do so in three w
 ### fastsimcoal2
 
 
+<br>
 
 ## Finding valid qpAdm models
 

@@ -1172,7 +1172,7 @@ parse_treemix_treeout = function(treeout) {
     mutate(inboth = to %in% .$from) %>%
     arrange(inboth, from, to)
 
-  graph %>% insert_admix_multi(source_to = newedges$from, dest_to = newedges$to, substitute = FALSE)
+  graph %>% insert_admix(source_to = newedges$from, dest_to = newedges$to, substitute = FALSE)
 }
 
 

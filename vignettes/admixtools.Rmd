@@ -47,6 +47,9 @@ Because of this, *ADMIXTOOLS 2* divides the computations into two steps:
 1. Computing $f_2$-statistics and storing them on disk. This can be slow since it accesses the genotype data.
 2. Using $f_2$-statistics to fit models. This is fast because $f_2$-statistics are very compact compared to genotype data.
 
+
+This page shows how standard *ADMIXTOOLS* analyses can be conducted in *ADMIXTOOLS 2*. In addition to that, *ADMIXTOOLS 2* introduces a range of new methods, mostly focused on admixture graphs, which are intended to make analyses simpler, faster, and most importantly, more robust. These methods focus on quantifying variability by resampling SNPs, automated exploration of graph topologies, and simulating data under admixture graphs. They are described [here](#graphs.html).
+
 <br>
 
 

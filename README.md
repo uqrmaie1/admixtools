@@ -25,32 +25,30 @@ fit of a new *qpGraph* model:
 
 ## Features
 
-  - Much faster than the original *ADMIXTOOLS* software
-  - Simple R command line interface
-  - Even simpler point-and-click interface
-  - Several new features and methodological innovations that make it
+-   Much faster than the original *ADMIXTOOLS* software
+-   Simple R command line interface
+-   Even simpler point-and-click interface
+-   Several new features and methodological innovations that make it
     easier to find robust models:
-      - [Automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#automatic-graph-optimization)
-        and
-        [semi-automated](https://uqrmaie1.github.io/admixtools/articles/graphs.html#semi-automated-graph-exploration)
-        admixture graph inference
-      - Simultaneous exploration of many *qpAdm* models
-      - Unbiased comparison of any two *qpGraph* models using
+    -   [Automated and semi-automated admixture graph
+        inference](html#exploring-different-graphs-1)
+    -   Simultaneous exploration of many *qpAdm* models
+    -   Unbiased comparison of any two *qpGraph* models using
         out-of-sample scores
-      - Jackknife and bootstrap standard errors and confidence intervals
+    -   Jackknife and bootstrap standard errors and confidence intervals
         for any *qpAdm*, *qpWave*, and *qpGraph* parameters
-      - Interface with *msprime* makes it easy to
-        [simulate](https://uqrmaie1.github.io/admixtools/articles/simulations.html)
+    -   Interface with *msprime* makes it easy to
+        [simulate](https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1)
         genetic data under an admixture graph
-  - Full support for genotype data in *PACKEDANCESTRYMAP/EIGENSTRAT*
+-   Full support for genotype data in *PACKEDANCESTRYMAP/EIGENSTRAT*
     format and *PLINK* format
-  - Wrapper functions around the original *ADMIXTOOLS* software (see
+-   Wrapper functions around the original *ADMIXTOOLS* software (see
     also [admixr](https://bodkan.net/admixr/index.html))
     <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
-  - [Extensive
+-   [Extensive
     documentation](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
-  - New features available [on
-    request](mailto:rmaier@broadinstitute.org)\!
+-   New features available [on
+    request](mailto:rmaier@broadinstitute.org)!
 
 ## Installation
 
@@ -93,8 +91,7 @@ CRAN with `install.packages()`).
 
 If you get the following error:
 
-`Error: Failed to install 'admixtools' from GitHub: Could not find tools
-necessary to compile a package.`
+`Error: Failed to install 'admixtools' from GitHub:  Could not find tools necessary to compile a package.`
 
 you might be able to solve the problem by installing
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/) for your
@@ -238,20 +235,20 @@ preparation.
 
 ## See also
 
-  - [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools) The original
+-   [ADMIXTOOLS](https://github.com/DReichLab/AdmixTools) The original
     *ADMIXTOOLS* software
-  - [admixr](https://bodkan.net/admixr/index.html) An R package with
+-   [admixr](https://bodkan.net/admixr/index.html) An R package with
     *ADMIXTOOLS* wrapper functions and many useful tutorials
-  - [admixturegraph](https://github.com/mailund/admixture_graph) An R
+-   [admixturegraph](https://github.com/mailund/admixture_graph) An R
     package for automatic graph inference
-  - [miqoGraph](https://github.com/juliayyan/PhylogeneticTrees.jl) A
+-   [miqoGraph](https://github.com/juliayyan/PhylogeneticTrees.jl) A
     Julia package for automatic graph inference
-  - [MixMapper](http://cb.csail.mit.edu/cb/mixmapper/) Another method to
+-   [MixMapper](http://cb.csail.mit.edu/cb/mixmapper/) Another method to
     infer admixture graphs
-  - [TreeMix](https://bitbucket.org/nygcresearch/treemix/wiki/Home)
+-   [TreeMix](https://bitbucket.org/nygcresearch/treemix/wiki/Home)
     Another method to infer admixture graphs
-  - [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
+-   [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
     A program to estimate the history of population size, subdivision,
     and gene flow
-  - [qpBrute](https://github.com/ekirving/qpbrute) Automated graph
+-   [qpBrute](https://github.com/ekirving/qpbrute) Automated graph
     fitting and Bayes factor calculations

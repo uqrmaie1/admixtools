@@ -33,5 +33,5 @@ Adxmiture graph with inserted edge
 Insert a single edge into graph
 }
 \seealso{
-\code{\link{delete_admix}}, \code{\link{insert_admix_multi}}
+\code{\link{delete_admix}}, \code{\link{insert_admix_n}}
 }
