@@ -738,7 +738,7 @@ insert_admix_n = function(graph, n = 1) {
   #   n = length(source_from)
   #   f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y])
   # }
-  f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y], substitute = TRUE)
+  f = function(x, y) insert_admix(x, substitute = TRUE)
   seq_len(n) %>% reduce(f, .init = graph)
 }
 
@@ -2571,11 +2571,13 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
       if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level-round(traceback_gen/2)
       else lasttracebacklevel = lasttracebacklevel - 1
       numtraceback = numtraceback + 1
-      data.tree::Prune(st, function(x) x$level < lasttracebacklevel)
-      st$Do(function(x) x$closed = x$level >= lasttracebacklevel)
-      stdat = st %>% st_to_dat
-      gimp = 0
-      if(verbose) alert_info(paste0('Traceback to level ', lasttracebacklevel))
+      #data.tree::Prune(st, function(x) x$level < lasttracebacklevel)
+      if(lasttracebacklevel > 0) {
+        st$Do(function(x) x$closed = x$level >= lasttracebacklevel)
+        stdat = st %>% st_to_dat
+        gimp = 0
+        if(verbose) alert_info(paste0('Traceback to level ', lasttracebacklevel, '\n'))
+      }
     }
     newgraph = stdat %>% filter(!isTRUE(closed)) %>% slice_min(score, with_ties = FALSE)
     if(nrow(newgraph) == 0) newgraph = stdat %>% slice_min(score, with_ties = FALSE)
