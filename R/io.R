@@ -65,19 +65,7 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 
 
 
-#' Read allele frequencies from *EIGENSTRAT* files
-#'
-#' @export
-#' @param pref Prefix of *EIGENSTRAT* files (files have to end in `.geno`, `.ind`, `.snp`)
-#' @inheritParams packedancestrymap_to_afs
-#' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
-#' @examples
-#' \dontrun{
-#' afdat = eigenstrat_to_afs(prefix, pops = pops)
-#' afs = afdat$afs
-#' counts = afdat$counts
-#' }
-eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
+eigenstrat_to_afs_old = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
   # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
   # pops is vector of populations for which to calculate AFs
   # defaults to third column in ind file
@@ -120,6 +108,76 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploi
   outlist = namedList(afs, counts, snpfile)
   outlist
 }
+
+
+#' Read allele frequencies from *EIGENSTRAT* files
+#'
+#' @export
+#' @param pref Prefix of *EIGENSTRAT* files (files have to end in `.geno`, `.ind`, `.snp`)
+#' @param numparts Number of parts into which the genotype file is split. Lowering this number can speed things up,
+#' but will take more memory.
+#' @inheritParams packedancestrymap_to_afs
+#' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
+#' @examples
+#' \dontrun{
+#' afdat = eigenstrat_to_afs(prefix, pops = pops)
+#' afs = afdat$afs
+#' counts = afdat$counts
+#' }
+eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
+                             adjust_pseudohaploid = TRUE, verbose = TRUE) {
+  # pref is the prefix for packedancestrymap files (ending in .geno, .snp, .ind)
+  # pops is vector of populations for which to calculate AFs
+  # defaults to third column in ind file
+  # inds: instead of specifying a list of populations for which to calculate AFs, you can specify a list of individuals
+  # returns data.frame; first 6 columns: snpfile; remaining columns: AF for each population
+
+  if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
+
+  nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
+  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+
+  ip = match_samples(indfile$X1, indfile$X3, inds, pops)
+  indvec = ip$indvec
+  upops = ip$upops
+  popind2 = which(indvec > 0)
+  pops = upops[indvec]
+  nindall = nrow(indfile)
+  nsnp = nrow(snpfile)
+  numpop = length(upops)
+
+  fl = normalizePath(paste0(pref, '.geno'))
+  if(adjust_pseudohaploid) {
+    geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, 0, min(nsnp, 1000), FALSE, FALSE)
+    ploidy = apply(geno, 2, function(x) max(1, length(unique(na.omit(x)))-1))
+  } else ploidy = rep(2, nindall)
+
+  afs = counts = matrix(NA, nsnp, length(upops))
+  start = ceiling(seq(1, nsnp+1, len = numparts+1))
+  end = start[-1]-1
+
+  for(i in 1:numparts) {
+
+    if(verbose && numparts > 1) alert_info(paste0('Reading part ', i,' of ', numparts,'...\r'))
+    geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, start[i]-1, end[i], FALSE, verbose && numparts == 1)
+    colnames(geno) = inds
+    counts[start[i]:end[i],] = t(rowsum((!is.na(t(geno)))*ploidy, pops))[,upops]
+    afs[start[i]:end[i],] = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))[,upops]/counts[start[i]:end[i],]
+  }
+  afs[!is.finite(afs)] = NA
+  rownames(afs) = rownames(counts) = snpfile$SNP
+  colnames(afs) = colnames(counts) = upops
+
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnp, ' SNPs\n'))
+    alert_info(paste0('Calculating allele frequencies from ', length(popind2), ' samples in ', numpop, ' populations\n'))
+  }
+
+  outlist = namedList(afs, counts, snpfile)
+  outlist
+}
+
 
 
 discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
@@ -368,20 +426,20 @@ read_eigenstrat = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf
 }
 
 # this exists just so there is an equivalent to cpp_read_plink and cpp_read_packedancestrymap
-cpp_read_eigenstrat = function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
-
-  #geno = apply(do.call(rbind, str_split(readLines(genofile, last)[(first+1):last], ''))[,indvec,drop=FALSE], 2, as.numeric)
-
-  geno = genofile %>%
-    read_lines(first, n_max = last-first, progress = FALSE) %>%
-    str_split('') %>%
-    do.call(rbind, .) %>%
-    `[`(,which(indvec==1),drop=FALSE) %>%
-    apply(2, as.numeric) %>%
-    replace(. == 9, NA)
-  if(transpose) geno %<>% t
-  geno
-}
+# cpp_read_eigenstrat = function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
+#
+#   #geno = apply(do.call(rbind, str_split(readLines(genofile, last)[(first+1):last], ''))[,indvec,drop=FALSE], 2, as.numeric)
+#
+#   geno = genofile %>%
+#     read_lines(first, n_max = last-first, progress = FALSE) %>%
+#     str_split('') %>%
+#     do.call(rbind, .) %>%
+#     `[`(,which(indvec==1),drop=FALSE) %>%
+#     apply(2, as.numeric) %>%
+#     replace(. == 9, NA)
+#   if(transpose) geno %<>% t
+#   geno
+# }
 
 # this exists just so there is an equivalent to cpp_read_plink and cpp_read_packedancestrymap
 cpp_eigenstrat_to_afs = function(genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose) {
@@ -949,7 +1007,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
 
   if(!is.null(cols_per_chunk)) {
-    stopifnot(!is.null(pops2))
+    stopifnot(is.null(pops2))
     snpfile = extract_f2_large(pref, outdir, inds = inds, pops = pops, blgsize = blgsize,
                                cols_per_chunk = cols_per_chunk, maxmiss = maxmiss,
                                minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,

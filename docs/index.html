@@ -89,6 +89,9 @@
       <a href="articles/plotting.html">Plotting</a>
     </li>
     <li>
+      <a href="articles/qpadm.html">qpWave and qpAdm</a>
+    </li>
+    <li>
       <a href="articles/resampling.html">Standard errors</a>
     </li>
   </ul>
@@ -139,12 +142,11 @@
 <li>Even simpler point-and-click interface</li>
 <li>Several new features and methodological innovations that make it easier to find robust models:
 <ul>
-<li>
-<a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#automatic-graph-optimization">Automated</a> and <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#semi-automated-graph-exploration">semi-automated</a> admixture graph inference</li>
+<li><a href="html#exploring-different-graphs-1">Automated and semi-automated admixture graph inference</a></li>
 <li>Simultaneous exploration of many <em>qpAdm</em> models</li>
 <li>Unbiased comparison of any two <em>qpGraph</em> models using out-of-sample scores</li>
 <li>Jackknife and bootstrap standard errors and confidence intervals for any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em> parameters</li>
-<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/simulations.html">simulate</a> genetic data under an admixture graph</li>
+<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1">simulate</a> genetic data under an admixture graph</li>
 </ul>
 </li>
 <li>Full support for genotype data in <em>PACKEDANCESTRYMAP/EIGENSTRAT</em> format and <em>PLINK</em> format</li>
@@ -173,9 +175,10 @@
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"plotly"</span><span class="op">)</span></code></pre></div>
 <p>Running <code><a href="https://devtools.r-lib.org//reference/remote-reexports.html">devtools::install_github("uqrmaie1/admixtools")</a></code> will compile C++ from source code (this isn’t necessary when installing packages from CRAN with <code><a href="https://rdrr.io/r/utils/install.packages.html">install.packages()</a></code>).</p>
 <p>If you get the following error:</p>
-<p><code>Error: Failed to install 'admixtools' from GitHub: Could not find tools necessary to compile a package.</code></p>
+<p><code>Error: Failed to install 'admixtools' from GitHub:  Could not find tools necessary to compile a package.</code></p>
 <p>you might be able to solve the problem by installing <a href="https://cran.r-project.org/bin/windows/Rtools/">Rtools</a> for your version of R if you use Windows, or <a href="https://developer.apple.com/download/more/">Xcode command line tools</a> if you use macOS. This is also described <a href="https://r-pkgs.org/setup.html#setup-tools">here</a>.</p>
-<p>If this doesn’t help, please <a href="mailto:rmaier@broadinstitute.org">contact me</a>.</p>
+<p>On some Linux distributions, it may be necessary to manually install additional libraries or programs. For example, if you see the error <code>gfortran: command not found</code> during installation, you would have to install <code>gfortan</code> with <code>sudo zypper in gfortran</code> or <code>sudo apt-get install gfortran</code>, depending on the Linux distribution.</p>
+<p>If you get any other errors during installation, please <a href="mailto:rmaier@broadinstitute.org">contact me</a>.</p>
 </div>
 <div id="usage" class="section level2">
 <h2 class="hasAnchor">

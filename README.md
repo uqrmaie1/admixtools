@@ -100,7 +100,13 @@ tools](https://developer.apple.com/download/more/) if you use macOS.
 This is also described
 [here](https://r-pkgs.org/setup.html#setup-tools).
 
-If this doesn’t help, please [contact
+On some Linux distributions, it may be necessary to manually install
+additional libraries or programs. For example, if you see the error
+`gfortran: command not found` during installation, you would have to
+install `gfortan` with `sudo zypper in gfortran` or
+`sudo apt-get install gfortran`, depending on the Linux distribution.
+
+If you get any other errors during installation, please [contact
 me](mailto:rmaier@broadinstitute.org).
 
 ## Usage

@@ -301,6 +301,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_read_eigenstrat
+NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
+RcppExport SEXP _admixtools_cpp_read_eigenstrat(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type genofile(genofileSEXP);
+    Rcpp::traits::input_parameter< int >::type nsnp(nsnpSEXP);
+    Rcpp::traits::input_parameter< int >::type nind(nindSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type indvec(indvecSEXP);
+    Rcpp::traits::input_parameter< int >::type first(firstSEXP);
+    Rcpp::traits::input_parameter< int >::type last(lastSEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_read_eigenstrat(genofile, nsnp, nind, indvec, first, last, transpose, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_read_plink_afs
 List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool adjust_pseudohaploid, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP adjust_pseudohaploidSEXP, SEXP verboseSEXP) {
@@ -416,6 +434,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_read_packedancestrymap", (DL_FUNC) &_admixtools_cpp_read_packedancestrymap, 8},
     {"_admixtools_cpp_packedancestrymap_ploidy", (DL_FUNC) &_admixtools_cpp_packedancestrymap_ploidy, 5},
     {"_admixtools_cpp_packedancestrymap_to_afs", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_afs, 9},
+    {"_admixtools_cpp_read_eigenstrat", (DL_FUNC) &_admixtools_cpp_read_eigenstrat, 8},
     {"_admixtools_cpp_read_plink_afs", (DL_FUNC) &_admixtools_cpp_read_plink_afs, 5},
     {"_admixtools_cpp_read_plink", (DL_FUNC) &_admixtools_cpp_read_plink, 8},
     {"_admixtools_cpp_plink_ploidy", (DL_FUNC) &_admixtools_cpp_plink_ploidy, 5},

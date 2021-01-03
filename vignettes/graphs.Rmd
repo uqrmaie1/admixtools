@@ -147,15 +147,15 @@ We can create this function for any graph, and use this function to see how chan
 
 ```{r}
 g_to_f2 = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
-g_to_f2(`a|A` = 0) %>% head
-g_to_f2(`a|A` = 0.2) %>% head
+g_to_f2(`n1|B` = 0) %>% head
+g_to_f2(`n1|B` = 0.2) %>% head
 ```
 
 Similarly, we can see how $f_4$-statistics are affected by changing one of the drift weights:
 
 ```{r}
-g_to_f2(`a|A` = 0) %>% f2dat_f4dat() %>% head
-g_to_f2(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
+g_to_f2(`n1|B` = 0) %>% f2dat_f4dat() %>% head
+g_to_f2(`n1|B` = 0.2) %>% f2dat_f4dat() %>% head
 ```
 
 

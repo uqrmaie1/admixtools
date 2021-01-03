@@ -202,7 +202,7 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_multi.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_n.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_old.html</loc>
@@ -476,6 +476,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/plotting.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/qpadm.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/resampling.html</loc>

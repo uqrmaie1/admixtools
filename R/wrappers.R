@@ -1232,6 +1232,7 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
   edges = graph %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>% mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n) %>% left_join(dates %>% transmute(from = node, fromdate = date)) %>% left_join(dates %>% transmute(to = node, todate = date)) %>% suppressMessages() %>%
     mutate(weight = ifelse(type == 'admix' & !duplicated(to), 0.5, 1)) %>%
     mutate(time = ifelse(type == 'admix', fromdate, fromdate)*tm, source = match(to, nodes)-1, sink = match(from, nodes)-1, migrants = weight, size = 1, gr = 0, migmat = 0,
+           gr = ifelse(type == 'admix', 0, paste0('G_', 1:nrow(.), '$')),
            epar = ifelse(type == 'admix', paste0('T_', from, '$'), paste0('T_', from, '$')),
            epar2 = paste0('T_', to, '$'),
            rule = ifelse(to %in% pops, '', paste0(epar2, ' <= ', epar))) %>% arrange(time)
@@ -1242,7 +1243,8 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
     nadm = edges %>% filter(migrants < 1) %>% nrow
     apar = paste0('A', seq_len(nadm), '$')[seq_len(nadm)]
     edges$migrants[edges$migrants < 1] = apar
-    edges$time = edges$epar
+    #edges$time = edges$epar
+    edges$time = edges$todate*1000
 
     est = "// Priors and rules file
   // *********************
@@ -1252,19 +1254,20 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
   //all Ns are in number of haploid individuals\n"
 
     apars = paste0('0\t', apar, '\tunif\t0\t1\toutput', collapse = '\n')
-    epars = paste0('1\t', unique(edges$epar), '\tlogunif\t10\t100000\toutput', collapse = '\n')
+    #epars = paste0('1\t', unique(edges$epar), '\tlogunif\t10\t100000\toutput', collapse = '\n')
+    gpars = paste0('0\t', unique(edges$gr)[1], '\tunif\t-1\t1\toutput', collapse = '\n')
 
-    est %<>% paste0(epars, '\n')
-    if(length(apars) > 0) est %<>% paste0(apars, '\n')
+    est %<>% paste0(gpars, '\n')
+    if(nadm > 0) est %<>% paste0(apars, '\n')
     est %<>% paste0("\n[RULES]\n")
-    est %<>% paste0(paste0(unique(edges$rule), collapse = '\n'))
+    #est %<>% paste0(paste0(unique(edges$rule), collapse = '\n'))
     est %<>% paste0("\n\n[COMPLEX PARAMETERS]\n")
 
     writeLines(est, paste0(outpref, '.est'))
 
   }
 
-  events = edges %$% paste(time, source, sink, migrants, size, gr, migmat) %>% paste(collapse = '\n')
+  events = edges %$% paste(time, source, sink, migrants, size, 0, migmat) %>% paste(collapse = '\n')
 
   out = "//Number of population samples (demes)\n"
   out %<>% paste0(nnode)

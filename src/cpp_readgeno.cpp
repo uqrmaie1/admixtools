@@ -290,4 +290,58 @@ List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVe
 }
 
 
+// [[Rcpp::export]]
+NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec,
+                                  int first, int last, bool transpose = false, bool verbose = true) {
+
+  int val;
+  long len, bytespersnp;
+  int readsnps = last - first;
+
+  std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
+
+  if(!in) {
+    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
+    throw std::runtime_error("io error");
+  }
+  in.seekg(0, std::ifstream::end);
+  // file size in bytes
+  len = (long)in.tellg();
+  bytespersnp = len/nsnp;
+
+  int nindused = 0;
+  for(int i = 0 ; i < nind; i++) {
+    if(indvec[i] == 1) {
+      nindused++;
+    }
+  }
+
+  NumericMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
+  std::fill(geno.begin(), geno.end(), NA_REAL);
+  in.seekg(first*bytespersnp, std::ifstream::beg);
+  std::string tmp;
+  for(int j = 0 ; j < readsnps; j++) {
+    int c = 0;
+    if(verbose && j % 1000 == 0) Rcout << "\r" << j/1000 << "k SNPs read...";
+    std::getline(in, tmp);
+    if(!transpose) {
+      for(int i = 0; i < nind; i++) {
+        if(!indvec[i]) continue;
+        val = tmp[i]-'0';
+        if(val != 9) geno(j, c) = val;
+        c++;
+      }
+    } else {
+      for(int i = 0; i < nind; i++) {
+        if(!indvec[i]) continue;
+        val = tmp[i]-'0';
+        if(val != 9) geno(c, j) = val;
+        c++;
+      }
+    }
+  }
+  if(verbose) Rcout << std::endl;
+  in.close();
+  return geno;
+}
 

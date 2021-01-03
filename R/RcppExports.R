@@ -81,6 +81,10 @@ cpp_packedancestrymap_to_afs <- function(genofile, nsnp, nind, indvec, first, la
     .Call('_admixtools_cpp_packedancestrymap_to_afs', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, ploidy, transpose, verbose)
 }
 
+cpp_read_eigenstrat <- function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
+    .Call('_admixtools_cpp_read_eigenstrat', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
+}
+
 cpp_read_plink_afs <- function(bedfile, indvec, indvec2, adjust_pseudohaploid, verbose) {
     .Call('_admixtools_cpp_read_plink_afs', PACKAGE = 'admixtools', bedfile, indvec, indvec2, adjust_pseudohaploid, verbose)
 }

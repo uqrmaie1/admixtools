@@ -8,8 +8,9 @@ articles:
   io: io.html
   parallel: parallel.html
   plotting: plotting.html
+  qpadm: qpadm.html
   resampling: resampling.html
-last_built: 2020-12-21T03:05Z
+last_built: 2021-01-03T23:29Z
 urls:
   reference: https://uqrmaie1.github.io/admixtools/index.html/reference
   article: https://uqrmaie1.github.io/admixtools/index.html/articles
