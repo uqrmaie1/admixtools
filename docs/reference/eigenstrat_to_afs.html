@@ -129,7 +129,7 @@
       <a href="../articles/graphs.html">Admixture graphs</a>
     </li>
     <li>
-      <a href="../articles/io.html">Genotype data</a>
+      <a href="../articles/io.html">Data formats</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -185,6 +185,7 @@
   <span class='va'>pref</span>,
   inds <span class='op'>=</span> <span class='cn'>NULL</span>,
   pops <span class='op'>=</span> <span class='cn'>NULL</span>,
+  numparts <span class='op'>=</span> <span class='fl'>100</span>,
   adjust_pseudohaploid <span class='op'>=</span> <span class='cn'>TRUE</span>,
   verbose <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
@@ -203,6 +204,11 @@
     <tr>
       <th>pops</th>
       <td><p>Populations from which to compute allele frequencies. If <code>NULL</code> (default), populations will be extracted from the third column in the <code>.ind</code> file. If population labels are provided, they should have the same length as <code>inds</code>, and will be matched to them by position</p></td>
+    </tr>
+    <tr>
+      <th>numparts</th>
+      <td><p>Number of parts into which the genotype file is split. Lowering this number can speed things up,
+but will take more memory.</p></td>
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>

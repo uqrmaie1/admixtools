@@ -1,5 +1,5 @@
 ---
-title: "Genotype data"
+title: "Data formats"
 author: "Robert Maier"
 date: "`r Sys.Date()`"
 output:
@@ -7,24 +7,87 @@ output:
     toc: true
     toc_depth: 2
 vignette: >
-  %\VignetteIndexEntry{Genotype data}
+  %\VignetteIndexEntry{Data formats}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 
 **Under construction**
 
-*ADMIXTOOLS 2* can read genotype data in binary *PLINK* format which is described [here](https://www.cog-genomics.org/plink2/input), and in *EIGENSTRAT*/*PACKEDANCESTRYMAP* formats, described [here](https://reich.hms.harvard.edu/software/InputFileFormats). 
+## Genotype data formats 
+
+*ADMIXTOOLS 2* can read genotype data in three formats.
+
+1. Binary *PLINK* format (PACKEDPED), described [here](https://www.cog-genomics.org/plink2/input)
+2. Binary *PACKEDANCESTRYMAP* format
+3. Text based *EIGENSTRAT* format
+
+*PACKEDANCESTRYMAP* and *EIGENSTRAT* are described [here](https://reich.hms.harvard.edu/software/InputFileFormats)
+
+In all three formats a dataset consists of three files: one file for the genotype matrix, one file for the SNP metadata, and one file for the sample metadata.
+
+The following shows what a data set for three SNPs and five samples grouped into two populations (French.DG, Onge.DG) could look like:
+
+### PLINK
+
+PLINK `.fam` files, have six columns, but only the first two (family/population ID and sample ID) are relevant in *ADMIXTOOLS 2*
+
+```
+French.DG	S_French-1.DG	0	0	M	-9
+French.DG	S_French-2.DG	0	0	F	-9
+French.DG	B_French-3.DG	0	0	M	-9
+Onge.DG	BR_Onge-2.DG	0	0	F	-9
+Onge.DG	BR_Onge-1.DG	0	0	F	-9
+```
+
+PLINK `.bim` file:
+
+```
+1	rs3094315	0.02013	752566	G	A
+1	rs12124819	0.020242	776546	A	G
+1	rs28765502	0.022137	832918	T	C
+```
+
+### EIGENSTRAT/PACKEDANCESTRYMAP
+
+*EIGENSTRAT* and *PACKEDANCESTRYMAP* use the same format for the metadata. The only difference is that the genotype data is stored in a text file in *EIGENSTRAT*, but in a binary file in *PACKEDANCESTRYMAP*.
+
+The `.ind` file has 3 out of the 6 columns in the `.fam` file, in different order:
+
+```
+S_French-1.DG M French.DG
+S_French-2.DG F French.DG
+B_French-3.DG M French.DG
+BR_Onge-2.DG F Onge.DG
+BR_Onge-1.DG F Onge.DG
+```
+
+`.snp` files are the same as `.bim` files, except that the first two columns are swapped:
+
+```
+rs3094315 1	0.02013	752566	G	A
+rs12124819 1	0.020242	776546	A	G
+rs28765502 1	0.022137	832918	T	C
+```
+
+*EIGENSTRAT* `.geno` files look like this:
+
+```
+29101
+10211
+22901
+```
+
+One SNP per row, one sample per column, and missing data is denoted by `9`. 
+
+
+## Reading genotype files
 
 While there are other R packages for reading and writing binary *PLINK* files ([plink2R](https://github.com/gabraham/plink2R), [genio](https://github.com/OchoaLab/genio)), no such packages exist to date for *PACKEDANCESTRYMAP* format files, so some of the functions shown here may be useful outside of the *ADMIXTOOLS* framework.
 
 Note that the functions below impose the restriction than individual IDs may not be duplicated across populations or families.
 
 
-*ADMIXTOOLS 2* currently doesn't handle many common genotype data wrangling tasks such merging different data sets. That's partly because *PLINK* already excels at this task, and partly because it requires a large amount of effort to handle all possible scenarios that can come up, without introducing potentially dangerous bugs. If converting your data to *PLINK* format, and using *PLINK* for these tasks is not a practical solution in your case, please let me know about it.
-
-
-### Reading genotype files
 
 ```{r, eval = FALSE}
 geno = read_plink("plink/prefix")
@@ -38,7 +101,23 @@ geno = read_packedancestrymap("packedancestrymap/prefix", inds = c('ind1', 'ind2
 ```
 
 
-### Computing allele frequencies
+## Extracting populations
+
+Populations can be extracted from *PLINK* files (and written to another set of *PLINK* files) like this: 
+
+```{r, eval = FALSE}
+extract_samples("input/prefix", "output/prefix", pops = c("pop1", "pop2"))
+```
+
+`extract_samples` can also be used to extract samples, similar to `plink --keep`.
+
+
+## Combining data sets
+
+*ADMIXTOOLS 2* can't merge data sets. Data in *PLINK* format can be merged using `plink --bmerge`. 
+
+
+## Computing allele frequencies
 
 ```{r, eval = FALSE}
 afs = plink_to_afs("plink/prefix")
@@ -47,7 +126,7 @@ afs = packedancestrymap_to_afs("packedancestrymap/prefix")
 ```
 
 
-### Converting *PACKEDANCESTRYMAP* to *PLINK*
+## Converting *PACKEDANCESTRYMAP* to *PLINK*
 
 This function converts genotype files from *PACKEDANCESTRYMAP* or *EIGENSTRAT* to *PLINK* format. If `inds` or `pops` is specified, only those samples will be extracted.
 

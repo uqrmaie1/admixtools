@@ -56,7 +56,8 @@ is_valid = function(graph) {
     sum(indegree == 0) == 1 &&
     all(indegree <= 2) &&
     all(outdegree <= 2) &&
-    !any(outdegree == 0 & indegree != 1)
+    !any(outdegree == 0 & indegree != 1) &&
+    !any(indegree == 0 & outdegree < 2)
 }
 
 is_simplified = function(graph) {
@@ -1802,6 +1803,9 @@ delete_admix = function(graph, from = NULL, to = NULL) {
     newleaves = setdiff(get_leafnames(g), leaves)
     #if(length(setdiff(leaves, get_leafnames(g))) > 0) browser()
     graph = g
+  }
+  if(degree(graph, get_root(graph), mode = 'out') == 1) {
+    graph %<>% igraph::delete_vertices(get_root(graph))
   }
   if(desimplify) graph %<>% desimplify_graph
   if(length(setdiff(leaves, get_leafnames(graph))) > 0) browser()
