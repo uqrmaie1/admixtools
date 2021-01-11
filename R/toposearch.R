@@ -11,10 +11,10 @@ numdags = function(n) {
   sum(sapply(1:n, function(k) (-1)^(k+1) * choose(n, k) * 2^(k*(n-k)) * numdags(n-k)))
 }
 
-# number of trees with x admiture events
+# number of trees with x admixture events
 numtreesadmix = function(n, nadmix) numtrees(n) * numadmixplacements(2*n-2, nadmix)
 
-# number of unique ways to add 'nadmix' undirectd edges; each added edge increases the number of edges by 3
+# number of unique ways to add 'nadmix' undirected edges; each added edge increases the number of edges by 3
 numadmixplacements = function(numedges, nadmix) {
   if(nadmix == 0) return(1)
   choose(numedges, 2) * numadmixplacements(numedges+3, nadmix-1)
@@ -96,7 +96,7 @@ get_leaves2 = function(graph) {
 
 get_root = function(graph) {
   root = V(graph)[igraph::degree(graph, mode = 'in') == 0]
-  if(length(root) != 1) stop(paste0('Root problem ', root))
+  if(length(root) != 1) stop(paste0('Root problem ', paste0(names(root), collapse = ' ')))
   root
 }
 
@@ -915,7 +915,7 @@ flipadmix_random = function(graph, fix_outgroup = TRUE) {
   el = igraph::as_edgelist(graph)
   out = graph
   for(i in seq_len(nrow(admixedges))) {
-    newg = admixedges %>% slice(i) %>% mutate(graph = map2(from, to, ~flipadmix(el, .x, .y))) %$% graph[[1]]
+    newg = admixedges %>% slice(i) %>% mutate(graph = map2(from, to, ~flipadmix2(el, .x, .y))) %$% graph[[1]]
     if(!is.null(newg)) {
       out = newg
       break
@@ -1088,9 +1088,9 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' @export
 #' @param data Input data in one of three forms:
 #' \enumerate{
-#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
 #' \item A directory which contains pre-computed f2-statistics
-#' \item The prefix of genotype files (slowest option)
+#' \item The prefix of genotype files
 #' }
 #' @param pops Populations for which to fit admixture graphs (default all)
 #' @param outpop An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as `outpop` will greatly reduce the search space compared to including it and not designating it as `outpop`.
@@ -1126,7 +1126,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' \item A matrix of dimensions `numgen` x `length(mutfuns)` defines the relative frequency of each mutation function in each generation
 #' }
 #' @param opt_worst_residual Optimize for lowest worst residual instead of best score. `FALSE` by default, because the likelihood score is generally a better indicator of the quality of the model fit. Optimizing for the lowest worst residual is also slower (because f4-statistics need to be computed).
-#' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs` doesn't finish sucessfully.
+#' @param store_intermediate Path and prefix of files for intermediate results to `.rds`. Can be useful if `find_graphs_old` doesn't finish sucessfully.
 #' @param parallel Parallelize over repeats (if `numrep > 1`) or graphs (if `numrep == 1`) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.
 #' @param stop_after Stop optimization after `stop_after` seconds (and after finishing the current generation).
 #' @param verbose Print progress updates
@@ -1135,16 +1135,16 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' @seealso \code{\link{qpgraph}}
 #' @examples
 #' \dontrun{
-#' find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,
+#' find_graphs_old(example_f2_blocks, numrep = 200, numgraphs = 100,
 #'             numgen = 20, numsel = 5, numadmix = 3)
 #' }
 #' \dontrun{
 #' # Making new mutation functions by modifying or combining existing ones:
 #' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-#' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+#' find_graphs_old(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
 #' }
-find_graphs = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
+find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
                        mutprobs = NULL, opt_worst_residual = FALSE, store_intermediate = NULL, parallel = TRUE, stop_after = NULL, verbose = TRUE, ...) {
@@ -1254,7 +1254,7 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
 
 #' Summarize triples across graphs
 #'
-#' This function summarizes topologies of population triples across graphs. If the list of graphs comes from \code{\link{find_graphs}}, only one graph from each run should be included, as graphs within the same run are not independent of each other.
+#' This function summarizes topologies of population triples across graphs.
 #'
 #' @param graphs A list of graphs
 #' @return A data frame with one line for each population triple and columns summarizing the relationship of each triple across graphs.
@@ -1423,6 +1423,13 @@ qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 
 }
 
+identify_edge = function(graph, from, to) {
+  # this function returns the original from node for given a desimplified graph, and an admixture edge a simplified graph
+  nam = names(V(graph))
+  if(!from %in% nam || !to %in% nam) return(from)
+  shortest_paths(graph, from, to, mode = 'out')$vpath[[1]] %>% names %>% tail(2) %>% head(1)
+}
+
 #' Find all trees which are part of the admixture graph
 #'
 #' @export
@@ -1437,7 +1444,7 @@ qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_splittrees = function(graph) {
+graph_splittrees = function(graph, return_admix = FALSE) {
   # splits an admixture graph into trees
   if(!'igraph' %in% class(graph)) {
     graph %<>% graph_from_edgelist
@@ -1455,7 +1462,11 @@ graph_splittrees = function(graph) {
   am = map(1:nrow(indices), ~slice(edges, -admixmat[cbind(indices[.,], 1:nadmix)])) %>% map(as.matrix)
   trees = am %>% map(graph_from_edgelist)
 
-  trees %>%
+  if(return_admix) {
+  admedges = am %>% map(~as_tibble(.) %>% filter(to %in% colnames(admixmat)) %>%
+                          rowwise %>% mutate(from = identify_edge(graph, from, to)) %>% ungroup)
+  }
+  out = trees %>%
     map(~{
       tr = .
       lf = get_leafnames(tr)
@@ -1465,7 +1476,9 @@ graph_splittrees = function(graph) {
       }
       tr
       }) %>%
-    enframe(value = 'graph') #%>% mutate(edges = am) %>% rowwise %>% mutate(evec = list(sort(paste(edges[,1], ' ' , edges[,2])))) %>% ungroup
+    enframe(value = 'graph')
+  if(return_admix) out %<>% mutate(admedges) #%>% rowwise %>% mutate(evec = list(sort(paste(edges[,1], ' ' , edges[,2])))) %>% ungroup
+  out
 }
 
 #' Find all trees within SPR distance of 1 of all graph component trees
@@ -1658,11 +1671,27 @@ flipadmix = function(graph, from, to) {
   row = which(edges[,1] == from & edges[,2] == to)
   edges[row,] = c(to, from)
   g = igraph::graph_from_edgelist(edges)
-  if(!is.dag(g) ||
-     max(degree(g, mode = 'in')) > 2 ||
-     max(degree(g, mode = 'out')) > 2 ||
-     max(degree(g, mode = 'all')) > 3) g = NULL
+  # if(!is.dag(g) ||
+  #    max(degree(g, mode = 'in')) > 2 ||
+  #    max(degree(g, mode = 'out')) > 2 ||
+  #    max(degree(g, mode = 'all')) > 3) g = NULL
+  if(!is_valid(g)) g = NULL
   g
+}
+
+flipadmix2 = function(graph, from, to) {
+
+  if('igraph' %in% class(graph)) edges = as_edgelist(graph)
+  else edges = graph
+  edges %<>% as.matrix
+  row1 = which(edges[,1] == from & edges[,2] == to)
+  row2 = which(edges[,2] == from)[1]
+  edges[row1,] = c(to, from)
+  g = igraph::graph_from_edgelist(edges)
+  if(!is.na(row2)) edges[row2,] = rev(edges[row2,])
+  g2 = igraph::graph_from_edgelist(edges)
+  if(is_valid(g2)) return(g2)
+  if(is_valid(g)) return(g)
 }
 
 #' Add a population to an admixture graph
@@ -2036,7 +2065,6 @@ split_multifurcations = function(graph) {
 #' Returns a signature of a graph consisting of the left and right descendent leaf nodes of each internal node (sorted and concatenated)
 #'
 #' Can be used to determine how often internal nodes occur in a list of other well fitting models
-#' @export
 #' @param graph An admixture graph
 #' @return A graph signature as character vector
 #' @examples
@@ -2393,19 +2421,18 @@ evaluate_moreadmix = function(graph, qpgfun, maxadmix, ntry = Inf, verbose = TRU
 
 
 rearrange_negdrift = function(graph, from, to) {
-  # graph is simplified, edge is regular edge
+  # assumes graph is simplified, edge is regular edge
 
   sib = graph %>% neighbors(from, mode = 'out') %>% names %>% setdiff(to)
   children = graph %>% neighbors(to, mode = 'out') %>% names %>% sample
   if(length(children) == 0 || length(sib) == 0) {
-    #warning('is leaf!')
     return(graph)
   }
-  if(length(c(to, sib, from, children[1])) %% 2 != 0) browser()
-  graph %<>%
+  og = get_outpop(graph)
+  gnew = graph %>%
     add_edges(c(to, sib, from, children[1])) %>%
     delete_edges(paste(c(from, to), c(sib, children[1]), sep = '|'))
-  if(is_valid(graph)) return(graph)
+  if(is_valid(gnew) && (is.null(og) || isTRUE(og == get_outpop(gnew)))) return(gnew)
 }
 
 
@@ -2447,6 +2474,7 @@ rearrange_negadmix3 = function(graph, from, to) {
     add_edges(c(grandparent_pos, to, to, parent_pos)) %>%
     delete_edges(paste(c(grandparent_pos, parent_pos, parent_neg), c(parent_pos, to, to), sep = '|'))
   if(!is_valid(newgraph)) {
+    browser()
     warning('rearrange_negadmix3 failed!')
     return(NULL)
   }
@@ -2470,10 +2498,20 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' This function generates and evaluates admixture graphs in `numgen` iterations
 #' to find well fitting admixturegraphs.
 #' @export
-#' @param f2_blocks A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}}
-#' @param numgraphs Number of graphs in each generation
-#' @param numgen Number of generations
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files
+#' }
 #' @param numadmix Number of admixture events within each graph. (Only relevant if `initgraph = NULL`)
+#' @param outpop Name of the outgroup population
+#' @param numgraphs Number of graphs in each generation
+#' @param stop_gen Total number of generations after which to stop
+#' @param stop_gen2 Number of generations without improvement after which to stop
+#' @param stop_sec Number of seconds after which to stop
+#' @param stop_score Stop once this score has been reached
+#' @param initgraph Graph to start with. If it is specified, `numadmix` and `outpop` will be inferred from this graph.
 #' @param mutfuns Functions used to modify graphs. Defaults to the following:
 #' \itemize{
 #' \item \code{\link{spr_leaves}}: Subtree prune and regraft leaves. Cuts a leaf node and attaches it
@@ -2486,7 +2524,9 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' \item \code{\link{mutate_n}}: Apply `n` of the mutation functions in this list to a graph (defaults to 2).
 #' }
 #' @param opt_worst_residual Optimize for lowest worst residual instead of best score. `FALSE` by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).
+#' @param return_searchtree Return the search tree in addition to the models. Output will be a list with three items: models, search tree, search tree as data frame
 #' @param plusminus_generations If the best score does not improve after `plusminus_generations` generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.
+#' If the current number of admixture events is lower than `max_numadmix`, the last step (removing an admixture edge) will be skipped.
 #' @param admix_constraints A data frame with constraints on the number of admixture events for each population.
 #' See \code{\link{satisfies_numadmix}}
 #' As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.
@@ -2494,35 +2534,41 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' See \code{\link{satisfies_eventorder}}
 #' As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.
 #' @param reject_f4z If this is a number greater than zero, all f4-statistics with `z > reject_f4z` will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.
+#' @param max_admix Maximum number of admixture edges. By default, this number is equal to `numadmix`, or to the number of admixture edges in `initgraph`, so the number of admixture edges stays constant. Setting this to a higher number will lead to more admixture edges being added occasionally (see `plusminus_generations`). Graphs with additional admixture edges will only be accepted if they improve the score by 5% or more.
 #' @param verbose Print progress updates
 #' @param ... Additional arguments passed to \code{\link{qpgraph}}
 #' @return A nested data frame with one model per line
-#' @seealso \code{\link{qpgraph}}
+#' @seealso \code{\link{qpgraph}}, \code{\link{find_graphs_old}}
 #' @examples
 #' \dontrun{
-#' pops = dimnames(example_f2_blocks)[[1]]
-#' initgraph = random_admixturegraph(pops, 2, outpop = 'Chimp.REF')
-#' res = find_graphs2(example_f2_blocks, initgraph, numgen = 100)
+#' res = find_graphs(example_f2_blocks, numadmix = 2)
 #' res %>% slice_min(score)
 #' }
 #' \dontrun{
-#' # Making new mutation functions by modifying or combining existing ones:
-#' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
-#' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-#' find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+#' # Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
+#' pops = dimnames(example_f2_blocks)[[1]]
+#' initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
+#' res = find_graphs(example_f2_blocks, initgraph, stop_gen2 = 10, max_admix = 3)
+#' res %>% slice_min(score)
 #' }
-find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, stopscore = 0, stop_after = NULL,
-                        stopafter_noimprovement = 15, traceback_gen = 10, initgraph = NULL, outpop = NULL,
-                        mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random, mutate_n),
-                        opt_worst_residual = FALSE, plusminus_generations = 5,
-                        admix_constraints = NULL, event_constraints = NULL, reject_f4z = 0,
-                        verbose = TRUE, ...) {
+find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_gen2 = 15, stop_score = 0, stop_sec = NULL,
+                       initgraph = NULL, numgraphs = 10,
+                       mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once, flipadmix_random,
+                                            place_root_random, mutate_n),
+                       opt_worst_residual = FALSE, plusminus_generations = 5, return_searchtree = FALSE,
+                       admix_constraints = NULL, event_constraints = NULL, reject_f4z = 0, max_admix = numadmix,
+                       verbose = TRUE, ...) {
 
+  nodups = TRUE
+  traceback_gen = Inf
+
+  f2_blocks = get_f2(data)
   if(is.null(initgraph)) {
     pops = dimnames(f2_blocks)[[1]]
     graph = random_admixturegraph(pops, numadmix, outpop = outpop)
   } else {
     graph = initgraph
+    numadmix = numadmix(graph)
   }
   if(opt_worst_residual) {
     qpgfun = function(graph, ...) {
@@ -2535,7 +2581,7 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
     qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
   }
   #qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
-  stop_at = Sys.time() + stop_after
+  stop_at = Sys.time() + stop_sec
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
   allfuns = c(wfuns, dfuns, mutfuns)
@@ -2543,8 +2589,8 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
   models = tibble(g = list(simplify_graph(graph))) %>%
     mutate(res = map(g, qpgfun), hash = map_chr(g, graph_hash), lasthash = graph_hash(graph)) %>%
     unnest_wider(res) %>%
-    mutate(edges = map(edges, ~filter(., weight < 0))) %>%
-    transmute(gen2 = 0, hash, g, edges, score, expanded = FALSE)
+    #mutate(edges = map(edges, ~filter(., weight < 0))) %>%
+    transmute(gen2 = 0, hash, g, edges, score)
   best = besthist = models$score
   bestmut = 'none'
   gimp = numtraceback = 0
@@ -2561,18 +2607,25 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
   tm = Sys.time()
   nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
   nzf4 = admixc = eventc = lasttracebacklevel = NULL
+  lasttracebackscore = Inf
 
-  for(i in seq_len(numgen)) {
+  for(i in seq_len(stop_gen)) {
 
-    if(best <= stopscore || gimp > stopafter_noimprovement || !is.null(stop_after) && Sys.time() > stop_at) break
+    if(best <= stop_score || gimp > stop_gen2 || !is.null(stop_sec) && Sys.time() > stop_at) break
     if(verbose) {
-      alert = if(!is.na(besthist[max(1,i-1)]) && besthist[max(1,i-1)] == best) alert_success else alert_info
-      msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
+      sc = besthist[max(1,i-1)]
+      alert = if(isTRUE(sc == best)) alert_success else alert_info
+      #msg = paste0(i, ': sc ', round(besthist[max(1,i-1)], 3), '\tbest ', round(best, 3),'\tnew ', if(i==1) 1 else nrow(newmod), '\ttot ', sum(!is.na(models$score)), ' ', sum(stdat$totalCount == 1), ' ', sum(stdat$score[stdat$totalCount == 1] < best*2),'\t')
+      msg = paste0(i, ': score ', round(besthist[max(1,i-1)], 3), '\tbest score ', round(best, 3),'\t')
+      na = if(i == 1 || is.null(newmod) || nrow(newmod) == 0) numadmix(graph) else numadmix(newmod$g[[1]])
+      if(numadmix != max_admix && i > 1) msg %<>% paste0('numadmix ', na, '\t')
+      msg %<>% paste0(bestmut, '\ttot ', sum(!is.na(models$score)))
     }
-    #if(i == 20) browser()
-    #newgraph = pick_graph(stdat, verbose = verbose > 2)
-    if(gimp > traceback_gen*(numtraceback+1)) {
-      if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level-round(traceback_gen/2)
+
+    if(gimp >= traceback_gen) {
+      #browser()
+      if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level#-traceback_gen
+      #if(is.null(lasttracebacklevel)) lasttracebacklevel = 2
       else lasttracebacklevel = lasttracebacklevel - 1
       numtraceback = numtraceback + 1
       #data.tree::Prune(st, function(x) x$level < lasttracebacklevel)
@@ -2580,9 +2633,12 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
         st$Do(function(x) x$closed = x$level >= lasttracebacklevel)
         stdat = st %>% st_to_dat
         gimp = 0
-        if(verbose) alert_info(paste0('Traceback to level ', lasttracebacklevel, '\n'))
+        lasttracebackscore = stdat %>% filter(level <= lasttracebacklevel) %>% slice_min(score) %>% pluck('score', 1)
+        if(is.null(lasttracebackscore)) lasttracebackscore = Inf
+        if(verbose) alert_info(paste0('Traceback to level ', lasttracebacklevel, ' with score ', round(lasttracebackscore, 3), '\n'))
       }
     }
+    #newgraph = pick_graph(stdat, verbose = verbose > 2)
     newgraph = stdat %>% filter(!isTRUE(closed)) %>% slice_min(score, with_ties = FALSE)
     if(nrow(newgraph) == 0) newgraph = stdat %>% slice_min(score, with_ties = FALSE)
 
@@ -2593,9 +2649,9 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
     if(verbose) alert(paste0(msg, '\n'))
     sel = models %>% filter(hash == newgraph$hash[[1]])
 
-    if(any(duplicated(models$hash))) browser()
-    models %<>% rows_update(sel %>% mutate(expanded = TRUE), by = 'hash')
+    #if(any(duplicated(models$hash))) browser()
     graph = sel$g[[1]]
+    if(!is.null(outpop) && is.null(get_outpop(graph))) browser()
 
     if(is.null(nzf4) && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)) {
       nzf4 = nonzero_f4
@@ -2612,17 +2668,35 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
 
     if(gimp > 0 && gimp %% plusminus_generations == 0) {
 
-      graph = models %>% slice_min(score, with_ties = FALSE) %>% pull(g) %>% pluck(1)
-      newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10,
+      sel = models %>% slice_min(score, with_ties = FALSE)
+      graph = sel$g[[1]]
+      #fun = if(fix_nadmix) eval_plusminusn else eval_plusnadmix
+      newmod = eval_plusnadmix(graph, qpgfun, n = 1, ntry = numgraphs*10,
                                nonzero_f4 = nzf4, admix_constraints = admixc,
-                               event_order = eventc) %>%
-        mutate(hash = map_chr(graph, graph_hash)) %>%
-        slice_min(score, with_ties = FALSE) %>%
-        transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = 'plusminusn')
-      if(newmod$hash == newmod$lasthash) {
+                               event_order = eventc) %>% slice_min(score, with_ties = FALSE)
+      mf = 'plusnadmix'
+      if(numadmix(graph) == max_admix) {
+        mf = 'plusminusn'
+        newmod = eval_minusnadmix(newmod$graph[[1]], qpgfun, n = 1, ntry = numgraphs*10,
+                                  nonzero_f4 = nzf4, admix_constraints = admixc,
+                                  event_order = eventc) %>% slice_min(score, with_ties = FALSE)
+      }
+      newmod %<>% mutate(hash = map_chr(graph, graph_hash)) %>%
+        transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = mf)
+      if(newmod$score > min(models$score, na.rm=F)*0.95) {
         gimp = gimp + 1
         next
       }
+      # newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10,
+      #              nonzero_f4 = nzf4, admix_constraints = admixc,
+      #              event_order = eventc) %>%
+      #   slice_min(score, with_ties = FALSE) %>%
+      #   mutate(hash = map_chr(graph, graph_hash)) %>%
+      #   transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = 'plusminusn')
+      # if(newmod$hash == newmod$lasthash) {
+      #   gimp = gimp + 1
+      #   next
+      # }
 
     } else {
 
@@ -2650,37 +2724,31 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
         newmod %<>% bind_rows(randmut)
       }
 
-      #print(nrow(newmod))
       newmod %<>% rowwise %>% filter(satisfies_constraints(g, nzf4, admixc, eventc)) %>% ungroup
-      #print(nrow(newmod))
       newmod %<>%
-        transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun, expanded = FALSE) %>%
-        filter(!duplicated(hash), !hash %in% models$hash)
+        transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun)
+      if(nodups) newmod %<>% filter(!duplicated(hash), !hash %in% models$hash)
       if(nrow(newmod) == 0) {
         alert_danger('No new models!\n')
         next
       }
       newmod %<>%
-        # slice_head(n = min(max(numgraphs-3,0), nrow(.))) %>%
-        # bind_rows(slice_sample(newmod)) %>%
-        # bind_rows(slice(newmod, pmax(1,floor(nrow(newmod)/c(2,10))))) %>%
-        # filter(!duplicated(hash)) %>%
         mutate(res = furrr::future_map(g, qpgfun, .options = furrr::furrr_options(seed = TRUE))) %>%
         unnest_wider(res) %>%
-        mutate(edges = map(edges, ~filter(., weight < 0))) %>%
-        transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun, expanded = FALSE) %>%
+        #mutate(edges = map(edges, ~filter(., weight < 0))) %>%
+        transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun) %>%
         arrange(score)
     }
 
-    if(any(is.na(newmod$score)) || nrow(newmod) == 0) browser()
-    if(is.na(newmod$score[1])) browser()
+    # if(any(is.na(newmod$score)) || nrow(newmod) == 0) browser()
+    # if(is.na(newmod$score[1])) browser()
     besthist[i] = newmod$score[1]
     bestmut = newmod$mutfun[1]
     if(besthist[i] < best) {
       best = besthist[i]
       gimp = 0
     } else gimp = gimp + 1
-    newmod %<>% filter(!hash %in% models$hash)
+    if(nodups) newmod %<>% filter(!hash %in% models$hash)
     models %<>% bind_rows(newmod, .)
 
     for(j in seq_len(nrow(newmod))) {
@@ -2695,11 +2763,11 @@ find_graphs2 = function(f2_blocks, numgen = 1, numgraphs = 10, numadmix = 0, sto
                     cntm_5 = node$parent$parent$parent$parent$parent$totalCount)
     }
     stdat = st %>% st_to_dat
-
   }
 
-  #namedList(models, stdat)
-  models
+  mout = models %>% transmute(generation = gen2, graph = g, edges, score, mutation = mutfun, hash, lasthash)
+  if(return_searchtree) return(list(models = mout, tree = st, dat = stdat))
+  mout
 }
 
 st_to_dat = function(st) {
@@ -3650,3 +3718,114 @@ is_clade = function(geno, pops1, pops2, i1=1, i2=1, perm=100) {
 }
 
 
+summarize_admix = function(graph) {
+  # groups pops by shared admixture
+
+  leaves = get_leafnames(graph)
+  adm = names(which(degree(graph, mode = 'in') > 1))
+  root = get_rootname(graph)
+  #dist = igraph::distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+  #  pivot_longer(-from, names_to = 'to', values_to = 'dist') %>% filter(is.finite(dist), dist > 0)
+
+
+  grps = delete_vertices(graph, adm) %>% components %$% membership %>%
+    split(., .) %>% map(names) %>% map(~intersect(., c(leaves, adm))) %>% compact
+  nam = map_chr(grps, ~shortest_paths(graph, .[1], root, mode = 'in') %$%
+                  vpath %>% pluck(1) %>% names %>% intersect(c(adm, root)) %>% `[`(1))
+  names(grps) = nam
+  sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
+  nam2 = map_chr(grps, ~paste(sort(.), collapse=' '))
+  sg %>% mutate(from2 = nam2[from], to2 = nam2[to])
+}
+
+
+triplet_proportions = function(fit) {
+
+  graph = fit$edges %>% edges_to_igraph()
+  trees = graph_splittrees(graph, return_admix = TRUE)
+  trees %>% unnest(admedges) %>%
+    left_join(ft$edges, by = c('from', 'to')) %>%
+    group_by(name) %>% summarize(graph = graph[1], weight = prod(weight))
+
+}
+
+tree_triplets = function(tree) {
+  # returns the population triplets that make up a tree
+  # currently too slow to run on many trees
+
+  leaves = get_leafnames(tree)
+  root = get_rootname(tree)
+  igraph::distances(tree, V(tree), leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>% pivot_longer(-from, names_to = 'to', values_to = 'dist') %>% filter(!from %in% c(leaves, root)) %>% group_by(from) %>% summarize(l = list(to[is.finite(dist)]), out = list(to[!is.finite(dist)])) %>% rowwise %>% mutate(l = list(t(combn(l, 2)) %>% as_tibble)) %>% unnest(l) %>% unnest(out) %>% transmute(out, X1 = pmin(V1, V2), X2 = pmax(V1, V2)) %>% distinct
+
+}
+
+tree_isoutgroup = function(tree, outgroup, pop1, pop2) {
+
+  root = get_rootname(tree)
+  p1 = shortest_paths(tree, root, pop1)$vpath[[1]]
+  p2 = shortest_paths(tree, root, pop2)$vpath[[1]]
+  og = shortest_paths(tree, root, outgroup)$vpath[[1]]
+  length(intersect(p1, og)) < length(intersect(p1, p2))
+}
+
+triplet_proportions1 = function(fit, outgroup, pop1, pop2) {
+
+  tp = triplet_proportions(fit)
+  graph = fit$edges %>% edges_to_igraph()
+  tp %>% rowwise %>% mutate(og = tree_isoutgroup(graph, outgroup, pop1, pop2)) %>%
+    filter(og) %$% sum(weight)
+}
+
+
+place_root = function(graph, from, to, outpop = NULL) {
+  # places root at edge from -> to
+
+  root = get_rootname(graph)
+  children = neighbors(graph, root, mode = 'out') %>% names
+  oldleaves = get_leafnames(graph)
+  newroot = newnodenam('root', names(V(graph)))
+  newg = graph %>% delete_vertices(root) %>% add_edges(c(children[1], children[2])) %>%
+    add_vertices(1, name = newroot) %>% delete_edges(paste0(from, '|', to)) %>% add_edges(c(newroot, from, newroot, to)) %>%
+    igraph::as.undirected(mode = 'collapse')
+  dist = distances(newg, newroot)
+  out = newg %>% as_edgelist %>% as_tibble(.name_repair = ~c('v1', 'v2')) %>%
+    rowwise %>%
+    mutate(from = ifelse(dist[,v1] <= dist[,v2], v1, v2), to = ifelse(from == v1, v2, v1)) %>%
+    ungroup %>% select(from, to) %>% edges_to_igraph()
+  count = 0
+  while(TRUE) {
+    newleaves =  setdiff(get_leafnames(out), oldleaves)
+    if(length(newleaves) == 0) break
+    for(l in newleaves) {
+      parent = neighbors(out, l, mode = 'in') %>% map(~degree(out, ., mode = 'in')) %>% keep(~.==1) %>% names %>% sample(1)
+      out %<>% delete_edges(paste0(parent, '|', l)) %>% add_edges(c(l, parent))
+    }
+    if(!is_valid(out)) browser()
+    # out2 = out %>% rowwise %>%
+    #   mutate(to = ifelse(!is.na(to), to, ifelse(runif(1) < 0.5, v1, v2)),
+    #          from = ifelse(!is.na(from), from, ifelse(to == v1, v2, v1))) %>% ungroup %>%
+    #   select(from, to) %>% edges_to_igraph()
+    # if(length(setdiff(get_leafnames(out2), oldleaves)) == 0) break
+    count = count + 1
+    if(count > 100) browser()
+  }
+  out
+}
+
+place_root_random = function(graph, keep_outgroup = TRUE) {
+
+  stopifnot(is_simplified(graph) && is_valid(graph))
+  outpop = get_outpop(graph)
+  if(keep_outgroup && !is.null(outpop)) {
+    graph %<>% delete_vertices(c(outpop, get_rootname(graph)))
+  }
+  randedge = graph %>% delete_vertices(c(get_rootname(.), get_leafnames(.))) %>%
+    E %>% attr('vnames') %>% sample(1) %>% str_split('\\|') %>% pluck(1)
+  graph %<>% place_root(randedge[1], randedge[2])
+  if(keep_outgroup && !is.null(outpop)) {
+    newroot = newnodenam('root', names(V(graph)))
+    oldroot = get_rootname(graph)
+    graph %<>% add_vertices(2, name = c(newroot, outpop)) %>% add_edges(c(newroot, outpop, newroot, oldroot))
+  }
+  graph
+}

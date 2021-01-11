@@ -34,7 +34,7 @@ library(admixtools)
 
 <br>
 
-## Background and theory
+## Graphs and f-statistics
 
 This section is about the relation between admixture graphs and *f*-statistics and assumes that you are familiar with [*f*-statistics](fstats.html).
 
@@ -43,7 +43,7 @@ This section is about the relation between admixture graphs and *f*-statistics a
 
 Admixture graphs tell us how the genetic drift that separates two populations ($f_2$) can be decomposed into segments that are unique to single populations, and segments that are shared between multiple populations.
 
-For example, in the graph below, the path between $C$ and $D$ is composed of only two segments (one unique to $C$ and one unique to $D$), while the path between $B$ and $D$ is composed of three segments, and the middle segment is shared with other population pairs.
+In the graph below, the path between $C$ and $D$ is composed of only two segments (one unique to $C$ and one unique to $D$), while the path between $B$ and $D$ is composed of three segments, and the middle segment ($n1|n2$) is shared with other population pairs, for example with $B$ to $C$.
 
 ```{r}
 g = matrix(c('R', 'R', 'n1', 'n1', 'n2', 'n2',
@@ -52,12 +52,17 @@ g = matrix(c('R', 'R', 'n1', 'n1', 'n2', 'n2',
 g %>% plotly_graph
 ```
 
-This can be expressed in the following equations:
 
-$$f_2(C, D) = n2|C + n2|D$$
+The distance between $B$ and $D$ can be expressed in the following equations:
+
+$$f_2(B, D) = f_2(n1,B) + f_2(n1,n2) + f_2(n2,D)$$
+or in short
+
 $$f_2(B, D) = n1|B + n1|n2 + n2|D$$
 
 ($x|y$ is the edge going from $x$ to $y$)
+
+It's a special property of $f_2$-statistics that allows us to break them down into these components. $F_{ST}$ for example is not additive like that, so generally $F_{ST}(C, D) \neq F_{ST}(n1,B) + F_{ST}(n1,n2) + F_{ST}(n2,D)$.
 
 There are $\frac{k(k-1)}{2}$ equations for the $f_2$-statistics of all population pairs ($k$ is the number of populations):
 
@@ -89,9 +94,9 @@ $a$ is the proportion of admixture coming through the left admixture edge, and $
 
 ### Graphs and f4
 
-While $f_2$ can be seen as the basic building block of other *f*-statistics, it is less widely used than $f_4$ and *D*-statistics. The next example shows how admixture graphs are related to $f_4$.
+$f_2$ can be seen as the basic building block of other *f*-statistics, buy many are more familiar with $f_4$ and *D*-statistics.
 
-Let's say we have four populations with these $f_4$- or *D*-statistics (all other possible $f_4$-statistics can be computed from these two, which is why they are not also listed here):
+To see how $f_4$- or *D*-statistics relate to admixture graphs, let's assume we have four populations, and we observe these $f_4$-statistics:
 
 $$f_4(A,B; C,D) = 0$$
 $$f_4(A,C; B,D) = 0.1$$
@@ -129,13 +134,18 @@ The example also shows that *f*-statistics cannot tell us where the root of a gr
 
 ### f4 ratio test
 
-```{r}
+```{r, echo = FALSE}
+g = matrix(c('R', 'O', 'R', 'n1', 'n1', 'n2', 'n1', 'n3', 'n2',
+              'B', 'n2', 'n4', 'n3', 'a', 'n3', 'C', 'n4', 'a',
+              'n4', 'D', 'a', 'A'), , 2, byrow = T) %>% edges_to_igraph()
 g %>% plotly_graph
 ```
 
 
-The graph above illustrates nicely how the $f_4$-ratio test can be used to estimate admixture weights. This test estimates an admixture weight $a$ as the ratio of two $f_4$-statistics, in this case $a = \frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$. $f_4(O,B;C,D)$ is exactly equal to the distance between $n1$ and $n2$, the left blue edge. That's because $O$ and $C$ form a clade relative to $B$ and $D$, and this edge is the only connection between the two clades. (They are not clades in the usual sense of the word, but in the sense that there is no overlap between the paths from $O$ to $C$ and the paths from $B$ to $D$.)
-At the same time, $f_4(O,B;C,A)$ is the intersection of paths going from $O$ to $C$, and from $B$ to $A$. Now there are two paths going from $B$ to $A$: A short one through the left, and a long one through the right admixture edge. Along the short path going to $A$ from the left, there is no intersection with the path from $O$ to $C$, so the component of $f_4(O,B;C,A)$ going through that path is zero. This means that all if $f_4(O,B;C,A)$ is not equal to zero, it is only due to the long path from $B$ to $A$. Along that path, the intersection  with $O$ to $C$ is exactly the left blue edge again. We now have two expressions for the length of that path: The first expression is $f_4(O,B;C,D)$, and the second expression is $a \times f_4(O,B;C,A)$, and so we can estimate $a$ as $\frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$.
+The $f_4$-ratio test can be used to estimate admixture weights ($a$ and $1-a$) for one admixed population using two $f_4$-statistics from five populations, assuming that the populations are related as above. As the name suggests, it estimates an admixture weight $a$ as the ratio of two $f_4$-statistics, in this case $a = \frac{f_4(B,O;A,C)}{f_4(B,O;D,C)}$. Thinking through why this works can help understand how *qpGraph* turns $f$-statistics into estimates of drift length and admixture weights.
+
+First, $f_4(B,O;D,C)$ is exactly equal to the distance between $n1$ and $n2$, the left blue edge. That's because $O$ and $C$ form a clade relative to $B$ and $D$, and this edge is the only connection between the two clades. (They are not clades in the usual sense of the word, but in the sense that there is no overlap between the paths from $O$ to $C$ and the paths from $B$ to $D$.)
+At the same time, $f_4(B,O;A,C)$ is the intersection of paths going from $O$ to $C$, and from $B$ to $A$. Now there are two paths going from $B$ to $A$: A short one through the left, and a long one through the right admixture edge. Along the short path going to $A$ from the left, there is no intersection with the path from $O$ to $C$, so the component of $f_4(B,O;A,C)$ going through that path is zero. This means that if $f_4(B,O;A,C)$ is not equal to zero, it is only due to the long path from $B$ to $A$. Along that path, the intersection  with $O$ to $C$ is exactly the left blue edge again. We now have two expressions for the length of that left blue edge: The first expression is $f_4(O,B;C,D)$, and the second expression is $a \times f_4(O,B;C,A)$. This allows us to estimate $a$ as $\frac{f_4(O,B;C,A)}{f_4(O,B;C,D)}$.
 
 For more complex graphs, drift lengths and admixture weights can be estimated in just the same way, although it is not always possible to express each estimated parameter as a simple ratio of two *f*-statistics. However, even without such simple expression, it is usually possible estimate graph parameters by numerically finding solutions to the system of graph equations. `qpgraph()` is doing just that: It finds the drift and admixture weights for a given graph which minimize the squared difference between the observed and the expected *f*-statistics.
 
@@ -147,32 +157,19 @@ We can create this function for any graph, and use this function to see how chan
 
 ```{r}
 g_to_f2 = graph_f2_function(g, admix_default = 0.5, drift_default = 0.1)
-g_to_f2(`n1|B` = 0) %>% head
-g_to_f2(`n1|B` = 0.2) %>% head
+g_to_f2(`a|A` = 0) %>% head
+g_to_f2(`a|A` = 0.2) %>% head
 ```
 
 Similarly, we can see how $f_4$-statistics are affected by changing one of the drift weights:
 
 ```{r}
-g_to_f2(`n1|B` = 0) %>% f2dat_f4dat() %>% head
-g_to_f2(`n1|B` = 0.2) %>% f2dat_f4dat() %>% head
+g_to_f2(`a|A` = 0) %>% f2dat_f4dat() %>% head
+g_to_f2(`a|A` = 0.2) %>% f2dat_f4dat() %>% head
 ```
 
 
 Usually we are interested in the inverse of this function: We estimate *f*-statistics from genetic data and use them to estimate drift and admixture weights. This is what `qpgraph()` does.
-
-
-### Why f3?
-
-(See also [this section](graphs.html#fitting-a-single-admixture-graph-1))
-
-`qpgraph()` uses $f_3$- rather than $f_2$-statistics for modeling graphs. $f_3$- and $f_4$-statistics are just sums of $f_2$-statistics, in particular
-
-$$f_3(A; B, C) = \frac{1}{2} (f_2(A,B)+f_2(A,C)-f_2(B,C))$$
-
-This raises the question whether it makes a difference to express a graph in terms of equations for $f_2$-statistics or equations for $f_3$-statistics. If there is an exact solution for one of the ($f_2$ or $f_3$) equation system, it is also a solution for the other equation system. In a case like that, the choice of *f*-statistics used does not make a difference.
-
-In practice, however, there usually is no exact solution for a given graph and set of *f*-statistics. Instead, `qpgraph()` estimates weights which minimize the sum of squared differences between the expected and the observed *f*-statistics, and this difference is usually greater than zero. In that case, an equation system of $f_2$-statistics can lead to different weight estimates than an equation system of $f_3$-statistics. In particular, using $f_3$-statistics will give more importance to the internal edges of the admixture graph, rather than the terminal edges leading to the leaf nodes. That's because each $f_2$-statistic can be thought of as the distance between two leaf nodes, while most $f_3$-statistics (all except the ones of the form $f_3(A; B, B)$) can be thought of as the distance between one leaf node (ideally an outgroup) and some internal node (the split point of the other two populations, in the simplest case without admixture).
 
 
 ### Identifiability
@@ -299,6 +296,55 @@ This apparent limitation of fitting admixture graphs with $f$-statistics has an 
 
 <br>
 
+## Modeling demographic history
+
+Admixture graphs are models of demographic history. Like all models, they should not be thought of as a perfect representation of reality, but instead as a good enough representation of reality. As simple as possible, but not simpler. A model that is too simple is one that doesn't fit the data well. In our case, not fitting the data well means that the $f$-statistics implied by the admixture graph are significantly different from the $f$-statistic that can be observed from the data (the $f$-statistic residuals are large).
+
+This makes it easy to reject certain admixture graphs. We can reject them if some of the $f$-statistic residuals are very large (let's say Z-score greater than 4; but it really depends on the number of populations), or if the log-likelihood score is far away from zero (this score is basically a weighted average of $f$-statistic residuals).
+
+However, the inverse is not true. A low score doesn't mean that an admixture graph is a good model of reality. It just means that we can't reject it. It may or may not be a good model. For example, when there are only very few SNPs to work with, more models appear to fit well, but that just means that there is less power to reject some of these models.
+
+Even with a large number of SNPs, failure to reject a model does not mean that the model has much to do with reality. There is often a large number of well-fitting models with substantially different features. While some of them may have better fits than others, often such differences in log-likelihood score or worst residual are due to chance. We can see that when we repeatedly fit two models with different SNPs, and we observe that some choices of SNPs favor one model, but other choices of SNPs favor the other model. In that case it's impossible to tell which model is closer to reality. The functions `qpgraph_resample_snps2()` and `compare_fits()` are there to test whether one model can be favored over another, when accounting for the variability between SNPs.
+
+Because it's usually not the case that any given admixture graph model (even with a perfect model fit) captures every aspect of the demographic history of a set of samples or populations, it helps to be aware of the ways in which even a well-fitting model can depart from reality. There are two different scenarios:
+
+1. The model is a simplification of reality
+
+    This should be expected, not only of admixture graph models, but of most models in general. If we have a model with, say, ten admixture events, and this model is perfectly consistent with all available data, it could mean that there really were ten admixture events in the history of these populations. But it could also mean that there were hundreds, or even thousands of different admixture events. Adding an admixture edge to a graph will never worsen the model fit. The question is just whether it substantially improves the fit. Occam's razor suggests that we should prefer the model with ten admixture events. That's because out of all well-fitting models with one hundred admixture events, we wouldn't know which one to pick, whereas there may only be one well-fitting model with ten admixture events. However, that doesn't mean that ten admixture events are more likely than a hundred. 
+
+    The One True Admixture Graph
+    
+    We know in fact that a large number of admixture events is generally a closer representation of reality than a small number. Admixture graphs typically group people into populations before modeling their history (that's true for observed samples as well as for unobserved ancestral samples). The process of grouping people into populations is never perfect, but it is necessary to create models of a complexity that we can handle. At least conceptually, we can imagine what it would look like if we didn't group people into populations, if we had an infinite number of SNPs for each sample, and if our goal was to recover not just a simplified model of reality, but the exact steps, generation by generation, that connect all people, present and past. What we would end up with is the pedigree connecting all these people. In this pedegree admixture graph, every child would be a 50/50 mixture of its parents. This means that in the limit of modelling more and more admixture events, an admixture graph eventually turns into a huge family pedigree. It's only at that point that the admixture graph stops being a simplified representation of the true demographic history. (The fact that admixture graphs can be seen as generalizations of pedigrees also means that we can use `qpraph()` or `find_graphs()` to infer regular family pedegrees.) When working with samples or populations which are separated by many generations, it's impossible to infer this pedigree admixture graph. The goal is instead to find the simplest model which is consistent with the data. While this simplification doesn't capture all aspects of demographic history, it is still very informative, because usually only a small minority of all possible models are consistent with the genetic data.
+
+
+2. The model misrepresents reality beyond just simplifying it
+
+    In the first scenario, where the model is a simplification, we can imagine that the simplified model is either contained within the true pedigree admixture graph, or that we could go from the true model to the simplified model by grouping nearby samples into populations. The alternative scenario is that we have a model where some parts of the graph are qualitatively different from the corresponding parts of the true graph (they don't form a part-whole relationship). We usually don't observe the true model, but it's not uncommon to see two relatively simple admixture graph models which cannot be rejected, but which tell very different stories (and which have the same number of admixture events). Unlike in the case with two models of different complexity, here it's not possible to parsimoniously pick the simpler model. Unless other types of information (genetic of non-genetic) allow us to distinguish between these two competing models, we have to concede at that point that we have reached the limit of what we can say with the data at hand.
+
+#### Distinguishing between a large number of alternative models requires a large amount of data
+
+It's difficult to say how much information exactly is contained in the *f*-statistics and their standard errors for a set of populations. The amount of information contained in the *f*-statistics would give us an upper limit for the number of possible models that can be distinguished. With ten populations and ten admixture events, the number of *possible* models is 9.8e+33. Many of these models are unidentifiable using *f*-statistics (they have the same expected *f*-statistics as another, simpler model), but I suspect that even when only the smaller set of identifiable models is considered, the information contained in *f*-statistics is insufficient to distinguish between all these models. Even in the case of small graphs with few admixture events, where the number of possible models is smaller (seven populations and no admixture allows for 10395 possible trees), it may be the case that some questions cannot be resolved due to a lack of information. For example, if several populations split from a common branch only a few generations apart, not enough genetic drift may have accumulated to determine the order of split times (ignoring for now that this question may be ill-posed because those splits may have been than continuous and overlapping events).
+
+All of this means that we shouldn't assume that once we have found a model with a very good log-likelihood score or worst residual, we should stop and declare victory. There may be many other models with equally good fits. This changes the question from *What is the correct admixture graph?* to *What do all well-fitting admixture graphs have in common?*, which in turn brings two challenges:
+
+1. How can we identify what the range of feasible models is?
+2. Assuming there is a large number of feasible models, how can we tell which features they share?
+
+In *ADMIXTOOLS 2*, we can use [`find_graphs` and other functions](#exploring-different-graphs-1) to identify the range of feasible models, and we can use [several other functions](#summarizing-graphs-1) to identify features shared by these models.
+
+
+#### Incorporating prior information
+
+*f*-statistics sometimes fail to reject models that can be rejected for other reasons. For example, models may be inconsistent with what we know from radiocarbon dating, from material culture, or from other types of genetic information. This prior information can be incorporated by restricting the space of considered models to those that are consistent with what we already know, as described [here](#constraining-the-search-space).
+
+
+#### f-statistics, qpAdm, and admixture graphs
+
+Most papers that use *f*-statistics derive their conclusions from different methods and different lines of evidence. Some of those are orthogonal to each other, while others are not. In particular, different types of *f*-statistics based analyses should not be interpreted as independent evidence. It can make sense to combine individual $f_4$- or $D$-statistics, *qpAdm*, and admixture graph models to address slightly different questions, but since all are based on the same type of information, they don't mutually reinforce each other (and they shouldn't contradict each other). For example, every *qpAdm* model corresponds to a certain class of admixture graph models. If one of the admixture graphs provides a good fit, so will the *qpAdm* model.
+
+In contrast to this, methods which use different aspects of the same genetic data, such as haplotype information, can provide additional support for *f*-statistics based analyses.
+
+<br>
 
 ## Graphs in *ADMIXTOOLS 2*
 
@@ -380,7 +426,7 @@ To get a better sense of how stable the edge weight optimization is, it makes se
 In this example, the optimization is very stable, and the initial values do not affect the estimated weights (columns `p1` to `p3`) or the score (column `value`):
 
 ```{r}
-example_winner$opt[[1]]
+qpgraph(example_f2_blocks, example_opt$graph[[1]])$opt
 ```
 
 Here, the optimization depends a bit more on the initial weights, and the weights for the admixture nodes `N3N4` and `N3N8` can not be estimated robustly (because they are not identifiable in this graph):
@@ -436,6 +482,18 @@ example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower)
   qpgraph(example_f2_blocks, .) %$% edges %>% plotly_graph
 ```
 
+
+### Why f3?
+
+`qpgraph()` uses $f_3$- rather than $f_2$-statistics for modeling graphs. $f_3$- and $f_4$-statistics are just sums of $f_2$-statistics, in particular
+
+$$f_3(A; B, C) = \frac{1}{2} (f_2(A,B)+f_2(A,C)-f_2(B,C))$$
+
+This raises the question whether it makes a difference to express a graph in terms of equations for $f_2$-statistics or equations for $f_3$-statistics. If there is an exact solution for one of the ($f_2$ or $f_3$) equation system, it is also a solution for the other equation system. In a case like that, the choice of *f*-statistics used does not make a difference.
+
+In practice, however, there usually is no exact solution for a given graph and set of *f*-statistics. Instead, `qpgraph()` estimates weights which minimize the sum of squared differences between the expected and the observed *f*-statistics, and this difference is usually greater than zero. In that case, an equation system of $f_2$-statistics can lead to different weight estimates than an equation system of $f_3$-statistics. In particular, using $f_3$-statistics will give more importance to the internal edges of the admixture graph, rather than the terminal edges leading to the leaf nodes. That's because each $f_2$-statistic can be thought of as the distance between two leaf nodes, while most $f_3$-statistics (all except the ones of the form $f_3(A; B, B)$) can be thought of as the distance between one leaf node (ideally an outgroup) and some internal node (the split point of the other two populations, in the simplest case without admixture).
+
+
 <br>
 
 ## Exploring different graphs
@@ -446,30 +504,28 @@ An advantage of being able to quickly evaluate a single model using precomputed 
 ### Fully automated graph exploration
 
 
-<br>
+**I recently made a couple of changes to `find_graphs()`. It's now faster, but the input arguments and output format have changed a bit.
+The old function is still available under the name `find_graphs_old()`. Please let me know if you encounter any problems!**
 
-
-The function `find_graphs()` attempts to automatically find admixture graphs that are compatible with the observed f-statistics. It generates and evaluates `numgraphs` admixture graphs in `numgen` generations, and in each generation selects and modifies the best graphs.
+The function `find_graphs()` searches for admixture graphs that are compatible with the observed *f*-statistics. It starts with a random admixture graph, and continuously improves it by making random and targeted changes to the graph. The outgroup and the number of admixture edges are held constant.
 
 
 ```{r, eval = FALSE}
-opt_results = find_graphs(f2_blocks, pops, outpop = pops[1], numrep = 200,
-                          numgraphs = 100, numgen = 20, numsel = 5, numadmix = 3)
+opt_results = find_graphs(f2_blocks, numgraphs = 10, numgen = 100,
+                          numadmix = 3, outpop = 'Chimp.REF')
 ```
 
-The output of `find_graphs()` (`opt_results`) will be a [nested data frame](https://r4ds.had.co.nz/many-models.html#nested-data), with each tested model in one line. Some columns in this data frame, like `score`, are regular numbers, while other columns, like `edges`, are *list-columns* where each element is another data frame.
+The output of `find_graphs()` (`opt_results`) will be a [nested data frame](https://r4ds.had.co.nz/many-models.html#nested-data), with each tested model in one line. Some columns in this data frame, like `score`, are regular numbers, while other columns, like `edges`, are *list-columns* where each element is a data frame.
 
 <br>
 
-The following commands will extract the best fitting model overall, and the best fitting model from each independent repeat.
+The following command will extract the best fitting model:
 
 ```{r, eval = FALSE}
-winner = opt_results %>% top_n(1, -jitter(score))
-winners = opt_results %>% group_by(run) %>% top_n(1, -jitter(score)) %>% ungroup
+winner = opt_results %>% slice_min(score, with_ties = FALSE)
 ```
 ```{r, echo = FALSE}
-winner = example_winner
-winners = example_winners
+winner = example_opt %>% slice_min(score, with_ties = FALSE)
 ```
 
 ```{r, fig.width = 9, fig.align="center"}
@@ -477,7 +533,7 @@ winner$score[[1]]
 plot_graph(winner$edges[[1]])
 ```
 
-It can take a while until `find_graphs()` finds graphs with good fits. To speed it up, it can be [parallelized](parallel.html).
+`find_graphs()` can get stuck in local optima: it won't be able to improve the graph even though better graphs exist. This is especially true for graphs with many populations and admixture events. In that case, it can help to run `find_graphs()` many times. Each run will begin with a different random graph, which increases the chances of finding graphs that are close to the global optimum.
 
 <br>
 
@@ -571,8 +627,8 @@ The following example shows how to test whether `graph1` gives a significantly b
 
 ```{r, eval = FALSE}
 pops = dimnames(example_f2_blocks)[[1]]
-graph1 = example_winners %>% arrange(score) %>% pluck('igraph', 1)
-graph2 = example_winners %>% arrange(score) %>% pluck('igraph', 100)
+graph1 = example_opt %>% pluck('graph', 1)
+graph2 = example_opt %>% pluck('graph', 100)
 fits = qpgraph_resample_multi(example_f2_blocks, list(graph1, graph2), nboot = 100)
 compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
 ```
@@ -796,24 +852,36 @@ If you want to override any of the default assumptions, you can do so in three w
 
 <br>
 
-## Finding valid qpAdm models
 
-Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs.
-
-```{r, fig.width = 9, fig.align="center"}
-mygraph = winners %>% pluck('igraph', 6)
-plot_graph(mygraph)
-qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3)
-```
-
-The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations.
+## Admixture graphs and pedigrees
 
 
-Valid qpAdm models need to satisfy the following criteria:
 
-* There have to be more right populations than left populations
-* The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative right population, but it can be included anyway, with `add_outgroup`.
-* Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that's correct and if it can be stated in a better way.)
+
+<br>
+
+<!-- ## Finding valid qpAdm models -->
+
+<!-- Every admixture graph maps to a specific set of valid qpAdm models. The function `qpadm_models` lists all valid qpAdm models for a graph. Models which are contained within larger valid models are not shown. The number of valid qpAdm models can be very large for big graphs, so you should only run this on small graphs. -->
+
+<!-- ```{r, fig.width = 9, fig.align="center"} -->
+<!-- mygraph = example_opt %>% pluck('graph', 6) -->
+<!-- plot_graph(mygraph) -->
+<!-- qpadm_models(mygraph, add_outgroup = TRUE, nested = FALSE, abbr = 3) -->
+<!-- ``` -->
+
+<!-- The only qpAdm models which are valid under this graph have `Den` as target and `Chi`, `Rus`, and `Swi` as right populations. -->
+
+
+<!-- Valid qpAdm models need to satisfy the following criteria: -->
+
+<!-- * There have to be more right populations than left populations -->
+<!-- * The left populations should not form a clade with respect to any right population. This means that a qpgraph outgroup is not an informative right population, but it can be included anyway, with `add_outgroup`. -->
+<!-- * Each set of left populations which forms a source for the target population has to form a clade with target at the exclusion of each right population. (Note: Check if that's correct and if it can be stated in a better way.) -->
+
+
+
+
 
 
 

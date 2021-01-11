@@ -716,8 +716,11 @@ server = function(input, output, session) {
     print(mutfuns)
 
     withProgress(message = paste('Evaluating ', numsel+(numgraphs-numsel)*numgen*numrep,' graphs...'), {
-      opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
-                                numgraphs = numgraphs, numgen = numgen, numsel = numsel,
+      # opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
+      #                           numgraphs = numgraphs, numgen = numgen, numsel = numsel,
+      #                           numadmix = nadmix, initgraph = g, mutfuns = mutfuns, diag = diag)
+      opt_results = find_graphs(f2blocks, outpop = outpop,
+                                numgraphs = numgraphs, numgen = numgen,
                                 numadmix = nadmix, initgraph = g, mutfuns = mutfuns, diag = diag)
     })
     print(opt_results)
@@ -726,7 +729,7 @@ server = function(input, output, session) {
     if(nrow(opt_results) == 0) {
       shinyalert('No valid graphs in output!', 'Try increasing the "diag" parameter.')
     } else {
-      winner = opt_results %>% top_n(1, -jitter(score)) %$% igraph[[1]]
+      winner = opt_results %>% slice_min(score) %$% graph[[1]]
       oldgraph = global$graph
       oldscore = global$score
       oldedges = global$edges

@@ -2352,11 +2352,12 @@ extract_f2_qpfs2 = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, max
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
-write_dot = function(graph, outfile = stdout()) {
+write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10) {
   # writes qpgraph output to a dot format file
 
   if('igraph' %in% class(graph)) {
-    edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to'))
+    edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
+      add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
   } else edges = graph
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
 
@@ -2365,7 +2366,7 @@ write_dot = function(graph, outfile = stdout()) {
                                      paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
                  from = str_replace_all(from, '[\\.-]', ''), to = str_replace_all(to, '[\\.-]', ''))
   out = 'digraph G {\n'
-  out = paste0(out, 'size = "7.5,10";\n')
+  out = paste0(out, 'size = "',size1,',',size2,'";\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
 

@@ -4,12 +4,12 @@
 \alias{get_f2}
 \title{Turns f2_data into f2_blocks}
 \usage{
-get_f2(f2_data, pops, pops2 = pops, afprod = FALSE, verbose = TRUE, ...)
+get_f2(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = TRUE, ...)
 }
 \arguments{
 \item{f2_data}{f2 data as genotype file prefix, f2 directory, or f2 blocks}
 
-\item{pops}{Populations for which to extract f2-stats}
+\item{pops}{Populations for which to extract f2-stats (defaults to all)}
 
 \item{pops2}{Optional second vector of populations. Can result in non-square array}
 

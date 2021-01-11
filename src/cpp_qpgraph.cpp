@@ -27,8 +27,8 @@ arma::vec cpp_opt_edge_lengths(const arma::mat& ppwts_2d, const arma::mat& ppinv
   cc /= sc*sc.t();
   mat CI(nc, nc, fill::eye);
   vec lengths;
-  if(constrained) lengths = as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower%sc, -upper%sc)))/sc;
-  //if(constrained) lengths = as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)))/sc;
+  //if(constrained) lengths = as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower%sc, -upper%sc)))/sc;
+  if(constrained) lengths = as<vec>(qpsolve(cc, q1, join_horiz(CI, -CI), join_vert(lower, -upper)))/sc;
   else lengths = solve(cc, q1)/sc;
   return lengths;
 }

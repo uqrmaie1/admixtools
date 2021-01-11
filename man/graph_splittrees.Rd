@@ -4,7 +4,7 @@
 \alias{graph_splittrees}
 \title{Find all trees which are part of the admixture graph}
 \usage{
-graph_splittrees(graph)
+graph_splittrees(graph, return_admix = FALSE)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}

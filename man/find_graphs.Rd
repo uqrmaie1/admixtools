@@ -6,23 +6,23 @@
 \usage{
 find_graphs(
   data,
-  pops = NULL,
-  outpop = NULL,
-  numrep = 1,
-  numgraphs = 50,
-  numgen = 5,
-  numsel = 5,
   numadmix = 0,
-  numstart = 1,
-  keep = c("all", "best", "last"),
-  initgraphs = NULL,
+  outpop = NULL,
+  stop_gen = 100,
+  stop_gen2 = 15,
+  stop_score = 0,
+  stop_sec = NULL,
+  initgraph = NULL,
+  numgraphs = 10,
   mutfuns = namedList(spr_leaves, spr_all, swap_leaves, move_admixedge_once,
-    flipadmix_random, mutate_n),
-  mutprobs = NULL,
+    flipadmix_random, place_root_random, mutate_n),
   opt_worst_residual = FALSE,
-  store_intermediate = NULL,
-  parallel = TRUE,
-  stop_after = NULL,
+  plusminus_generations = 5,
+  return_searchtree = FALSE,
+  admix_constraints = NULL,
+  event_constraints = NULL,
+  reject_f4z = 0,
+  max_admix = numadmix,
   verbose = TRUE,
   ...
 )
@@ -30,35 +30,26 @@ find_graphs(
 \arguments{
 \item{data}{Input data in one of three forms:
 \enumerate{
-\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
 \item A directory which contains pre-computed f2-statistics
-\item The prefix of genotype files (slowest option)
+\item The prefix of genotype files
 }}
 
-\item{pops}{Populations for which to fit admixture graphs (default all)}
+\item{numadmix}{Number of admixture events within each graph. (Only relevant if \code{initgraph = NULL})}
 
-\item{outpop}{An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as \code{outpop} will greatly reduce the search space compared to including it and not designating it as \code{outpop}.}
+\item{outpop}{Name of the outgroup population}
 
-\item{numrep}{Number of independent repetitions (each repetition can be run in parallel)}
+\item{stop_gen}{Total number of generations after which to stop}
+
+\item{stop_gen2}{Number of generations without improvement after which to stop}
+
+\item{stop_score}{Stop once this score has been reached}
+
+\item{stop_sec}{Number of seconds after which to stop}
+
+\item{initgraph}{Graph to start with. If it is specified, \code{numadmix} and \code{outpop} will be inferred from this graph.}
 
 \item{numgraphs}{Number of graphs in each generation}
-
-\item{numgen}{Number of generations}
-
-\item{numsel}{Number of graphs which are selected in each generation. Should be less than \code{numgraphs}.}
-
-\item{numadmix}{Number of admixture events within each graph}
-
-\item{numstart}{Number of random initializations in each call to \code{qpgraph}. Defaults to 1, to speed up the graph optimization.}
-
-\item{keep}{Which models should be returned. One of \code{all}, \code{best}, \code{last}
-\itemize{
-\item \code{all} (default): Return all evaluated graphs
-\item \code{best}: Return only the best fitting graph from each repeat and each generation
-\item \code{last}: Return all graphs from the last generation
-}}
-
-\item{initgraphs}{Optional graph or list of igraphs to start with. If \code{NULL}, optimization will start with random graphs.}
 
 \item{mutfuns}{Functions used to modify graphs. Defaults to the following:
 \itemize{
@@ -70,23 +61,26 @@ to a random other edge in the graph, keeping the number of admixture nodes const
 \item \code{\link{move_admixedge_once}}: Moves an admixture edge to a nearby location.
 \item \code{\link{flipadmix_random}}: Flips the direction of an admixture edge (if possible).
 \item \code{\link{mutate_n}}: Apply \code{n} of the mutation functions in this list to a graph (defaults to 2).
-}
-See examples for how to make new mutation functions.}
-
-\item{mutprobs}{Relative frequencies of each mutation function.
-\itemize{
-\item \code{NULL} (default) means each mutation function is picked with equal probability
-\item A numeric vector of length equal to \code{mutfuns} defines the relative frequency of each mutation function
-\item A matrix of dimensions \code{numgen} x \code{length(mutfuns)} defines the relative frequency of each mutation function in each generation
 }}
 
-\item{opt_worst_residual}{Optimize for lowest worst residual instead of best score. \code{FALSE} by default, because the likelihood score is generally a better indicator of the quality of the model fit. Optimizing for the lowest worst residual is also slower (because f4-statistics need to be computed).}
+\item{opt_worst_residual}{Optimize for lowest worst residual instead of best score. \code{FALSE} by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).}
 
-\item{store_intermediate}{Path and prefix of files for intermediate results to \code{.rds}. Can be useful if \code{find_graphs} doesn't finish sucessfully.}
+\item{plusminus_generations}{If the best score does not improve after \code{plusminus_generations} generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.
+If the current number of admixture events is lower than \code{max_numadmix}, the last step (removing an admixture edge) will be skipped.}
 
-\item{parallel}{Parallelize over repeats (if \code{numrep > 1}) or graphs (if \code{numrep == 1}) by replacing \code{\link[purrr]{map}} with \code{\link[furrr]{future_map}}. Will only be effective if \code{\link[future]{plan}} has been set.}
+\item{return_searchtree}{Return the search tree in addition to the models. Output will be a list with three items: models, search tree, search tree as data frame}
 
-\item{stop_after}{Stop optimization after \code{stop_after} seconds (and after finishing the current generation).}
+\item{admix_constraints}{A data frame with constraints on the number of admixture events for each population.
+See \code{\link{satisfies_numadmix}}
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.}
+
+\item{event_constraints}{A data frame with constraints on the order of events in an admixture graph.
+See \code{\link{satisfies_eventorder}}
+As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.}
+
+\item{reject_f4z}{If this is a number greater than zero, all f4-statistics with \code{z > reject_f4z} will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.}
+
+\item{max_admix}{Maximum number of admixture edges. By default, this number is equal to \code{numadmix}, or to the number of admixture edges in \code{initgraph}, so the number of admixture edges stays constant. Setting this to a higher number will lead to more admixture edges being added occasionally (see \code{plusminus_generations}). Graphs with additional admixture edges will only be accepted if they improve the score by 5\% or more.}
 
 \item{verbose}{Print progress updates}
 
@@ -96,25 +90,22 @@ See examples for how to make new mutation functions.}
 A nested data frame with one model per line
 }
 \description{
-This function generates and evaluates admixture graphs in \code{numgen} iterations across \code{numrep} independent repeats
-to find well fitting admixturegraphs. It uses the function \code{\link[furrr]{future_map}}
-to parallelize across the independent repeats. The function \code{\link[future]{plan}} can be called
-to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
-a compute cluster. Setting \code{numadmix} to 0 will search for well fitting trees, which is much faster than searching
-for admixture graphs with many admixture nodes.
+This function generates and evaluates admixture graphs in \code{numgen} iterations
+to find well fitting admixturegraphs.
 }
 \examples{
 \dontrun{
-find_graphs(example_f2_blocks, numrep = 200, numgraphs = 100,
-            numgen = 20, numsel = 5, numadmix = 3)
+res = find_graphs(example_f2_blocks, numadmix = 2)
+res \%>\% slice_min(score)
 }
 \dontrun{
-# Making new mutation functions by modifying or combining existing ones:
-newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
-newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-find_graphs(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+# Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
+pops = dimnames(example_f2_blocks)[[1]]
+initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
+res = find_graphs(example_f2_blocks, initgraph, stop_gen2 = 10, max_admix = 3)
+res \%>\% slice_min(score)
 }
 }
 \seealso{
-\code{\link{qpgraph}}
+\code{\link{qpgraph}}, \code{\link{find_graphs_old}}
 }

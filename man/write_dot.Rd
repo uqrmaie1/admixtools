@@ -4,7 +4,7 @@
 \alias{write_dot}
 \title{Convert graph to dot format}
 \usage{
-write_dot(graph, outfile = stdout())
+write_dot(graph, outfile = stdout(), size1 = 7.5, size2 = 10)
 }
 \arguments{
 \item{graph}{Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')}

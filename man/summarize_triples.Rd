@@ -20,5 +20,5 @@ A data frame with one line for each population triple and columns summarizing th
 }
 }
 \description{
-This function summarizes topologies of population triples across graphs. If the list of graphs comes from \code{\link{find_graphs}}, only one graph from each run should be included, as graphs within the same run are not independent of each other.
+This function summarizes topologies of population triples across graphs.
 }
