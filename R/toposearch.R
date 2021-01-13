@@ -2475,8 +2475,8 @@ rearrange_negadmix3 = function(graph, from, to) {
     add_edges(c(grandparent_pos, to, to, parent_pos)) %>%
     delete_edges(paste(c(grandparent_pos, parent_pos, parent_neg), c(parent_pos, to, to), sep = '|'))
   if(!is_valid(newgraph)) {
-    browser()
-    warning('rearrange_negadmix3 failed!')
+    #browser()
+    #warning('rearrange_negadmix3 failed!')
     return(NULL)
   }
   if(length(parent_neg) != 1 || length(parent_pos) != 1) stop('aaa')
@@ -2682,22 +2682,15 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
                                   nonzero_f4 = nzf4, admix_constraints = admixc,
                                   event_order = eventc) %>% slice_min(score, with_ties = FALSE)
       }
+      alert_info('Plusminus done 1\n')
       newmod %<>% mutate(hash = map_chr(graph, graph_hash)) %>%
         transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = mf)
+      alert_info('Plusminus done 2\n')
       if(newmod$score > min(models$score, na.rm=F)*0.95) {
         gimp = gimp + 1
+        alert_info('Plusminus done 3\n')
         next
       }
-      # newmod = eval_plusminusn(graph, qpgfun, n = sample(1:2, 1, prob = c(100,1)), ntry = numgraphs*10,
-      #              nonzero_f4 = nzf4, admix_constraints = admixc,
-      #              event_order = eventc) %>%
-      #   slice_min(score, with_ties = FALSE) %>%
-      #   mutate(hash = map_chr(graph, graph_hash)) %>%
-      #   transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = 'plusminusn')
-      # if(newmod$hash == newmod$lasthash) {
-      #   gimp = gimp + 1
-      #   next
-      # }
 
     } else {
 
@@ -3794,6 +3787,7 @@ triplet_proportions1 = function(fit, outgroup, pop1, pop2) {
 
 place_root = function(graph, from, to, outpop = NULL) {
   # places root at edge from -> to
+  # may reduce number of admixture edges
 
   root = get_rootname(graph)
   children = neighbors(graph, root, mode = 'out') %>% names
@@ -3808,22 +3802,28 @@ place_root = function(graph, from, to, outpop = NULL) {
     mutate(from = ifelse(dist[,v1] <= dist[,v2], v1, v2), to = ifelse(from == v1, v2, v1)) %>%
     ungroup %>% select(from, to) %>% edges_to_igraph()
   count = 0
-  while(TRUE) {
-    newleaves =  setdiff(get_leafnames(out), oldleaves)
-    if(length(newleaves) == 0) break
-    for(l in newleaves) {
-      parent = neighbors(out, l, mode = 'in') %>% map(~degree(out, ., mode = 'in')) %>% keep(~.==1) %>% names %>% sample(1)
-      out %<>% delete_edges(paste0(parent, '|', l)) %>% add_edges(c(l, parent))
-    }
-    if(!is_valid(out)) browser()
-    # out2 = out %>% rowwise %>%
-    #   mutate(to = ifelse(!is.na(to), to, ifelse(runif(1) < 0.5, v1, v2)),
-    #          from = ifelse(!is.na(from), from, ifelse(to == v1, v2, v1))) %>% ungroup %>%
-    #   select(from, to) %>% edges_to_igraph()
-    # if(length(setdiff(get_leafnames(out2), oldleaves)) == 0) break
-    count = count + 1
-    if(count > 100) browser()
+  newleaves =  setdiff(get_leafnames(out), oldleaves)
+  while(length(newleaves) > 0) {
+    g = out %>% igraph::delete_vertices(newleaves) %>% simplify_graph()
+    newleaves = setdiff(get_leafnames(g), oldleaves)
+    out = g
   }
+  # while(TRUE) {
+  #   newleaves =  setdiff(get_leafnames(out), oldleaves)
+  #   if(length(newleaves) == 0) break
+  #   for(l in newleaves) {
+  #     parent = neighbors(out, l, mode = 'in') %>% map(~degree(out, ., mode = 'in')) %>% keep(~.==1) %>% names %>% sample(1)
+  #     out %<>% delete_edges(paste0(parent, '|', l)) %>% add_edges(c(l, parent))
+  #   }
+  #   if(!is_valid(out)) browser()
+  #   # out2 = out %>% rowwise %>%
+  #   #   mutate(to = ifelse(!is.na(to), to, ifelse(runif(1) < 0.5, v1, v2)),
+  #   #          from = ifelse(!is.na(from), from, ifelse(to == v1, v2, v1))) %>% ungroup %>%
+  #   #   select(from, to) %>% edges_to_igraph()
+  #   # if(length(setdiff(get_leafnames(out2), oldleaves)) == 0) break
+  #   count = count + 1
+  #   if(count > 100) browser()
+  # }
   out
 }
 
