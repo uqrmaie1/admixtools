@@ -190,7 +190,7 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' @param return_f4 Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to `FALSE` because this can be slow.
 #' @param f3precomp Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of `data`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
 #' @param f3basepop Optional f3-statistics base population. Inference will be based on f3-statistics of the form `f3(f3basepop; i, j)` for all population pairs `(i, j)`. Defaults to the outgroup population if the graph has one. This option is ignored if `f3precomp` is provided. Changing `f3basepop` should make very little difference.
-#' @param ppinv Optional inverse f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.
+#' @param ppinv Optional inverse f3-statistics covariance matrix
 #' @param f2_blocks_test An optional 3d array of f2-statistics used for computing an out-of-sample score. This should contain only SNP blocks which are not part of `f2_blocks`. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step
 #' @param verbose Print progress updates
 #' @return `qpgraph` returns a list with data describing the model fit:
@@ -354,7 +354,10 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p = ztop(z))
 
   out = namedList(edges, score, f2, f3, opt, ppinv)
-  if(!is.null(f2_blocks_test)) out[['score_test']] = score_test
+  if(!is.null(f2_blocks_test)) {
+    out[['score_test']] = score_test
+    out[['f3_test']] = precomp_test$f3out
+  }
   if(return_f4 && !is.null(data)) {
     if(verbose) alert_info(paste0('Computing f4\n'))
     out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3)
@@ -539,7 +542,6 @@ fitf4 = function(f2_blocks, f2, f3) {
 #' Compare the fit of two qpgraph models
 #'
 #' Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other
-#' @export
 #' @param fits1 The fits of the first graph
 #' @param fits2 The fits of the second graph
 #' @param boot should match the `boot` parameter in `qpgraph_resample_snps` (`FALSE` by default)
@@ -618,7 +620,7 @@ compare_fits = function(scores1, scores2) {
 
 #' Evaluate a qpgraph model many times
 #'
-#' This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. using a list of bootstrap resampled f2-statistics and corresponding test-set f2-statistics
+#' This function is used in combination with \code{\link{compare_fits}} in order to test whether one graph has a significantly better fit than another. using a list of bootstrap resampled f2-statistics and corresponding test-set f2-statistics
 #' @export
 #' @param f2_blocks A list of bootstrap resampled f2-statistics
 #' @param graph An admixture graph
@@ -626,7 +628,7 @@ compare_fits = function(scores1, scores2) {
 #' @param verbose Print progress updates
 #' @param ... Arguments passed to \code{\link{qpgraph}}
 #' @return A data frame with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
-#' @seealso \code{\link{compare_fits3}} \code{\link{boo_list}}
+#' @seealso \code{\link{compare_fits}} \code{\link{boo_list}}
 qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...) {
 
   #progressr::with_progress({
@@ -642,7 +644,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
   #pb = progress::progress_bar$new(total = length(f2_blocks))
   tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
     mutate(fun2 = pmap(list(f2_blocks, f2_blocks_test, graph), fun)) %>%
-    mutate(out = furrr::future_invoke_map(fun2, .progress = verbose),
+    mutate(out = furrr::future_invoke_map(fun2, .progress = verbose, .options = furrr::furrr_options(seed = TRUE)),
            result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
     select(-out, -fun2) %>% unnest_wider(result)
   #})
@@ -663,7 +665,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 
 #' Evaluate a qpgraph models many times
 #'
-#' This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.
+#' This function is used in combination with \code{\link{compare_fits}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.
 #' @export
 #' @param f2_blocks 3d array of f2-statistics
 #' @param graphlist A list of admixture graphs
@@ -671,7 +673,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 #' @param verbose Print progress updates
 #' @param ... Arguments passed to \code{\link{qpgraph}}
 #' @return A list of same length as `graphlist` with data frames with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
-#' @seealso \code{\link{compare_fits3}}
+#' @seealso \code{\link{compare_fits}}
 qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, ...) {
 
   boo = boo_list(f2_blocks, nboot = nboot)
@@ -684,7 +686,6 @@ qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, .
 #' Compare the fit of two qpgraph models
 #'
 #' Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
-#' @export
 #' @param fit1 The fit of the first graph
 #' @param fit2 The fit of the second graph
 #' @param f2_blocks f2 blocks used for fitting `fit1` and `fit2`. Used in combination with `f2_blocks_test` to compute f-statistics covariance matrix.
@@ -728,6 +729,12 @@ compare_fits4 = function(fit1, fit2, f2_blocks, f2_blocks_test, boot = FALSE, se
     ci_high = unname(quantile(scorediff, 0.975, na.rm = T))
   }
   namedList(diff, se, z, p, p_emp, ci_low, ci_high, scores1, scores2)
+}
+
+
+fit_to_worstf3z = function(fit) {
+  fit$f3 %>% left_join(fit$f3_test, by = c('pop1', 'pop2', 'pop3')) %>%
+    mutate(z = (est.y-fit)/sqrt(se.x^2+se.y^2)) %>% slice_max(abs(z)) %>% pluck('z', 1)
 }
 
 

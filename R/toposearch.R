@@ -1246,7 +1246,8 @@ summarize_graph = function(graph, exclude_outgroup = TRUE) {
     summarize(across(starts_with('x'), any),
               toposet = paste0(x12+0, x21+0, x13+0, x31+0, x23+0, x32+0, collapse='')) %>%
     ungroup %>%
-    mutate(tlr = !x13 & !x31 & (x23 | x32) & (x12 | x21))
+    #mutate(tlr = !x13 & !x31 & (x23 | x32) & (x12 | x21))
+    mutate(tlr = !x13 & (x23 | x32) & (x12 | x21))
 
   tripletopo
 }
@@ -1377,7 +1378,7 @@ isomorphism_classes2 = function(igraphlist) {
 qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   # don't do this for large models
 
-  outgroup = names(V(graph)[2])
+  outgroup = get_outpop(graph)
   nleaves = graph %>% get_leaves %>% length
 
   # all triples which could form target - left pop - right pop
@@ -2215,7 +2216,7 @@ leafdistances = function(graph) {
 reconstruct_from_leafdist = function(leafdist) {
 
   leaves = union(leafdist$from, leafdist$to)
-  pref = admixtools:::shortest_unique_prefixes(leaves)
+  pref = shortest_unique_prefixes(leaves)
 
   parents = leafdist %>% group_by(to) %>% filter(dist == 1) %>% mutate(node = paste0(to, '_p1'), dist = 1, d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(d), collapse = ' '), from = to) %>% ungroup %>% select(node, dist, from, d, dnum, desc) %>% distinct %>% group_by(desc) %>% top_n(1, node) %>% ungroup
 
@@ -2224,11 +2225,11 @@ reconstruct_from_leafdist = function(leafdist) {
 
 
 
-  parents = leafdist %>% filter(dist == 1) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
+  parents = leafdist %>% filter(dist == 1) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
 
-  p2 = leafdist %>% filter(dist == 2) %>% filter(from %in% parents$from) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
+  p2 = leafdist %>% filter(dist == 2) %>% filter(from %in% parents$from) %>% group_by(from) %>% mutate(d = list(union(from, to))) %>% rowwise %>% mutate(dnum = length(d), desc = paste(sort(shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup %>% select(from, dist, d, dnum, desc) %>% distinct
 
-  p2 %>% left_join(parents %>% select(from, d), by = 'from') %>% rowwise %>% mutate(d = list(union(to, d)), dnum = length(d), desc = paste(sort(admixtools:::shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup
+  p2 %>% left_join(parents %>% select(from, d), by = 'from') %>% rowwise %>% mutate(d = list(union(to, d)), dnum = length(d), desc = paste(sort(shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup
 
 
   graph = graph.empty()
@@ -2242,7 +2243,7 @@ reconstruct_from_leafdist = function(leafdist) {
       nn = ld %>% filter(dist == j)
       reachable = union(reachable, nn$to)
       oldnam = if(j == 1) l else newnam
-      newnam = admixtools:::shortest_unique_prefixes(reachable) %>% sort %>% paste(collapse = '_') %>% paste0('_', .)
+      newnam = shortest_unique_prefixes(reachable) %>% sort %>% paste(collapse = '_') %>% paste0('_', .)
       if(!newnam %in% names(V(graph))) graph %<>% add_vertices(1, name = newnam)
       if(oldnam != newnam) graph %<>% add_edges(c(newnam, oldnam))
       if(nrow(nn) == 0) break
@@ -3718,8 +3719,9 @@ is_clade = function(geno, pops1, pops2, i1=1, i2=1, perm=100) {
 }
 
 
-summarize_admix = function(graph) {
-  # groups pops by shared admixture
+condense_graph = function(graph) {
+  # groups pops by shared admixture, return graph of those groups
+  # should be redone in a nicer way
 
   leaves = get_leafnames(graph)
   adm = names(which(degree(graph, mode = 'in') > 1))
@@ -3733,9 +3735,22 @@ summarize_admix = function(graph) {
   nam = map_chr(grps, ~shortest_paths(graph, .[1], root, mode = 'in') %$%
                   vpath %>% pluck(1) %>% names %>% intersect(c(adm, root)) %>% `[`(1))
   names(grps) = nam
-  sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
+  #sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
+  sg = adm %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to0', 'from0') %>% select(2:1) %>% unnest(from)
   nam2 = map_chr(grps, ~paste(sort(.), collapse=' '))
-  sg %>% mutate(from2 = nam2[from], to2 = nam2[to])
+  nam2 %<>% c(setdiff(adm, names(grps)) %>% set_names %>% map_chr(~shortest_paths(graph, ., leaves, mode = 'out')$vpath %>% suppressWarnings %>% compact %>% pluck(1) %>% names %>% intersect(nam2) %>% `[`(1)))
+  sg %>% mutate(from = nam2[from0], to = nam2[to0]) %>% distinct(from, to)
+}
+
+pair_admix = function(graph) {
+
+  graph %>% condense_graph %>% edges_to_igraph() %>% igraph::distances(mode = 'out') %>%
+    igraph::graph_from_adjacency_matrix() %>% igraph::simplify() %>%
+    as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>% rowwise %>%
+    mutate(from = str_split(from, ' '), to = str_split(to, ' ')) %>% unnest(from) %>% unnest(to) %>%
+    transmute(from, to, dir = 1) %>%
+    bind_rows(rename(., from = to, to = from) %>% mutate(dir = -dir)) %>%
+    complete(from, to, fill = list(dir = 0)) %>% filter(from < to) %>% arrange(from, to)
 }
 
 
@@ -3787,7 +3802,7 @@ place_root = function(graph, from, to, outpop = NULL) {
   newg = graph %>% delete_vertices(root) %>% add_edges(c(children[1], children[2])) %>%
     add_vertices(1, name = newroot) %>% delete_edges(paste0(from, '|', to)) %>% add_edges(c(newroot, from, newroot, to)) %>%
     igraph::as.undirected(mode = 'collapse')
-  dist = distances(newg, newroot)
+  dist = igraph::distances(newg, newroot)
   out = newg %>% as_edgelist %>% as_tibble(.name_repair = ~c('v1', 'v2')) %>%
     rowwise %>%
     mutate(from = ifelse(dist[,v1] <= dist[,v2], v1, v2), to = ifelse(from == v1, v2, v1)) %>%

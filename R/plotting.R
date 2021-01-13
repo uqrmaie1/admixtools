@@ -719,7 +719,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   }
 
   if(collapse_threshold > 0) {
-      edges %<>% collapse_edges(10^collapse_threshold)
+      edges %<>% collapse_edges(collapse_threshold)
   }
 
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
