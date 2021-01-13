@@ -21,8 +21,8 @@ qpgraph_resample_snps2(f2_blocks, graph, f2_blocks_test, verbose = TRUE, ...)
 A data frame with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
 }
 \description{
-This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. using a list of bootstrap resampled f2-statistics and corresponding test-set f2-statistics
+This function is used in combination with \code{\link{compare_fits}} in order to test whether one graph has a significantly better fit than another. using a list of bootstrap resampled f2-statistics and corresponding test-set f2-statistics
 }
 \seealso{
-\code{\link{compare_fits3}} \code{\link{boo_list}}
+\code{\link{compare_fits}} \code{\link{boo_list}}
 }

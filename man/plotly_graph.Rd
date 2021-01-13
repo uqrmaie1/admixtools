@@ -10,7 +10,8 @@ plotly_graph(
   fix = FALSE,
   shift_down = TRUE,
   print_highlow = FALSE,
-  highlight_unidentifiable = FALSE
+  highlight_unidentifiable = FALSE,
+  pos = NULL
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ By default this is only done for graphs with fewer than 10 leaves.}
 \item{shift_down}{Shift descendent nodes down}
 
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
+
+\item{pos}{Optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
 }
 \value{
 A plotly object

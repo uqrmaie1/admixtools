@@ -21,8 +21,8 @@ qpgraph_resample_multi(f2_blocks, graphlist, nboot, verbose = TRUE, ...)
 A list of same length as \code{graphlist} with data frames with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
 }
 \description{
-This function is used in combination with \code{\link{compare_fits3}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.
+This function is used in combination with \code{\link{compare_fits}} in order to test whether one graph has a significantly better fit than another. It creates bootstrap resampled SNP block training and test sets, and uses them to evaluate multiple graphs.
 }
 \seealso{
-\code{\link{compare_fits3}}
+\code{\link{compare_fits}}
 }

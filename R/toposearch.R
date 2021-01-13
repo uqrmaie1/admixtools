@@ -3729,7 +3729,7 @@ condense_graph = function(graph) {
                   vpath %>% pluck(1) %>% names %>% intersect(c(adm, root)) %>% `[`(1))
   names(grps) = nam
   #sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
-  sg = adm %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to0', 'from0') %>% select(2:1) %>% unnest(from)
+  sg = adm %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to0', 'from0') %>% select(2:1) %>% unnest(from0)
   nam2 = map_chr(grps, ~paste(sort(.), collapse=' '))
   nam2 %<>% c(setdiff(adm, names(grps)) %>% set_names %>% map_chr(~shortest_paths(graph, ., leaves, mode = 'out')$vpath %>% suppressWarnings %>% compact %>% pluck(1) %>% names %>% intersect(nam2) %>% `[`(1)))
   sg %>% mutate(from = nam2[from0], to = nam2[to0]) %>% distinct(from, to)

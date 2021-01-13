@@ -702,11 +702,12 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' By default this is only done for graphs with fewer than 10 leaves.
 #' @param shift_down Shift descendent nodes down
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
+#' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
 #' @return A plotly object
 #' @examples
 #' plotly_graph(example_graph)
 plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE,
-                        print_highlow = FALSE, highlight_unidentifiable = FALSE) {
+                        print_highlow = FALSE, highlight_unidentifiable = FALSE, pos = NULL) {
 
 
   if(class(graph)[1] == 'igraph') {
@@ -725,7 +726,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
   graph = edges %>% select(1:2) %>% as.matrix %>% igraph::graph_from_edgelist()
 
-  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
+  if(is.null(pos)) pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
 
   eg = edges %>% left_join(pos, by=c('from'='node')) %>%

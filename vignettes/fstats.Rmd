@@ -31,7 +31,7 @@ $$F_{ST}(A, B) = \frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}}
 
 One reason why *ADMIXTOOLS* uses *f*-statistics and not pairwise $F_{ST}$ is that *f*-statistics are additive: $f_2(A, C) = f_2(A, B) + f_2(B, C)$. This holds under the assumptions that there is a large number of sites, genetic drift is neutral, and there are no backmutations or recurrent mutations.
 
-In contrast, pairwise $F_{ST}$ is not additive. In fact, it doesn't even satisfy the triangle inequality, which means that $F_{ST}(A, C)$ can be greater than $F_{ST}(A, B) + F_{ST}(B, C)$.
+In contrast, pairwise $F_{ST}$ is not additive. $F_{ST}(A, C)$ can be equal to, greater, or smaller than $F_{ST}(A, B) + F_{ST}(B, C)$.
 
 On the other hand, $f_2$ has the disadvantage that its expectation depends on the allele frequency spectrum. This can be a problem when combining *f*-statistics from different populations pairs using different SNPs.
 
@@ -45,7 +45,7 @@ $n_{A,j}$ and $n_{B,j}$ are the counts of independently sampled alleles in popou
 
 ## *f*~4~
 
-$f_4$ is the covariance of allele frequency differences between two pairs of populations. It can also be expressed as a sum of $f_2$-statistics:
+$f_4$ is the covariance of allele frequency differences between two pairs of populations^[Strictly speaking, this is not always true. $f_4$ is the covariance of allele frequency differences, only if both allele frequency differences are zero in expectation. That's the case if the designation of reference and alternative alleles is unrelated to the average allele frequency in each populations, but it's not the case for example when derived / ancestral alleles are coded as 1 and 0, and when some populations have more derived or ancestral alleles than others.]. It can also be expressed as a sum of $f_2$-statistics:
 
 $$
 \begin{equation}
@@ -230,9 +230,56 @@ What follows are more detailed descriptions of the different strategies for deal
 
 The selection of SNPs can introduce bias in a way very similar to missing SNPs. The theory behind *f*-statistics holds when SNPs are ascertained to be heterozygous in an outgroup, and when that is the only ascertainment criterion. This means that any further subsetting, for example to SNPs which are common across a range of populations, or the inclusion of SNPs which are heterozygous in one out of several groups, violates this ascertainment principle.
 
-To see that a very skewed SNP ascertainment has the potential to create arbitrary results, imagine that a particular $f_4$-statistic for four populations is computed for every SNP in the genome. Let's say the true value of that statistic is zero. The per-SNP statistics will still fluctuate widely, and by selecting only the SNPs with positive $f_4$-statistics, or only the SNPs with negative $f_4$-statistics, very significant results in any direction can be obtained.
+To see that a very skewed SNP ascertainment has the potential to create arbitrary results, imagine that a particular $f_4$-statistic for four populations is computed for every SNP in the genome. Let's say the first two populations form a clade relative to the second two, and so the true value of that $f_4$-statistic averaged across all SNPs is zero. However, only the average across SNPs is zero. That statistics for single SNPs will still fluctuate widely. If we selected only the SNPs with positive $f_4$-statistics, or only the SNPs with negative $f_4$-statistics, and average over this highly ascertained set of SNPs, we could get a highly significant overall $f_4$-statistic.
 
-In practice it is generally not the case that small violations of the strict SNP ascertainment requirements affect the results in a substantial manner. SNP ascertainment is usually not random with respect to allele frequencies in any given population, nor with respect to allele frequency differences between two populations, but it is usually more or less random with respect to covariances among allele frequency differences. If there is doubt about this, it can help to repeat analyses under different SNP ascertainment schemes.
+SNP ascertainment schemes that are not completely random can can at least potentially create some bias because the chosen SNPs' average $f_4$-statistics differ from the overall average.
+
+#### Common vs rare SNPs
+
+One common ascertainment scheme is to pick SNPs that are found to be polymorphic in several different populations. This is similar to picking SNPs that are common across all populations. In most cases this doesn't give results that are substantially different from working with an unascertained set of SNPs, but it's worth considering when this might create problems.
+
+Common SNPs tend to be older than rare SNPs because it takes time for a new mutation to rise to a high frequency. $f_4$-statistics computed on common SNPs are therefore more influenced by the distant past, whereas $f_4$-statistics computed on rare SNPs tend to be more influenced by the recent past. In theory it's possible that $f_4$-statistics for four populations are completely dependent on whether the SNPs used are more informative of the recent past or the distant past.
+
+The example below demonstrates how an $f_4$-statistic could flip sign depending on whether more common or more rare SNPs enter the analysis. Each of the four populations is a two-way admixture between two other populations, and the drift separating any two populations is either recent (green solid edges) or old (blue solid edges).
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(admixtools)
+library(tidyverse)
+```
+
+```{r, echo = FALSE}
+g = matrix(c('R', 'X', 'R', 'Y', 'X', 'AB', 'X', 'CD', 'Y', 'AD', 'Y', 'BC', 'AB', 'A0', 'AB', 'B0', 'CD', 'C0', 'CD', 'D0', 'AD', 'A0', 'AD', 'D0', 'BC', 'B0', 'BC', 'C0', 'A0', 'A', 'B0', 'B', 'C0', 'C', 'D0', 'D'),, 2, byrow = T) %>% igraph::graph_from_edgelist()
+pos = tribble(
+  ~node, ~x,    ~y,
+  "R",   -1.25, 6, 
+  "X",   -2.25, 3, 
+  "Y",   -0.25, 5, 
+  "AB",  -2.75, 2, 
+  "CD",  -1.75, 2, 
+  "AD",  -0.75, 4, 
+  "BC",  0.25,  4, 
+  "A0",  -2.75, 1, 
+  "B0",  -1.75, 1, 
+  "C0",  -0.75, 1, 
+  "D0",  0.25,  1, 
+  "A",   -2.75, 0, 
+  "B",   -1.75, 0, 
+  "C",   -0.75, 0, 
+  "D",   0.25,  0
+)
+plotly_graph(g, pos = pos)
+```
+
+Suppose we are interested in $f_4(A,C;B,D)$. If we ignore the old (blue) part of the graph for now, we can trace the path from $A$ to $C$, and we see that along the green (recent) edges it intersects with the path from $B$ to $D$ and that both paths move in the same direction along the green edges (left to right). That suggests that $f_4(A,C;B,D)$ should be positive.
+
+Now let's trace the path from $A$ to $C$ and the path from $B$ to $D$ along the blue edges. $A$ to $C$ again goes from left to right, but $B$ to $D$ now goes in the opposite direction (right to left). This means that along this part of the graph, $f_4(A,C;B,D)$ should be negative. The rare SNPs, which are more influenced by the more recent (left) part of the graph behave in a way that's opposite from the common SNPs, which are more influenced by the older (right) part of the graph. On average, these two effects might cancel out and lead to $f_4(A,C;B,D)$ close to zero, but ascertaining more common or more rare SNPs could lead to either a negative or a positive estimate of $f_4(A,C;B,D)$.
+
+Although this example is contrived, it shows that under some complex demographic histories, $f$-statistics can be different when considering only common or only rare SNPs.
+
+
+<br>
+
+Ultimately, the only way to makes sure that SNP ascertainment doesn't bias the results is to check whether different SNP ascertainment schemes lead to different results.
 
 
 
@@ -240,9 +287,6 @@ In practice it is generally not the case that small violations of the strict SNP
 
 In *ADMIXTOOLS 2*, the simplest way to compute *f*-statistics from genotype data is to use `f2_from_geno()`.
 
-```{r, echo = FALSE}
-library(admixtools)
-```
 
 ```{r, eval = FALSE}
 genotype_data = "/my/geno/prefix"

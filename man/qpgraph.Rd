@@ -63,7 +63,7 @@ Both of these options do not take the covariance of f3-statistics into account. 
 
 \item{f3basepop}{Optional f3-statistics base population. Inference will be based on f3-statistics of the form \verb{f3(f3basepop; i, j)} for all population pairs \verb{(i, j)}. Defaults to the outgroup population if the graph has one. This option is ignored if \code{f3precomp} is provided. Changing \code{f3basepop} should make very little difference.}
 
-\item{ppinv}{Optional inverse f3-statistics covariance matrix. Can be used for \code{\link{compare_fits3}}.}
+\item{ppinv}{Optional inverse f3-statistics covariance matrix}
 
 \item{f2_blocks_test}{An optional 3d array of f2-statistics used for computing an out-of-sample score. This should contain only SNP blocks which are not part of \code{f2_blocks}. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step}
 
