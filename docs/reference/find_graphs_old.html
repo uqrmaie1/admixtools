@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Find well fitting admixture graphs — find_graphs • admixtools</title>
+<title>Find well fitting admixture graphs — find_graphs_old • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,9 +54,13 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Find well fitting admixture graphs — find_graphs" />
-<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations
-to find well fitting admixturegraphs." />
+<meta property="og:title" content="Find well fitting admixture graphs — find_graphs_old" />
+<meta property="og:description" content="This function generates and evaluates admixture graphs in numgen iterations across numrep independent repeats
+to find well fitting admixturegraphs. It uses the function future_map
+to parallelize across the independent repeats. The function plan can be called
+to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+a compute cluster. Setting numadmix to 0 will search for well fitting trees, which is much faster than searching
+for admixture graphs with many admixture nodes." />
 
 
 
@@ -175,33 +179,37 @@ to find well fitting admixturegraphs." />
     <div class="page-header">
     <h1>Find well fitting admixture graphs</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
-    <div class="hidden name"><code>find_graphs.Rd</code></div>
+    <div class="hidden name"><code>find_graphs_old.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations
-to find well fitting admixturegraphs.</p>
+    <p>This function generates and evaluates admixture graphs in <code>numgen</code> iterations across <code>numrep</code> independent repeats
+to find well fitting admixturegraphs. It uses the function <code><a href='https://rdrr.io/pkg/furrr/man/future_map.html'>future_map</a></code>
+to parallelize across the independent repeats. The function <code><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></code> can be called
+to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
+a compute cluster. Setting <code>numadmix</code> to 0 will search for well fitting trees, which is much faster than searching
+for admixture graphs with many admixture nodes.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>find_graphs</span><span class='op'>(</span>
+    <pre class="usage"><span class='fu'>find_graphs_old</span><span class='op'>(</span>
   <span class='va'>data</span>,
-  numadmix <span class='op'>=</span> <span class='fl'>0</span>,
+  pops <span class='op'>=</span> <span class='cn'>NULL</span>,
   outpop <span class='op'>=</span> <span class='cn'>NULL</span>,
-  stop_gen <span class='op'>=</span> <span class='fl'>100</span>,
-  stop_gen2 <span class='op'>=</span> <span class='fl'>15</span>,
-  stop_score <span class='op'>=</span> <span class='fl'>0</span>,
-  stop_sec <span class='op'>=</span> <span class='cn'>NULL</span>,
-  initgraph <span class='op'>=</span> <span class='cn'>NULL</span>,
-  numgraphs <span class='op'>=</span> <span class='fl'>10</span>,
+  numrep <span class='op'>=</span> <span class='fl'>1</span>,
+  numgraphs <span class='op'>=</span> <span class='fl'>50</span>,
+  numgen <span class='op'>=</span> <span class='fl'>5</span>,
+  numsel <span class='op'>=</span> <span class='fl'>5</span>,
+  numadmix <span class='op'>=</span> <span class='fl'>0</span>,
+  numstart <span class='op'>=</span> <span class='fl'>1</span>,
+  keep <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"all"</span>, <span class='st'>"best"</span>, <span class='st'>"last"</span><span class='op'>)</span>,
+  initgraphs <span class='op'>=</span> <span class='cn'>NULL</span>,
   mutfuns <span class='op'>=</span> <span class='fu'>namedList</span><span class='op'>(</span><span class='va'>spr_leaves</span>, <span class='va'>spr_all</span>, <span class='va'>swap_leaves</span>, <span class='va'>move_admixedge_once</span>,
-    <span class='va'>flipadmix_random</span>, <span class='va'>place_root_random</span>, <span class='va'>mutate_n</span><span class='op'>)</span>,
+    <span class='va'>flipadmix_random</span>, <span class='va'>mutate_n</span><span class='op'>)</span>,
+  mutprobs <span class='op'>=</span> <span class='cn'>NULL</span>,
   opt_worst_residual <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  plusminus_generations <span class='op'>=</span> <span class='fl'>5</span>,
-  return_searchtree <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  admix_constraints <span class='op'>=</span> <span class='cn'>NULL</span>,
-  event_constraints <span class='op'>=</span> <span class='cn'>NULL</span>,
-  reject_f4z <span class='op'>=</span> <span class='fl'>0</span>,
-  max_admix <span class='op'>=</span> <span class='va'>numadmix</span>,
+  store_intermediate <span class='op'>=</span> <span class='cn'>NULL</span>,
+  parallel <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  stop_after <span class='op'>=</span> <span class='cn'>NULL</span>,
   verbose <span class='op'>=</span> <span class='cn'>TRUE</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
@@ -218,36 +226,48 @@ to find well fitting admixturegraphs.</p>
 </ol></td>
     </tr>
     <tr>
-      <th>numadmix</th>
-      <td><p>Number of admixture events within each graph. (Only relevant if <code>initgraph = NULL</code>)</p></td>
+      <th>pops</th>
+      <td><p>Populations for which to fit admixture graphs (default all)</p></td>
     </tr>
     <tr>
       <th>outpop</th>
-      <td><p>Name of the outgroup population</p></td>
+      <td><p>An outgroup population which will split at the root from all other populations in all tested graphs. If one of the populations is know to be an outgroup, designating it as <code>outpop</code> will greatly reduce the search space compared to including it and not designating it as <code>outpop</code>.</p></td>
     </tr>
     <tr>
-      <th>stop_gen</th>
-      <td><p>Total number of generations after which to stop</p></td>
-    </tr>
-    <tr>
-      <th>stop_gen2</th>
-      <td><p>Number of generations without improvement after which to stop</p></td>
-    </tr>
-    <tr>
-      <th>stop_score</th>
-      <td><p>Stop once this score has been reached</p></td>
-    </tr>
-    <tr>
-      <th>stop_sec</th>
-      <td><p>Number of seconds after which to stop</p></td>
-    </tr>
-    <tr>
-      <th>initgraph</th>
-      <td><p>Graph to start with. If it is specified, <code>numadmix</code> and <code>outpop</code> will be inferred from this graph.</p></td>
+      <th>numrep</th>
+      <td><p>Number of independent repetitions (each repetition can be run in parallel)</p></td>
     </tr>
     <tr>
       <th>numgraphs</th>
       <td><p>Number of graphs in each generation</p></td>
+    </tr>
+    <tr>
+      <th>numgen</th>
+      <td><p>Number of generations</p></td>
+    </tr>
+    <tr>
+      <th>numsel</th>
+      <td><p>Number of graphs which are selected in each generation. Should be less than <code>numgraphs</code>.</p></td>
+    </tr>
+    <tr>
+      <th>numadmix</th>
+      <td><p>Number of admixture events within each graph</p></td>
+    </tr>
+    <tr>
+      <th>numstart</th>
+      <td><p>Number of random initializations in each call to <code>qpgraph</code>. Defaults to 1, to speed up the graph optimization.</p></td>
+    </tr>
+    <tr>
+      <th>keep</th>
+      <td><p>Which models should be returned. One of <code>all</code>, <code>best</code>, <code>last</code></p><ul>
+<li><p><code>all</code> (default): Return all evaluated graphs</p></li>
+<li><p><code>best</code>: Return only the best fitting graph from each repeat and each generation</p></li>
+<li><p><code>last</code>: Return all graphs from the last generation</p></li>
+</ul></td>
+    </tr>
+    <tr>
+      <th>initgraphs</th>
+      <td><p>Optional graph or list of igraphs to start with. If <code>NULL</code>, optimization will start with random graphs.</p></td>
     </tr>
     <tr>
       <th>mutfuns</th>
@@ -260,40 +280,31 @@ to a random other edge in the graph, keeping the number of admixture nodes const
 <li><p><code><a href='move_admixedge_once.html'>move_admixedge_once</a></code>: Moves an admixture edge to a nearby location.</p></li>
 <li><p><code><a href='flipadmix_random.html'>flipadmix_random</a></code>: Flips the direction of an admixture edge (if possible).</p></li>
 <li><p><code><a href='mutate_n.html'>mutate_n</a></code>: Apply <code>n</code> of the mutation functions in this list to a graph (defaults to 2).</p></li>
+</ul><p>See examples for how to make new mutation functions.</p></td>
+    </tr>
+    <tr>
+      <th>mutprobs</th>
+      <td><p>Relative frequencies of each mutation function.</p><ul>
+<li><p><code>NULL</code> (default) means each mutation function is picked with equal probability</p></li>
+<li><p>A numeric vector of length equal to <code>mutfuns</code> defines the relative frequency of each mutation function</p></li>
+<li><p>A matrix of dimensions <code>numgen</code> x <code><a href='https://rdrr.io/r/base/length.html'>length(mutfuns)</a></code> defines the relative frequency of each mutation function in each generation</p></li>
 </ul></td>
     </tr>
     <tr>
       <th>opt_worst_residual</th>
-      <td><p>Optimize for lowest worst residual instead of best score. <code>FALSE</code> by default, because the likelihood score is generally a better indicator of the quality of the model fit, and because optimizing for the lowest worst residual is slower (because f4-statistics need to be computed).</p></td>
+      <td><p>Optimize for lowest worst residual instead of best score. <code>FALSE</code> by default, because the likelihood score is generally a better indicator of the quality of the model fit. Optimizing for the lowest worst residual is also slower (because f4-statistics need to be computed).</p></td>
     </tr>
     <tr>
-      <th>plusminus_generations</th>
-      <td><p>If the best score does not improve after <code>plusminus_generations</code> generations, another approach to improving the score will be attempted: A number of graphs with on additional admixture edge will be generated and evaluated. The resulting graph with the best score will be picked, and new graphs will be created by removing any one admixture edge (bringing the number back to what it was originally). The graph with the lowest score will then be selected. This often makes it possible to break out of local optima, but is slower than regular graph modifications.
-If the current number of admixture events is lower than <code>max_numadmix</code>, the last step (removing an admixture edge) will be skipped.</p></td>
+      <th>store_intermediate</th>
+      <td><p>Path and prefix of files for intermediate results to <code>.rds</code>. Can be useful if <code>find_graphs_old</code> doesn't finish sucessfully.</p></td>
     </tr>
     <tr>
-      <th>return_searchtree</th>
-      <td><p>Return the search tree in addition to the models. Output will be a list with three items: models, search tree, search tree as data frame</p></td>
+      <th>parallel</th>
+      <td><p>Parallelize over repeats (if <code>numrep &gt; 1</code>) or graphs (if <code>numrep == 1</code>) by replacing <code><a href='https://purrr.tidyverse.org/reference/map.html'>map</a></code> with <code><a href='https://rdrr.io/pkg/furrr/man/future_map.html'>future_map</a></code>. Will only be effective if <code><a href='https://rdrr.io/pkg/future/man/plan.html'>plan</a></code> has been set.</p></td>
     </tr>
     <tr>
-      <th>admix_constraints</th>
-      <td><p>A data frame with constraints on the number of admixture events for each population.
-See <code><a href='satisfies_numadmix.html'>satisfies_numadmix</a></code>
-As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.</p></td>
-    </tr>
-    <tr>
-      <th>event_constraints</th>
-      <td><p>A data frame with constraints on the order of events in an admixture graph.
-See <code><a href='satisfies_eventorder.html'>satisfies_eventorder</a></code>
-As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.</p></td>
-    </tr>
-    <tr>
-      <th>reject_f4z</th>
-      <td><p>If this is a number greater than zero, all f4-statistics with <code>z &gt; reject_f4z</code> will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.</p></td>
-    </tr>
-    <tr>
-      <th>max_admix</th>
-      <td><p>Maximum number of admixture edges. By default, this number is equal to <code>numadmix</code>, or to the number of admixture edges in <code>initgraph</code>, so the number of admixture edges stays constant. Setting this to a higher number will lead to more admixture edges being added occasionally (see <code>plusminus_generations</code>). Graphs with additional admixture edges will only be accepted if they improve the score by 5% or more.</p></td>
+      <th>stop_after</th>
+      <td><p>Stop optimization after <code>stop_after</code> seconds (and after finishing the current generation).</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -310,19 +321,18 @@ As soon as one graph happens to satisfy these constraints, all subsequently gene
     <p>A nested data frame with one model per line</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph.html'>qpgraph</a></code>, <code><a href='find_graphs_old.html'>find_graphs_old</a></code></p></div>
+    <div class='dont-index'><p><code><a href='qpgraph.html'>qpgraph</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='va'>res</span> <span class='op'>=</span> <span class='fu'>find_graphs</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, numadmix <span class='op'>=</span> <span class='fl'>2</span><span class='op'>)</span>
-<span class='va'>res</span> <span class='op'>%&gt;%</span> <span class='fu'>slice_min</span><span class='op'>(</span><span class='va'>score</span><span class='op'>)</span>
+<span class='fu'>find_graphs_old</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, numrep <span class='op'>=</span> <span class='fl'>200</span>, numgraphs <span class='op'>=</span> <span class='fl'>100</span>,
+            numgen <span class='op'>=</span> <span class='fl'>20</span>, numsel <span class='op'>=</span> <span class='fl'>5</span>, numadmix <span class='op'>=</span> <span class='fl'>3</span><span class='op'>)</span>
 <span class='op'>}</span>
 <span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='co'># Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement</span>
-<span class='va'>pops</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/dimnames.html'>dimnames</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span><span class='op'>)</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span>
-<span class='va'>initgraph</span> <span class='op'>=</span> <span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='va'>pops</span>, <span class='fl'>0</span>, outpop <span class='op'>=</span> <span class='st'>'Chimp.REF'</span><span class='op'>)</span>
-<span class='va'>res</span> <span class='op'>=</span> <span class='fu'>find_graphs</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>initgraph</span>, stop_gen2 <span class='op'>=</span> <span class='fl'>10</span>, max_admix <span class='op'>=</span> <span class='fl'>3</span><span class='op'>)</span>
-<span class='va'>res</span> <span class='op'>%&gt;%</span> <span class='fu'>slice_min</span><span class='op'>(</span><span class='va'>score</span><span class='op'>)</span>
+<span class='co'># Making new mutation functions by modifying or combining existing ones:</span>
+<span class='va'>newfun1</span> <span class='op'>=</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>...</span><span class='op'>)</span> <span class='fu'><a href='mutate_n.html'>mutate_n</a></span><span class='op'>(</span><span class='va'>graph</span>, <span class='fl'>3</span>, <span class='va'>...</span><span class='op'>)</span>
+<span class='va'>newfun2</span> <span class='op'>=</span> <span class='kw'>function</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>...</span><span class='op'>)</span> <span class='fu'><a href='flipadmix_random.html'>flipadmix_random</a></span><span class='op'>(</span><span class='fu'><a href='spr_leaves.html'>spr_leaves</a></span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>...</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span>
+<span class='fu'>find_graphs_old</span><span class='op'>(</span><span class='va'>f2_blocks</span>, mutfuns <span class='op'>=</span> <span class='fu'>namedList</span><span class='op'>(</span><span class='va'>spr_leaves</span>, <span class='va'>newfun1</span>, <span class='va'>newfun2</span><span class='op'>)</span>, mutprobs <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>0.2</span>, <span class='fl'>0.3</span>, <span class='fl'>0.5</span><span class='op'>)</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

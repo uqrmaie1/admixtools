@@ -148,7 +148,12 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' target = 'Denisova.DG'
 #' qpadm(example_f2_blocks, left, right, target)
 #' \dontrun{
-#' qpadm("/my/geno/prefix", left, right, target)
+#' # The original ADMIXTOOLS qpAadm program has an option called "allsnps"
+#' # that selects different SNPs for each f4-statistic, which is
+#' # useful when working with sparse genotype data.
+#' # To get the same behavior in ADMIXTOOLS 2, supply the genotype data prefix
+#' # and set `allsnps = TRUE`
+#' qpadm("/my/geno/prefix", left, right, target, allsnps = TRUE)
 #' }
 qpadm = function(data, left, right, target, f4blocks = NULL,
                  fudge = 0.0001, boot = FALSE, getcov = TRUE,
@@ -164,7 +169,12 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     if(!is.null(target)) left = c(target, setdiff(left, target))
     if(is_geno_prefix(data)) {
       f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
-      f4blocks = f4blockdat %>% f4blockdat_to_f4blocks()
+      f4blocks = f4blockdat %>% mutate(n = length) %>% f4blockdat_to_f4blocks()
+      if(verbose) {
+        alert_info('Number of SNPs used for each f4-statistic:\n')
+        f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>% summarize(n = sum(n)) %>% ungroup %>% as.data.frame %>% print
+        alert_info(paste0('Number of SNPs used in total after excluding blocks with missing data: ',count_snps(f4blocks),'\n'))
+      }
     } else {
       if(verbose) alert_info('Computing f4 stats...\n')
       f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE, verbose = verbose)
@@ -327,8 +337,7 @@ f4blockdat_to_f4blocks = function(f4blockdat, remove_na = TRUE) {
   if(remove_na) {
     keep = apply(arr, 3, function(x) sum(is.na(x)) == 0)
     arr = arr[,,keep, drop = FALSE]
-    if(sum(!keep) > 0) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
-                                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
+    if(mean(keep) < 0.5) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!'))
   }
   arr
 }

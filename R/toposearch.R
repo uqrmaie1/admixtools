@@ -240,16 +240,7 @@ simplify_graph_old = function(graph) {
   graph
 }
 
-#' Remove redundant edges
-#'
-#' Nodes with in and out degree of one will be removed.
-#' @param graph an igraph object
-#' @export
-#' @examples
-#' simple = simplify_graph(example_igraph)
-#' plot_graph(example_igraph)
-#' plot_graph(simple)
-simplify_graph = function(graph) {
+simplify_graph_old = function(graph) {
   # removes redundant nodes
 
   if(is_simplified(graph)) return(graph)
@@ -272,6 +263,47 @@ simplify_graph = function(graph) {
   graph
 }
 
+
+#' Remove redundant edges
+#'
+#' Nodes with in and out degree of one will be removed.
+#' @param graph an igraph object
+#' @export
+#' @examples
+#' simple = simplify_graph(example_igraph)
+#' plot_graph(example_igraph)
+#' plot_graph(simple)
+simplify_graph = function(graph) {
+  # removes redundant nodes
+
+  indegree = degree(graph, mode='in')
+  outdegree = degree(graph, mode='out')
+  convmat = FALSE
+  if(class(graph) == 'matrix') {
+    convmat = TRUE
+    graph = graph_from_edgelist(graph)
+  }
+  graph %<>% igraph::simplify()
+  redundant = which(indegree == 1 & outdegree == 1)
+
+  if(length(redundant) != 0) {
+    newfrom = redundant %>% igraph::adjacent_vertices(graph, ., mode='in') %>% unlist
+    #newto = redundant %>% igraph::adjacent_vertices(graph, ., mode='out') %>% unlist
+    newto = redundant %>% map_dbl(~nextnonredundant(graph, .))
+    graph %<>% igraph::add_edges(interleave(newfrom, newto)) %>% igraph::delete_vertices(names(redundant))
+  }
+  graph %<>% igraph::simplify()
+  if(any(indegree > 1 & outdegree > 1)) graph %<>% X_to_H
+  if(convmat) graph = igraph::as_edgelist(graph)
+  graph
+}
+
+
+nextnonredundant = function(graph, node) {
+  n = neighbors(graph, node, mode = 'out')[1]
+  if(degree(graph, n) != 2) return(n)
+  return(nextnonredundant(graph, n))
+}
 
 
 #' Add two nodes before each admixture node
@@ -1445,7 +1477,7 @@ identify_edge = function(graph, from, to) {
 #'   mutate(res = list(qpgraph(example_f2_blocks, graph))) %>%
 #'   unnest_wider(res)
 #' }
-graph_splittrees = function(graph, return_admix = FALSE) {
+graph_splittrees = function(graph, return_admix = FALSE, simplify = TRUE) {
   # splits an admixture graph into trees
   if(!'igraph' %in% class(graph)) {
     graph %<>% graph_from_edgelist
@@ -1467,19 +1499,20 @@ graph_splittrees = function(graph, return_admix = FALSE) {
   admedges = am %>% map(~as_tibble(.) %>% filter(to %in% colnames(admixmat)) %>%
                           rowwise %>% mutate(from = identify_edge(graph, from, to)) %>% ungroup)
   }
-  out = trees %>%
-    map(~{
-      tr = .
-      lf = get_leafnames(tr)
-      while(length(setdiff(lf, leaves)) > 0) {
-        tr = igraph::delete_vertices(tr, setdiff(lf, leaves)) %>% simplify_graph
-        lf = get_leafnames(tr)
-      }
-      tr
-      }) %>%
-    enframe(value = 'graph')
+  out = trees %>% map(~prune_extra_leaves(., leaves))
+  if(simplify) out %<>% map(simplify_graph)
+  out %<>% enframe(value = 'graph')
   if(return_admix) out %<>% mutate(admedges) #%>% rowwise %>% mutate(evec = list(sort(paste(edges[,1], ' ' , edges[,2])))) %>% ungroup
   out
+}
+
+prune_extra_leaves = function(graph, keep) {
+  leaves = get_leafnames(graph)
+  while(length(setdiff(leaves, keep)) > 0) {
+    graph = igraph::delete_vertices(graph, setdiff(leaves, keep))
+    leaves = get_leafnames(graph)
+  }
+  graph
 }
 
 #' Find all trees within SPR distance of 1 of all graph component trees
@@ -3617,8 +3650,9 @@ summarize_numadmix = function(graph) {
   # returns a data frame which lists the maximum number of admixture events for each population
 
   adm = names(which(degree(graph, mode = 'in') > 1))
+  root = get_rootname(graph)
   graph %>% get_leafnames %>% set_names %>%
-    map(~all_simple_paths(graph, 'R', ., mode = 'out') %>% map_dbl(~length(intersect(adm, names(.)))) %>% max) %>%
+    map(~all_simple_paths(graph, root, ., mode = 'out') %>% map_dbl(~length(intersect(adm, names(.)))) %>% max) %>%
     unlist %>% enframe('pop', 'nadmix')
 }
 
@@ -3728,11 +3762,22 @@ condense_graph = function(graph) {
   nam = map_chr(grps, ~shortest_paths(graph, .[1], root, mode = 'in') %$%
                   vpath %>% pluck(1) %>% names %>% intersect(c(adm, root)) %>% `[`(1))
   names(grps) = nam
-  #sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
-  sg = adm %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to0', 'from0') %>% select(2:1) %>% unnest(from0)
   nam2 = map_chr(grps, ~paste(sort(.), collapse=' '))
-  nam2 %<>% c(setdiff(adm, names(grps)) %>% set_names %>% map_chr(~shortest_paths(graph, ., leaves, mode = 'out')$vpath %>% suppressWarnings %>% compact %>% pluck(1) %>% names %>% intersect(nam2) %>% `[`(1)))
-  sg %>% mutate(from = nam2[from0], to = nam2[to0]) %>% distinct(from, to)
+  #sg = adm %>% intersect(nam) %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to', 'from') %>% select(2:1) %>% unnest(from)
+  # sg = adm %>% set_names %>% map(~neighbors(graph, ., mode = 'in') %>% names %>% map_chr(~shortest_paths(graph, ., root, mode = 'in') %$% vpath %>% pluck(1) %>% names %>% intersect(nam) %>% `[`(1)) %>% unique) %>% enframe('to0', 'from0') %>% select(2:1) %>% unnest(from0)
+
+  # nam2 %<>% c(setdiff(adm, names(grps)) %>% set_names %>% map_chr(~shortest_paths(graph, ., leaves, mode = 'out')$vpath %>% suppressWarnings %>% compact %>% pluck(1) %>% names %>% intersect(nam2) %>% `[`(1)))
+  # sg %>% mutate(from = nam2[from0], to = nam2[to0]) %>% distinct(from, to)
+
+  sgi = distances(graph, nam, nam, mode = 'out') %>% igraph::graph_from_adjacency_matrix() %>% igraph::simplify()
+  while(!all(names(V(sgi)) %in% nam)) {
+    node = setdiff(names(V(sgi)), nam)[1]
+    parents = sgi %>% neighbors(node, mode = 'in') %>% names
+    children = sgi %>% neighbors(node, mode = 'out') %>% names
+    newedges = expand_grid(a=parents, b=children) %>% as.matrix %>% t %>% c
+    sgi %<>% delete_vertices(node) %>% add_edges(newedges)
+  }
+  sgi %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from0', 'to0')) %>% mutate(from = nam2[from0], to = nam2[to0]) %>% distinct(from, to)
 }
 
 pair_admix = function(graph) {
@@ -3844,3 +3889,39 @@ place_root_random = function(graph, keep_outgroup = TRUE) {
   }
   graph
 }
+
+
+
+adjlist_find_paths = function(a, n, m, path = c()) {
+  # Find paths from node index n to m using adjacency list a.
+  path = c(path, n)
+  if(n == m) return(list(path))
+  paths = list()
+  for(child in a[[n]]) {
+    child = as.numeric(child)
+    if (!child %in% path) {
+      child_paths = adjlist_find_paths(a, child, m, path)
+      for(child_path in child_paths) {
+        paths = c(paths, list(child_path))
+      }
+    }
+  }
+  paths
+}
+
+paths_from_to = function(graph, from, to) {
+  # Find paths in graph from vertex source to vertex dest
+  adj = get.adjlist(graph, mode = 'out')
+  nam = names(V(graph))
+  adjlist_find_paths(adj, which(nam == from), which(nam == to)) %>% map(~nam[.])
+}
+
+all_paths = function(graph) {
+  # returns all paths from root to leaves; list with one list for each leaf node
+  root = get_rootname(graph)
+  leaves = get_leafnames(graph)
+  leaves %>% set_names %>% map(~paths_from_to(graph, root, .))
+}
+
+
+

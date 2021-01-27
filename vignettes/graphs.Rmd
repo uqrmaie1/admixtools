@@ -511,8 +511,8 @@ The function `find_graphs()` searches for admixture graphs that are compatible w
 
 
 ```{r, eval = FALSE}
-opt_results = find_graphs(f2_blocks, numgraphs = 10, numgen = 100,
-                          numadmix = 3, outpop = 'Chimp.REF')
+opt_results = find_graphs(example_f2_blocks, numadmix = 3, outpop = 'Chimp.REF',
+                          stop_gen = 100)
 ```
 
 The output of `find_graphs()` (`opt_results`) will be a [nested data frame](https://r4ds.had.co.nz/many-models.html#nested-data), with each tested model in one line. Some columns in this data frame, like `score`, are regular numbers, while other columns, like `edges`, are *list-columns* where each element is a data frame.
@@ -540,6 +540,20 @@ plot_graph(winner$edges[[1]])
 #### Constraining the search space
 
 Sometimes it is useful to not search for any graphs that fit the data, but to incorporate prior knowledge by constraining the set of graphs that should be considered. This can be done by passing additional arguments to `find_graphs()`, which end in `_constraints`. More on this [here](#summarizing-graphs-1).
+
+The following example shows how could specify that we only want to consider models in which archaic humans are unadmixed.
+
+```{r, eval = FALSE}
+# make a data frame which specifies minimum and maximum number of admixture events
+constraints = tribble(
+  ~pop, ~min, ~max,
+  'Altai_Neanderthal.DG', NA, 0,
+  'Denisova.DG', NA, 0,
+  'Vindija.DG', NA, 0)
+opt_results = find_graphs(example_f2_blocks, numadmix = 3, outpop = 'Chimp.REF',
+                          stop_gen = 100, admix_constraints = constraints)
+```
+
 
 
 ### Semi-automated graph exploration

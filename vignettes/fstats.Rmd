@@ -240,7 +240,7 @@ One common ascertainment scheme is to pick SNPs that are found to be polymorphic
 
 Common SNPs tend to be older than rare SNPs because it takes time for a new mutation to rise to a high frequency. $f_4$-statistics computed on common SNPs are therefore more influenced by the distant past, whereas $f_4$-statistics computed on rare SNPs tend to be more influenced by the recent past. In theory it's possible that $f_4$-statistics for four populations are completely dependent on whether the SNPs used are more informative of the recent past or the distant past.
 
-The example below demonstrates how an $f_4$-statistic could flip sign depending on whether more common or more rare SNPs enter the analysis. Each of the four populations is a two-way admixture between two other populations, and the drift separating any two populations is either recent (green solid edges) or old (blue solid edges).
+The example below demonstrates how an $f_4$-statistic could flip sign depending on whether more common or more rare SNPs enter the analysis (as observed for example in [this paper](https://science.sciencemag.org/content/367/6484/eaay5012)). Each of the four populations is a two-way admixture between two other populations, and the drift separating any two populations is either recent (green solid edges) or old (blue solid edges).
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
 library(admixtools)
@@ -274,12 +274,12 @@ Suppose we are interested in $f_4(A,C;B,D)$. If we ignore the old (blue) part of
 
 Now let's trace the path from $A$ to $C$ and the path from $B$ to $D$ along the blue edges. $A$ to $C$ again goes from left to right, but $B$ to $D$ now goes in the opposite direction (right to left). This means that along this part of the graph, $f_4(A,C;B,D)$ should be negative. The rare SNPs, which are more influenced by the more recent (left) part of the graph behave in a way that's opposite from the common SNPs, which are more influenced by the older (right) part of the graph. On average, these two effects might cancel out and lead to $f_4(A,C;B,D)$ close to zero, but ascertaining more common or more rare SNPs could lead to either a negative or a positive estimate of $f_4(A,C;B,D)$.
 
-Although this example is contrived, it shows that under some complex demographic histories, $f$-statistics can be different when considering only common or only rare SNPs.
+Although this example is contrived, it shows how under some complex demographic histories, $f$-statistics can depend on whether more common or more rare SNPs are used in the analysis.
 
 
 <br>
 
-Ultimately, the only way to makes sure that SNP ascertainment doesn't bias the results is to check whether different SNP ascertainment schemes lead to different results.
+Ultimately, the only way to makes sure that SNP ascertainment doesn't substantially affect the results is to repeat analyses under different ascertainment schemes.
 
 
 

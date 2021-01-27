@@ -92,7 +92,12 @@ right = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG', 'Switzerland_Bichon.SG
 target = 'Denisova.DG'
 qpadm(example_f2_blocks, left, right, target)
 \dontrun{
-qpadm("/my/geno/prefix", left, right, target)
+# The original ADMIXTOOLS qpAadm program has an option called "allsnps"
+# that selects different SNPs for each f4-statistic, which is
+# useful when working with sparse genotype data.
+# To get the same behavior in ADMIXTOOLS 2, supply the genotype data prefix
+# and set `allsnps = TRUE`
+qpadm("/my/geno/prefix", left, right, target, allsnps = TRUE)
 }
 }
 \references{
