@@ -2495,7 +2495,15 @@ edges_to_treemix = function(edges, outpref) {
 }
 
 
-
+parse_dot = function(dotfile) {
+  dotfile %>%
+    read_lines %>%
+    str_subset('->') %>%
+    str_split('->') %>%
+    map(~str_squish(.) %>% str_replace_all(' .+', '') %>% str_squish()) %>%
+    do.call(rbind, .) %>%
+    igraph::graph_from_edgelist()
+}
 
 
 

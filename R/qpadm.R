@@ -762,41 +762,51 @@ qpwave_pairs = function(f2_data, left, right) {
 #' @param leftright Populations which will be distributed between left and right
 #' @param rightfix Populations which will be on the right side in all models
 #' @param target Target population
+#' @param full_results Return all output items which are returned by \code{\link{qpadm}}. By default (`full_results = FALSE`), weights and several other statistics will not be computed for each model, making it faster and the output more readable. If `full_results = TRUE`, the output will be a nested data frame where each row is one `qpadm` model, and each column has one data frame item from the regular qpadm output (`weights`, `f4`, `rankdrop`, `popdrop`).
 #' @param verbose Print progress updates
-#' @details When `leftright` is L1, L2, L3, L4, `rightfix` is R, and `target` is T,
-#' the following models will be genrated: \cr
+#' @details If `leftright` consists of the populations L1, L2, L3, L4; `rightfix` is the population R; and `target` is T,
+#' the following models will be genrated: \cr\cr
 
-#' left / right / target \cr
-#' L1 / L2, L3, L4, R / T \cr
-#' L2 / L1, L3, L4, R / T \cr
-#' L3 / L1, L2, L4, R / T \cr
-#' L4 / L1, L2, L3, R / T \cr
-#' L1, L2 / L3, L4, R / T \cr
-#' L1, L3 / L2, L4, R / T \cr
-#' L1, L4 / L2, L3, R / T \cr
-#' L2, L3 / L1, L4, R / T \cr
-#' L2, L4 / L1, L3, R / T \cr
-#' L3, L4 / L1, L2, R / T \cr
+#' (left), (right), (target) \cr
+#' (L1), (L2, L3, L4, R), (T) \cr
+#' (L2), (L1, L3, L4, R), (T) \cr
+#' (L3), (L1, L2, L4, R), (T) \cr
+#' (L4), (L1, L2, L3, R), (T) \cr
+#' (L1, L2), (L3, L4, R), (T) \cr
+#' (L1, L3), (L2, L4, R), (T) \cr
+#' (L1, L4), (L2, L3, R), (T) \cr
+#' (L2, L3), (L1, L4, R), (T) \cr
+#' (L2, L4), (L1, L3, R), (T) \cr
+#' (L3, L4), (L1, L2, R), (T) \cr
 #'
 #' @return A data frame with Chi-squared statistics and p-values for each population combination
-qpadm_rotate = function(f2_blocks, leftright, target, rightfix = NULL, verbose = TRUE) {
+#' @examples
+#' \dontrun{
+#' pops = dimnames(example_f2_blocks)[[1]]
+#' qpadm_rotate(example_f2_blocks, leftright = pops[1:4],
+#'              target = pops[5], rightfix = pops[6:7])
+#' }
+qpadm_rotate = function(f2_blocks, leftright, target, rightfix = NULL, full_results = FALSE, verbose = TRUE) {
 
   lr = all_lr2(leftright, length(rightfix))
   if(verbose) alert_info(paste0('Evaluating ', length(lr[[1]]), ' models...\n'))
-  qpadm_eval_rotate(f2_blocks, target, lr, rightfix, verbose = verbose)
+  qpadm_eval_rotate(f2_blocks, target, lr, rightfix, full_results = full_results, verbose = verbose)
 
 }
 
-qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, verbose = TRUE) {
+qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, full_results = FALSE, verbose = TRUE) {
+  if(full_results) fun = function(...) qpadm(..., verbose = FALSE)
+  else fun = qpadm_p
   leftright_dat %>%
     as_tibble %>%
     rowwise %>% mutate(right = list(c(right, rightfix))) %>% ungroup %>%
-    mutate(res = furrr::future_map2(left, right, ~qpadm_p(f2_blocks, .x, .y, target),
+    mutate(res = furrr::future_map2(left, right, ~fun(f2_blocks, .x, .y, target),
                                     .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) #%>%
   #mutate(chisq = map(rankdrop, 'chisq') %>% map_dbl(1)) %>%
   #arrange(chisq)
 }
+
 
 
 

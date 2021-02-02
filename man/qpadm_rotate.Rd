@@ -4,7 +4,14 @@
 \alias{qpadm_rotate}
 \title{Compute p-values for many qpadm models}
 \usage{
-qpadm_rotate(f2_blocks, leftright, target, rightfix = NULL, verbose = TRUE)
+qpadm_rotate(
+  f2_blocks,
+  leftright,
+  target,
+  rightfix = NULL,
+  full_results = FALSE,
+  verbose = TRUE
+)
 }
 \arguments{
 \item{f2_blocks}{3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}}.}
@@ -14,6 +21,8 @@ qpadm_rotate(f2_blocks, leftright, target, rightfix = NULL, verbose = TRUE)
 \item{target}{Target population}
 
 \item{rightfix}{Populations which will be on the right side in all models}
+
+\item{full_results}{Return all output items which are returned by \code{\link{qpadm}}. By default (\code{full_results = FALSE}), weights and several other statistics will not be computed for each model, making it faster and the output more readable. If \code{full_results = TRUE}, the output will be a nested data frame where each row is one \code{qpadm} model, and each column has one data frame item from the regular qpadm output (\code{weights}, \code{f4}, \code{rankdrop}, \code{popdrop}).}
 
 \item{verbose}{Print progress updates}
 }
@@ -27,17 +36,24 @@ in the set of left population and adding the remaining populations to the right 
 (See details for an example of how models are generated)
 }
 \details{
-When \code{leftright} is L1, L2, L3, L4, \code{rightfix} is R, and \code{target} is T,
-the following models will be genrated: \cr
-left / right / target \cr
-L1 / L2, L3, L4, R / T \cr
-L2 / L1, L3, L4, R / T \cr
-L3 / L1, L2, L4, R / T \cr
-L4 / L1, L2, L3, R / T \cr
-L1, L2 / L3, L4, R / T \cr
-L1, L3 / L2, L4, R / T \cr
-L1, L4 / L2, L3, R / T \cr
-L2, L3 / L1, L4, R / T \cr
-L2, L4 / L1, L3, R / T \cr
-L3, L4 / L1, L2, R / T \cr
+If \code{leftright} consists of the populations L1, L2, L3, L4; \code{rightfix} is the population R; and \code{target} is T,
+the following models will be genrated: \cr\cr
+(left), (right), (target) \cr
+(L1), (L2, L3, L4, R), (T) \cr
+(L2), (L1, L3, L4, R), (T) \cr
+(L3), (L1, L2, L4, R), (T) \cr
+(L4), (L1, L2, L3, R), (T) \cr
+(L1, L2), (L3, L4, R), (T) \cr
+(L1, L3), (L2, L4, R), (T) \cr
+(L1, L4), (L2, L3, R), (T) \cr
+(L2, L3), (L1, L4, R), (T) \cr
+(L2, L4), (L1, L3, R), (T) \cr
+(L3, L4), (L1, L2, R), (T) \cr
+}
+\examples{
+\dontrun{
+pops = dimnames(example_f2_blocks)[[1]]
+qpadm_rotate(example_f2_blocks, leftright = pops[1:4],
+             target = pops[5], rightfix = pops[6:7])
+}
 }
