@@ -102,11 +102,10 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param target Target population
 #' @param f4blocks Instead of f2 blocks, f4 blocks can be supplied. This is used by \code{\link{qpadm_multi}}
 #' @param fudge Value added to diagonal matrix elements before inverting
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
-#' of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
-#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
-#' or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix of f4 statistics,
-#' as well as the weight standard errors, will be computed using bootstrapping.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
 #' @param getcov Compute weights covariance. Setting `getcov = FALSE` will speed up the computation.
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.

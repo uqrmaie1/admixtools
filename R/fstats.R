@@ -33,7 +33,7 @@
 #' }
 afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE,
                             pops1 = NULL, pops2 = NULL, outpop = NULL, outdir = NULL,
-                            overwrite = FALSE, verbose = TRUE) {
+                            overwrite = FALSE, fst = TRUE, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
@@ -85,12 +85,14 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     f2 = mats_to_f2arr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
     counts = mats_to_ctarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
     afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
+    if(fst) fstarr = mats_to_fstarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
+    else fstarr = NULL
     if(!poly_only) countsap = counts
     else countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
     if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
 
     if(!is.null(outdir)) {
-      write_f2(namedList(f2, afprod, counts, countsap), outdir = outdir, overwrite = overwrite)
+      write_f2(namedList(f2, afprod, counts, countsap, fstarr), outdir = outdir, overwrite = overwrite)
       bl = paste0(outdir, '/block_lengths.rds')
       bla = paste0(outdir, '/block_lengths_a.rds')
       if(!file.exists(bl) || overwrite) saveRDS(block_lengths, file = bl)
@@ -186,7 +188,6 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
     out = out * rep(snpwt, each = nc1*nc2)
   }
   out %<>% block_arr_mean(block_lengths)
-
   dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
   out
 }
@@ -221,6 +222,37 @@ mats_to_ctarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   }
   out %<>% block_arr_mean(block_lengths)
 
+  dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
+  out
+}
+
+mats_to_fstarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = FALSE) {
+
+  nc1 = ncol(countmat1)
+  nc2 = ncol(countmat2)
+  nr = nrow(afmat1)
+
+  stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
+  stopifnot(all.equal(ncol(afmat1), nc1))
+  stopifnot(all.equal(ncol(afmat2), nc2))
+
+  if(cpp) {
+    # todo
+  } else {
+    denom1 = countmat1-1
+    denom2 = countmat2-1
+    het1b = afmat1*(1-afmat1)
+    het2b = afmat2*(1-afmat2)
+    corr1 = het1b/denom1
+    corr2 = het2b/denom2
+    het1ub = het1b * countmat1 / denom1
+    het2ub = het2b * countmat2 / denom2
+    num = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(corr1, corr2, `+`))
+    fstdenom = num + outer_array(het1ub, het2ub, `+`)
+    num %<>% block_arr_mean(block_lengths)
+    fstdenom %<>% block_arr_mean(block_lengths)
+    out = num/fstdenom
+  }
   dimnames(out) = list(colnames(afmat1), colnames(afmat2), paste0('l', block_lengths))
   out
 }

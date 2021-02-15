@@ -13,11 +13,10 @@ test_cladality(f2_data, left, right, fudge = 1e-04, boot = FALSE, cpp = TRUE)
 
 \item{fudge}{Value added to diagonal matrix elements before inverting}
 
-\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
-of f4 statistics, as well as the weight standard errors, will be computed using block-jackknife.
-Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
-or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix of f4 statistics,
-as well as the weight standard errors, will be computed using bootstrapping.}
+\item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number
+will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 }

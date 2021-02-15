@@ -17,10 +17,10 @@ qpf4ratio(data, pops, boot = FALSE, verbose = FALSE)
 \item{pops}{A vector of 5 populations or a five column population matrix.
 The following ratios will be computed: \verb{f4(1, 2; 3, 4)/f4(1, 2; 5, 4)}}
 
-\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix
-of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times,
-where \code{n} is either equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}.
-The the covariance matrix of the f statistics will be computed using bootstrapping.}
+\item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number
+will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.}
 
 \item{verbose}{Print progress updates}
 }

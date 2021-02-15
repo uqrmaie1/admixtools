@@ -10,6 +10,7 @@ f2_from_precomp(
   pops = NULL,
   pops2 = NULL,
   afprod = FALSE,
+  fst = FALSE,
   return_array = TRUE,
   apply_corr = TRUE,
   remove_na = TRUE,

@@ -26,7 +26,7 @@ do = list(pageLength = pl, lengthMenu = list(c(pl, -1), c(pl, 'All')),
 actionButton = function(...) actionBttn(..., style = 'unite', size = 'sm')
 #cols = gg_color_hue(5, 97, 15)
 cols = c("#FFF1F0", "#F7F8E4", "#E2FDF2", "#E8F9FF", "#FFF1FF")
-mutfuns = c(`SPR leaves`='spr_leaves', `SPR all`='spr_all', `Swap leaves`='swap_leaves', `Move admixture edge`='move_admixedge_once', `Flip admix`='flipadmix_random')
+mutfuns = c(`SPR leaves`='spr_leaves', `SPR all`='spr_all', `Swap leaves`='swap_leaves', `Move admixture edge`='move_admixedge_once', `Flip admix`='flipadmix_random', `Change root`='place_root_random', `Mutate n`='mutate_n')
 
 box = function (..., title = NULL, footer = NULL, status = NULL, solidHeader = FALSE,
                 background = NULL, width = 6, height = NULL, collapsible = FALSE,
@@ -94,13 +94,15 @@ tt = c('data' = 'Load data here',
        'addleaf' = 'Choose a population which should be added to the current graph',
        'qpgraph_add' = 'Fit all graphs that result from adding this population to each edge',
        'optim_run' = 'Run optimization. The current graph is modified in a number of different ways, and each modified graph is evaluated. Can be run iteratively across several generations.',
-       'optim_ngraphs' = 'Number of graphs to generate and evaluate per generation',
        'optim_ngen' = 'Number of generations. In each generation the best fitting graphs are selected for the next generation.',
+       'optim_sec' = 'Minimum number of seconds to run',
        'mutfuns' = 'SPR leaves: Subree prune and regraft leaf edges\n
                     SPR all: Subree prune and regraft any edges\\n
                     Swap leaves: Swap two random leaves\\\n
                     Move admixture edge: Shift one admixture edge\\\\n
-                    Flip admix: Flip the direction of one admixture edge',
+                    Flip admix: Flip the direction of one admixture edge\\\\\n
+                    Change root: Place the root of the tree on a random edge\\\\\\n
+                    Mutate n: Combine two or more of the other mutation functions',
        'econstraints_update_div' = 'Set limits to minimum and maximum edge lengths',
        'aconstraints_update_div' = 'Set limits to admixture weights',
        'qpgraphbin' = 'Choose the qpGraph executable on your computer',
@@ -239,10 +241,8 @@ ui = function(request) {
                                                            hr()),
                                                   menuItem('Optimize', tabName = 'qpgraph_optim',
                                                            actionButton('optim_run', 'Run'),
-                                                           sliderInput('optim_ngraphs', '# graphs', 1, 100, 10),
-                                                           sliderInput('optim_ngen', '# generations', 1, 20, 1),
-                                                           conditionalPanel('input.optim_ngen > 1', sliderInput('optim_nsel', '# selected', 1, 10, 3)),
-                                                           sliderInput('optim_nrep', '# repeats', 1, 50, 1),
+                                                           numericInput('optim_ngen', '# generations', 10, 1, 1000),
+                                                           numericInput('optim_sec', 'min seconds', 10, 1, 1000),
                                                            checkboxInput('optim_initrand', 'Start randomly'),
                                                            checkboxGroupInput('mutfuns', 'Graph modifications', choices = mutfuns, selected = mutfuns)),
                                                   menuItem('Constrain', tabName = 'qpgraph_constraints',
@@ -449,9 +449,10 @@ server = function(input, output, session) {
         print('switch to f2')
 
         global$bod = fluidRow(
-          tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
+          column(1, div(radioGroupButtons('fst', choices = c('f2', 'fst')))),
+          column(11, tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
                       tabPanel('Ind pairs', plotlyOutput(outputId = 'f2heatmap_indiv', height = '800', width='auto')),
-                      tabPanel('Pop table', dto('f2stats'))))
+                      tabPanel('Pop table', dto('f2stats')))))
 
       } else if(exp == 'f4') {
 
@@ -694,10 +695,8 @@ server = function(input, output, session) {
 
   observeEvent(input$optim_run, {
 
-    numgraphs = input$optim_ngraphs
     numgen = input$optim_ngen
-    numsel = input$optim_nsel
-    numrep = input$optim_nrep
+    stop_sec = input$optim_sec
     diag = input$qpgraph_diag
     lambdascale = as.numeric(input$lambdascale)
     f2blocks = get_f2blocks()
@@ -711,16 +710,14 @@ server = function(input, output, session) {
     print('running opt...')
     print(pops)
     print(dim(f2blocks))
-    print(paste(numgraphs, numgen, numsel, nadmix))
+    print(paste(numgen, nadmix))
     mutfuns = sapply(input$mutfuns, get)
-    print(mutfuns)
 
-    withProgress(message = paste('Evaluating ', numsel+(numgraphs-numsel)*numgen*numrep,' graphs...'), {
+    withProgress(message = paste('Running find_graphs...\nCheck R console to see progress'), {
       # opt_results = find_graphs(f2blocks, outpop = outpop, numrep = numrep,
       #                           numgraphs = numgraphs, numgen = numgen, numsel = numsel,
       #                           numadmix = nadmix, initgraph = g, mutfuns = mutfuns, diag = diag)
-      opt_results = find_graphs(f2blocks, outpop = outpop,
-                                numgraphs = numgraphs, numgen = numgen,
+      opt_results = find_graphs(f2blocks, outpop = outpop, stop_gen = numgen, stop_sec = stop_sec,
                                 numadmix = nadmix, initgraph = g, mutfuns = mutfuns, diag = diag)
     })
     print(opt_results)
@@ -859,6 +856,22 @@ server = function(input, output, session) {
                                  apply_corr = input$f2corr, afprod = input$afprod)
     })
     print('get f2 done')
+    f2blocks
+  })
+
+  get_fstblocks = reactive({
+    print('get fst')
+    poplist = global$poplist
+    req(poplist, global$countdir)
+    if(length(poplist) == 0) return()
+    pops = rep(names(poplist), sapply(poplist, length))
+    inds = NULL
+    if(global$iscountdata) inds = unlist(poplist)
+    withProgress(message = 'Reading data and computing fst...', {
+      f2blocks = f2_from_precomp(global$countdir, inds = inds, pops = pops,
+                                 apply_corr = input$f2corr, afprod = input$afprod, fst = TRUE)
+    })
+    print('get fst done')
     f2blocks
   })
 
@@ -1908,8 +1921,8 @@ server = function(input, output, session) {
   get_f2 = reactive({
 
     print('get f2')
-    f2blocks = get_f2blocks()
-    req(f2blocks, p1, p2, p3, p4)
+    f2blocks = if(input$fst == 'fst') get_fstblocks() else get_f2blocks()
+    #req(f2blocks, p1, p2, p3, p4)
     f2(f2blocks)
   })
 
@@ -1946,7 +1959,7 @@ server = function(input, output, session) {
   plotly_f2 = reactive({
 
     print('get f2')
-    f2blocks = get_f2blocks()
+    f2blocks = if(input$fst == 'fst') get_fstblocks() else get_f2blocks()
 
     pdat = f2blocks %>%
       apply(1:2, mean, na.rm = T) %>%

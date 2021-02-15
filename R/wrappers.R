@@ -310,6 +310,13 @@ qpadm_wrapper = function(pref, left, right, target = NULL, bin = '~np29/o2bin/qp
   run_admixtools(cmd, parse_qpadm_output, outfile, printonly, verbose)
 }
 
+#' Wrapper function around the original qpWave program
+#'
+#'
+#' @export
+#' @inheritParams qpadm
+qpwave_wrapper = qpadm_wrapper
+
 
 #' Wrapper function around the original qpGraph program
 #' @export
@@ -638,7 +645,7 @@ parse_qpgraph_output = function(outfile, logfile = outfile) {
       str_sub(3) %>% str_split(' ') %>% unlist %>% as.numeric
     f3 = expand_grid(pop2 = pops, pop3 = pops) %>% mutate(pop1 = pops[1], .before = 1) %>%
       mutate(est = fn(f3eststart, f3estend)/mul, fit = fn(f3fitstart, f3fitend)/mul, se = fn(f3sigstart, f3sigend)/mul/10) %>%
-      mutate(diff = fit - est, z = diff/se)
+      mutate(diff = est - fit, z = diff/se)
 
     #f3 = NULL
   }
@@ -691,7 +698,7 @@ parse_qpgraph_output_edges = function(outfile, uselabels = FALSE) {
 
   nammap = dat %>%
     filter(grepl('^label', X1)) %>%
-    separate('X1', c('x', 'label', 'name'), sep=' +') %>%
+    separate('X1', c('x', 'label', 'name'), sep=' +', extra = 'drop') %>%
     select(label, name) %>%
     deframe
 

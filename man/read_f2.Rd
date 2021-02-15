@@ -10,6 +10,7 @@ read_f2(
   pops2 = NULL,
   afprod = FALSE,
   counts = FALSE,
+  fst = FALSE,
   remove_na = TRUE,
   verbose = FALSE
 )

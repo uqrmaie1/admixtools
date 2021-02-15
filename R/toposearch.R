@@ -795,7 +795,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
     cutgrandparent = neighbors(graph, cutparent, mode='in')
     cutsibling = igraph::difference(neighbors(graph, cutparent, mode='out'), cutnode)
     hostnodes = igraph::difference(V(graph), c(root, cutnodes, cutparent, cutsibling, firstgen))
-    if(length(hostnodes) > 0) break
+    if(length(hostnodes) > 0 && length(cutsibling) != 0) break
     if(i > 100) browser()
   })
 
@@ -805,6 +805,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
   newnam = paste(hostnode, sample(letters, 1), sep='_')
   while(newnam %in% names(V(graph))) newnam = paste0(newnam, sample(letters, 1))
 
+  tryCatch({
   graph %<>% igraph::add_vertices(1, name=newnam) %>%
     igraph::add_edges(c(names(cutgrandparent), names(cutsibling),
                 hostparent, newnam,
@@ -812,6 +813,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
                 newnam, names(cutnode))) %>%
     igraph::delete_vertices(names(cutparent)) %>%
     igraph::delete_edges(paste(hostparent, hostnode, sep='|'))
+  }, error = function(e) browser())
   stopifnot(igraph::is_simple(graph))
   stopifnot(igraph::is_dag(graph))
   graph
@@ -2380,10 +2382,12 @@ eval_plusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, nonzero_f4 = NULL, 
   #newgraphs %<>% slice_sample(n = ntry)
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
-  newgraphs %>%
+  newgraphs %<>%
     rowwise %>%
     filter(satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
-                                 event_order = event_order)) %>% ungroup %>%
+                                 event_order = event_order)) %>% ungroup
+  if(nrow(newgraphs) == 0) return(tibble())
+  newgraphs %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
   #%>% select(source_from, source_to, dest_from, dest_to, graph, score)
@@ -2395,10 +2399,12 @@ eval_minusnadmix = function(graph, qpgfun, n = 1, ntry = Inf, nonzero_f4 = NULL,
   newgraphs = tibble(graph = graph_minusn(list(graph), n = n, ntry = ntry))
   if(verbose) alert_info(paste0('Evaluating ', nrow(newgraphs), ' graphs...\n'))
   if(nrow(newgraphs) == 0) return(tibble())
-  newgraphs %>%
+  newgraphs %<>%
     rowwise %>%
     filter(satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
-                                 event_order = event_order)) %>% ungroup %>%
+                                 event_order = event_order)) %>% ungroup
+  if(nrow(newgraphs) == 0) return(tibble())
+  newgraphs %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score)
 }
@@ -2689,39 +2695,41 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
 
     if(is.null(nzf4) && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)) {
       nzf4 = nonzero_f4
-      alert_info('All zero f4 ok!\n')
+      if(verbose) alert_info('All zero f4 ok!\n')
     }
     if(is.null(admixc) && !is.null(admix_constraints) && satisfies_numadmix(graph, admix_constraints)) {
       admixc = admix_constraints
-      alert_info('Admix constraints ok!\n')
+      if(verbose) alert_info('Admix constraints ok!\n')
     }
     if(is.null(eventc) && !is.null(event_constraints) && satisfies_eventorder(graph, event_constraints)) {
       eventc = event_constraints
-      alert_info('Event constraints ok!\n')
+      if(verbose) alert_info('Event constraints ok!\n')
     }
 
     if(gimp > 0 && gimp %% plusminus_generations == 0) {
 
       sel = models %>% slice_min(score, with_ties = FALSE)
       graph = sel$g[[1]]
-      #fun = if(fix_nadmix) eval_plusminusn else eval_plusnadmix
+      tryCatch({
       newmod = eval_plusnadmix(graph, qpgfun, n = 1, ntry = numgraphs*10,
                                nonzero_f4 = nzf4, admix_constraints = admixc,
-                               event_order = eventc) %>% slice_min(score, with_ties = FALSE)
+                               event_order = eventc, verbose = verbose)
+      if(nrow(newmod) == 0) next
+      newmod %<>% slice_min(score, with_ties = FALSE)
+      }, error = function(e) browser())
       mf = 'plusnadmix'
       if(numadmix(graph) == max_admix) {
         mf = 'plusminusn'
         newmod = eval_minusnadmix(newmod$graph[[1]], qpgfun, n = 1, ntry = numgraphs*10,
                                   nonzero_f4 = nzf4, admix_constraints = admixc,
-                                  event_order = eventc) %>% slice_min(score, with_ties = FALSE)
+                                  event_order = eventc, verbose = verbose)
+        if(nrow(newmod) == 0) next
+        newmod %<>% slice_min(score, with_ties = FALSE)
       }
-      alert_info('Plusminus done 1\n')
       newmod %<>% mutate(hash = map_chr(graph, graph_hash)) %>%
         transmute(hash, lasthash = sel$hash[[1]], g = graph, gen2 = i, edges, score, mutfun = mf)
-      alert_info('Plusminus done 2\n')
       if(newmod$score > min(models$score, na.rm=F)*0.95) {
         gimp = gimp + 1
-        alert_info('Plusminus done 3\n')
         next
       }
 
@@ -2745,9 +2753,11 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
         remaining = numgraphs - nrow(newmod)
       }
       if(remaining > 0) {
+        tryCatch({
         randmut = tibble(fun = mutfuns, mutfun = names(fun)) %>%
           slice_sample(n = remaining, replace = TRUE) %>%
           rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
+        }, error = function(e) browser())
         newmod %<>% bind_rows(randmut)
       }
 
@@ -3102,7 +3112,12 @@ summarize_proxies = function(graph) {
   lastadm = map(leaves, ~intersect(names(subcomponent(graph, .x, mode = 'in')), admnodes)) %>%
     set_names(leaves) %>% discard(~length(.) == 0) %>% map(~head(., 1)) %>% unlist %>% enframe('pop', 'admnodes')
 
-  proxies = lastadm %>% left_join(admkeys %>% transmute(admnodes, proxy = left, weight = wl), by = 'admnodes') %>% unnest(proxy) %>% bind_rows(lastadm %>% left_join(admkeys %>% transmute(admnodes, proxy = right, weight = wr), by = 'admnodes') %>% unnest(proxy)) %>%
+  proxies = lastadm %>%
+    left_join(admkeys %>% transmute(admnodes, proxy = left, weight = wl), by = 'admnodes') %>%
+    unnest(proxy) %>%
+    bind_rows(lastadm %>%
+                left_join(admkeys %>% transmute(admnodes, proxy = right, weight = wr), by = 'admnodes') %>%
+                unnest(proxy)) %>%
     select(-admnodes) %>% add_count(pop, name = 'nproxies')
   if(is.null(edges)) proxies %<>% select(-weight)
   graph %>% count_admix %>% filter(nadmix > 0) %>% left_join(proxies, by = 'pop')
@@ -3233,9 +3248,7 @@ summarize_graphlist_eventorder = function(graphlist) {
 # }
 
 
-path_pairs = function(graph) {
-
-  # returns all pairs of paths from root to all leaves
+root_paths = function(graph) {
 
   leaves = get_leafnames(graph)
   root = get_rootname(graph)
@@ -3243,10 +3256,53 @@ path_pairs = function(graph) {
   parents = adm %>% rlang::set_names() %>% map(~names(neighbors(graph, ., mode = 'in')))
   admedges = parents %>% imap(~paste(.x, .y, sep = '|'))
 
-  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names) %>% tibble(.name_repair = ~'path') %>% rowwise %>% mutate(pop = tail(path, 1), edges = list(setdiff(vs_to_es(path), admedges)), admix = list(intersect(path, adm)), lr = list(map(admedges[admix], 1) %in% edges + 0), edges = list(setdiff(edges, unlist(admedges)))) %>% ungroup %>% add_count(pop)
+  paths = all_simple_paths(graph, root, leaves, mode = 'out') %>% map(names) %>%
+    tibble(.name_repair = ~'path') %>% rowwise %>%
+    mutate(pop = tail(path, 1),
+           edges = list(setdiff(vs_to_es(path), admedges)),
+           admix = list(intersect(path, adm)),
+           lr = list(map(admedges[admix], 1) %in% edges + 0),
+           edges = list(setdiff(edges, unlist(admedges))),
+           admedges = list(map2_chr(admedges[admix], 2-lr, ~.x[.y]))) %>%
+    ungroup %>% add_count(pop)
+  paths
+}
 
-  expand_grid(rename_with(paths, ~paste0(.,'1')), rename_with(paths, ~paste0(.,'2'))) %>% filter(pop1 != pop2) %>% rowwise %>% mutate(edges = list(setdiff(union(edges1, edges2), intersect(edges1, edges2))), admix = list(c(admix1, admix2)), lr = list(c(lr1, lr2))) %>% ungroup
+path_pairs = function(graph) {
 
+  # returns all pairs of paths from root to all leaves
+
+  paths = root_paths(graph) %>% select(-admedges)
+  expand_grid(rename_with(paths, ~paste0(.,'1')),
+              rename_with(paths, ~paste0(.,'2'))) %>%
+    filter(pop1 != pop2) %>% rowwise %>%
+    mutate(edges = list(setdiff(union(edges1, edges2), intersect(edges1, edges2))),
+           admix = list(c(admix1, admix2)), lr = list(c(lr1, lr2))) %>%
+    ungroup
+}
+
+path_triples = function(graph) {
+
+  paths = root_paths(graph) #%>% select(-edges)
+  expand_grid(rename_with(paths, ~paste0(.,'1')),
+              rename_with(paths, ~paste0(.,'2')),
+              rename_with(paths, ~paste0(.,'3'))) %>%
+    filter(pop1 != pop2, pop1 != pop3, pop2 != pop3) %>% rowwise %>%
+    mutate(admix12 = list(c(admix1, admix2)),
+           admix13 = list(c(admix1, admix3)),
+           admix23 = list(c(admix2, admix3)),
+           lr12 = list(c(lr1, lr2)),
+           lr13 = list(c(lr1, lr3)),
+           lr23 = list(c(lr2, lr3)),
+           last12 = tail(intersect(path1, path2), 1),
+           last13 = tail(intersect(path1, path3), 1),
+           last23 = tail(intersect(path2, path3), 1),
+           m121 = match(last12, path1),
+           m131 = match(last13, path1),
+           og = case_when(m121 < m131 ~ pop2,
+                          m121 < match(last23, path2) ~ pop1,
+                          m131 < match(last12, path1) ~ pop3)) %>%
+    ungroup %>% select(-m121, m131)
 }
 
 #' Find well fitting admixture graphs
@@ -3794,13 +3850,29 @@ pair_admix = function(graph) {
 
 triplet_proportions = function(fit) {
 
-  graph = fit$edges %>% edges_to_igraph()
+  graph = fit %>% edges_to_igraph()
   trees = graph_splittrees(graph, return_admix = TRUE)
   trees %>% unnest(admedges) %>%
-    left_join(ft$edges, by = c('from', 'to')) %>%
+    left_join(fit, by = c('from', 'to')) %>%
     group_by(name) %>% summarize(graph = graph[1], weight = prod(weight))
 
 }
+
+
+triplet_proportions2 = function(fit) {
+
+  graph = fit %>% edges_to_igraph()
+  triples = path_triples(graph)
+  adm = fit %>% filter(type == 'admix') %>%
+    transmute(e = paste0(from, '|', to), weight) %>% deframe
+  prop = triples %>% rowwise %>%
+    mutate(w1 = prod(adm[admedges1]), w2 = prod(adm[admedges2]), w3 = prod(adm[admedges3]), w = w1*w2*w3) %>%
+    group_by(pop1, pop2, pop3, og) %>% summarize(sm = sum(w)) %>% ungroup %>% suppressMessages()
+  x = prop %>% select(1:3) %>% distinct
+  miss = bind_rows(x %>% mutate(og = pop1), x %>% mutate(og = pop2), x %>% mutate(og = pop3)) %>% mutate(sm = 0) %>% anti_join(prop, by = c('pop1', 'pop2', 'pop3', 'og'))
+  prop %>% bind_rows(miss) %>% arrange(pop1, pop2, pop3)
+}
+
 
 tree_triplets = function(tree) {
   # returns the population triplets that make up a tree
@@ -3872,17 +3944,23 @@ place_root = function(graph, from, to, outpop = NULL) {
   out
 }
 
-place_root_random = function(graph, keep_outgroup = TRUE) {
+#' Modify a graph by changing the position of the root node
+#'
+#' @export
+#' @param graph An admixture graph
+#' @param fix_outgroup Keep outgroup in place
+#' @return A new admixture graph
+place_root_random = function(graph, fix_outgroup = TRUE) {
 
   stopifnot(is_simplified(graph) && is_valid(graph))
   outpop = get_outpop(graph)
-  if(keep_outgroup && !is.null(outpop)) {
+  if(fix_outgroup && !is.null(outpop)) {
     graph %<>% delete_vertices(c(outpop, get_rootname(graph)))
   }
   randedge = graph %>% delete_vertices(c(get_rootname(.), get_leafnames(.))) %>%
     E %>% attr('vnames') %>% sample(1) %>% str_split('\\|') %>% pluck(1)
   graph %<>% place_root(randedge[1], randedge[2])
-  if(keep_outgroup && !is.null(outpop)) {
+  if(fix_outgroup && !is.null(outpop)) {
     newroot = newnodenam('root', names(V(graph)))
     oldroot = get_rootname(graph)
     graph %<>% add_vertices(2, name = c(newroot, outpop)) %>% add_edges(c(newroot, outpop, newroot, oldroot))
@@ -3922,6 +4000,8 @@ all_paths = function(graph) {
   leaves = get_leafnames(graph)
   leaves %>% set_names %>% map(~paths_from_to(graph, root, .))
 }
+
+
 
 
 

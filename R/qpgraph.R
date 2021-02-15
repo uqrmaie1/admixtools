@@ -149,13 +149,13 @@ opt_edge_lengths = function(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudg
 }
 
 qpgraph_score = function(f3_fit, f3_est, ppinv = diag(length(f3_fit))) {
-  res = f3_fit - f3_est
+  res = f3_est - f3_fit
   lik = t(res) %*% ppinv %*% res
   lik[1,1]
 }
 
 treemix_score = function(f3_fit, f3_est, ppinv) {
-  res = f3_fit - f3_est
+  res = f3_est - f3_fit
   se = sqrt(diag(solve(ppinv)))
   sum(res^2/(2*se^2) + log(se * sqrt(2*pi)))
 }
@@ -351,7 +351,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   edges %<>% select(1:2) %>% set_colnames(c('from', 'to')) %>%  as_tibble %>%
     mutate(type = ifelse(1:n() %in% normedges, 'edge', 'admix'), weight = weight, low = low, high = high)
   f2 = precomp$f2out
-  f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = fit - est, z = diff/se, p = ztop(z))
+  f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = est - fit, z = diff/se, p = ztop(z))
 
   out = namedList(edges, score, f2, f3, opt, ppinv)
   if(!is.null(f2_blocks_test)) {
@@ -385,10 +385,10 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
 #' @param f3basepop f3-statistics base population. If `NULL` (the default),
 #' the first population in `pops` will be used as the basis.
 #' @param lambdascale Scales f2-statistics. This has no effect on the fit, but is used in the original *qpGraph* program to display branch weights on a scale that corresponds to FST distances.
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of f3 statistics
-#' will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times, where `n` is either
-#' equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`. The the covariance matrix
-#' of f3 statistics will be computed using bootstrapping.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
 #' @param seed Random seed used if `boot` is `TRUE`.
 #' @param diag_f3 Regularization term added to the diagonal elements of the covariance matrix of estimated f3 statistics (after scaling by the matrix trace). In the original *qpGraph* program, this is fixed at 0.00001.
 #' @param lsqmode Least-squares mode. If `TRUE`, the likelihood score will be computed using a diagonal matrix with `1/(sum(diag(f3_var)) * diag_f3)`, in place of the inverse f3-statistic covariance matrix. `lsqmode = 2` will use the identity matrix instead, which is equivalent to computing the score as the sum of squared residuals (`sum((f3_est-f3_fit)^2)`). Both of these options do not take the covariance of f3-statistics into account. This can lead to bias, but is more stable in cases where the inverse f3-statistics covariance matrix can not be estimated precisely (for example because the number of populations is large). An alternative to using `lsqmode = TRUE` which doesn't completely ignore the covariance of f3-statistics is to increase `diag_f3`.
@@ -508,7 +508,7 @@ f3out_to_fittedf2out = function(f2out, f3out) {
     right_join(f3out %>% filter(pop2 != pop3) %>% transmute(pop1=pop2, pop2=pop3, f3 = fit), by = c('pop1', 'pop2')) %>%
     left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop1=pop2, f2_1 = fit), by = c('pop1')) %>%
     left_join(f3out %>% filter(pop2 == pop3) %>% transmute(pop2=pop3, f2_2 = fit), by = c('pop2')) %>%
-    transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = fit - est, z = diff/se, p = ztop(z))
+    transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = est - fit, z = diff/se, p = ztop(z))
 }
 
 
@@ -533,7 +533,7 @@ fitf4 = function(f2_blocks, f2, f3) {
     left_join(f2_fit2 %>% rename(c2 = f2fit), by = c('pop2' = 'pop1', 'pop3' = 'pop2')) %>%
     left_join(f2_fit2 %>% rename(c3 = f2fit), by = c('pop1' = 'pop1', 'pop3' = 'pop2')) %>%
     left_join(f2_fit2 %>% rename(c4 = f2fit), by = c('pop2' = 'pop1', 'pop4' = 'pop2')) %>%
-    mutate(fit = (c1 + c2 - c3 - c4)/2, diff = fit - est, z = diff/se, p = ztop(z)) %>%
+    mutate(fit = (c1 + c2 - c3 - c4)/2, diff = est - fit, z = diff/se, p = ztop(z)) %>%
     select(-c1:-c4)
 }
 
@@ -690,7 +690,10 @@ qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, .
 #' @param fit2 The fit of the second graph
 #' @param f2_blocks f2 blocks used for fitting `fit1` and `fit2`. Used in combination with `f2_blocks_test` to compute f-statistics covariance matrix.
 #' @param f2_blocks_test f2 blocks which were not used for fitting `fit1` and `fit2`
-#' @param boot If `TRUE`, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to the number of blocks. If `FALSE` jackknife will be used. If set to a number, bootstrap resampling will be used on `f2_blocks_test` with the number of resamplings equal to `boot`. If bootstrap resampling is enabled, empirical p-values (`p_emp`) and 95 confidence intervals (`ci_low` and `ci_high`) will be reported.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks. If bootstrap resampling is enabled, empirical p-values (`p_emp`) and 95 confidence intervals (`ci_low` and `ci_high`) will be reported.
 #' @param seed Random seed used if `boot` is `TRUE`. Does not need to match a seed used in fitting the models
 #' @examples
 #' \dontrun{

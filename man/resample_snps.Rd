@@ -22,9 +22,10 @@ qpgraph_resample_snps(f2_blocks, boot = FALSE, ...)
 \arguments{
 \item{f2_blocks}{a 3d array of blocked f2 statistics}
 
-\item{boot}{If \code{FALSE} (the default), each block will be left out at a time.
-Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either equal to \code{boot} if it is an integer,
-or equal to the number of blocks if \code{boot} is \code{TRUE}.}
+\item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number
+will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.}
 
 \item{...}{named arguments which are passed to the \code{qp} function.}
 

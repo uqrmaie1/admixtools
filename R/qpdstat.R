@@ -23,10 +23,10 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' population combinations to be tested. Other `pop` arguments will be ignored.
 #' }
 #' @param pop2 A vector of population labels
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
-#' of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
-#' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
-#' The the covariance matrix of the f statistics will be computed using bootstrapping.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
 #' @param sure The number of population combinations can get very large. This is a safety option that stops you
 #' from accidently computing all combinations if that number is large.
 #' @param unique_only If `TRUE` (the default), redundant combinations will be excluded
@@ -63,6 +63,47 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
     select(-f2dat, -var, -sts)
 
   out
+}
+
+#' Compute Fst
+#'
+#' This function reads Fst from a directory with precomputed f2-statistics, and turns per-block data
+#' into estimates and standard errors for each population pair. See `details` for how Fst is computed.
+#' @export
+#' @inheritParams f2
+#' @param data A directory which contains pre-computed f2- and fst-statistics
+#' @details The Hudson Fst estimator used here is described in the two publications below.
+#' For two populations with estimated allele frequency vectors `p1` and `p2`,
+#' and allele count vectors `n1` and `n2`, it is calculated as follows:\cr\cr
+#' `num = (p1 - p2)^2 - p1*(1-p1)/(n1-1) - p2*(1-p2)/(n2-1)`\cr
+#' `denom = p1 + p2 - 2*p1*p2`\cr
+#' `fst = mean(num)/mean(denom)`\cr\cr
+#' This is done independently for each SNP block, and is stored on disk for each population pair.
+#' Jackknifing or bootstrapping across these per-block estimates yields the overall estimates and standard errors.
+#' @references Reich, D. (2009) \emph{Reconstructing Indian population history} Nature
+#' @references Bhatia, G. (2013) \emph{Estimating and interpreting Fst: the impact of rare variants} Genome Research
+#' @examples
+#' \dontrun{
+#' pop1 = 'Denisova.DG'
+#' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
+#' fst(f2_dir, pop1, pop2)
+#' }
+fst = function(data, pop1 = NULL, pop2 = NULL,
+               boot = FALSE, verbose = FALSE) {
+
+  out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2,
+                           sure = TRUE, unique_only = TRUE, fnum = 2)
+
+  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
+  statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
+  f2_blocks = f2_from_precomp(data, pops = pop1, pops2 = pop2, fst = TRUE) %>% samplefun
+  block_lengths = parse_number(dimnames(f2_blocks)[[3]])
+
+  out %>% group_by(pop1, pop2) %>%
+    summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
+    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    select(-f2dat, -var, -sts)
 }
 
 
@@ -369,10 +410,10 @@ f4_from_f2 = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
 #' }
 #' @param pops A vector of 5 populations or a five column population matrix.
 #' The following ratios will be computed: `f4(1, 2; 3, 4)/f4(1, 2; 5, 4)`
-#' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix
-#' of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
-#' where `n` is either equal to `boot` if it is an integer, or equal to the number of blocks if `boot` is `TRUE`.
-#' The the covariance matrix of the f statistics will be computed using bootstrapping.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
 #' @param verbose Print progress updates
 #' @return `qpf4ratio` returns a data frame with f4 ratios
 qpf4ratio = function(data, pops, boot = FALSE, verbose = FALSE) {

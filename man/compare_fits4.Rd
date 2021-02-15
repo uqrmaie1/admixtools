@@ -15,7 +15,10 @@ compare_fits4(fit1, fit2, f2_blocks, f2_blocks_test, boot = FALSE, seed = NULL)
 
 \item{f2_blocks_test}{f2 blocks which were not used for fitting \code{fit1} and \code{fit2}}
 
-\item{boot}{If \code{TRUE}, bootstrap resampling will be used on \code{f2_blocks_test} with the number of resamplings equal to the number of blocks. If \code{FALSE} jackknife will be used. If set to a number, bootstrap resampling will be used on \code{f2_blocks_test} with the number of resamplings equal to \code{boot}. If bootstrap resampling is enabled, empirical p-values (\code{p_emp}) and 95 confidence intervals (\code{ci_low} and \code{ci_high}) will be reported.}
+\item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number
+will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the number of bootstrap resamplings will be
+equal to the number of SNP blocks. If bootstrap resampling is enabled, empirical p-values (\code{p_emp}) and 95 confidence intervals (\code{ci_low} and \code{ci_high}) will be reported.}
 
 \item{seed}{Random seed used if \code{boot} is \code{TRUE}. Does not need to match a seed used in fitting the models}
 }

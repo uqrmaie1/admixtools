@@ -673,8 +673,11 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
       pop1 = min(nam1[i], nam2[j])
       pop2 = max(nam1[i], nam2[j])
       if(pop1 <= pop2) {
-        mat1 = cbind(f2 = as.vector(f2_arrs$f2[i, j, ]), counts = as.vector(f2_arrs$counts[i, j, ]))
-        mat2 = cbind(afprod = as.vector(f2_arrs$afprod[i, j, ]), countsap = as.vector(f2_arrs$countsap[i, j, ]))
+        mat1 = cbind(f2 = as.vector(f2_arrs$f2[i, j, ]),
+                     counts = as.vector(f2_arrs$counts[i, j, ]),
+                     fst = as.vector(f2_arrs$fst[i, j, ]))
+        mat2 = cbind(afprod = as.vector(f2_arrs$afprod[i, j, ]),
+                     countsap = as.vector(f2_arrs$countsap[i, j, ]))
         dir = paste0(outdir, '/', pop1, '/')
         fl1 = paste0(dir, pop2, '_f2.rds')
         fl2 = paste0(dir, pop2, '_ap.rds')
@@ -707,7 +710,7 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
 read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
-                   counts = FALSE, remove_na = TRUE, verbose = FALSE) {
+                   counts = FALSE, fst = FALSE, remove_na = TRUE, verbose = FALSE) {
   # assumes f2 is in first column, afprod in second column
 
   if(is.null(pops)) pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
@@ -727,7 +730,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
     filter(!duplicated(paste(p1, p2)))
 
   suffix = if(afprod) '_ap.rds' else '_f2.rds'
-  col = if(counts) 2 else 1
+  col = if(counts) 2 else if(fst) 3 else 1
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
@@ -737,6 +740,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
     dat = readRDS(paste0(pref, suffix))[,col]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
+    if(fst && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
   if(verbose) alert_info(paste0('\n'))
@@ -1594,8 +1598,8 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' dir = 'my/f2/dir/'
 #' f2_blocks = f2_from_precomp(dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod = FALSE, return_array = TRUE,
-                           apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
+f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod = FALSE, fst = FALSE,
+                           return_array = TRUE, apply_corr = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   if(!is.null(pops) && !is.null(inds) && length(pops) != length(inds)) stop("'pops' and 'inds' are not the same length!")
   if(!dir.exists(dir)) stop(paste0("Directory ", normalizePath(dir, mustWork = FALSE), " doesn't exist!"))
@@ -1618,10 +1622,10 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
     if(is.null(pops2)) pops2 = pops
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(union(pops, pops2)), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops, pops2, afprod = afprod, remove_na = remove_na, verbose = verbose)
+    f2_blocks = read_f2(dir, pops, pops2, afprod = afprod, fst = fst, remove_na = remove_na, verbose = verbose)
   }
   if(afprod) f2_blocks = scale_ap_blocks(f2_blocks, from = 0)
-  else if(any(apply(f2_blocks,1:2,mean,na.rm=T)<0)) warning(paste('Some f2-statistic estimates are',
+  else if(any(apply(f2_blocks,1:2,mean,na.rm=T)<0) && !fst) warning(paste('Some f2-statistic estimates are',
          'negative across blocks. This is probably caused by too many missing or rare SNPs in',
          'populations with low sample size, which makes the f2 bias correction unreliable.',
          "Consider running 'f2_from_precomp' with 'afprod = TRUE'."))

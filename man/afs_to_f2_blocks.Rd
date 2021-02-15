@@ -14,6 +14,7 @@ afs_to_f2_blocks(
   outpop = NULL,
   outdir = NULL,
   overwrite = FALSE,
+  fst = TRUE,
   verbose = TRUE
 )
 }

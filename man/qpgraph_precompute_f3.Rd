@@ -30,10 +30,10 @@ the first population in \code{pops} will be used as the basis.}
 
 \item{lambdascale}{Scales f2-statistics. This has no effect on the fit, but is used in the original \emph{qpGraph} program to display branch weights on a scale that corresponds to FST distances.}
 
-\item{boot}{If \code{FALSE} (the default), each block will be left out at a time and the covariance matrix of f3 statistics
-will be computed using block-jackknife. Otherwise bootstrap resampling is performed \code{n} times, where \code{n} is either
-equal to \code{boot} if it is an integer, or equal to the number of blocks if \code{boot} is \code{TRUE}. The the covariance matrix
-of f3 statistics will be computed using bootstrapping.}
+\item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number
+will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.}
 
 \item{seed}{Random seed used if \code{boot} is \code{TRUE}.}
 

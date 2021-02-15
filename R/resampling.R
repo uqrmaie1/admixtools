@@ -629,9 +629,10 @@ make_resample_inds_fun = function(qpfun) {
 #' The subdivisions are formed by leaving out one or more SNP block at a time (see `boot` for details).
 #' @name resample_snps
 #' @param f2_blocks a 3d array of blocked f2 statistics
-#' @param boot If `FALSE` (the default), each block will be left out at a time.
-#' Otherwise bootstrap resampling is performed `n` times, where `n` is either equal to `boot` if it is an integer,
-#' or equal to the number of blocks if `boot` is `TRUE`.
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
 #' @param verbose print progress updates
 #' @param ... named arguments which are passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs
