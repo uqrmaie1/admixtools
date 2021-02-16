@@ -1059,7 +1059,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
                         maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                         transitions = TRUE, transversions = TRUE,
-                        auto_only = TRUE, keepsnps = NULL, afprod = FALSE, format = NULL,
+                        auto_only = TRUE, keepsnps = NULL, afprod = FALSE, fst = FALSE, format = NULL,
                         adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
@@ -1073,7 +1073,7 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
     blocks = scale_ap_blocks(arrs$ap_blocks, from = 0)
   } else {
     if(verbose) alert_info(paste0('Returning f2-statistics\n'))
-    blocks = arrs$f2_blocks
+    blocks = if(fst) arrs$fst_blocks else arrs$f2_blocks
   }
   if(remove_na) {
     keep = apply(blocks, 3, function(x) sum(!is.finite(x))==0)

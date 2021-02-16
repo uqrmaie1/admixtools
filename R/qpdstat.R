@@ -31,6 +31,7 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' from accidently computing all combinations if that number is large.
 #' @param unique_only If `TRUE` (the default), redundant combinations will be excluded
 #' @param verbose Print progress updates
+#' @param ... Additional arguments passed to \code{\link{f2_from_geno}} when `data` is a genotype prefix
 #' @return `f2` returns a data frame with f2 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
@@ -42,7 +43,7 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' f2(f2_dir, pop1, pop2)
 #' }
 f2 = function(data, pop1 = NULL, pop2 = NULL,
-              boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+              boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE, ...) {
 
   out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2,
                            sure = sure, unique_only = unique_only, fnum = 2)
@@ -50,7 +51,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(data, pops) %>% samplefun
+  f2_blocks = get_f2(data, pops, ...) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f2 -----------------
@@ -71,7 +72,6 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 #' into estimates and standard errors for each population pair. See `details` for how Fst is computed.
 #' @export
 #' @inheritParams f2
-#' @param data A directory which contains pre-computed f2- and fst-statistics
 #' @details The Hudson Fst estimator used here is described in the two publications below.
 #' For two populations with estimated allele frequency vectors `p1` and `p2`,
 #' and allele count vectors `n1` and `n2`, it is calculated as follows:\cr\cr
@@ -89,14 +89,20 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 #' fst(f2_dir, pop1, pop2)
 #' }
 fst = function(data, pop1 = NULL, pop2 = NULL,
-               boot = FALSE, verbose = FALSE) {
+               boot = FALSE, verbose = FALSE, ...) {
 
   out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2,
                            sure = TRUE, unique_only = TRUE, fnum = 2)
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = f2_from_precomp(data, pops = pop1, pops2 = pop2, fst = TRUE) %>% samplefun
+  #f2fun = if(is_geno_prefix(data)) f2_from_geno else f2_from_precomp
+  ell = list(...)
+  ell$fst = TRUE
+  ell$f2_data = data
+  ell$pops = pop1
+  ell$pops2 = pop2
+  f2_blocks = do.call(get_f2, ell) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   out %>% group_by(pop1, pop2) %>%
@@ -113,8 +119,9 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' Computes f3 statistics from f2 blocks of the form \eqn{f3(A; B, C)}. Equivalent to
 #' \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
 #' @export
-#' @param pop3 A vector of population labels
 #' @inheritParams f2
+#' @param pop3 A vector of population labels
+#' @param ... Additional arguments passed to \code{\link{f2_from_geno}} when `data` is a genotype prefix
 #' @return `qp3pop` returns a data frame with f3 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
@@ -130,7 +137,7 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' qp3pop(f2_dir, pop1, pop2, pop3)
 #' }
 qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-                  boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE) {
+                  boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE, ...) {
 
   stopifnot(is.null(pop2) & is.null(pop3) | !is.null(pop2) & !is.null(pop3))
   stopifnot(!is_geno_prefix(data) || !is.null(pop1))
@@ -141,7 +148,7 @@ qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(data, pops) %>% samplefun
+  f2_blocks = get_f2(data, pops, ...) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f3 -----------------

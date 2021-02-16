@@ -70,6 +70,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     nam_ap = list(pops1, pops2, paste0('l', block_lengths_a))
     f2_blocks = array(NA, dim_f2, nam_f2)
     ap_blocks = array(NA, dim_ap, nam_ap)
+    fst_blocks = f2_blocks
   }
 
   for(i in 1:length(popvecs1)) {
@@ -86,10 +87,11 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     counts = mats_to_ctarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
     afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
     if(fst) fstarr = mats_to_fstarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
-    else fstarr = NULL
+    else fstarr = f2
     if(!poly_only) countsap = counts
     else countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
-    if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
+    rm(am1, am2, cm1, cm2); gc()
+    if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) {f2[j, j, ] = 0; fstarr[j, j, ] = 0}
 
     if(!is.null(outdir)) {
       write_f2(namedList(f2, afprod, counts, countsap, fstarr), outdir = outdir, overwrite = overwrite)
@@ -100,14 +102,17 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     } else {
       f2_blocks[s1, s2, ] = f2
       ap_blocks[s1, s2, ] = afprod
+      fst_blocks[s1, s2, ] = fstarr
       if(square && !isTRUE(all.equal(s1, s2))) {
         f2_blocks[s2, s1, ] = aperm(f2, c(2,1,3))
         ap_blocks[s2, s1, ] = aperm(afprod, c(2,1,3))
+        fst_blocks[s2, s1, ] = aperm(fstarr, c(2,1,3))
       }
     }
+    rm(counts, countsap, afprod, f2); gc()
   }
   if(length(popvecs1) > 1 & verbose) cat('\n')
-  if(is.null(outdir)) namedList(f2_blocks, ap_blocks)
+  if(is.null(outdir)) namedList(f2_blocks, ap_blocks, fst_blocks)
 }
 
 
