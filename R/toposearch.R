@@ -61,8 +61,9 @@ is_valid = function(graph) {
 }
 
 is_simplified = function(graph) {
-  deg = degree(graph)
-  sum(deg == 2) == 1 && max(deg) == 3 && igraph::is_simple(graph)
+  indeg = degree(graph, mode = 'in')
+  outdeg = degree(graph, mode = 'out')
+  sum(indeg == 1 & outdeg == 1) == 0 && max(indeg + outdeg) == 3 && igraph::is_simple(graph)
 }
 
 #' Convert data frame graph to igraph
@@ -233,7 +234,7 @@ simplify_graph_old = function(graph) {
     graph %<>% igraph::delete_vertices(redundant[1])
     graph %<>% igraph::add_edges(c(newfrom, newto))
     graph %<>% igraph::simplify()
-    if(i > 100) browser()
+    if(i > 100) stop('sg old error')
   })
   graph %<>% X_to_H
   if(convmat) graph = igraph::as_edgelist(graph)
@@ -294,6 +295,7 @@ simplify_graph = function(graph) {
   }
   graph %<>% igraph::simplify()
   if(any(indegree > 1 & outdegree > 1)) graph %<>% X_to_H
+  if(!is_simplified(graph)) graph %<>% simplify_graph()
   if(convmat) graph = igraph::as_edgelist(graph)
   graph
 }
@@ -301,7 +303,7 @@ simplify_graph = function(graph) {
 
 nextnonredundant = function(graph, node) {
   n = neighbors(graph, node, mode = 'out')[1]
-  if(degree(graph, n) != 2) return(n)
+  if(degree(graph, n, mode = 'in') != 1 || degree(graph, n, mode = 'out') != 1) return(n)
   return(nextnonredundant(graph, n))
 }
 
@@ -336,7 +338,6 @@ desimplify_graph = function(graph) {
   graph = igraph::simplify(graph)
   graph = igraph::delete_edges(graph, deledges)
   if(max(degree(graph, mode='in')) > 2 || max(degree(graph, mode='out')) > 2) {
-    browser()
     stop('Desimplify failed')
   }
   if(convmat) graph = igraph::as_edgelist(graph)
@@ -397,11 +398,12 @@ split_graph = function(graph) {
   # returns a tree and a list of edges that can be used to reconstruct the original admixturegraph
   if(!'igraph' %in% class(graph)) {
     edges = graph
-    graph = edges %>% edges_to_igraph %>% simplify_graph
+    graph = edges %>% edges_to_igraph
     edges %<>% filter(type == 'admix') %>%
       left_join(edges %>% transmute(fromfrom = from, from = to), by = 'from')
     pickedges = TRUE
   } else pickedges = FALSE
+  graph %<>% simplify_graph()
   nodes = frommap = tomap = names(V(graph))
   names(frommap) = names(tomap) = nodes
   fromnodes = tonodes = c()
@@ -432,35 +434,33 @@ split_graph = function(graph) {
       } else {
         p1 = parents[1]
       }
-      if(length(parents) == 0 || !p1 %in% names(V(graph)) || root %in% parents) browser()
+      if(length(parents) == 0 || !p1 %in% names(V(graph)) || root %in% parents) stop('split graph error')
       fromnode0 = names(neighbors(graph, p1, mode = 'in'))
-      if(i > 100) browser()
+      if(i > 100) stop('split graph error 2')
     }
     # stopifnot(!any(c(parents[1], admix[1]) %in% unlist(admixedges)))
     # too strict; probably won't be able to always reintroduce admixedges at appropriate locations after SPR
+
     fromnode = setdiff(names(neighbors(graph, p1, mode = 'out')), adm)
     tonode0 = setdiff(names(neighbors(graph, adm, mode = 'in')), p1)
     tonode = names(neighbors(graph, adm, mode = 'out'))
     fromnodes %<>% c(fromnode)
     tonodes %<>% c(tonode)
-    # fromnodes %<>% c(fromnode0)
-    # tonodes %<>% c(tonode0)
-    #if(adm %in% fromnodes) fromnodes[fromnodes == adm] = fromnode
-    #if(adm %in% tonodes) tonodes[tonodes == adm] = tonode
-    #if(adm == 'pPygmy3' || p1 == 'pPygmy3') browser()
+
     graphnew = igraph::delete_vertices(graph, adm)
-    if(length(c(tonode0, tonode)) %% 2 != 0) browser()
     graphnew = igraph::add_edges(graphnew, c(tonode0, tonode))
     if(tonode %in% admix) frommap[tonode0] = adm
     #if(delete_nodes) {
       graphnew = igraph::delete_vertices(graphnew, p1)
       if(p1 %in% tonodes) tonodes[tonodes == p1] = tonode
+      if(length(fromnode) == 0) browser()
       if(p1 %in% fromnodes) fromnodes[fromnodes == p1] = fromnode
-      if(length(c(fromnode0, fromnode)) %% 2 != 0) browser()
-      graphnew = igraph::add_edges(graphnew, c(fromnode0, fromnode)) %>% simplify_graph()
+      graphnew2 = igraph::add_edges(graphnew, c(fromnode0, fromnode)) %>% simplify_graph()
+      if(!is_simplified(graphnew2)) browser()
+      graphnew = graphnew2
     #}
     if(is_valid(graphnew) && numadmix(graphnew) < numadmix(graph)) graph = graphnew
-    else browser()
+    else stop('Graph invalid')
     deleted = rbind(deleted, c(frommap[p1], adm))
     if(frommap[p1] != p1) {
       deleted = rbind(deleted, c(p1, frommap[p1]))
@@ -658,7 +658,7 @@ insert_admix_old = function(graph, fromnodes, tonodes, substitute_missing = FALS
     else warning('did not insert or substitute admixedge')
   }
   if(desimplify) graph %<>% simplify_graph %>% desimplify_graph
-  if(!isTRUE(all.equal(leaves, sort(get_leafnames(graph))))) browser()
+  if(!isTRUE(all.equal(leaves, sort(get_leafnames(graph))))) stop('insert_admix_old failed!')
   graph
 }
 
@@ -796,7 +796,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
     cutsibling = igraph::difference(neighbors(graph, cutparent, mode='out'), cutnode)
     hostnodes = igraph::difference(V(graph), c(root, cutnodes, cutparent, cutsibling, firstgen))
     if(length(hostnodes) > 0 && length(cutsibling) != 0) break
-    if(i > 100) browser()
+    if(i > 100) stop('spr error')
   })
 
   hostnode = sample(names(hostnodes), 1)
@@ -813,7 +813,7 @@ subtree_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outgroup = 
                 newnam, names(cutnode))) %>%
     igraph::delete_vertices(names(cutparent)) %>%
     igraph::delete_edges(paste(hostparent, hostnode, sep='|'))
-  }, error = function(e) browser())
+  }, error = function(e) stop('spr error'))
   stopifnot(igraph::is_simple(graph))
   stopifnot(igraph::is_dag(graph))
   graph
@@ -828,7 +828,7 @@ admixturegraph_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outg
   o = graph
   desimplify = !is_simplified(graph)
   if(desimplify) graph %<>% simplify_graph
-  if(!is_valid(graph)) browser()
+  if(!is_valid(graph)) stop('apr error')
   spl = split_graph(graph)
   graph = subtree_prune_and_regraft(spl$tree, only_leaves = only_leaves, fix_outgroup = fix_outgroup)
   #graph = insert_admix_old(graph, spl$fromnodes, spl$tonodes, substitute_missing = TRUE)
@@ -888,7 +888,7 @@ move_admixedge_once = function(graph, fix_outgroup = TRUE) {
                      names(neighbors(graph, parents[2], mode='out'))) &
            !n %in% names(subcomponent(graph, admix[i], mode='out'))) {
           newgrandparent = names(neighbors(graph, n, mode='in'))
-          if(length(c(grandparent, sibling, newgrandparent, parents[j], parents[j], n)) %% 2 != 0) browser()
+          if(length(c(grandparent, sibling, newgrandparent, parents[j], parents[j], n)) %% 2 != 0) stop('move admix error')
           graph = igraph::add_edges(graph, c(grandparent, sibling, newgrandparent, parents[j], parents[j], n))
           graph = igraph::delete_edges(graph, c(paste(newgrandparent, n, sep='|'),
                                               paste(grandparent, parents[j], sep='|'),
@@ -1016,7 +1016,6 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_
   newmodels %<>% mutate(mutation = names(mutations),
                         igraph = imap(igraph, ~tryCatch(exec(mutations[[.y]], .x), error = function(e) .x)))
   if(verbose) alert_info(paste0('Evaluating graphs...', space))
-  #if(lastgen == 10) browser()
   newmodels %<>% mutate(out = map(igraph, qpgfun))
   if(verbose) alert_info(paste0('Attaching to previous generations...', space))
   winners %>%
@@ -1238,7 +1237,6 @@ find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgrap
     for(i in seq_len(numrep)) {
       if(verbose && numrep > 1) alert_info(paste0('Repeat ', i, ' out of ', numrep, '...\n'))
       res[[i]] = oa(i)
-      #if(is.null(res[[i]])) browser()
     }
   }
   res = bind_rows(res, .id='run')
@@ -1846,7 +1844,7 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   ograph = graph
   if(is.null(from)) {
     if(desimplify) graph %<>% simplify_graph
-    if(!is_valid(graph)) browser()
+    if(!is_valid(graph)) stop('delete admix error')
     admix = graph %>% find_admixedges %>% slice_sample
     if(nrow(admix) == 0) stop("No admix edges found!")
     from = admix$from
@@ -1864,18 +1862,14 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   newleaves = setdiff(get_leafnames(graph), leaves)
   while(length(newleaves) > 0) {
     g = graph %>% igraph::delete_vertices(newleaves) %>% simplify_graph()
-    #if(!is_valid(g)) browser()
     newleaves = setdiff(get_leafnames(g), leaves)
-    #if(length(setdiff(leaves, get_leafnames(g))) > 0) browser()
     graph = g
   }
   if(degree(graph, get_root(graph), mode = 'out') == 1) {
     graph %<>% igraph::delete_vertices(get_root(graph))
   }
   if(desimplify) graph %<>% desimplify_graph
-  if(length(setdiff(leaves, get_leafnames(graph))) > 0) browser()
-  if(!is_valid(graph)) browser()
-  if(!isTRUE(all.equal(sort(get_leafnames(graph)), leaves))) stop('xxxx')
+  if(!isTRUE(all.equal(sort(get_leafnames(graph)), leaves)) || !is_valid(graph)) stop('xxxx')
   graph
 }
 
@@ -2509,14 +2503,12 @@ rearrange_negadmix3 = function(graph, from, to) {
   parent_neg = from
   parent_pos = graph %>% neighbors(to, mode = 'in') %>% names %>% setdiff(parent_neg)
   grandparent_pos = graph %>% neighbors(parent_pos, mode = 'in') %>% names
-  if(length(grandparent_pos) != 1) return(NULL)
+  if(length(grandparent_pos) != 1) return()
   newgraph = graph %>%
     add_edges(c(grandparent_pos, to, to, parent_pos)) %>%
     delete_edges(paste(c(grandparent_pos, parent_pos, parent_neg), c(parent_pos, to, to), sep = '|'))
   if(!is_valid(newgraph)) {
-    #browser()
-    #warning('rearrange_negadmix3 failed!')
-    return(NULL)
+    return()
   }
   if(length(parent_neg) != 1 || length(parent_pos) != 1) stop('aaa')
   newgraph2 = newgraph %>% add_edges(c(parent_neg, parent_pos)) %>% simplify_graph
@@ -2525,7 +2517,7 @@ rearrange_negadmix3 = function(graph, from, to) {
     mutate(g = list(insert_admix(newgraph, source_from, source_to, dest_from, dest_to))) %>%
     pull(g) %>% pluck(1) %>% simplify_graph
   leaves2 = sort(get_leafnames(newgraph))
-  if(!isTRUE(all.equal(leaves, leaves2)) || !is_valid(newgraph)) return(NULL)
+  if(!isTRUE(all.equal(leaves, leaves2)) || !is_valid(newgraph)) return()
   nold = numadmix(graph)
   nnew = numadmix(newgraph)
   if(nnew < nold) newgraph %<>% insert_admix_n(nold - nnew)
@@ -2663,7 +2655,6 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     }
 
     if(gimp >= traceback_gen) {
-      #browser()
       if(is.null(lasttracebacklevel)) lasttracebacklevel = newgraph$level#-traceback_gen
       #if(is.null(lasttracebacklevel)) lasttracebacklevel = 2
       else lasttracebacklevel = lasttracebacklevel - 1
@@ -2689,9 +2680,8 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     if(verbose) alert(paste0(msg, '\n'))
     sel = models %>% filter(hash == newgraph$hash[[1]])
 
-    #if(any(duplicated(models$hash))) browser()
     graph = sel$g[[1]]
-    if(!is.null(outpop) && is.null(get_outpop(graph))) browser()
+    if(!is.null(outpop) && is.null(get_outpop(graph))) stop('fg error')
 
     if(is.null(nzf4) && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)) {
       nzf4 = nonzero_f4
@@ -2716,7 +2706,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
                                event_order = eventc, verbose = verbose)
       if(nrow(newmod) == 0) next
       newmod %<>% slice_min(score, with_ties = FALSE)
-      }, error = function(e) browser())
+      }, error = function(e) stop('fg error 2'))
       mf = 'plusnadmix'
       if(numadmix(graph) == max_admix) {
         mf = 'plusminusn'
@@ -2753,12 +2743,13 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
         remaining = numgraphs - nrow(newmod)
       }
       if(remaining > 0) {
-        tryCatch({
+
+      tryCatch({
         randmut = tibble(fun = mutfuns, mutfun = names(fun)) %>%
           slice_sample(n = remaining, replace = TRUE) %>%
           rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
-        }, error = function(e) browser())
         newmod %<>% bind_rows(randmut)
+        }, error = function(e) if(verbose) alert_warning("Could not apply mutation function"))
       }
 
       newmod %<>% rowwise %>% filter(satisfies_constraints(g, nzf4, admixc, eventc)) %>% ungroup
@@ -2772,13 +2763,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       newmod %<>%
         mutate(res = furrr::future_map(g, qpgfun, .options = furrr::furrr_options(seed = TRUE))) %>%
         unnest_wider(res) %>%
-        #mutate(edges = map(edges, ~filter(., weight < 0))) %>%
         transmute(gen2 = i, hash, lasthash, g, edges, score, mutfun) %>%
         arrange(score)
     }
 
-    # if(any(is.na(newmod$score)) || nrow(newmod) == 0) browser()
-    # if(is.na(newmod$score[1])) browser()
     besthist[i] = newmod$score[1]
     bestmut = newmod$mutfun[1]
     if(besthist[i] < best) {
@@ -2846,7 +2834,7 @@ pick_graph = function(stdat, minprob = 0.5, cnt1 = 10, cnt5 = 30, pen1 = 1.2, pe
            imp = replace_na((gimp+1)^gpen, 1),
            potential = 1000 / (score * g1 * g5 * imp), potential = replace_na(potential, 1/max(score, na.rm=T)))
   maxpot = max(out$potential)
-  if(maxpot == Inf) browser()
+  if(maxpot == Inf) stop('maxpot inf')
   out %<>% slice_sample(n = 1, weight_by = potential^10)
   if(verbose) alert_warning(out %$% paste0('\tcnt ', sum(stdat$totalCount == 1), '\tpen ', paste0(round(g1, 2), ' ', round(g5, 2), ' ', round(imp, 2), '\tpot ', round(potential, 2), ' ', round(maxpot, 2), '\n')))
   out
@@ -2861,7 +2849,7 @@ pick_graph2 = function(stdat, lasttracebacklevel, tracebackafter = 4, verbose = 
   }
   if(is.null(lasttracebacklevel)) lasttracebacklevel = max(stdat$level)
   sel = stdat %>% filter(level < lasttracebacklevel, height == 1) %>% slice_max(level) %>% slice_min(score, with_ties = FALSE)
-  if(nrow(sel) == 0) browser()
+  if(nrow(sel) == 0) stop('pick graph error')
   if(verbose) print(sel)
   sel
 }
@@ -2882,13 +2870,9 @@ swap_negdrift = function(graph, from, to) {
 
 replace_admix_with_random = function(graph, from = NULL, to = NULL) {
 
-  if(!is_valid(graph) || !all(c(from, to) %in% names(V(graph)))) browser()
   leaves = sort(get_leafnames(graph))
   g = graph %>% delete_admix(from, to)
-  if(!is_valid(g)) browser()
-  tryCatch(all.equal(leaves, sort(get_leafnames(g))), error = function() browser())
   g %<>% insert_admix
-  if(!is_valid(g)) browser()
   g
 }
 
@@ -3206,12 +3190,6 @@ summarize_eventorder = function(graph, unique_only = TRUE) {
     filter(node_1 != node_2) %>% left_join(node_pairs, by = c('node_1'='from', 'node_2'='to')) %>%
     mutate(order = replace_na(order, 0))
   if(unique_only) {
-  #   bla = out %>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
-  #     mutate(x = all(c(-1,1) %in% order)) %>% ungroup %>% filter(x)
-  #   if(nrow(bla) > 1) browser()
-    # out %<>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
-    #   mutate(order = all(c(-1,1) %in% order)) %>%
-    # slice_max(abs(order), with_ties = FALSE) %>% ungroup
     out %<>% group_by(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2) %>%
       filter(all(order != -1) & any(order == 1)) %>% ungroup %>%
       transmute(earlier1 = pmin(pop1_1, pop2_1, na.rm=T),
@@ -3593,10 +3571,6 @@ summarize_zerof4 = function(graph, eps = 1e-7) {
 satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 
   root = get_rootname(graph)
-  # pe1 = all_simple_paths(graph, 'Russia_Ust_Ishim.DG', root, mode = 'in')
-  # pe2 = all_simple_paths(graph, 'Altai_Neanderthal.DG', root, mode = 'in')
-  # pl1 = all_simple_paths(graph, 'Mbuti.DG', root, mode = 'in')
-  # pl2 = all_simple_paths(graph, 'Vindija.DG', root, mode = 'in')
 
   if(is.na(earlier2)) earlier2 = names(neighbors(graph, earlier1, mode='in'))
   if(is.na(later2)) later2 = names(neighbors(graph, later1, mode='in'))
@@ -3604,7 +3578,7 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
   pe2 = all_simple_paths(graph, earlier2, root, mode = 'in')
   pl1 = all_simple_paths(graph, later1, root, mode = 'in')
   pl2 = all_simple_paths(graph, later2, root, mode = 'in')
-  if(length(pe1) == 0 || length(pe2) == 0 || length(pl1) == 0 || length(pl2) == 0) browser()
+  if(length(pe1) == 0 || length(pe2) == 0 || length(pl1) == 0 || length(pl2) == 0) stop('satisfies_oneevent error')
 
   ppis = expand_grid(expand_grid(pe1, pe2) %>% mutate(i = 1:n()),
                      expand_grid(pl1, pl2) %>% mutate(j = 1:n())) %>% rowwise %>%
@@ -3911,7 +3885,8 @@ place_root = function(graph, from, to, outpop = NULL) {
   oldleaves = get_leafnames(graph)
   newroot = newnodenam('root', names(V(graph)))
   newg = graph %>% delete_vertices(root) %>% add_edges(c(children[1], children[2])) %>%
-    add_vertices(1, name = newroot) %>% delete_edges(paste0(from, '|', to)) %>% add_edges(c(newroot, from, newroot, to)) %>%
+    add_vertices(1, name = newroot) %>% delete_edges(paste0(from, '|', to)) %>%
+    add_edges(c(newroot, from, newroot, to)) %>%
     igraph::as.undirected(mode = 'collapse')
   dist = igraph::distances(newg, newroot)
   out = newg %>% as_edgelist %>% as_tibble(.name_repair = ~c('v1', 'v2')) %>%
@@ -3925,22 +3900,6 @@ place_root = function(graph, from, to, outpop = NULL) {
     newleaves = setdiff(get_leafnames(g), oldleaves)
     out = g
   }
-  # while(TRUE) {
-  #   newleaves =  setdiff(get_leafnames(out), oldleaves)
-  #   if(length(newleaves) == 0) break
-  #   for(l in newleaves) {
-  #     parent = neighbors(out, l, mode = 'in') %>% map(~degree(out, ., mode = 'in')) %>% keep(~.==1) %>% names %>% sample(1)
-  #     out %<>% delete_edges(paste0(parent, '|', l)) %>% add_edges(c(l, parent))
-  #   }
-  #   if(!is_valid(out)) browser()
-  #   # out2 = out %>% rowwise %>%
-  #   #   mutate(to = ifelse(!is.na(to), to, ifelse(runif(1) < 0.5, v1, v2)),
-  #   #          from = ifelse(!is.na(from), from, ifelse(to == v1, v2, v1))) %>% ungroup %>%
-  #   #   select(from, to) %>% edges_to_igraph()
-  #   # if(length(setdiff(get_leafnames(out2), oldleaves)) == 0) break
-  #   count = count + 1
-  #   if(count > 100) browser()
-  # }
   out
 }
 
