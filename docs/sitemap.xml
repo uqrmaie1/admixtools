@@ -142,6 +142,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/flipadmix_random.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/fst.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/generate_all_graphs.html</loc>
   </url>
   <url>
@@ -280,6 +283,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/permute_leaves.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/place_root_random.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plink_to_afs.html</loc>
   </url>
   <url>
@@ -359,6 +365,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpwave_pairs.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpwave_wrapper.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_admixturegraph.html</loc>

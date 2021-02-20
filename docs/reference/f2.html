@@ -188,7 +188,8 @@
   boot <span class='op'>=</span> <span class='cn'>FALSE</span>,
   sure <span class='op'>=</span> <span class='cn'>FALSE</span>,
   unique_only <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  verbose <span class='op'>=</span> <span class='cn'>FALSE</span>
+  verbose <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  <span class='va'>...</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -219,10 +220,10 @@ population combinations to be tested. Other <code>pop</code> arguments will be i
     </tr>
     <tr>
       <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time and the covariance matrix
-of the f statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed <code>n</code> times,
-where <code>n</code> is either equal to <code>boot</code> if it is an integer, or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.
-The the covariance matrix of the f statistics will be computed using bootstrapping.</p></td>
+      <td><p>If <code>FALSE</code> (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If <code>boot</code> is an integer, that number
+will specify the number of bootstrap resamplings. If <code>boot = TRUE</code>, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.</p></td>
     </tr>
     <tr>
       <th>sure</th>
@@ -236,6 +237,10 @@ from accidently computing all combinations if that number is large.</p></td>
     <tr>
       <th>verbose</th>
       <td><p>Print progress updates</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>Additional arguments passed to <code><a href='f2_from_geno.html'>f2_from_geno</a></code> when <code>data</code> is a genotype prefix</p></td>
     </tr>
     </table>
 

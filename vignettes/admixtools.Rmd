@@ -1,5 +1,5 @@
 ---
-title: "ADMIXTOOLS 2 Torial"
+title: "ADMIXTOOLS 2 Tutorial"
 author: "Robert Maier"
 date: "`r Sys.Date()`"
 output:
@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{ADMIXTOOLS 2 Torial}
+  %\VignetteIndexEntry{ADMIXTOOLS 2 Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
@@ -386,15 +386,22 @@ The results of *ADMIXTOOLS 2* should generally match those of *ADMIXTOOLS*. Howe
 
 * Selection of SNPs
 
-  The default behavior in *ADMIXTOOLS* is to only use SNPs which are non-missing and polymorphic across all populations. The parameter `allsnps` can be used to instead compute each *f*-statistic from a potentially different set of SNPs; those that are non-missing in the populations described by each *f*-statistic.
+  Different *ADMIXTOOLS* programs select SNPs in slightly different ways.*qpDstat* selects different SNPs for each $f_4$-statistic (similar to `allsnps: YES` in *qpAdm* and *qpGraph*). The default in *qpAdm* and *qpGraph* is to select only those SNPs which are present in all populations in the tested model (`allsnps: NO`). In addition to that, some programs discard SNPs which have identical allele frequencies in all populations, while others do not. (The SNPs that remain are sometimes called "polymorphic" here. They are polymorphic not in the traditional meaning, but with regard to their allele frequencies.) While those SNPs are not informative in the sense that they do not shift $f_4$-statistics away from zero, they can still have a small impact on the magnitude of the estimate, and on the total number of SNPs used.
 
-  *ADMIXTOOLS 2* doesn't have an `allsnps` option. Instead, there is a parameter called `maxmiss`. SNPs which are missing in a fraction of populations greater than `maxmiss` will be excluded. The default value `maxmiss = 1` ensures that *f*-statistics can be extracted for a large number of populations without discarding most SNPs. `maxmiss = 1` is equivalent to `allsnps: YES`. To imitate the default behavior `allsnps: NO`, set `maxmiss = 0`, or provide the list of SNPs to use with `keepsnps`.
+  *ADMIXTOOLS 2* is set up in such a way that the default options are the same as in *ADMIXTOOLS* in most cases. However, missing data can [make things complicated](fstats.html#bias-due-to-missing-data-1). Most notably, in order to get the default behavior of the original *qpDstat*, the first argument to the `qpdstat()` function has to be the prefix of genotype files. Similarly, to get the `allsnps: YES` behavior of *qpAdm* and *qpGraph*, the first argument to the `qpadm()` and `qpgraph()` functions has to be the prefix of genotype files and in addition to that, the `allsnps` parameter in these functions should be set to `TRUE`.
+  With regard to the use of non-polymorphic/non-informative SNPs, *ADMIXTOOLS 2* includes them for the computation for $f_2$-statistics, but not for the computation of allele frequency products. This usually makes very little difference, but it makes it possible to imitate the default behavior of the original *ADMIXTOOLS* programs.
 
 * Pseudohaploid data
 
   In *ADMIXTOOLS*, it is recommended to use the option `inbreed: YES` when dealing with pseudohaploid data. This will ensure that when the low-sample-size correction factor for $f_2$-statistics is computed, each pseudohaploid sample contributes only one haplotype. However, this will not work for populations of only a single pseudohaploid sample. Which is not a big problem, because the default option `inbreed: NO` usually gives very similar results.
 
   *ADMIXTOOLS 2* automatically detects which samples are diploid and which samples are pseudohaploid based on the first 1000 SNPs, and computes the correction factor appropriately. The exact default behavior of *ADMIXTOOLS* (`inbreed: NO`) can be recovered by setting `adjust_pseudohaploid = FALSE` in `extract_f2()`.
+
+* $f_4$ vs D-statistics
+
+  In *ADMIXTOOLS*, *qpDstat* computes D-statistics by default `f4mode: YES` will compute instead compute $f_4$. This is reversed in *ADMIXTOOLS 2*: The default is `f4mode = TRUE`, and setting it to false will compute D-statistics. The reason for this is that `f4mode = FALSE` (computing D-statistics) is only possible when the first argument to the function is the prefix of genotype files.
+  
+  
 
 <br>
 

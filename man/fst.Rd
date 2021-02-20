@@ -4,10 +4,14 @@
 \alias{fst}
 \title{Compute Fst}
 \usage{
-fst(data, pop1 = NULL, pop2 = NULL, boot = FALSE, verbose = FALSE)
+fst(data, pop1 = NULL, pop2 = NULL, boot = FALSE, verbose = FALSE, ...)
 }
 \arguments{
-\item{data}{A directory which contains pre-computed f2- and fst-statistics}
+\item{data}{Input data in one of three forms: \enumerate{
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A directory which contains pre-computed f2-statistics
+\item The prefix of genotype files (slowest option)
+}}
 
 \item{pop1}{One of the following four:
 \enumerate{
@@ -27,6 +31,8 @@ will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the num
 equal to the number of SNP blocks.}
 
 \item{verbose}{Print progress updates}
+
+\item{...}{Additional arguments passed to \code{\link{f2_from_geno}} when \code{data} is a genotype prefix}
 }
 \description{
 This function reads Fst from a directory with precomputed f2-statistics, and turns per-block data

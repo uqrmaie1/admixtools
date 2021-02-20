@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Estimate f3 statistics — qp3pop • admixtools</title>
+<title>Wrapper function around the original qpWave program — qpwave_wrapper • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,9 +54,8 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Estimate f3 statistics — qp3pop" />
-<meta property="og:description" content="Computes f3 statistics from f2 blocks of the form \(f3(A; B, C)\). Equivalent to
-\((f2(A, B) + f2(A, C) - f2(B, C)) / 2\) and to \(f4(A, B; A, C)\)" />
+<meta property="og:title" content="Wrapper function around the original qpWave program — qpwave_wrapper" />
+<meta property="og:description" content="Wrapper function around the original qpWave program" />
 
 
 
@@ -173,114 +172,55 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Estimate f3 statistics</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/qpdstat.R'><code>R/qpdstat.R</code></a></small>
-    <div class="hidden name"><code>qp3pop.Rd</code></div>
+    <h1>Wrapper function around the original qpWave program</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
+    <div class="hidden name"><code>qpwave_wrapper.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Computes f3 statistics from f2 blocks of the form \(f3(A; B, C)\). Equivalent to
-\((f2(A, B) + f2(A, C) - f2(B, C)) / 2\) and to \(f4(A, B; A, C)\)</p>
+    <p>Wrapper function around the original qpWave program</p>
     </div>
 
-    <pre class="usage"><span class='fu'>qp3pop</span><span class='op'>(</span>
-  <span class='va'>data</span>,
-  pop1 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  pop2 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  pop3 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  boot <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  sure <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  unique_only <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  verbose <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  <span class='va'>...</span>
+    <pre class="usage"><span class='fu'>qpwave_wrapper</span><span class='op'>(</span>
+  <span class='va'>pref</span>,
+  <span class='va'>left</span>,
+  <span class='va'>right</span>,
+  target <span class='op'>=</span> <span class='cn'>NULL</span>,
+  bin <span class='op'>=</span> <span class='st'>"~np29/o2bin/qpAdm"</span>,
+  outdir <span class='op'>=</span> <span class='st'>"./"</span>,
+  parfile <span class='op'>=</span> <span class='cn'>NULL</span>,
+  allsnps <span class='op'>=</span> <span class='st'>"NO"</span>,
+  blgsize <span class='op'>=</span> <span class='fl'>0.05</span>,
+  fancyf4 <span class='op'>=</span> <span class='st'>"NO"</span>,
+  f4mode <span class='op'>=</span> <span class='st'>"YES"</span>,
+  inbreed <span class='op'>=</span> <span class='st'>"NO"</span>,
+  printonly <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  env <span class='op'>=</span> <span class='st'>""</span>,
+  verbose <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>data</th>
-      <td><p>Input data in one of three forms:</p><ol>
-<li><p>A 3d array of blocked f2 statistics, output of <code><a href='f2_from_precomp.html'>f2_from_precomp</a></code> or <code><a href='extract_f2.html'>extract_f2</a></code> (fastest option)</p></li>
-<li><p>A directory which contains pre-computed f2-statistics</p></li>
-<li><p>The prefix of genotype files (slowest option)</p></li>
-</ol></td>
+      <th>left</th>
+      <td><p>Left populations (sources)</p></td>
     </tr>
     <tr>
-      <th>pop1</th>
-      <td><p>One of the following four:</p><ol>
-<li><p><code>NULL</code>: all possible population combinations will be returned</p></li>
-<li><p>A vector of population labels. All combinations with the other <code>pop</code> arguments will be returned</p></li>
-<li><p>A matrix with population combinations to be tested, with one population per column and one
-combination per row. Other <code>pop</code> arguments will be ignored.</p></li>
-<li><p>the location of a file (<code>poplistname</code> or <code>popfilename</code>) which specifies the populations or
-population combinations to be tested. Other <code>pop</code> arguments will be ignored.</p></li>
-</ol></td>
+      <th>right</th>
+      <td><p>Right populations (outgroups)</p></td>
     </tr>
     <tr>
-      <th>pop2</th>
-      <td><p>A vector of population labels</p></td>
-    </tr>
-    <tr>
-      <th>pop3</th>
-      <td><p>A vector of population labels</p></td>
-    </tr>
-    <tr>
-      <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), block-jackknife resampling will be used to compute standard errors.
-Otherwise, block-bootstrap resampling will be used to compute standard errors. If <code>boot</code> is an integer, that number
-will specify the number of bootstrap resamplings. If <code>boot = TRUE</code>, the number of bootstrap resamplings will be
-equal to the number of SNP blocks.</p></td>
-    </tr>
-    <tr>
-      <th>sure</th>
-      <td><p>The number of population combinations can get very large. This is a safety option that stops you
-from accidently computing all combinations if that number is large.</p></td>
-    </tr>
-    <tr>
-      <th>unique_only</th>
-      <td><p>If <code>TRUE</code> (the default), redundant combinations will be excluded</p></td>
+      <th>target</th>
+      <td><p>Target population</p></td>
     </tr>
     <tr>
       <th>verbose</th>
       <td><p>Print progress updates</p></td>
     </tr>
-    <tr>
-      <th>...</th>
-      <td><p>Additional arguments passed to <code><a href='f2_from_geno.html'>f2_from_geno</a></code> when <code>data</code> is a genotype prefix</p></td>
-    </tr>
     </table>
 
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p><code>qp3pop</code> returns a data frame with f3 statistics</p>
-    <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
-
-    
-
-<p><code>f3</code></p>
-    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
-
-    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history</em> Genetics</p>
-<p>Peter, B. (2016) <em>Admixture, Population Structure, and F-Statistics</em> Genetics</p>
-
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='va'>pop1</span> <span class='op'>=</span> <span class='st'>'Denisova.DG'</span>
-<span class='va'>pop2</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span><span class='op'>)</span>
-<span class='va'>pop3</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span><span class='op'>)</span>
-<span class='fu'>qp3pop</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span>, <span class='va'>pop3</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 6 x 7</span><span>
-#&gt;   pop1        pop2                 pop3                  est      se     z     p
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>               </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.059</span><span style='text-decoration: underline;'>1</span><span> 5.98</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  98.7     0
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.072</span><span style='text-decoration: underline;'>0</span><span> 6.47</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 111.      0
-#&gt; </span><span style='color: #555555;'>3</span><span> Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.074</span><span style='text-decoration: underline;'>2</span><span> 7.02</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 106.      0
-#&gt; </span><span style='color: #555555;'>4</span><span> Denisova.DG Vindija.DG           Chimp.REF          0.059</span><span style='text-decoration: underline;'>4</span><span> 5.92</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 100.      0
-#&gt; </span><span style='color: #555555;'>5</span><span> Denisova.DG Vindija.DG           Mbuti.DG           0.072</span><span style='text-decoration: underline;'>4</span><span> 6.34</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 114.      0
-#&gt; </span><span style='color: #555555;'>6</span><span> Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.075</span><span style='text-decoration: underline;'>0</span><span> 6.96</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 108.      0</div><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>qp3pop</span><span class='op'>(</span><span class='va'>f2_dir</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span>, <span class='va'>pop3</span><span class='op'>)</span>
-<span class='op'>}</span>
-</div></span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

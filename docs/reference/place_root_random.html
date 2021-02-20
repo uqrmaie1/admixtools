@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Compare the fit of two qpgraph models — compare_fits4 • admixtools</title>
+<title>Modify a graph by changing the position of the root node — place_root_random • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,8 +54,8 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits4" />
-<meta property="og:description" content="Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other." />
+<meta property="og:title" content="Modify a graph by changing the position of the root node — place_root_random" />
+<meta property="og:description" content="Modify a graph by changing the position of the root node" />
 
 
 
@@ -172,59 +172,34 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Compare the fit of two qpgraph models</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/qpgraph.R'><code>R/qpgraph.R</code></a></small>
-    <div class="hidden name"><code>compare_fits4.Rd</code></div>
+    <h1>Modify a graph by changing the position of the root node</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
+    <div class="hidden name"><code>place_root_random.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Takes two data frames with model fits computed on two graphs for on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.</p>
+    <p>Modify a graph by changing the position of the root node</p>
     </div>
 
-    <pre class="usage"><span class='fu'>compare_fits4</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span>, <span class='va'>f2_blocks</span>, <span class='va'>f2_blocks_test</span>, boot <span class='op'>=</span> <span class='cn'>FALSE</span>, seed <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>place_root_random</span><span class='op'>(</span><span class='va'>graph</span>, fix_outgroup <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>fit1</th>
-      <td><p>The fit of the first graph</p></td>
+      <th>graph</th>
+      <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>fit2</th>
-      <td><p>The fit of the second graph</p></td>
-    </tr>
-    <tr>
-      <th>f2_blocks</th>
-      <td><p>f2 blocks used for fitting <code>fit1</code> and <code>fit2</code>. Used in combination with <code>f2_blocks_test</code> to compute f-statistics covariance matrix.</p></td>
-    </tr>
-    <tr>
-      <th>f2_blocks_test</th>
-      <td><p>f2 blocks which were not used for fitting <code>fit1</code> and <code>fit2</code></p></td>
-    </tr>
-    <tr>
-      <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), block-jackknife resampling will be used to compute standard errors.
-Otherwise, block-bootstrap resampling will be used to compute standard errors. If <code>boot</code> is an integer, that number
-will specify the number of bootstrap resamplings. If <code>boot = TRUE</code>, the number of bootstrap resamplings will be
-equal to the number of SNP blocks. If bootstrap resampling is enabled, empirical p-values (<code>p_emp</code>) and 95 confidence intervals (<code>ci_low</code> and <code>ci_high</code>) will be reported.</p></td>
-    </tr>
-    <tr>
-      <th>seed</th>
-      <td><p>Random seed used if <code>boot</code> is <code>TRUE</code>. Does not need to match a seed used in fitting the models</p></td>
+      <th>fix_outgroup</th>
+      <td><p>Keep outgroup in place</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='va'>nblocks</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/dim.html'>dim</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span><span class='op'>)</span><span class='op'>[</span><span class='fl'>3</span><span class='op'>]</span>
-<span class='va'>train</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/sample.html'>sample</a></span><span class='op'>(</span><span class='fl'>1</span><span class='op'>:</span><span class='va'>nblocks</span>, <span class='fu'><a href='https://rdrr.io/r/base/Round.html'>round</a></span><span class='op'>(</span><span class='va'>nblocks</span><span class='op'>/</span><span class='fl'>2</span><span class='op'>)</span><span class='op'>)</span>
-<span class='va'>fit1</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span><span class='op'>[</span>,,<span class='va'>train</span><span class='op'>]</span>, <span class='va'>graph1</span><span class='op'>)</span>
-<span class='va'>fit2</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span><span class='op'>[</span>,,<span class='va'>train</span><span class='op'>]</span>, <span class='va'>graph2</span><span class='op'>)</span>
-<span class='fu'>compare_fits4</span><span class='op'>(</span><span class='va'>fit1</span>, <span class='va'>fit2</span>, <span class='va'>example_f2_blocks</span><span class='op'>[</span>,,<span class='va'>train</span><span class='op'>]</span>, <span class='va'>example_f2_blocks</span><span class='op'>[</span>,,<span class='op'>-</span><span class='va'>train</span><span class='op'>]</span><span class='op'>)</span>
-<span class='op'>}</span>
-</div></pre>
+    <p>A new admixture graph</p>
+
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

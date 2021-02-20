@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Estimate f3 statistics — qp3pop • admixtools</title>
+<title>Compute Fst — fst • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,9 +54,9 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Estimate f3 statistics — qp3pop" />
-<meta property="og:description" content="Computes f3 statistics from f2 blocks of the form \(f3(A; B, C)\). Equivalent to
-\((f2(A, B) + f2(A, C) - f2(B, C)) / 2\) and to \(f4(A, B; A, C)\)" />
+<meta property="og:title" content="Compute Fst — fst" />
+<meta property="og:description" content="This function reads Fst from a directory with precomputed f2-statistics, and turns per-block data
+into estimates and standard errors for each population pair. See details for how Fst is computed." />
 
 
 
@@ -173,27 +173,17 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Estimate f3 statistics</h1>
+    <h1>Compute Fst</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/qpdstat.R'><code>R/qpdstat.R</code></a></small>
-    <div class="hidden name"><code>qp3pop.Rd</code></div>
+    <div class="hidden name"><code>fst.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Computes f3 statistics from f2 blocks of the form \(f3(A; B, C)\). Equivalent to
-\((f2(A, B) + f2(A, C) - f2(B, C)) / 2\) and to \(f4(A, B; A, C)\)</p>
+    <p>This function reads Fst from a directory with precomputed f2-statistics, and turns per-block data
+into estimates and standard errors for each population pair. See <code>details</code> for how Fst is computed.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>qp3pop</span><span class='op'>(</span>
-  <span class='va'>data</span>,
-  pop1 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  pop2 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  pop3 <span class='op'>=</span> <span class='cn'>NULL</span>,
-  boot <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  sure <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  unique_only <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  verbose <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  <span class='va'>...</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>fst</span><span class='op'>(</span><span class='va'>data</span>, pop1 <span class='op'>=</span> <span class='cn'>NULL</span>, pop2 <span class='op'>=</span> <span class='cn'>NULL</span>, boot <span class='op'>=</span> <span class='cn'>FALSE</span>, verbose <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -222,24 +212,11 @@ population combinations to be tested. Other <code>pop</code> arguments will be i
       <td><p>A vector of population labels</p></td>
     </tr>
     <tr>
-      <th>pop3</th>
-      <td><p>A vector of population labels</p></td>
-    </tr>
-    <tr>
       <th>boot</th>
       <td><p>If <code>FALSE</code> (the default), block-jackknife resampling will be used to compute standard errors.
 Otherwise, block-bootstrap resampling will be used to compute standard errors. If <code>boot</code> is an integer, that number
 will specify the number of bootstrap resamplings. If <code>boot = TRUE</code>, the number of bootstrap resamplings will be
 equal to the number of SNP blocks.</p></td>
-    </tr>
-    <tr>
-      <th>sure</th>
-      <td><p>The number of population combinations can get very large. This is a safety option that stops you
-from accidently computing all combinations if that number is large.</p></td>
-    </tr>
-    <tr>
-      <th>unique_only</th>
-      <td><p>If <code>TRUE</code> (the default), redundant combinations will be excluded</p></td>
     </tr>
     <tr>
       <th>verbose</th>
@@ -251,36 +228,28 @@ from accidently computing all combinations if that number is large.</p></td>
     </tr>
     </table>
 
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p><code>qp3pop</code> returns a data frame with f3 statistics</p>
-    <h2 class="hasAnchor" id="alias"><a class="anchor" href="#alias"></a>Alias</h2>
-
-    
-
-<p><code>f3</code></p>
+    <p>The Hudson Fst estimator used here is described in the two publications below.
+For two populations with estimated allele frequency vectors <code>p1</code> and <code>p2</code>,
+and allele count vectors <code>n1</code> and <code>n2</code>, it is calculated as follows:<br /><br />
+<code>num = (p1 - p2)^2 - p1*(1-p1)/(n1-1) - p2*(1-p2)/(n2-1)</code><br />
+<code>denom = p1 + p2 - 2*p1*p2</code><br />
+<code>fst = mean(num)/mean(denom)</code><br /><br />
+This is done independently for each SNP block, and is stored on disk for each population pair.
+Jackknifing or bootstrapping across these per-block estimates yields the overall estimates and standard errors.</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
-    <p>Patterson, N. et al. (2012) <em>Ancient admixture in human history</em> Genetics</p>
-<p>Peter, B. (2016) <em>Admixture, Population Structure, and F-Statistics</em> Genetics</p>
+    <p>Reich, D. (2009) <em>Reconstructing Indian population history</em> Nature</p>
+<p>Bhatia, G. (2013) <em>Estimating and interpreting Fst: the impact of rare variants</em> Genome Research</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='va'>pop1</span> <span class='op'>=</span> <span class='st'>'Denisova.DG'</span>
+    <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>pop1</span> <span class='op'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='va'>pop2</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span><span class='op'>)</span>
-<span class='va'>pop3</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'Chimp.REF'</span>, <span class='st'>'Mbuti.DG'</span>, <span class='st'>'Russia_Ust_Ishim.DG'</span><span class='op'>)</span>
-<span class='fu'>qp3pop</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span>, <span class='va'>pop3</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 6 x 7</span><span>
-#&gt;   pop1        pop2                 pop3                  est      se     z     p
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>               </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.059</span><span style='text-decoration: underline;'>1</span><span> 5.98</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span>  98.7     0
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.072</span><span style='text-decoration: underline;'>0</span><span> 6.47</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 111.      0
-#&gt; </span><span style='color: #555555;'>3</span><span> Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.074</span><span style='text-decoration: underline;'>2</span><span> 7.02</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 106.      0
-#&gt; </span><span style='color: #555555;'>4</span><span> Denisova.DG Vindija.DG           Chimp.REF          0.059</span><span style='text-decoration: underline;'>4</span><span> 5.92</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 100.      0
-#&gt; </span><span style='color: #555555;'>5</span><span> Denisova.DG Vindija.DG           Mbuti.DG           0.072</span><span style='text-decoration: underline;'>4</span><span> 6.34</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 114.      0
-#&gt; </span><span style='color: #555555;'>6</span><span> Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.075</span><span style='text-decoration: underline;'>0</span><span> 6.96</span><span style='color: #555555;'>e</span><span style='color: #BB0000;'>-4</span><span> 108.      0</div><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>qp3pop</span><span class='op'>(</span><span class='va'>f2_dir</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span>, <span class='va'>pop3</span><span class='op'>)</span>
+<span class='fu'>fst</span><span class='op'>(</span><span class='va'>f2_dir</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span><span class='op'>)</span>
 <span class='op'>}</span>
-</div></span></pre>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

@@ -202,9 +202,10 @@ The subdivisions are formed by leaving out one or more SNP block at a time (see 
     </tr>
     <tr>
       <th>boot</th>
-      <td><p>If <code>FALSE</code> (the default), each block will be left out at a time.
-Otherwise bootstrap resampling is performed <code>n</code> times, where <code>n</code> is either equal to <code>boot</code> if it is an integer,
-or equal to the number of blocks if <code>boot</code> is <code>TRUE</code>.</p></td>
+      <td><p>If <code>FALSE</code> (the default), block-jackknife resampling will be used to compute standard errors.
+Otherwise, block-bootstrap resampling will be used to compute standard errors. If <code>boot</code> is an integer, that number
+will specify the number of bootstrap resamplings. If <code>boot = TRUE</code>, the number of bootstrap resamplings will be
+equal to the number of SNP blocks.</p></td>
     </tr>
     <tr>
       <th>...</th>

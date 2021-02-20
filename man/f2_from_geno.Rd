@@ -21,6 +21,7 @@ f2_from_geno(
   auto_only = TRUE,
   keepsnps = NULL,
   afprod = FALSE,
+  fst = FALSE,
   format = NULL,
   adjust_pseudohaploid = TRUE,
   remove_na = TRUE,

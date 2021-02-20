@@ -11,7 +11,8 @@ f2(
   boot = FALSE,
   sure = FALSE,
   unique_only = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{
@@ -44,6 +45,8 @@ from accidently computing all combinations if that number is large.}
 \item{unique_only}{If \code{TRUE} (the default), redundant combinations will be excluded}
 
 \item{verbose}{Print progress updates}
+
+\item{...}{Additional arguments passed to \code{\link{f2_from_geno}} when \code{data} is a genotype prefix}
 }
 \value{
 \code{f2} returns a data frame with f2 statistics
