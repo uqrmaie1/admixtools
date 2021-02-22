@@ -152,14 +152,13 @@ The two scenarios are illustrated for SNPs with different missingness patterns i
 
 <br>
 
-There are different solutions to these problems. Most of them involve choosing specific sets of SNPs:
+This means that when working with samples or populations with significant amounts of missing data, it can matter which SNPs we decide to use. There is a trade-off between minimizing the chance of bias (using few SNPs) and maximizing power (using many SNPs). Here are the three basic options, ordered from most conservative / fewest SNPs (which is the default) to least conservative / most SNPs.
 
-1. Using only SNPs present in all populations in a given analysis (`maxmiss = 0` / `allsnps: NO`)
-2. Using only SNPs present in all four populations of any given $f_4$-statistic (`allsnps`)
-3. Excluding SNPs or populations with high levels of missingness (`maxmiss > 0`)
-4. Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics (`afprod = TRUE`)
+1. Use the same SNPs for every $f_4$-statistic (`maxmiss = 0` / `allsnps: NO`)
+2. Use different SNPs for each $f_4$-statistic (`allsnps: YES / allsnps = TRUE`)
+3. Use different SNPs for each $f_2$-statistic (`maxmiss > 0`)
 
-These options fall along a gradient that ranges from very conservative - using fewer SNPs and thus having less power, minimizing the chance of false positive results - to less conservative - using all SNPs that are informative, at cost increasing the chance of false positive results. They are discussed individually below. Which of this solutions is most suitable in your case depends on a few different factors:
+These options are discussed in more detail below. The second option makes it necessary to read data from genotype files directly. To choose between option 1 and option 3, adjust the `maxmiss` parameter in `extract_f2()` or `f2_from_geno()`. Which of this solutions is most suitable in your case depends on a few different factors:
 
 * If most of your samples have few missing SNPs, you will not loose much power by using the first, most conservative option.
 * If there is lots of missingness, but you have reason to believe that SNPs are missing more or less at random, it can be safe to use the less conservative options. This could be the case if, for example, all populations were genotyped using the same technology, and if there are no associations between missingness in one population, and allele frequency in another population.
@@ -206,24 +205,24 @@ These options fall along a gradient that ranges from very conservative - using f
 
 What follows are more detailed descriptions of the different strategies for dealing with missing data, and their implementations in *ADMIXTOOLS* and in *ADMIXTOOLS 2*.
 
-1. Using only SNPs present in all populations in a given analysis
+1. Use the same SNPs for every $f_4$-statistic
     
     This is the most conservative option, and it is the default in both *ADMIXTOOLS* (where it corresponds to `allsnps: NO`) and *ADMIXTOOLS 2* (where it corresponds to `maxmiss = 0`). The downside of this option is that few SNPs may remain, especially in models with many populations (or when extracting $f_2$-statistics for many populations).
     
-2. Using only SNPs present in all populations of any given *f*-statistic
+2. Use different SNPs for each $f_4$-statistic
 
     This option uses different SNPs for different *f*-statistics and therefore often uses more SNPs in total than the first option. It requires for each $f_3$-statistic and $f_4$-statistic that the SNPs be present in all three or four populations, respectively. In *ADMIXTOOLS* this corresponds to `allsnps: YES`.
     As the set of SNPs used in this option can be different for every *f*-statistic, and pre-computed $f_2$-statistics are calculated on a fixed set of SNPs for every population pair, pre-computed $f_2$-statistics can't be used for this option. Because of this, many *ADMIXTOOLS 2* functions can read data directly from genotype files and have an `allsnps` argument which can be `TRUE` or `FALSE`. Reading data directly from genotype files is slower, but makes it possible to choose this option for dealing with missing data.
 
-3. Excluding SNPs or populations with high levels of missingness
+3. Use different SNPs for each $f_2$-statistic
 
-    The issues described in this section are only problematic if there is lots of missing data. If you can drop the populations with lots of missing data, that solves the problem. If that's not an option, it might help to exclude SNPs with high missingness. In *ADMIXTOOLS 2*, the default option of `maxmiss = 0` is very conservative in that it excludes all SNPs which are missing in any population. At the opposite extreme, `maxmiss = 1` will not exclude any SNPs, and for each $f_2$-statistic it will use all SNPs that are present in that pair. Generally speaking, values of `maxmiss` closer to 0 are more conservative and will leave you with fewer SNPs, while values closer to 1 make use of more SNPs, but are less conservative.
+    In *ADMIXTOOLS 2*, the default option of `maxmiss = 0` is conservative in that it excludes all SNPs which are missing in any population. At the opposite extreme, `maxmiss = 1` will not exclude any SNPs, and for each $f_2$-statistic it will use all SNPs that are present in that pair. Generally speaking, values of `maxmiss` closer to 0 are more conservative and will leave you with fewer SNPs, while values closer to 1 make use of more SNPs, but are less conservative.
     It's difficult to give a recommendation on what fraction of missingness is acceptable, because the risk of introducing bias doesn't just depend on the *amount* of missingness, but also on the amount of *structure* in the missingess. When SNPs are missing more or less at random, it is much less of a problem than when it's mostly common or mostly rare SNPs that are missing in some populations. This can occur, for example, when combining data which were genotyped using different technologies.
     
 
-4. Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics
+    *Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics*
 
-    This solution is complementary to the ones mentioned before. If you recall the equation above in which $f_4$ is expressed as a sum of four $f_2$-statistics, you will see that it can be expressed equally as a sum of four allele frequency products (averaged across SNPs). When no SNPs are missing, there is no difference between $f_4$ as a sum of $f_2$ and $f_4$ as a sum of allele frequency products. However, when some SNPs are missing, it is often better to compute $f_4$ as a sum of allele frequency products. This is because the $f_2$ bias correction factor is more influenced by using different sets of SNPs than allele frequency products. In *ADMIXTOOLS 2*, allele frequency products are always extracted from genotype data in parallel with $f_2$-statistics. Functions which directly or indirectly use $f_4$-statistics will automatically use these allele frequency products when reading data from disk. When data from disk is read manually, for example using `f2_from_precomp()`, the option `afprod = TRUE` can be used to read allele frequency products instead of $f_2$-statistics.
+    If you end up using `maxmiss > 0`, there is another thing you can do to reduce the chance of bias. If you recall the equation above in which $f_4$ is expressed as a sum of four $f_2$-statistics, you will see that it can be expressed equally as a sum of four allele frequency products (averaged across SNPs). When no SNPs are missing, there is no difference between $f_4$ as a sum of $f_2$ and $f_4$ as a sum of allele frequency products. However, when some SNPs are missing, it is often better to compute $f_4$ as a sum of allele frequency products. This is because the $f_2$ bias correction factor is more influenced by using different sets of SNPs than allele frequency products. In *ADMIXTOOLS 2*, allele frequency products are always extracted from genotype data in parallel with $f_2$-statistics. Functions which directly or indirectly use $f_4$-statistics will automatically use these allele frequency products when reading data from disk. When data from disk is read manually, for example using `f2_from_precomp()`, the option `afprod = TRUE` can be used to read allele frequency products instead of $f_2$-statistics.
 
 
 ### Bias due to SNP ascertainment

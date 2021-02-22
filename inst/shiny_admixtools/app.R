@@ -212,11 +212,11 @@ ui = function(request) {
                                                            checkboxInput('qpadm_results', 'Show results', value = TRUE),
                                                            checkboxInput('qpadm_rotate', 'Rotate left', value = FALSE))),
                                          menuItem('qpGraph', tabName = 'qpgraph', expandedName = 'qpgraph', id = 'qpgraph', icon = icon('project-diagram'),
+                                                  checkboxInput('evaluate_graph', 'Evaluate graph', FALSE),
                                                   menuItem('Fit',
                                                              splitLayout(
                                                                shiny::actionButton('qpgraph_update', 'Update graph'),
                                                                shiny::actionButton('qpgraph_revert', 'Revert graph')),
-                                                           checkboxInput('evaluate_graph', 'Evaluate immediately', TRUE),
                                                            #actionButton('options_update', 'Update'),
                                                            splitLayout(numericInput('qpgraph_diag', 'diag', value = 0.0001, step = 0.0001),
                                                            numericInput('numstart', '# init', value = 10, min = 1)),
@@ -453,6 +453,13 @@ server = function(input, output, session) {
           column(11, tabsetPanel(tabPanel('Pop pairs', plotlyOutput(outputId = 'f2heatmap', height = '800', width='auto')),
                       tabPanel('Ind pairs', plotlyOutput(outputId = 'f2heatmap_indiv', height = '800', width='auto')),
                       tabPanel('Pop table', dto('f2stats')))))
+
+      } else if(exp == 'f3') {
+
+        print('switch to f3')
+
+        global$bod = fluidRow(
+          column(12, tabsetPanel(tabPanel('Pop table', dto('f3stats')))))
 
       } else if(exp == 'f4') {
 
@@ -1926,6 +1933,13 @@ server = function(input, output, session) {
     f2(f2blocks)
   })
 
+  get_f3 = reactive({
+
+    print('get f3')
+    f2blocks = get_f2blocks()
+    f3(f2blocks)
+  })
+
   get_f4 = reactive({
 
     print('get f4')
@@ -2163,6 +2177,7 @@ server = function(input, output, session) {
   output$snpresample = dtfun({format_table(get_snpresample())})
 
   output$f2stats = dtfun({format_table(get_f2())})
+  output$f3stats = dtfun({format_table(get_f3())})
   output$f4stats = dtfun({format_table(get_f4())})
 
   output$qpadm_weights = dtfun({format_table(get_qpadm()$weights)})

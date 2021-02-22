@@ -21,7 +21,7 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
                                          int first, int last, bool transpose = false, bool verbose = true) {
 
   int val;
-  long len, bytespersnp;
+  long long len, bytespersnp;
   int readsnps = last - first;
 
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -32,11 +32,8 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
-  len = (long)in.tellg();
+  len = (long long)in.tellg();
   bytespersnp = len/(nsnp+1);
-
-  // size of packed data, in bytes, per SNP
-  //np = (long)ceil((double)nind / PACK_DENSITY);
 
   int nindused = 0;
   int* blockused = new int[bytespersnp];
@@ -123,7 +120,7 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
 NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest = 1000) {
 
   int val, k;
-  long bytespersnp, len;
+  long long bytespersnp, len;
 
   ntest = std::min(ntest, nsnp);
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -132,7 +129,7 @@ NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, 
     throw std::runtime_error("io error");
   }
   in.seekg(0, std::ifstream::end);
-  len = (long)in.tellg();
+  len = (long long)in.tellg();
   bytespersnp = len/(nsnp+1);
 
   NumericVector ploidy(nind);
@@ -187,7 +184,7 @@ List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVe
 
   int val, k, pop;
 
-  long len, bytespersnp;
+  long long len, bytespersnp;
   int readsnps = std::min(nsnp, last?last:nsnp) - first;
 
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -198,7 +195,7 @@ List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVe
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
-  len = (long)in.tellg();
+  len = (long long)in.tellg();
   bytespersnp = len/(nsnp+1);
 
   int numpop = max(indvec)+1;
@@ -295,7 +292,7 @@ NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVe
                                   int first, int last, bool transpose = false, bool verbose = true) {
 
   int val;
-  long len, bytespersnp;
+  long long len, bytespersnp;
   int readsnps = last - first;
 
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -306,7 +303,7 @@ NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVe
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
-  len = (long)in.tellg();
+  len = (long long)in.tellg();
   bytespersnp = len/nsnp;
 
   int nindused = 0;
