@@ -2603,7 +2603,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
   }
   if(opt_worst_residual) {
     qpgfun = function(graph, ...) {
-      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = TRUE, ...)
+      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = opt_worst_residual, ...)
       res$score = res$worst_residual
       res$worst_residual = res$f4 = NULL
       res

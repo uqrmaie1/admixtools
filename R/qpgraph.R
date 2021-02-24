@@ -227,7 +227,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   } else stop(paste0('Cannot parse graph of class ', class(graph),'!'))
   if(lambdascale == -1) lambdascale = 1
   if(!lambdascale > 0) stop("'lambdascale' has to be > 0!")
-  if(return_f4 && is.null(data)) stop("Can't compute f4 without f2 data!")
+  if(!isFALSE(return_f4) && is.null(data)) stop("Can't compute f4 without f2 data!")
 
   if(cpp) {
     optimweightsfun = cpp_optimweightsfun
@@ -358,10 +358,14 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     out[['score_test']] = score_test
     out[['f3_test']] = precomp_test$f3out
   }
-  if(return_f4 && !is.null(data)) {
+  if(isTRUE(return_f4) || return_f4 == 'f4') {
     if(verbose) alert_info(paste0('Computing f4\n'))
     out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3)
-    out$worst_residual = out$f4 %>% slice_max(abs(z), with_ties = F) %>% pull(z) %>% abs
+    out$worst_residual = max(abs(out$f4$z))
+  } else if(return_f4 == 'f2') {
+    out$worst_residual = fitf2(f2_blocks[pops, pops, ], f2, f3)$z %>% abs %>% max
+  } else if(return_f4 == 'f3') {
+    out$worst_residual = max(abs(f3$z))
   }
   out
 }
@@ -511,7 +515,20 @@ f3out_to_fittedf2out = function(f2out, f3out) {
     transmute(pop1, pop2, est, se, fit = (f2_1 + f2_2 - f3*2), diff = est - fit, z = diff/se, p = ztop(z))
 }
 
-
+fitf2 = function(f2_blocks, f2, f3) {
+  # returns a tibble with estimated and fitted f2-statistics
+  cmb = combn(0:(dim(f2_blocks)[1]-1), 2)+(1:0)
+  f2_out = f3 %>% filter(pop2 == pop3) %$% fit
+  f2_fit = f3 %>% mutate(f21 = f2_out[cmb[1,]], f22 = f2_out[cmb[2,]], f2fit = (f21 + f22 - fit*2))
+  f2_fit2 = f2 %>%
+    left_join(f2_fit, by = c('pop1'='pop2', 'pop2'='pop3')) %>%
+    filter(!is.na(f2fit)) %>%
+    transmute(pop1, pop2, fit = f2fit) %>%
+    bind_rows(f2_fit %>% filter(pop2 == pop3) %>% select(pop1, pop2, fit))
+  f2(f2_blocks, verbose = FALSE) %>%
+    inner_join(f2_fit2, by = c('pop1', 'pop2')) %>%
+    mutate(diff = est - fit, z = diff/se, p = ztop(z))
+}
 
 
 fitf4 = function(f2_blocks, f2, f3) {
