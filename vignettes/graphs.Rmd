@@ -245,7 +245,7 @@ Two patterns in here are very common:
 
 If a graph has non-identifiable edges, it means that the estimated values for those edges should be treated with caution. However, the graph itself can still be a valid model. In particular, the fit of the graph (likelihood score or worst residual) will not be meaningfully affected by the presence of non-identifiable edges.
 
-Even if all edges in a graph are identifiable, some estimated parameters may not be robust, for example if they rely on precise estimates of short edges in the graph. In this case, [bootstrap confidence intervals](graphs.html#bootstrap-resampled-graph-fits-1) can be used to find out how robust the parameter estimates are.  
+Even if all edges in a graph are identifiable, some estimated parameters may not be robust, for example if they rely on precise estimates of short edges in the graph. In this case, [bootstrap confidence intervals](graphs.html#confidence-intervals-1) can be used to find out how robust the parameter estimates are.  
 
 
 
@@ -482,6 +482,19 @@ example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower)
   qpgraph(example_f2_blocks, .) %$% edges %>% plotly_graph
 ```
 
+### Confidence intervals
+
+In *ADMIXTOOLS 2*, you can compute confidence intervals for the estimated drift lengths and admixture weights. This is done by fitting the same graph many times using different random subsets of SNP blocks. This makes it slow compared to fitting a graph just once on all SNPs, but it can give you a sense of how robust the estimates on the different edges are.
+
+```{r, eval = FALSE}
+fits = qpgraph_resample_snps(example_f2_blocks, example_igraph, boot = 100)
+fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
+```
+```{r, echo = FALSE}
+example_fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
+```
+
+
 
 ### Why f3?
 
@@ -644,19 +657,10 @@ pops = dimnames(example_f2_blocks)[[1]]
 graph1 = example_opt %>% pluck('graph', 1)
 graph2 = example_opt %>% pluck('graph', 100)
 fits = qpgraph_resample_multi(example_f2_blocks, list(graph1, graph2), nboot = 100)
-compare_fits3(fits[[1]]$score_test, fits[[2]]$score_test)
+compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
 ```
 
 
-Fitting a graph multiple times on different sets of SNPs is not only useful for comparing two graphs. It also allows us to put confidence intervals on the parameters estimated in a single graph.
-
-```{r, eval = FALSE}
-fits = qpgraph_resample_snps(example_f2_blocks, example_igraph, boot = 100)
-fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
-```
-```{r, echo = FALSE}
-example_fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
-```
 
 <br>
 

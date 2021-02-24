@@ -256,11 +256,11 @@ from accidently computing all combinations if that number is large.</p></td>
     <pre class="examples"><div class='input'><span class='va'>pop1</span> <span class='op'>=</span> <span class='st'>'Denisova.DG'</span>
 <span class='va'>pop2</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'Altai_Neanderthal.DG'</span>, <span class='st'>'Vindija.DG'</span><span class='op'>)</span>
 <span class='fu'>f2</span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 6</span><span>
-#&gt;   pop1        pop2                   est      se     z     p
-#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span> </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
-#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG 0.141 0.001</span><span style='text-decoration: underline;'>15</span><span>  123.     0
-#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG           0.145 0.001</span><span style='text-decoration: underline;'>15</span><span>  126.     0</div><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+</div><div class='output co'>#&gt; <span style='color: #555555;'># A tibble: 2 x 4</span><span>
+#&gt;   pop1        pop2                   est      se
+#&gt;   </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>       </span><span style='color: #555555;font-style: italic;'>&lt;chr&gt;</span><span>                </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>   </span><span style='color: #555555;font-style: italic;'>&lt;dbl&gt;</span><span>
+#&gt; </span><span style='color: #555555;'>1</span><span> Denisova.DG Altai_Neanderthal.DG 0.141 0.001</span><span style='text-decoration: underline;'>15</span><span>
+#&gt; </span><span style='color: #555555;'>2</span><span> Denisova.DG Vindija.DG           0.145 0.001</span><span style='text-decoration: underline;'>15</span><span></div><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='fu'>f2</span><span class='op'>(</span><span class='va'>f2_dir</span>, <span class='va'>pop1</span>, <span class='va'>pop2</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></span></pre>

@@ -2,7 +2,7 @@
 % Please edit documentation in R/fstats.R
 \name{count_snps}
 \alias{count_snps}
-\title{Count SNPs in an array of per block f2-statistics}
+\title{Count SNPs in an f2-statistics array}
 \usage{
 count_snps(f2_blocks)
 }
@@ -13,5 +13,8 @@ count_snps(f2_blocks)
 The total number of SNPs across all blocks
 }
 \description{
-This function adds up all block lengths, which are stored in the names along the third dimension of the array
+This function adds up all block lengths (number of SNPs in each SNP blocks), which are stored in the names along the third dimension of the array. When the f2-statistics were computed while setting \code{maxmiss} to values greater than 0, it is possible that not all f2-statistics are based on the same number of SNPs. In that case, the value returned by this function is merely an upper bound on the number of SNPs used.
+}
+\seealso{
+\code{\link{f2_from_geno}}, \code{\link{f2_from_precomp}}
 }

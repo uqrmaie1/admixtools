@@ -570,28 +570,12 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 
 #' Compare the fit of two qpgraph models
 #'
-#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other. Used to be called `compare_fits3`
+#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
 #' @export
 #' @param scores1 Scores for the first graph
 #' @param scores2 Scores for the second graph
-#' @seealso \code{\link{qpgraph_resample_snps2}} \code{\link{boo_list}}
+#' @seealso \code{\link{qpgraph_resample_multi}}
 #' @examples
-#' \dontrun{
-#' boo = boo_list(f2_blocks, nboot = 100)
-#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test)
-#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test)
-#' compare_fits(fits1$score_test, fits2$score_test)
-#' }
-#' # Use all SNP blocks for f3 covariance matrix
-#' \dontrun{
-#' boo = boo_list(f2_blocks, nboot = 100)
-#' ppinv1 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph1))$ppinv
-#' ppinv2 = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph2))$ppinv
-#' fits1 = qpgraph_resample_snps2(boo$boo, graph1, boo$test, ppinv = ppinv1)
-#' fits2 = qpgraph_resample_snps2(boo$boo, graph2, boo$test, ppinv = ppinv2)
-#' compare_fits(fits1$score_test, fits2$score_test)
-#' }
-#' # Same as above
 #' \dontrun{
 #' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
 #' compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
@@ -673,6 +657,10 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 #' @param verbose Print progress updates
 #' @param ... Arguments passed to \code{\link{qpgraph}}
 #' @return A list of same length as `graphlist` with data frames with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
+#' \dontrun{
+#' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
+#' compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
+#' }
 #' @seealso \code{\link{compare_fits}}
 qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, ...) {
 

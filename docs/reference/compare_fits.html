@@ -55,7 +55,7 @@
   <script src="../extra.js"></script>
 
 <meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits" />
-<meta property="og:description" content="Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other. Used to be called compare_fits3" />
+<meta property="og:description" content="Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other." />
 
 
 
@@ -178,7 +178,7 @@
     </div>
 
     <div class="ref-description">
-    <p>Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other. Used to be called <code>compare_fits3</code></p>
+    <p>Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.</p>
     </div>
 
     <pre class="usage"><span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>scores1</span>, <span class='va'>scores2</span><span class='op'>)</span></pre>
@@ -198,26 +198,10 @@
 
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></code> <code><a href='boo_list.html'>boo_list</a></code></p></div>
+    <div class='dont-index'><p><code><a href='qpgraph_resample_multi.html'>qpgraph_resample_multi</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='va'>boo</span> <span class='op'>=</span> <span class='fu'><a href='boo_list.html'>boo_list</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, nboot <span class='op'>=</span> <span class='fl'>100</span><span class='op'>)</span>
-<span class='va'>fits1</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span><span class='op'>(</span><span class='va'>boo</span><span class='op'>$</span><span class='va'>boo</span>, <span class='va'>graph1</span>, <span class='va'>boo</span><span class='op'>$</span><span class='va'>test</span><span class='op'>)</span>
-<span class='va'>fits2</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span><span class='op'>(</span><span class='va'>boo</span><span class='op'>$</span><span class='va'>boo</span>, <span class='va'>graph2</span>, <span class='va'>boo</span><span class='op'>$</span><span class='va'>test</span><span class='op'>)</span>
-<span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>fits1</span><span class='op'>$</span><span class='va'>score_test</span>, <span class='va'>fits2</span><span class='op'>$</span><span class='va'>score_test</span><span class='op'>)</span>
-<span class='op'>}</span>
-<span class='co'># Use all SNP blocks for f3 covariance matrix</span>
-<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='va'>boo</span> <span class='op'>=</span> <span class='fu'><a href='boo_list.html'>boo_list</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, nboot <span class='op'>=</span> <span class='fl'>100</span><span class='op'>)</span>
-<span class='va'>ppinv1</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span><span class='op'>(</span><span class='va'>graph1</span><span class='op'>)</span><span class='op'>)</span><span class='op'>$</span><span class='va'>ppinv</span>
-<span class='va'>ppinv2</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_precompute_f3.html'>qpgraph_precompute_f3</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span><span class='op'>(</span><span class='va'>graph2</span><span class='op'>)</span><span class='op'>)</span><span class='op'>$</span><span class='va'>ppinv</span>
-<span class='va'>fits1</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span><span class='op'>(</span><span class='va'>boo</span><span class='op'>$</span><span class='va'>boo</span>, <span class='va'>graph1</span>, <span class='va'>boo</span><span class='op'>$</span><span class='va'>test</span>, ppinv <span class='op'>=</span> <span class='va'>ppinv1</span><span class='op'>)</span>
-<span class='va'>fits2</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_snps2.html'>qpgraph_resample_snps2</a></span><span class='op'>(</span><span class='va'>boo</span><span class='op'>$</span><span class='va'>boo</span>, <span class='va'>graph2</span>, <span class='va'>boo</span><span class='op'>$</span><span class='va'>test</span>, ppinv <span class='op'>=</span> <span class='va'>ppinv2</span><span class='op'>)</span>
-<span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>fits1</span><span class='op'>$</span><span class='va'>score_test</span>, <span class='va'>fits2</span><span class='op'>$</span><span class='va'>score_test</span><span class='op'>)</span>
-<span class='op'>}</span>
-<span class='co'># Same as above</span>
-<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='va'>fits</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_multi.html'>qpgraph_resample_multi</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='va'>graph1</span>, <span class='va'>graph2</span><span class='op'>)</span>, nboot <span class='op'>=</span> <span class='fl'>100</span><span class='op'>)</span>
 <span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>fits</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score_test</span>, <span class='va'>fits</span><span class='op'>[[</span><span class='fl'>2</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score_test</span><span class='op'>)</span>
 <span class='op'>}</span>

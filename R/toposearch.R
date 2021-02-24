@@ -1395,7 +1395,6 @@ isomorphism_classes2 = function(igraphlist) {
 #'
 #' For large admixturegraph, there may be a large number of valid qpAdm models!
 #'
-#' @export
 #' @param graph An admixture graph as igraph object
 #' @param add_outgroup Should the graph outgroup be added to the qpAdm right populations?
 #' Technically this shouldn't be an informative outgroup for qpAdm.

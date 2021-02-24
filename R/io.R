@@ -508,19 +508,18 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  # todo: first and last option
-  # afs = cpp_read_plink_afs(normalizePath(bedfile), indvec, indvec2,
-  #                          adjust_pseudohaploid = adjust_pseudohaploid,
-  #                          verbose = verbose)
   afmatrix = countmatrix = matrix(NA, last - first + 1, length(upops))
   aflist = countlist = list()
   firsts = round(seq(first, last, length = numblocks))
   lasts = c(firsts[-1]-1, last)
   snp_indices = c()
+  if(adjust_pseudohaploid) ploidy = cpp_plink_ploidy(normalizePath(bedfile), nsnpall, nindall, indvec)
+  else ploidy = rep(2, nindall)
+
   for(i in seq_len(numblocks)) {
     if(numblocks > 1) alert_info(paste0('Reading block ', i,' of ', numblocks,'...\r'))
     dat = cpp_plink_to_afs(normalizePath(bedfile), nsnpall, nindall, indvec-1,
-                           first = firsts[i]-1, last = lasts[i], rep(2, nindall), FALSE, verbose && numblocks == 1)
+                           first = firsts[i]-1, last = lasts[i], ploidy, FALSE, verbose && numblocks == 1)
     if(poly_only) {
       keep = !rowMeans(dat$afs, na.rm=TRUE) %in% 0:1
       dat$afs %<>% `[`(keep,)
@@ -1080,6 +1079,7 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
     blocks = blocks[,,keep, drop = FALSE]
     if(sum(!keep) > 0) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
                         'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
+    if(sum(keep) == 0) stop('Too many missing values!')
   }
   blocks
 }

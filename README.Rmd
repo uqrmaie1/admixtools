@@ -175,9 +175,20 @@ For even greater transparency, many of the core functions are implemented twice:
 
 For questions, feature requests, and bug reports, please contact Robert Maier under <rmaier@broadinstitute.org>.
 
+## Acknowledgments
+
+Nick Patterson has developed the original *ADMIXTOOLS* software. David Reich and Nick Patterson have not only conceived most of the ideas that have made *ADMIXTOOLS* so successful, they have also provided me (and continue to provide me) with critical ideas and feedback in the development of *ADMIXTOOLS 2*.
+
+I also want to thank all members of the Reich lab for many discussions which have helped me gain a better understanding of the underlying methods, and for crucial feedback about *ADMIXTOOLS 2*; in particular Pavel Flegontov, Iosif Lazaridis, Mark Lipson, Harald Ringbauer, Shop Mallick, and Tian Chen Zeng.
+
+Many useful features in *ADMIXTOOLS 2* were suggested by its users. If you are able to install and run *ADMIXTOOLS 2* without issues, it is only because others have cleared the path for you, by bringing problems to my attention. In no particular order, I want to thank Ornob Alam, Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias Göllner, Christian Huber, Kale, Ted Kandell, Fraser Combe, Matthew Williams, Lenny Dykstra, Kristján Moore, Dilawer Khan, Lareb Humayoun, and Sánta Benedek
+
+If you expected to see your name here but I failed to include it, please let me know about it!
+
+
 ## Cite *ADMIXTOOLS 2*
 
-If you wish to cite *ADMIXTOOLS 2*, you can link to this website and mention that a manuscript describing *ADMIXTOOLS 2* is currently under preparation.
+If you want to cite *ADMIXTOOLS 2*, you can link to this website and mention that a manuscript describing *ADMIXTOOLS 2* is currently under preparation.
 
 ## See also
 

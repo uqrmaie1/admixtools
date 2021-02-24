@@ -61,7 +61,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
     summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
     mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(-f2dat, -var, -sts)
+    select(pop1, pop2, est, se)
 
   out
 }
@@ -109,7 +109,7 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
     summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
     mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(-f2dat, -var, -sts)
+    select(pop1, pop2, est, se)
 }
 
 

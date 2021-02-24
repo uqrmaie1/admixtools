@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
     toc: true
-    toc_depth: 3
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{ADMIXTOOLS 2 Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
@@ -170,7 +170,7 @@ count_snps(f2_blocks)
 ```
 
 
-If you want to try any of this without extracting and loading your own $f_2$-statistics, you can instead use `example_f2_blocks` which becomes available as you load `admixtools`.
+If you want to try any of this without extracting and loading your own $f_2$-statistics, you can instead use `example_f2_blocks` which becomes available after running `library(admixtools)`.
 
 <br>
 
@@ -240,6 +240,27 @@ Computing $f_4$- or *D*-statistics from genotype data directly is slower, but it
 
 <br>
 
+## F~ST~
+
+ $F_{ST}$ is closely related to $f_2$, but unlike $f_2$, it doesn't function as a building block for other tools in *ADMIXTOOLS 2*. However, it is the most widely used metric to estimate the genetic distance between populations. Running `extract_f2()` will create files which don't only contain $f_2$ estimates for each population pair, but also separate  $F_{ST}$ estimates. The function `fst()` can either read these pre-computed estimates, or compute them directly from genotype files:
+
+```{r, eval = FALSE}
+fst(my_f2_dir)
+```
+
+```{r, eval = FALSE}
+fst(prefix, pop1 = "Altai_Neanderthal.DG", pop2 = c("Denisova.DG", "Vindija.DG"))
+```
+
+To estimate $F_{ST}$ without bias, we need at least two independent observations in each population. With pseudohaploid data, we only get one independent observation per sample, and so for populations consisting of only one pseudohaploid sample, $F_{ST}$ cannot be estimated without bias. If we want to ignore that bias and get estimates anyway, we can pretend the pseudohaploid samples are actually diploid using the option `adjust_pseudohaploid = FALSE`.
+
+```{r, eval = FALSE}
+fst(prefix, pop1 = "Altai_Neanderthal.DG", pop2 = c("Denisova.DG", "Vindija.DG"), adjust_pseudohaploid = FALSE)
+```
+
+
+<br>
+
 ## *qpWave* and *qpAdm*
 
 *qpWave* and *qpAdm* are two programs with different goals - *qpWave* is used for estimating the number of admixture events, and *qpAdm* is used for estimating admixture weights - but they perform almost the same computations. The key difference is that *qpWave* compares two sets of populations (`left` and `right`), while *qpAdm* is tests how a single `target` population (which can be one of the `left` populations) relates to `left` and `right`. In *ADMIXTOOLS 2*, both `qpadm()` and `qpwave()`require at least three arguments:
@@ -291,7 +312,10 @@ results$popdrop
 
 <br>
 
-The following two functions can be used to explore many *qpWave* or *qpAdm* models at the same time.
+
+### Running many models
+
+There are several functions that can be used to run many *qpWave* or *qpAdm* models at the same time.
 
 #### Pairwise cladality tests
 
@@ -305,15 +329,43 @@ qpwave_pairs(example_f2_blocks, left = c(target, left), right = right)
 ```
 
 
+
 #### Rotating outgroups
 
-`qpadm_rotate()` tests many `qpadm()` models at a time. For each model, the `leftright` populations will be split into two groups: The first group will be the `left` populations passed to `qpadm()`, while the second group will be added to `rightfix` and become the set of right populations.
+`qpadm_rotate()` tests many `qpadm()` models at a time. For each model, the `leftright` populations will be split into two groups: The first group will be the `left` populations passed to `qpadm()`, while the second group will be added to `rightfix` and become the set of right populations. By default, this function will only compute p-values but not weights for each model (which makes it faster). If you want the full output for each model, set `full_results = TRUE`.
 
 ```{r, eval = FALSE}
 qpadm_rotate(f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
 ```
 ```{r, echo = FALSE}
 qpadm_rotate(example_f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
+```
+
+#### Many qpadm models
+
+Swapping some populations between the `left` and the `right` set is one common way to run multiple `qpadm()` models. There is also a more general function, in which you can specify any models that you want to run. This is faster than looping over several calls to the `qpadm()` function, in particular when reading data from a genotype matrix directly, because it re-uses f4-statistics.
+
+To specify the `qpadm()` models you want to run, you need to make a data frame with columns `left`, `right`, and `target`, where each model is in a different row.
+
+```{r, eval = FALSE}
+models = tibble(
+           left = list(pops[1:2], pops[3]),
+           right = list(pops[4:6], pops[1:2]),
+           target = c(pops[7], pops[7]))
+results = qpadm_multi('/my/geno/prefix', models)
+```
+```{r, echo = FALSE}
+models = tibble(
+           left = list(pops[1:2], pops[3]),
+           right = list(pops[4:6], pops[1:2]),
+           target = c(pops[7], pops[7]))
+results = qpadm_multi(example_f2_blocks, models)
+```
+
+The output is a list where each item is the result from one model. The following command would combine the weights for all models into a new data frame:
+
+```{r}
+results %>% map('weights') %>% bind_rows(.id = 'model')
 ```
 
 
