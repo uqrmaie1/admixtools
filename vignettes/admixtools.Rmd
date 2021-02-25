@@ -255,7 +255,8 @@ fst(prefix, pop1 = "Altai_Neanderthal.DG", pop2 = c("Denisova.DG", "Vindija.DG")
 To estimate $F_{ST}$ without bias, we need at least two independent observations in each population. With pseudohaploid data, we only get one independent observation per sample, and so for populations consisting of only one pseudohaploid sample, $F_{ST}$ cannot be estimated without bias. If we want to ignore that bias and get estimates anyway, we can pretend the pseudohaploid samples are actually diploid using the option `adjust_pseudohaploid = FALSE`.
 
 ```{r, eval = FALSE}
-fst(prefix, pop1 = "Altai_Neanderthal.DG", pop2 = c("Denisova.DG", "Vindija.DG"), adjust_pseudohaploid = FALSE)
+fst(prefix, pop1 = "Altai_Neanderthal.DG", pop2 = c("Denisova.DG", "Vindija.DG"),
+    adjust_pseudohaploid = FALSE)
 ```
 
 

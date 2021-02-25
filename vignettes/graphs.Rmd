@@ -554,15 +554,14 @@ plot_graph(winner$edges[[1]])
 
 Sometimes it is useful to not search for any graphs that fit the data, but to incorporate prior knowledge by constraining the set of graphs that should be considered. This can be done by passing additional arguments to `find_graphs()`, which end in `_constraints`. More on this [here](#summarizing-graphs-1).
 
-The following example shows how could specify that we only want to consider models in which archaic humans are unadmixed.
+The following example shows how could specify that we only want to consider models in which the first two populations are unadmixed (setting the maximum to 0), and the third population is admixed (setting the minimum to 1).
 
 ```{r, eval = FALSE}
-# make a data frame which specifies minimum and maximum number of admixture events
 constraints = tribble(
   ~pop, ~min, ~max,
   'Altai_Neanderthal.DG', NA, 0,
   'Denisova.DG', NA, 0,
-  'Vindija.DG', NA, 0)
+  'Russia_Ust_Ishim.DG', 1, NA)
 opt_results = find_graphs(example_f2_blocks, numadmix = 3, outpop = 'Chimp.REF',
                           stop_gen = 100, admix_constraints = constraints)
 ```

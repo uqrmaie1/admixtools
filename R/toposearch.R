@@ -2601,7 +2601,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = initgraph
     numadmix = numadmix(graph)
   }
-  if(opt_worst_residual) {
+  if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
       res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = opt_worst_residual, ...)
       res$score = res$worst_residual
@@ -3839,10 +3839,13 @@ triplet_proportions2 = function(fit) {
   adm = fit %>% filter(type == 'admix') %>%
     transmute(e = paste0(from, '|', to), weight) %>% deframe
   prop = triples %>% rowwise %>%
-    mutate(w1 = prod(adm[admedges1]), w2 = prod(adm[admedges2]), w3 = prod(adm[admedges3]), w = w1*w2*w3) %>%
+    mutate(w1 = prod(adm[admedges1]),
+           w2 = prod(adm[admedges2]),
+           w3 = prod(adm[admedges3]), w = w1*w2*w3) %>%
     group_by(pop1, pop2, pop3, og) %>% summarize(sm = sum(w)) %>% ungroup %>% suppressMessages()
   x = prop %>% select(1:3) %>% distinct
-  miss = bind_rows(x %>% mutate(og = pop1), x %>% mutate(og = pop2), x %>% mutate(og = pop3)) %>% mutate(sm = 0) %>% anti_join(prop, by = c('pop1', 'pop2', 'pop3', 'og'))
+  miss = bind_rows(x %>% mutate(og = pop1), x %>% mutate(og = pop2), x %>% mutate(og = pop3)) %>%
+    mutate(sm = 0) %>% anti_join(prop, by = c('pop1', 'pop2', 'pop3', 'og'))
   prop %>% bind_rows(miss) %>% arrange(pop1, pop2, pop3)
 }
 
