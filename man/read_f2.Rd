@@ -8,9 +8,8 @@ read_f2(
   f2_dir,
   pops = NULL,
   pops2 = NULL,
-  afprod = FALSE,
+  type = "f2",
   counts = FALSE,
-  fst = FALSE,
   remove_na = TRUE,
   verbose = FALSE
 )
@@ -23,13 +22,13 @@ which may require a lot of memory.}
 
 \item{pops2}{Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.}
 
-\item{afprod}{Return allele frequency products instead of f2 estimates}
-
 \item{counts}{Return allele counts instead of f2 estimates}
 
 \item{remove_na}{Remove blocks with missing values}
 
 \item{verbose}{Print progress updates}
+
+\item{afprod}{Return allele frequency products instead of f2 estimates}
 }
 \value{
 A 3d array of block jackknife estimates

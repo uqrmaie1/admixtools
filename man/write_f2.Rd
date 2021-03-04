@@ -4,13 +4,17 @@
 \alias{write_f2}
 \title{Write blocked f2 estimates to disk}
 \usage{
-write_f2(f2_arrs, outdir, overwrite = FALSE)
+write_f2(est_arr, count_arr, outdir, id = "f2", overwrite = FALSE)
 }
 \arguments{
-\item{f2_arrs}{3d arrays with blocked f2, allele frequency products, and counts for each population pair.
+\item{est_arr}{A 3d array with blocked f2, allele frequency products, or fst estimates for each population pair.
 The first two dimensions of each array have to have population names.}
 
+\item{count_arr}{A 3d array of the same dimension with counts}
+
 \item{outdir}{Directory where data will be stored}
+
+\item{id}{Postfix showing the type of statistic ("f2", "ap", or "fst")}
 
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 }
@@ -20,7 +24,7 @@ and writes each pair to a separate \code{.rds} file under \code{{outdir}/{pop1}/
 }
 \examples{
 \dontrun{
-write_f2(f2_arrs, outdir = 'path/to/f2stats/')
+write_f2(f2_arr, count_arr, outdir = 'path/to/f2stats/')
 }
 }
 \seealso{

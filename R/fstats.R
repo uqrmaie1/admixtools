@@ -14,7 +14,7 @@
 #' }
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
-#' @param poly_only Exclude sites with identical allele frequencies in all populations
+#' @param poly_only Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of `c("f2", "ap", "fst")`
 #' @param pop1 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
 #' @param pop2 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
 #' @param outpop If specified, f2-statistics will be weighted by heterozygosity in this population
@@ -31,9 +31,9 @@
 #' afdat = plink_to_afs('/my/geno/prefix')
 #' afs_to_f2_blocks(afdat, outdir = '/my/f2/data/')
 #' }
-afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TRUE,
+afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
                             pops1 = NULL, pops2 = NULL, outpop = NULL, outdir = NULL,
-                            overwrite = FALSE, fst = TRUE, verbose = TRUE) {
+                            overwrite = FALSE, afprod = TRUE, fst = TRUE, poly_only = c('f2'), verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
@@ -54,9 +54,11 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
   popvecs1 = chunks$popvecs1
   popvecs2 = chunks$popvecs2
 
-  poly = if(poly_only) afdat$snpfile$poly else 1:nrow(afdat$snpfile)
-  block_lengths_a = get_block_lengths(afdat$snpfile, blgsize = blgsize)
-  block_lengths = get_block_lengths(afdat$snpfile[poly,], blgsize = blgsize)
+  sp = afdat$snpfile$poly
+  sn = 1:nrow(afdat$snpfile)
+
+  block_lengths_p = get_block_lengths(afdat$snpfile[sp,], blgsize = blgsize)
+  block_lengths_n = get_block_lengths(afdat$snpfile[sn,], blgsize = blgsize)
 
   if(!is.null(outpop)) {
     p = afmat[,outpop]
@@ -64,13 +66,36 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
   } else snpwt = NULL
 
   if(is.null(outdir)) {
-    dim_f2 = c(length(pops1), length(pops2), length(block_lengths))
-    dim_ap = c(length(pops1), length(pops2), length(block_lengths_a))
-    nam_f2 = list(pops1, pops2, paste0('l', block_lengths))
-    nam_ap = list(pops1, pops2, paste0('l', block_lengths_a))
-    f2_blocks = array(NA, dim_f2, nam_f2)
-    ap_blocks = array(NA, dim_ap, nam_ap)
-    fst_blocks = f2_blocks
+    dim_p = c(length(pops1), length(pops2), length(block_lengths_p))
+    dim_n = c(length(pops1), length(pops2), length(block_lengths_n))
+    nam_p = list(pops1, pops2, paste0('l', block_lengths_p))
+    nam_n = list(pops1, pops2, paste0('l', block_lengths_n))
+    f2_blocks = if('f2' %in% poly_only) array(NA, dim_p, nam_p) else array(NA, dim_n, nam_n)
+    ap_blocks = fst_blocks = NULL
+    if(afprod) ap_blocks = if('ap' %in% poly_only) array(NA, dim_p, nam_p) else array(NA, dim_n, nam_n)
+    if(fst) fst_blocks = if('fst' %in% poly_only) array(NA, dim_p, nam_p) else array(NA, dim_n, nam_n)
+  }
+
+  if('f2' %in% poly_only) {
+    sf2 = sp
+    block_lengths_f2 = block_lengths_p
+  } else {
+    sf2 = sn
+    block_lengths_f2 = block_lengths_n
+  }
+  if('ap' %in% poly_only) {
+    sap = sp
+    block_lengths_ap = block_lengths_p
+  } else {
+    sap = sn
+    block_lengths_ap = block_lengths_n
+  }
+  if('fst' %in% poly_only) {
+    sfst = sp
+    block_lengths_fst = block_lengths_p
+  } else {
+    sfst = sn
+    block_lengths_fst = block_lengths_n
   }
 
   for(i in 1:length(popvecs1)) {
@@ -82,34 +107,55 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05, poly_only = TR
     cm1 = countmat[, s1, drop=F]
     cm2 = countmat[, s2, drop=F]
 
-    # compute f2 arr only from polymorphic SNPs, but afprod arr from all SNPs
-    f2 = mats_to_f2arr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
-    counts = mats_to_ctarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths)
-    afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
-    if(fst) fstarr = mats_to_fstarr(am1[poly,], am2[poly,], cm1[poly,], cm2[poly,], block_lengths, snpwt)
-    else fstarr = f2
-    if(!poly_only) countsap = counts
-    else countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
+    f2 = mats_to_f2arr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2, snpwt)
+    counts = mats_to_ctarr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2)
+    if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
+
+    if(afprod) {
+      aparr = mats_to_aparr(am1[sap,], am2[sap,], cm1[sap,], cm2[sap,], block_lengths_ap)
+      if(isTRUE(all.equal(sap, sf2))) {
+        countsap = counts
+      } else countsap = mats_to_ctarr(am1[sap,], am2[sap,], cm1[sap,], cm2[sap,], block_lengths_ap)
+    }
+    if(fst) {
+      fstarr = mats_to_fstarr(am1[sfst,], am2[sfst,], cm1[sfst,], cm2[sfst,], block_lengths_fst, snpwt)
+      if(isTRUE(all.equal(sfst, sf2))) {
+        countsfst = counts
+      } else if(isTRUE(all.equal(sfst, sap)) && afprod) {
+        countsfst = countsap
+      } else countsfst = mats_to_ctarr(am1[sfst,], am2[sfst,], cm1[sfst,], cm2[sfst,], block_lengths_fst)
+      if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) fstarr[j, j, ] = 0
+    }
     rm(am1, am2, cm1, cm2); gc()
-    if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) {f2[j, j, ] = 0; fstarr[j, j, ] = 0}
+
 
     if(!is.null(outdir)) {
-      write_f2(namedList(f2, afprod, counts, countsap, fstarr), outdir = outdir, overwrite = overwrite)
-      bl = paste0(outdir, '/block_lengths.rds')
-      bla = paste0(outdir, '/block_lengths_a.rds')
-      if(!file.exists(bl) || overwrite) saveRDS(block_lengths, file = bl)
-      if(!file.exists(bla) || overwrite) saveRDS(block_lengths_a, file = bla)
+      write_f2(f2, counts, outdir = outdir, id = 'f2', overwrite = overwrite)
+      bl = paste0(outdir, '/block_lengths_f2.rds')
+      if(!file.exists(bl) || overwrite) saveRDS(block_lengths_f2, file = bl)
+
+      if(afprod) {
+        write_f2(aparr, countsap, outdir = outdir, id = 'ap', overwrite = overwrite)
+        bl = paste0(outdir, '/block_lengths_ap.rds')
+        if(!file.exists(bl) || overwrite) saveRDS(block_lengths_ap, file = bl)
+      }
+      if(fst) {
+        write_f2(fstarr, counts, outdir = outdir, id = 'fst', overwrite = overwrite)
+        bl = paste0(outdir, '/block_lengths_fst.rds')
+        if(!file.exists(bl) || overwrite) saveRDS(block_lengths_fst, file = bl)
+      }
+
     } else {
       f2_blocks[s1, s2, ] = f2
-      ap_blocks[s1, s2, ] = afprod
-      fst_blocks[s1, s2, ] = fstarr
+      if(afprod) ap_blocks[s1, s2, ] = aparr
+      if(fst) fst_blocks[s1, s2, ] = fstarr
       if(square && !isTRUE(all.equal(s1, s2))) {
         f2_blocks[s2, s1, ] = aperm(f2, c(2,1,3))
-        ap_blocks[s2, s1, ] = aperm(afprod, c(2,1,3))
-        fst_blocks[s2, s1, ] = aperm(fstarr, c(2,1,3))
+        if(afprod) ap_blocks[s2, s1, ] = aperm(aparr, c(2,1,3))
+        if(fst) fst_blocks[s2, s1, ] = aperm(fstarr, c(2,1,3))
       }
     }
-    rm(counts, countsap, afprod, f2); gc()
+    rm(counts, f2); gc()
   }
   if(length(popvecs1) > 1 & verbose) cat('\n')
   if(is.null(outdir)) namedList(f2_blocks, ap_blocks, fst_blocks)
@@ -197,7 +243,7 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
   out
 }
 
-mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cpp = TRUE) {
+mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = TRUE) {
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
   stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
@@ -490,7 +536,7 @@ average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
 #'   group_modify(joint_spectrum) %>%
 #'   ungroup
 #' }
-joint_spectrum = function(afs, ...) {
+joint_spectrum = function(afs) {
 
   afs %<>% as.matrix
   if(class(afs[,1]) != 'numeric') stop("'afs' should only have numeric columns!")
@@ -508,7 +554,8 @@ joint_spectrum = function(afs, ...) {
   snpcounts %>%
     colMeans(na.rm = TRUE) %>%
     enframe('pattern', 'proportion') %>%
-    left_join(obs, by = 'pattern')
+    left_join(obs, by = 'pattern') %>%
+    arrange(pattern)
 }
 
 #' Turn f2 data to f4 data

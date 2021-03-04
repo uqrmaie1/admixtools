@@ -25,6 +25,9 @@ extract_f2(
   format = NULL,
   adjust_pseudohaploid = TRUE,
   cols_per_chunk = NULL,
+  fst = TRUE,
+  afprod = TRUE,
+  poly_only = c("f2"),
   verbose = TRUE
 )
 }
@@ -70,6 +73,12 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
 \item{cols_per_chunk}{Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for \code{cols_per_chunk} in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.}
+
+\item{fst}{Write files with pairwise FST for every population pair. Setting this to FALSE can make \code{extract_f2} faster and will require less memory.}
+
+\item{afprod}{Write files with allele frequency products for every population pair. Setting this to FALSE can make \code{extract_f2} faster and will require less memory.}
+
+\item{poly_only}{Specify whether SNPs with identical allele frequencies in every population should be discarded (\code{poly_only = TRUE}), or whether they should be used (\code{poly_only = FALSE}). By default (\code{poly_only = c("f2")}), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).}
 
 \item{verbose}{Print progress updates}
 }

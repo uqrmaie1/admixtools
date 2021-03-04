@@ -1216,6 +1216,24 @@ joint_sfs = function(afs, pref = NULL) {
   expand_grid(!!!popcounts %>% map(~0:.)) %>% left_join(obs) %>% mutate(n = replace_na(n, 0)) %>% suppressMessages()
 }
 
+sfs_to_f2 = function(sfs) {
+
+  sfs2 = sfs %>% mutate(across(all_of('n'), ~./sum(.)), across(!all_of('n'), ~./max(.)))
+  pops = colnames(sfs)[-ncol(sfs)]
+  nvec = apply(sfs[-ncol(sfs)], 2, max, na.rm=TRUE)
+  cmb = t(combn(1:length(pops), 2))
+  map(1:nrow(cmb), ~{
+    x1 = cmb[.,1]
+    x2 = cmb[.,2]
+    n1 = nvec[x1]
+    n2 = nvec[x2]
+    sfs2 %>% select(x1, x2, n) %>% set_colnames(c('p1', 'p2', 'n')) %>%
+      mutate(f2 = (p1-p2)^2 - p1*(1-p1)/max(1,n1-1) - p2*(1-p2)/max(1,n2-1),
+             denom = p1 + p2 - 2*p1*p2) %>%
+      summarize(f2 = sum(n*f2), fst = sum(n*f2)/sum(n*denom)) %>%
+      mutate(pop1 = pops[x1], pop2 = pops[x2])
+  }) %>% bind_rows() %>% select(pop1, pop2, f2, fst)
+}
 
 write_fastsimcoal_obs = function(afs, outfile = stdout()) {
 
@@ -1228,7 +1246,8 @@ write_fastsimcoal_obs = function(afs, outfile = stdout()) {
 }
 
 
-write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
+write_fastsimcoal_files = function(graph, outpref, tpl = FALSE, num_snps = 10000000,
+                                   recombination_rate = 0.00000001, mutation_rate = 0.00000002) {
 
   tm = 1000
   pops = get_leafnames(graph)
@@ -1294,7 +1313,8 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
   out %<>% paste0('\n//Per chromosome: Number of linkage blocks\n')
   out %<>% paste0('1')
   out %<>% paste0('\n//per Block: data type, num loci, rec. rate and mut rate + optional parameters\n')
-  out %<>% paste0('FREQ 10000000 0.00000001 0.00000002\n')
+  if(tpl) out %<>% paste0('FREQ ', num_snps,' ', recombination_rate,' ', mutation_rate,'\n')
+  else out %<>% paste0('SNP ', num_snps,' ', recombination_rate,' ', mutation_rate,'\n')
   #out %<>% paste0('DNA 10000000 0.00000001 0.00000002 0.33\n')
   #out %<>% paste0('STANDARD 10000000 0.00000001 0.00000002\n')
 
@@ -1303,12 +1323,40 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE) {
 
 
 
+parse_fastsimcoal_dsfs = function(obs_file, popcounts) {
+  # reads fastsimcoal DSFS.obs file
+  # popcounts is vector of haplotype counts for each population
 
-write_fastsimcoal_tpl = function(outfile = stdout()) {
-
-
+  cnt = obs_file %>%
+    read_lines %>%
+    pluck(3) %>%
+    str_split('\t') %>%
+    pluck(1) %>%
+    as.numeric
+  expand_grid(!!!popcounts %>% map(~0:.)) %>% mutate(n = cnt)
 }
 
+fastsimcoal_sim_dsfs = function(graph, outpref, run = './fsc26', popcounts = 1, num_snps = 10000000,
+                                recombination_rate = 0.00000001, mutation_rate = 0.00000002, verbose = TRUE) {
+
+  write_fastsimcoal_files(graph, outpref, tpl = FALSE, num_snps = num_snps, recombination_rate = recombination_rate,
+                          mutation_rate = mutation_rate)
+  if(file.exists(run)) {
+    obs_file = paste0(outpref, '/', basename(outpref), '_DSFS.obs')
+    if(file.exists(obs_file)) rm(obs_file)
+    else dir.create(outpref, showWarnings = FALSE)
+    cmd = paste0(run, ' -i ', outpref,'.par -n1 -d -u -s0 -k 100000000 > ', outpref, '.txt')
+    if(verbose) alert_info(paste0('Running "', cmd, '"...\n'))
+    olddir = getwd()
+    system(paste0('cd ', dirname(outpref), '; ', cmd, '; cd ', olddir))
+    pops = get_leafnames(graph)
+    if(length(popcounts) == 1) popcounts = rep(popcounts*2, length(pops)) %>% set_names(pops)
+    dsfs = parse_fastsimcoal_dsfs(obs_file, popcounts)
+    return(dsfs)
+  } else {
+    if(verbose) alert_info(paste0('file ', run, ' not found. Files written to ', outpref, '\n'))
+  }
+}
 
 
 

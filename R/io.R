@@ -651,38 +651,35 @@ read_plink = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
 #' This function takes 3d arrays of blocked f2, allele frequency products, and counts, splits them by population pair,
 #' and writes each pair to a separate `.rds` file under \code{{outdir}/{pop1}/{pop2}.rds}.
 #' @export
-#' @param f2_arrs 3d arrays with blocked f2, allele frequency products, and counts for each population pair.
+#' @param est_arr A 3d array with blocked f2, allele frequency products, or fst estimates for each population pair.
 #' The first two dimensions of each array have to have population names.
+#' @param count_arr A 3d array of the same dimension with counts
+#' @param id Postfix showing the type of statistic ("f2", "ap", or "fst")
 #' @param outdir Directory where data will be stored
 #' @param overwrite Overwrite existing files in `outdir`
 #' @seealso \code{\link{read_f2}}
 #' @examples
 #' \dontrun{
-#' write_f2(f2_arrs, outdir = 'path/to/f2stats/')
+#' write_f2(f2_arr, count_arr, outdir = 'path/to/f2stats/')
 #' }
-write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
+write_f2 = function(est_arr, count_arr, outdir, id = 'f2', overwrite = FALSE) {
 
   if(!dir.exists(outdir)) dir.create(outdir)
-  d1 = dim(f2_arrs[[1]])[1]
-  d2 = dim(f2_arrs[[1]])[2]
-  nam1 = dimnames(f2_arrs[[1]])[[1]]
-  nam2 = dimnames(f2_arrs[[1]])[[2]]
+  d1 = dim(est_arr)[1]
+  d2 = dim(est_arr)[2]
+  nam1 = dimnames(est_arr)[[1]]
+  nam2 = dimnames(est_arr)[[2]]
   for(i in seq_len(d1)) {
     for(j in seq_len(d2)) {
       pop1 = min(nam1[i], nam2[j])
       pop2 = max(nam1[i], nam2[j])
       if(pop1 <= pop2) {
-        mat1 = cbind(f2 = as.vector(f2_arrs$f2[i, j, ]),
-                     counts = as.vector(f2_arrs$counts[i, j, ]),
-                     fst = as.vector(f2_arrs$fst[i, j, ]))
-        mat2 = cbind(afprod = as.vector(f2_arrs$afprod[i, j, ]),
-                     countsap = as.vector(f2_arrs$countsap[i, j, ]))
+        mat = cbind(as.vector(est_arr[i, j, ]), as.vector(count_arr[i, j, ]))
+        colnames(mat) = c(id, 'counts')
         dir = paste0(outdir, '/', pop1, '/')
-        fl1 = paste0(dir, pop2, '_f2.rds')
-        fl2 = paste0(dir, pop2, '_ap.rds')
+        fl = paste0(dir, pop2, '_', id,'.rds')
         if(!dir.exists(dir)) dir.create(dir)
-        if(!file.exists(fl1) || overwrite) saveRDS(mat1, file = fl1)
-        if(!file.exists(fl2) || overwrite) saveRDS(mat2, file = fl2)
+        if(!file.exists(fl) || overwrite) saveRDS(mat, file = fl)
       }
     }
   }
@@ -708,8 +705,8 @@ write_f2 = function(f2_arrs, outdir, overwrite = FALSE) {
 #' \dontrun{
 #' read_f2(f2_dir, pops = c('pop1', 'pop2', 'pop3'))
 #' }
-read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
-                   counts = FALSE, fst = FALSE, remove_na = TRUE, verbose = FALSE) {
+read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
+                   counts = FALSE, remove_na = TRUE, verbose = FALSE) {
   # assumes f2 is in first column, afprod in second column
 
   if(is.null(pops)) pops = list.dirs(f2_dir, full.names = FALSE, recursive = FALSE)
@@ -717,8 +714,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
   stopifnot(!any(duplicated(pops)))
   stopifnot(!any(duplicated(pops2)))
 
-  if(afprod) block_lengths = readRDS(paste0(f2_dir, '/block_lengths_a.rds'))
-  else block_lengths = readRDS(paste0(f2_dir, '/block_lengths.rds'))
+  block_lengths = readRDS(paste0(f2_dir, '/block_lengths_',type,'.rds'))
 
   f2_blocks = array(NA, c(length(pops), length(pops2), length(block_lengths)),
               list(pops, pops2, paste0('l', block_lengths)))
@@ -728,24 +724,24 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, afprod = FALSE,
     add_count(p1, p2) %>%
     filter(!duplicated(paste(p1, p2)))
 
-  suffix = if(afprod) '_ap.rds' else '_f2.rds'
-  col = if(counts) 2 else if(fst) 3 else 1
+  col = if(counts) 2 else 1
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
-    if(verbose) alert_info(paste0('Reading ', ifelse(afprod, 'afprod', 'f2'),
+    if(verbose) alert_info(paste0('Reading ', type,
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
     pref = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i])
-    dat = readRDS(paste0(pref, suffix))[,col]
+    dat = readRDS(paste0(pref, '_', type, '.rds'))[,col]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
-    if(fst && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0
+    if(type == 'fst' && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
   if(verbose) alert_info(paste0('\n'))
   if(remove_na || verbose) {
     keep = apply(f2_blocks, 3, function(x) sum(!is.finite(x)) == 0)
     if(!all(keep)) {
+      if(sum(keep) == 0) stop("No blocks remain after discarding blocks with missing values! If you want to compute FST for pseudohaploid samples, set `adjust_pseudohaploid = FALSE`")
       if(remove_na) {
         warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
@@ -867,13 +863,16 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #'   afs_to_f2(afdir, f2dir, chunk1 = i, chunk2 = .)
 #'   })})
 #'   }
-afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE, verbose = TRUE) {
+afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE,
+                     type = 'f2', poly_only = FALSE, snpdat = NULL, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
-  fl = paste0(afdir, '/snpdat.tsv.gz')
-  nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
-  snpdat = read_table2(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
-  poly = snpdat$poly
+  if(is.null(snpdat)) {
+    fl = paste0(afdir, '/snpdat.tsv.gz')
+    nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
+    snpdat = read_table2(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
+  }
+
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
   am2 = readRDS(paste0(afdir, '/afs', chunk2, '.rds'))
   cm1 = readRDS(paste0(afdir, '/counts', chunk1, '.rds'))
@@ -882,32 +881,36 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
   nam2 = colnames(am2)
   nsnp = nrow(am1)
 
-  fl = paste0(outdir, '/block_lengths.rds')
-  fla = paste0(outdir, '/block_lengths_a.rds')
+  if(poly_only) {
+    snps = snpdat$poly
+    am1 = am1[snps,,drop=F]
+    am2 = am2[snps,,drop=F]
+    cm1 = cm1[snps,,drop=F]
+    cm2 = cm2[snps,,drop=F]
+  } else snps = seq_len(nsnp)
+
+  fl = paste0(outdir, '/block_lengths_',type,'.rds')
   if(!file.exists(fl)) {
-    block_lengths = get_block_lengths(snpdat[poly,], blgsize = blgsize)
+    block_lengths = get_block_lengths(snpdat[snps,], blgsize = blgsize)
     saveRDS(block_lengths, file = fl)
   } else {
     block_lengths = readRDS(fl)
   }
-  if(!file.exists(fla)) {
-    block_lengths_a = get_block_lengths(snpdat, blgsize = blgsize)
-    saveRDS(block_lengths_a, file = fla)
-  } else {
-    block_lengths_a = readRDS(fla)
-  }
 
   filenames = expand_grid(nam1, nam2) %>%
     transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2))) %$%
-    nam %>% rep(each = 2) %>% paste0(c('_f2.rds', '_ap.rds'))
+    nam %>% rep(each = 2) %>% paste0('_', type, '.rds')
   if(all(file.exists(filenames)) && !overwrite) return()
 
-  f2 = mats_to_f2arr(am1[poly,,drop=F], am2[poly,,drop=F], cm1[poly,,drop=F], cm2[poly,,drop=F], block_lengths, snpwt)
-  counts = mats_to_ctarr(am1[poly,,drop=F], am2[poly,,drop=F], cm1[poly,,drop=F], cm2[poly,,drop=F], block_lengths)
-  afprod = mats_to_aparr(am1, am2, cm1, cm2, block_lengths_a)
-  countsap = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths_a)
-  if(chunk1 == chunk2) for(i in 1:dim(f2)[1]) f2[i, i, ] = 0
-  write_f2(namedList(f2, counts, afprod, countsap), outdir = outdir)
+  countsap = aparr = fstarr = NULL
+
+  fun = get(paste0('mats_to_', type, 'arr'))
+  if(sum(block_lengths) != nrow(am1)) stop("block_lengths and am1 don't match!")
+
+  arr = fun(am1, am2, cm1, cm2, block_lengths, snpwt)
+  counts = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths)
+  if(chunk1 == chunk2) for(i in 1:dim(arr)[1]) arr[i, i, ] = 0
+  write_f2(arr, counts, outdir = outdir, id = type)
 }
 
 
@@ -994,6 +997,9 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `eigenstrat`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` treats all samples as diploid and is equivalent to the *ADMIXTOOLS* `inbreed: NO` option.
 #' @param cols_per_chunk Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
+#' @param fst Write files with pairwise FST for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
+#' @param afprod  Write files with allele frequency products for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
+#' @param poly_only Specify whether SNPs with identical allele frequencies in every population should be discarded (`poly_only = TRUE`), or whether they should be used (`poly_only = FALSE`). By default (`poly_only = c("f2")`), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).
 #' @param verbose Print progress updates
 #' @return SNP metadata (invisibly)
 #' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
@@ -1007,7 +1013,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
-                      adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
+                      adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, fst = TRUE, afprod = TRUE,
+                      poly_only = c('f2'), verbose = TRUE) {
 
   if(!is.null(cols_per_chunk)) {
     stopifnot(is.null(pops2))
@@ -1016,7 +1023,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
                                transitions = transitions, transversions = transversions,
                                keepsnps = keepsnps, snpblocks = snpblocks, overwrite = overwrite,
-                               format = format, adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+                               format = format, adjust_pseudohaploid = adjust_pseudohaploid,
+                               afprod = afprod, fst = fst, poly_only = poly_only, verbose = verbose)
     return(invisible(snpfile))
   }
   if(!is.null(outdir)) {
@@ -1036,9 +1044,10 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   if(verbose) alert_warning(paste0(nrow(afdat$afs), ' SNPs remain after filtering. ',
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))
 
-  arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = TRUE,
-                          pops1 = pops, pops2 = pops2,
-                          outpop = if(outpop_scale) outpop else NULL, blgsize = blgsize, verbose = verbose)
+  if(isTRUE(poly_only)) poly_only = c('f2', 'ap', 'fst')
+  arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = poly_only,
+                          pops1 = pops, pops2 = pops2, outpop = if(outpop_scale) outpop else NULL,
+                          blgsize = blgsize, afprod = afprod, fst = fst, verbose = verbose)
 
   if(is.null(outdir)) return(arrs)
 
@@ -1058,28 +1067,33 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
                         maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                         transitions = TRUE, transversions = TRUE,
-                        auto_only = TRUE, keepsnps = NULL, afprod = FALSE, fst = FALSE, format = NULL,
+                        auto_only = TRUE, keepsnps = NULL, afprod = FALSE, fst = FALSE, poly_only = c("f2"),
+                        format = NULL,
                         adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
-             maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, pops2 = pops2, outpop = outpop, outpop_scale = outpop_scale,
-             transitions = transitions, transversions = transversions,
+             maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, pops2 = pops2, outpop = outpop,
+             outpop_scale = outpop_scale, transitions = transitions, transversions = transversions,
              auto_only = auto_only, keepsnps = keepsnps, format = format,
-             adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+             adjust_pseudohaploid = adjust_pseudohaploid, fst = fst, afprod = afprod,
+             poly_only = poly_only, verbose = verbose)
   if(afprod) {
-    if(verbose) alert_info(paste0('Returning allele frequency products\n'))
+    if(verbose) alert_info(paste0('Returning allele frequency product blocks\n'))
     #blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
     blocks = scale_ap_blocks(arrs$ap_blocks, from = 0)
+  } else if(fst) {
+    if(verbose) alert_info(paste0('Returning fst blocks\n'))
+    blocks = arrs$fst_blocks
   } else {
-    if(verbose) alert_info(paste0('Returning f2-statistics\n'))
-    blocks = if(fst) arrs$fst_blocks else arrs$f2_blocks
+    if(verbose) alert_info(paste0('Returning f2 blocks\n'))
+    blocks = arrs$f2_blocks
   }
   if(remove_na) {
     keep = apply(blocks, 3, function(x) sum(!is.finite(x))==0)
     blocks = blocks[,,keep, drop = FALSE]
+    if(sum(keep) == 0) stop("No blocks remain after discarding blocks with missing values! If you want to compute FST for pseudohaploid samples, set `adjust_pseudohaploid = FALSE`")
     if(sum(!keep) > 0) warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
-                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
-    if(sum(keep) == 0) stop('Too many missing values!')
+                                      'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
   }
   blocks
 }
@@ -1128,7 +1142,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
                             maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                             transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL,
-                            adjust_pseudohaploid = TRUE, verbose = TRUE) {
+                            adjust_pseudohaploid = TRUE, afprod = TRUE, fst = TRUE, poly_only = c('f2'), verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
   snpdat = extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
@@ -1136,20 +1150,26 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
               transitions = transitions, transversions = transversions,
               keepsnps = keepsnps, format = format, poly_only = FALSE,
               adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
+
   numchunks = length(list.files(outdir, 'afs.+rds'))
 
   if(!is.null(outpop) && outpop_scale) {
     p = snpdat$outpopaf
     snpwt = 1/(p*(1-p))
   } else snpwt = NULL
+  if(isTRUE(poly_only)) poly_only = c('f2', 'ap', 'fst')
 
-  if(verbose) alert_warning(paste0('Computing ', choose(numchunks, 2), ' chunk pairs. If this takes too long,
+  if(verbose) alert_warning(paste0('Computing ', choose(numchunks+1, 2), ' chunk pairs. If this takes too long,
   consider running "extract_afs" and then paralellizing over "afs_to_f2".\n'))
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
       if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
-      afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize,
-                           snpwt = snpwt, overwrite = overwrite)
+      afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
+                snpwt = snpwt, overwrite = overwrite, type = 'f2', poly_only = 'f2' %in% poly_only)
+      if(afprod) afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
+                           snpwt = snpwt, overwrite = overwrite, type = 'ap', poly_only = 'ap' %in% poly_only)
+      if(fst) afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
+                        snpwt = snpwt, overwrite = overwrite, type = 'fst', poly_only = 'fst' %in% poly_only)
     }
   }
   if(verbose) alert_info('\n')
@@ -1447,7 +1467,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     split_mat(afdat$counts, cols_per_chunk = cols_per_chunk, prefix = paste0(partdir, '/counts'), verbose = FALSE)
   }
   if(verbose) alert_info('\n')
-  snpparts %<>% bind_rows
+  snpparts %<>% bind_rows %>% mutate(CHR = as.character(CHR))
   if(verbose) alert_warning(paste0(nrow(snpparts), ' SNPs remain after filtering. ',
                                    sum(snpparts$poly),' are polymorphic.\n'))
 
@@ -1622,7 +1642,8 @@ f2_from_precomp = function(dir, inds = NULL, pops = NULL, pops2 = NULL, afprod =
     if(is.null(pops)) pops = list.dirs(dir, full.names = FALSE, recursive = FALSE)
     if(is.null(pops2)) pops2 = pops
     if(verbose) alert_info(paste0('Reading precomputed data for ', length(union(pops, pops2)), ' populations...\n'))
-    f2_blocks = read_f2(dir, pops, pops2, afprod = afprod, fst = fst, remove_na = remove_na, verbose = verbose)
+    type = if(fst) 'fst' else if(afprod) 'ap' else 'f2'
+    f2_blocks = read_f2(dir, pops, pops2, type = type, remove_na = remove_na, verbose = verbose)
   }
   if(afprod) f2_blocks = scale_ap_blocks(f2_blocks, from = 0)
   else if(any(apply(f2_blocks,1:2,mean,na.rm=T)<0) && !fst) warning(paste('Some f2-statistic estimates are',

@@ -22,6 +22,7 @@ f2_from_geno(
   keepsnps = NULL,
   afprod = FALSE,
   fst = FALSE,
+  poly_only = c("f2"),
   format = NULL,
   adjust_pseudohaploid = TRUE,
   remove_na = TRUE,
@@ -61,6 +62,10 @@ f2_from_geno(
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
 \item{afprod}{Return negative average allele frequency products instead of f2-statistics. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.}
+
+\item{fst}{Write files with pairwise FST for every population pair. Setting this to FALSE can make \code{extract_f2} faster and will require less memory.}
+
+\item{poly_only}{Specify whether SNPs with identical allele frequencies in every population should be discarded (\code{poly_only = TRUE}), or whether they should be used (\code{poly_only = FALSE}). By default (\code{poly_only = c("f2")}), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be \code{plink} to read \code{.bed}, \code{.bim}, \code{.fam} files, or \code{eigenstrat}, or \code{packedancestrymap} to read \code{.geno}, \code{.snp}, \code{.ind} files.}

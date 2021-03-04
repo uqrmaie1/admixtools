@@ -2755,6 +2755,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun)
       if(nodups) newmod %<>% filter(!duplicated(hash), !hash %in% models$hash)
+      if(!is.null(outpop)) newmod %<>% rowwise %>% filter(get_outpop(g) == outpop) %>% ungroup
       if(nrow(newmod) == 0) {
         alert_danger('No new models!\n')
         next

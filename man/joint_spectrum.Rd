@@ -4,7 +4,7 @@
 \alias{joint_spectrum}
 \title{Estimate joint allele frequency spectrum}
 \usage{
-joint_spectrum(afs, ...)
+joint_spectrum(afs)
 }
 \arguments{
 \item{afs}{A matrix or data frame of allele frequencies}

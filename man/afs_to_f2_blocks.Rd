@@ -8,13 +8,14 @@ afs_to_f2_blocks(
   afdat,
   maxmem = 8000,
   blgsize = 0.05,
-  poly_only = TRUE,
   pops1 = NULL,
   pops2 = NULL,
   outpop = NULL,
   outdir = NULL,
   overwrite = FALSE,
+  afprod = TRUE,
   fst = TRUE,
+  poly_only = c("f2"),
   verbose = TRUE
 )
 }
@@ -30,13 +31,13 @@ afs_to_f2_blocks(
 
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
-\item{poly_only}{Exclude sites with identical allele frequencies in all populations}
-
 \item{outpop}{If specified, f2-statistics will be weighted by heterozygosity in this population}
 
 \item{outdir}{Directory into which to write f2 data (if \code{NULL}, data is returned instead)}
 
 \item{overwrite}{Should existing files be overwritten? Only relevant if \code{outdir} is not \code{NULL}}
+
+\item{poly_only}{Exclude sites with identical allele frequencies in all populations. Can be \code{TRUE}, \code{FALSE}, or "f2only". "f2only" is the default and means that polymorphic sites will be used for allele frequency prodcuts, but not for f2-statistics.}
 
 \item{verbose}{Print progress updates}
 

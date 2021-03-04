@@ -12,6 +12,9 @@ afs_to_f2(
   blgsize = 0.05,
   snpwt = NULL,
   overwrite = FALSE,
+  type = "f2",
+  poly_only = FALSE,
+  snpdat = NULL,
   verbose = TRUE
 )
 }
