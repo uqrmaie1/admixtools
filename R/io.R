@@ -2095,7 +2095,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
-                                block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE) {
+                                block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE, ...) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -2138,8 +2138,10 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
-  if(auto_only) snpfile %<>% filter(as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
-  nsnpaut = nrow(snpfile)
+  snpfile$keep = TRUE
+  if(auto_only) snpfile %<>% mutate(keep = as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
+  if('keepsnps' %in% names(list(...))) snpfile %<>% mutate(keep = keep & SNP %in% list(...)$keepsnps)
+  nsnpaut = sum(snpfile$keep)
   pops = unique(c(popcombs$pop1, popcombs$pop2, popcombs$pop3, popcombs$pop4))
 
   if(!all(pops %in% indfile$pop))
@@ -2159,11 +2161,16 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   p3 = match(pc$pop3, pops)
   p4 = match(pc$pop4, pops)
 
-  if(verbose) alert_info(paste0('Computing block lengths for ', nrow(snpfile),' SNPs...\n'))
-  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile, blgsize = blgsize)
+  if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
+  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile %>% filter(keep), blgsize = blgsize)
   numblocks = length(block_lengths)
-  start = lag(cumsum(block_lengths), default = 0)
-  end = cumsum(block_lengths)
+
+  snpfile$block = NA; snpfile$block[snpfile$keep] = rep(1:length(block_lengths), block_lengths)
+  snpfile %<>% fill(block, .direction = 'updown')
+  snpind = split(snpfile$keep, snpfile$block)
+  bl = rle(snpfile$block)$lengths
+  start = lag(cumsum(bl), default = 0)
+  end = cumsum(bl)
 
   popind = popcombs %>%
     group_by(model) %>%
@@ -2176,7 +2183,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
                                   i, ' out of ', numblocks, '...\r'))
     # replace following two lines with cpp_geno_to_afs?
-    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)
+    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]]]
     at = gmat_to_aftable(gmat, popvec)
     if(!allsnps) {
       usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)

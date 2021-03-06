@@ -38,6 +38,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
 
+  old = `[`; `[` = function(...) old(..., drop=F)
   afmat = afdat$afs
   countmat = afdat$counts
   mem = lobstr::obj_size(afmat)
@@ -102,10 +103,10 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
-    am1 = afmat[, s1, drop=F]
-    am2 = afmat[, s2, drop=F]
-    cm1 = countmat[, s1, drop=F]
-    cm2 = countmat[, s2, drop=F]
+    am1 = afmat[, s1]
+    am2 = afmat[, s2]
+    cm1 = countmat[, s1]
+    cm2 = countmat[, s2]
 
     f2 = mats_to_f2arr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2, snpwt)
     counts = mats_to_ctarr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2)
@@ -217,7 +218,6 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
 
   nc1 = ncol(countmat1)
   nc2 = ncol(countmat2)
-  nr = nrow(afmat1)
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
   stopifnot(all.equal(ncol(afmat1), nc1))
@@ -235,7 +235,7 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
     out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(corr1, corr2, `+`))
   }
   if(!is.null(snpwt)) {
-    stopifnot(length(snpwt) == nr)
+    stopifnot(length(snpwt) == nrow(afmat1))
     out = out * rep(snpwt, each = nc1*nc2)
   }
   out %<>% block_arr_mean(block_lengths)
