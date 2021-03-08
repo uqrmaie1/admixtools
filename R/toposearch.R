@@ -153,18 +153,19 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
   # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices,
   # so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
   leaves = get_leaves(graph)
+  root = get_root(graph)
   lv = shortest_unique_prefixes(names(leaves))
   g = set_vertex_attr(graph, 'name', leaves, lv)
   ormap = names(V(g))
   names(ormap) = ormap
 
-  root = get_root(graph)
+
   nammap = unify_vertex_names_rec(g, root, ormap, sep1 = sep1, sep2 = sep2)
   nammap[lv] = names(leaves)
   names(nammap)[match(lv, names(nammap))] = names(leaves)
-  nammap['R'] = names(root)
+  nammap[names(root)] = names(root)
   if(!keep_unique) {
-    changed = setdiff(names(nammap), c('R', names(leaves)))
+    changed = setdiff(names(nammap), c(names(root), names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
   }
   nammap %<>% map_chr(digest::digest) %>% paste0('x', .)
@@ -1374,7 +1375,8 @@ isomorphism_classes2 = function(igraphlist) {
   if(numgraph == 0) return(numeric())
   if(numgraph == 0) return(1)
 
-  igraphlist %<>% map(unify_vertex_names) %>% map(as_edgelist) %>% map(as_tibble) %>% map(~arrange(., V1, V2))
+  igraphlist %<>% map(unify_vertex_names) %>% map(as_edgelist) %>%
+    map(~as_tibble(., .name_repair = ~c('V1', 'V2'))) %>% map(~arrange(., V1, V2))
 
   cmb = combn(numgraph, 2)
   iso = map2_lgl(cmb[1,], cmb[2,], ~identical(igraphlist[[.x]], igraphlist[[.y]]))
@@ -1941,7 +1943,7 @@ generate_all_trees = function(leaves) {
   stopifnot(!'R' %in% leaves)
   if(any(str_detect(leaves, '\\|'))) stop('Leaves cannot have "|" in name!')
   init = graph_from_edgelist(matrix(c('R', leaves[1]), 1))
-  add_leaves_rec(init, leaves[-1])
+  add_leaves_rec(init, leaves[-1]) %>% map(~delete_vertices(.,'R'))
 }
 
 #' Generate all graphs
@@ -1963,8 +1965,10 @@ generate_all_graphs = function(leaves, nadmix = 0, sure = FALSE, verbose = TRUE)
   if(verbose) alert_info(paste0('Adding all possible admixutre edges...\n'))
   graphs = flatten(map(trees, ~add_edges_rec(., nadmix)))
   if(verbose) alert_info(paste0('Identifying isomorpisms in ', length(graphs),' graphs...\n'))
-  iso = isomorphism_classes2(graphs)
-  graphs[!duplicated(iso)]
+  hashes = map_chr(graphs, graph_hash)
+  keep = which(!duplicated(hashes))
+  if(verbose) alert_info(paste0('Returning ', length(keep),' unique graphs...\n'))
+  graphs[keep]
 }
 
 add_leaves_rec = function(tree, leaves) {
