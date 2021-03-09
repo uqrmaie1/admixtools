@@ -37,7 +37,7 @@ afs_to_f2_blocks(
 
 \item{overwrite}{Should existing files be overwritten? Only relevant if \code{outdir} is not \code{NULL}}
 
-\item{poly_only}{Exclude sites with identical allele frequencies in all populations. Can be \code{TRUE}, \code{FALSE}, or "f2only". "f2only" is the default and means that polymorphic sites will be used for allele frequency prodcuts, but not for f2-statistics.}
+\item{poly_only}{Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of \code{c("f2", "ap", "fst")}}
 
 \item{verbose}{Print progress updates}
 

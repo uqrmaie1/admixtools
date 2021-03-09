@@ -14,7 +14,8 @@ f4blockdat_from_geno(
   block_lengths = NULL,
   f4mode = TRUE,
   allsnps = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{

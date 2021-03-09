@@ -2750,9 +2750,9 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       if(remaining > 0) {
 
       tryCatch({
-        randmut = tibble(fun = mutfuns, mutfun = names(fun)) %>%
+        randmut = tibble(mutfun = names(mutfuns), fun = map(mutfuns, ~possibly(., NULL))) %>%
           slice_sample(n = remaining, replace = TRUE) %>%
-          rowwise %>% mutate(g = list(fun(graph))) %>% ungroup %>% select(-fun)
+          rowwise %>% mutate(g = list(fun(graph))) %>% filter(!is.null(g)) %>% ungroup %>% select(-fun)
         newmod %<>% bind_rows(randmut)
         }, error = function(e) if(verbose) alert_warning("Could not apply mutation function"))
       }
