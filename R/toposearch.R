@@ -743,7 +743,8 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
   leaves2 = sort(get_leafnames(newgraph))
   if(!is_valid(newgraph) || !isTRUE(all.equal(leaves2, leaves))) {
     if(substitute) graph %<>% insert_admix(substitute = FALSE)
-    else stop("Inserting edge failed!")
+    else browser()
+    #else stop("Inserting edge failed!")
   } else graph = newgraph
   graph
 }
@@ -2239,7 +2240,8 @@ leafdistances = function(graph) {
 
   graph %<>% simplify_graph
   leaves = get_leafnames(graph)
-  dist = igraph::distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>% pivot_longer(-from, names_to = 'to', values_to = 'dist')
+  dist = igraph::distances(graph, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'dist')
   dist2 = dist %>% filter(is.finite(dist), from != to)
   dist2 %>% left_join(dist2, by = 'from') %>% filter(to.x != to.y, to.x %in% leaves, to.y %in% leaves) %>% mutate(pp = paste(to.x, to.y)) %>% group_by(pp) %>% top_n(1, -jitter(dist.y)) %>% ungroup %>% transmute(from = to.y, to = to.x, dist = dist.y)
 
@@ -3968,6 +3970,36 @@ all_paths = function(graph) {
 }
 
 
+pair_percentages = function(graph) {
+  # returns how often each population ordered pair of populations is observed among the internal node descendants
 
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  dest = graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order)
+  single = dest %>% count(to)
+  dest %>% full_join(dest, by = 'from') %>% count(to.x, to.y) %>%
+    left_join(single %>% transmute(to.x = to, n1 = n)) %>%
+    left_join(single %>% transmute(to.y = to, n2 = n)) %>%
+    mutate(frac1 = n/n1, frac2 = n/n2) %>% arrange(to.x, to.y) %>% suppressMessages()
+}
 
+graph_distance = function(graph1, graph2) {
 
+  x1 = pair_percentages(graph1)
+  x2 = pair_percentages(graph2)
+  mean((c(x1$frac1, x1$frac2) - c(x2$frac1, x2$frac2))^2)
+}
+
+#' Pairwise distance estimates for graphs
+#'
+#' Computes a distance estimate for each graph pair. Each graph is first summarized as a vector which counts for every leaf pair how many internal nodes reach that pair. The distance between two graphs is the Euclidean distance between the vectors of two graphs, and is scaled to fall between 0 and 1.
+#' @param graphlist List of graphs
+#' @return A data frame with graph distances
+graph_distances = function(graphlist) {
+
+  numgraphs = length(graphlist)
+  pp = map(graphlist, pair_percentages) %>% map(~c(.$frac1, .$frac2))
+  expand_grid(graph1 = seq_len(numgraphs), graph2 = seq_len(numgraphs)) %>% filter(graph1 < graph2) %>%
+    rowwise %>% mutate(dist = mean((pp[[graph1]] - pp[[graph2]])^2)) %>% ungroup
+}

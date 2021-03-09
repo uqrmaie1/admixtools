@@ -92,8 +92,8 @@ arr3d_to_pairmat = function(arr, diag = TRUE) {
 
 
 prodarray = function(m1, m2) {
-  (array(m1, c(nrow(m1), ncol(m1), 1))[,,rep(1, ncol(m2))] *
-    array(m2, c(nrow(m1), 1, ncol(m2)))[,rep(1, ncol(m1)),]) %>%
+  (array(m1, c(nrow(m1), ncol(m1), 1))[,,rep(1, ncol(m2)),drop=F] *
+    array(m2, c(nrow(m1), 1, ncol(m2)))[,rep(1, ncol(m1)),,drop=F]) %>%
     aperm(c(2,3,1))
 }
 
@@ -101,8 +101,8 @@ outer_array = function(m1, m2, FUN = `*`) {
   nr = nrow(m1)
   nc1 = ncol(m1)
   nc2 = ncol(m2)
-  FUN(array(m1, c(nr, nc1, 1))[,,rep(1, nc2)],
-      array(m2, c(nr, 1, nc2))[,rep(1, nc1),]) %>%
+  FUN(array(m1, c(nr, nc1, 1))[,,rep(1, nc2),drop=F],
+      array(m2, c(nr, 1, nc2))[,rep(1, nc1),,drop=F]) %>%
     aperm(c(2,3,1))
 }
 

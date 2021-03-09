@@ -189,7 +189,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, ou
   snpdat = afdat$snpfile
   if(maxmiss < 1) snpdat$miss = rowMeans(afdat$counts == 0)
   else snpdat %<>% mutate(miss = 0)
-  if(minmaf > 0 | maxmaf < 0.5) snpdat %<>% mutate(af = rowMeans(afdat$afs, na.rm=TRUE)/2, maf = pmin(af, 1-af))
+  if(minmaf > 0 | maxmaf < 0.5) snpdat %<>% mutate(af = weighted_row_means(afdat$afs, afdat$counts), maf = pmin(af, 1-af))
   else snpdat %<>% mutate(af = 0.2, maf = 0.2)
 
   if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
