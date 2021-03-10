@@ -714,7 +714,9 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
   stopifnot(!any(duplicated(pops)))
   stopifnot(!any(duplicated(pops2)))
 
-  block_lengths = readRDS(paste0(f2_dir, '/block_lengths_',type,'.rds'))
+  fl = paste0(f2_dir, '/block_lengths_',type,'.rds')
+  if(!file.exists(fl)) stop('block_lengths file not found. Please run extract_f2() again, as the file format has recently changed.')
+  block_lengths = readRDS(fl)
 
   f2_blocks = array(NA, c(length(pops), length(pops2), length(block_lengths)),
               list(pops, pops2, paste0('l', block_lengths)))
@@ -730,8 +732,9 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
     pop2 = popcomb$pops2[i]
     if(verbose) alert_info(paste0('Reading ', type,
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
-    pref = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i])
-    dat = readRDS(paste0(pref, '_', type, '.rds'))[,col]
+    fl = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
+    if(!file.exists(fl)) stop(paste0('File ', fl, ' not found!'))
+    dat = readRDS(fl)[,col]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
     if(type == 'fst' && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0

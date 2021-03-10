@@ -2737,7 +2737,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
         newmod = e %>% slice_min(weight, n = floor(numgraphs/2)) %>%
           mutate(mutfun = ifelse(type == 'admix', sample(names(wfuns), 1), sample(names(dfuns), 1)),
                  fun = allfuns[mutfun],
-                 g = pmap(list(fun, from, to), function(x, y, z) x(graph, y, z))) %>%
+                 g = pmap(list(fun, from, to), function(x, y, z) possibly(x, NULL)(graph, y, z))) %>%
           rowwise %>% filter(!is.null(g)) %>% ungroup
       }
       remaining = numgraphs - nrow(newmod)
@@ -2796,7 +2796,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     stdat = st %>% st_to_dat
   }
 
-  mout = models %>% transmute(generation = gen2, graph = g, edges, score, mutation = mutfun, hash, lasthash)
+  mout = models %>% transmute(generation = gen2, graph = unname(g), edges, score, mutation = mutfun, hash, lasthash)
   if(return_searchtree) return(list(models = mout, tree = st, dat = stdat))
   mout
 }
