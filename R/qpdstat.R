@@ -471,3 +471,37 @@ qpf4ratio = function(data, pops, boot = FALSE, verbose = FALSE) {
 }
 
 
+
+
+#' Compute f4 from allele frequencies
+#'
+#' @export
+#' @param afdat A data frame with allele frequencies and SNP metadata. Can be grouped.
+#' @param popcombs A data frame with population combinations. Columns `pop1` to `pop4`
+#' @examples
+#' \dontrun{
+#' # Compute f4 for all mutatation classes separately
+#' afs = plink_to_afs('/my/geno/prefix', pops = c('p1', 'p2', 'p3', 'p4', 'p5'))
+#' afdat = bind_cols(afs$snpfile, afs$afs %>% as_tibble()) %>%
+#'         mutate(gr = paste0(pmin(A1, A2), pmax(A1, A2))) %>%
+#'         group_by(gr)
+#' popcombs = tibble(pop1 = c('p1', 'p5'), pop2 = 'p2', pop3 = 'p3', pop4 = 'p4')
+#' out = f4_from_afdat(afdat, popcombs)
+#' out %>% ggplot(aes(gr, est)) + geom_point() +
+#'           geom_errorbar(aes(ymin = est - se, ymax = est + se)) +
+#'           facet_wrap(~paste(pop1, pop2, pop3, pop4), scales = 'free')
+#' }
+f4_from_afdat = function(afdat, popcombs) {
+
+  for(i in 1:nrow(popcombs)) {
+    p1 = popcombs$pop1[i]
+    p2 = popcombs$pop2[i]
+    p3 = popcombs$pop3[i]
+    p4 = popcombs$pop4[i]
+    afdat %<>% mutate(!!paste0('f4_', i) := (!!sym(p1)-!!sym(p2))*(!!sym(p3)-!!sym(p4)))
+  }
+  afdat %>% select(group_cols(), any_of(c('CHR', 'cm', 'POS', 'block')), starts_with('f4_')) %>%
+    snpdat_to_jackest %>% arrange(.col, gr) %>% left_join(popcombs %>% mutate(.col = paste0('f4_', 1:n()))) %>%
+    transmute(pop1, pop2, pop3, pop4, est, se = sqrt(var), z = est/se, cnt)
+}
+

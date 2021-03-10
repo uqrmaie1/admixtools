@@ -257,7 +257,7 @@ jack_dat_stats = function(dat, na.rm = TRUE) {
     mutate(h = sum(n)/n,
            est = mean(tot - loo, na.rm = na.rm)*n() + weighted.mean(loo, n, na.rm = na.rm),
            xtau = (h*tot - (h-1)*loo - est)^2/(h-1)) %>%
-    summarize(est = est[1], var = mean(xtau, na.rm = na.rm), n = sum(!is.na(xtau)))
+    summarize(est = est[1], var = mean(xtau, na.rm = na.rm), cnt = sum(n), n = sum(!is.na(xtau)))
 }
 
 
@@ -711,5 +711,22 @@ summarize_fits = function(fits, q_low = 0.05, q_high = 0.95) {
 }
 
 
+snpdat_to_jackest = function(dat) {
+  # dat is a (grouped) data frame with one row per SNP, and a column `block` (or `CHR` and `cm`)
+  # output has columns est and se or each other column in input
+
+  if(! 'block' %in% names(dat)) {
+    bl = get_block_lengths(dat)
+    gr = group_vars(dat)
+    dat %<>% ungroup %>% mutate(block = rep(1:length(bl), bl)) %>% group_by(gr)
+  }
+
+  dat %>% select(-any_of(c('CHR', 'cm', 'POS'))) %>%
+    select(where(is.numeric), block, group_cols()) %>%
+    pivot_longer(-c(block, group_cols()), names_to = '.col', values_to = 'v') %>%
+    group_by(.col, block, .add = TRUE) %>% summarize(est = mean(v, na.rm=T), n = sum(!is.na(v))) %>%
+    est_to_loo_dat() %>%
+    group_by(.col, .add = TRUE) %>% jack_dat_stats() %>% ungroup %>% suppressMessages()
+}
 
 
