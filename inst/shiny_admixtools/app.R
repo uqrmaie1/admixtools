@@ -356,7 +356,7 @@ server = function(input, output, session) {
     global$countdir = parseDirPath(volumes, input$dir)
     global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
     global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
-      'block_lengths.rds' %in% list.files(global$countdir)
+      'block_lengths_f2.rds' %in% list.files(global$countdir)
     print('global$iscountdata')
     print(global$iscountdata)
     if(global$iscountdata) {
@@ -387,7 +387,7 @@ server = function(input, output, session) {
     global$countdir = normalizePath(input$textdirinput)
     global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
     global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
-      'block_lengths.rds' %in% list.files(global$countdir)
+      'block_lengths_f2.rds' %in% list.files(global$countdir)
     print('global$iscountdata')
     print(global$iscountdata)
     if(global$iscountdata) {
@@ -1788,7 +1788,7 @@ server = function(input, output, session) {
 
     global$iscountdata = 'indivs' %in% list.dirs(global$countdir,F,F)
     global$isf2data = !'indivs' %in% list.dirs(global$countdir,F,F) &
-      'block_lengths.rds' %in% list.files(global$countdir)
+      'block_lengths_f2.rds' %in% list.files(global$countdir)
     if(global$iscountdata) {
       global$allinds = list.dirs(paste0(global$countdir, '/pairs'),F,F)
     } else if(global$isf2data) {

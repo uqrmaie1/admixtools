@@ -4,13 +4,13 @@
 \alias{satisfies_zerof4}
 \title{Test f4 constraints on a graph}
 \usage{
-satisfies_zerof4(graph, nonzero_f4)
+satisfies_zerof4(graph, zero_f4)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{nonzero_f4}{A data frame or matrix with four columns. One row for each f4-statistic which is
-observed to be significantly non-zero}
+\item{zero_f4}{A data frame or matrix with four columns. One row for each f4-statistic which is
+expected to be zero}
 }
 \value{
 \code{TRUE} if all constraints are satisfied, else \code{FALSE}
@@ -21,8 +21,9 @@ the f4-statistics listed in \code{nonzero_f4} being non-zero
 }
 \examples{
 \dontrun{
-# Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
-constrain_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
-satisfies_zerof4(random_admixturegraph(5, 2), constrain_f4)
+# Test whether Chimp and Altai are a clade with respect to all populations X and Y:
+# (whether f4("Chimp", "Altai"; X, Y) is 0 for all pairs of X and Y)
+zero_f4 = expand_grid(pop1 = "Chimp", pop2 = "Altai", pop3 = X, pop4 = Y)
+satisfies_zerof4(random_admixturegraph(5, 2), zero_f4)
 }
 }

@@ -7,7 +7,7 @@
 f4_from_afdat(afdat, popcombs)
 }
 \arguments{
-\item{afdat}{A data frame with allele frequencies, and SNP metadata. Can be grouped.}
+\item{afdat}{A data frame with allele frequencies and SNP metadata. Can be grouped.}
 
 \item{popcombs}{A data frame with population combinations. Columns \code{pop1} to \code{pop4}}
 }
@@ -16,6 +16,7 @@ Compute f4 from allele frequencies
 }
 \examples{
 \dontrun{
+# Compute f4 for all mutatation classes separately
 afs = plink_to_afs('/my/geno/prefix', pops = c('p1', 'p2', 'p3', 'p4', 'p5'))
 afdat = bind_cols(afs$snpfile, afs$afs \%>\% as_tibble()) \%>\%
         mutate(gr = paste0(pmin(A1, A2), pmax(A1, A2))) \%>\%

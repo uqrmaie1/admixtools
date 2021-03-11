@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{summarize_numadmix}
 \alias{summarize_numadmix}
-\title{List the number of admixture events for each population}
+\title{List number of admixture events for each population}
 \usage{
 summarize_numadmix(graph)
 }
@@ -13,7 +13,7 @@ summarize_numadmix(graph)
 A data frame with columns \code{pop} and \code{nadmix}
 }
 \description{
-List the number of admixture events for each population
+List number of admixture events for each population
 }
 \examples{
 \dontrun{

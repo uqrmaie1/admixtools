@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{summarize_zerof4}
 \alias{summarize_zerof4}
-\title{List all f4-statistics which have to be zero}
+\title{List clades in a graph}
 \usage{
 summarize_zerof4(graph, eps = 1e-07)
 }
@@ -15,7 +15,7 @@ summarize_zerof4(graph, eps = 1e-07)
 A data frame with all (non-redundant) zero f4-statistics
 }
 \description{
-List all f4-statistics which have to be zero
+List clades in a graph
 }
 \examples{
 \dontrun{

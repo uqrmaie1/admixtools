@@ -2,7 +2,7 @@
 % Please edit documentation in R/toposearch.R
 \name{summarize_eventorder}
 \alias{summarize_eventorder}
-\title{List the number of admixture events for each population}
+\title{List population split events in a graph}
 \usage{
 summarize_eventorder(graph, unique_only = TRUE)
 }
@@ -13,7 +13,7 @@ summarize_eventorder(graph, unique_only = TRUE)
 A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}
 }
 \description{
-List the number of admixture events for each population
+List population split events in a graph
 }
 \examples{
 \dontrun{

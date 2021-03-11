@@ -2688,7 +2688,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = sel$g[[1]]
     if(!is.null(outpop) && is.null(get_outpop(graph))) stop('fg error')
 
-    if(is.null(nzf4) && reject_f4z > 0 && satisfies_zerof4(graph, nonzero_f4)) {
+    if(is.null(nzf4) && reject_f4z > 0 && satisfies_nonzerof4(graph, nonzero_f4)) {
       nzf4 = nonzero_f4
       if(verbose) alert_info('All zero f4 ok!\n')
     }
@@ -3113,13 +3113,22 @@ summarize_proxies = function(graph) {
   graph %>% count_admix %>% filter(nadmix > 0) %>% left_join(proxies, by = 'pop')
 }
 
-
-summarize_graphlist = function(graphlist) {
+#' List proxy populations in graphlist
+#'
+#' @export
+#' @param graphlist A list of admixture graphs
+#' @return A data frame with columns `pop`, `proxy`, `nadmix`, `nproxies`, `n`, `frac`
+#' @examples
+#' \dontrun{
+#' summarize_proxies_list(graphlist)
+#' }
+summarize_proxies_list = function(graphlist) {
+  # need to update for list of fits
 
   graphlist %>% map(summarize_proxies) %>% bind_rows(.id = 'g') %>%
     group_by(pop) %>% add_count(proxy) %>%
     group_by(pop, proxy) %>%
-    summarize(nadmix = mean(nadmix), nproxies = mean(nproxies), n = mean(n)) %>%
+    summarize(nadmix = mean(nadmix), nproxies = mean(nproxies), n = mean(n), .groups = 'drop') %>%
     mutate(frac = n/length(graphlist)) %>% arrange(-n) %>% ungroup
 }
 
@@ -3173,7 +3182,7 @@ all_node_events = function(graph) {
 
 }
 
-#' List the number of admixture events for each population
+#' List population split events in a graph
 #'
 #' @export
 #' @param graph An admixture graph
@@ -3206,14 +3215,20 @@ summarize_eventorder = function(graph, unique_only = TRUE) {
   out
 }
 
-summarize_graphlist_eventorder = function(graphlist) {
+#' List population split events in a list of graphs
+#'
+#' @export
+#' @param graphlist A list of admixture graphs
+#' @return A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`, `n`, `frac`
+#' @examples
+#' \dontrun{
+#' summarize_eventorder(graphlist)
+#' }
+summarize_eventorder_list = function(graphlist) {
 
+  tot = length(graphlist)
   graphlist %>% map(summarize_eventorder) %>% bind_rows(.id = 'g') %>%
-    select(-node_1, -node_2) %>%
-    add_count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, name = 'obs') %>%
-    count(type_1, pop1_1, pop2_1, type_2, pop1_2, pop2_2, order, obs) %>%
-    mutate(frac1 = n/length(graphlist), frac2 = n/obs) %>%
-    arrange(-n) %>% ungroup
+    count(earlier1, earlier2, later1, later2) %>% mutate(frac = n/tot)
 }
 
 
@@ -3538,7 +3553,7 @@ find_invariants = function(graph, eps = 1e-7) {
 }
 
 
-#' List all f4-statistics which have to be zero
+#' List clades in a graph
 #'
 #' @export
 #' @param graph An admixture graph
@@ -3573,6 +3588,82 @@ summarize_zerof4 = function(graph, eps = 1e-7) {
     mutate(f4 = (f14 + f23 - f13 - f24)/2) %>% ungroup %>% suppressMessages %>%
     filter(between(f4, -eps, eps)) %>% select(pop1:pop4)
 }
+
+#' List clades in a list of graphs
+#'
+#' @export
+#' @param graphlist A list of admixture graphs
+#' @return A data frame with columns `pop1`, `pop2`, `pop3`, `pop4`, `n`, `frac`
+#' @examples
+#' \dontrun{
+#' summarize_zerof4_list(graphlist)
+#' }
+summarize_zerof4_list = function(graphlist) {
+
+  tot = length(graphlist)
+  graphlist %>% map(summarize_zerof4) %>% bind_rows(.id = 'g') %>%
+    count(pop1, pop2, pop3, pop4) %>% mutate(frac = n/tot)
+}
+
+normalize_zerof4 = function(zerof4) {
+  zerof4 %>% as_tibble(.name_repair = ~c('pop1', 'pop2', 'pop3', 'pop4')) %>%
+    transmute(p1 = pmin(pop1, pop2),
+              p2 = pmax(pop1, pop2),
+              p3 = pmin(pop3, pop4),
+              p4 = pmax(pop3, pop4)) %>%
+    transmute(pop1 = if_else(p1 < p3, p1, p3),
+              pop2 = if_else(p1 < p3, p2, p4),
+              pop3 = if_else(p1 < p3, p3, p1),
+              pop4 = if_else(p1 < p3, p4, p2)) %>% distinct
+}
+
+#' Test f4 constraints on a graph
+#'
+#' This function returns `TRUE` if and only if the admixture graph is compatible with
+#' the f4-statistics listed in `nonzero_f4` being non-zero
+#' @export
+#' @param graph An admixture graph
+#' @param nonzero_f4 A data frame or matrix with four columns. One row for each f4-statistic which is
+#' expected to be non-zero
+#' @return `TRUE` if all constraints are satisfied, else `FALSE`
+#' @examples
+#' \dontrun{
+#' # Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
+#' nonzero_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
+#' satisfies_nonzerof4(random_admixturegraph(5, 2), nonzero_f4)
+#' }
+satisfies_nonzerof4 = function(graph, nonzero_f4) {
+
+  if(is.null(nonzero_f4) || nrow(nonzero_f4) == 0) return(TRUE)
+  unexpected_f4 = nonzero_f4 %>% normalize_zerof4 %>%
+    inner_join(summarize_zerof4(graph)) %>% suppressMessages()
+  nrow(unexpected_f4) == 0
+}
+
+#' Test f4 constraints on a graph
+#'
+#' This function returns `TRUE` if and only if the admixture graph is compatible with
+#' the f4-statistics listed in `nonzero_f4` being non-zero
+#' @export
+#' @param graph An admixture graph
+#' @param zero_f4 A data frame or matrix with four columns. One row for each f4-statistic which is
+#' expected to be zero
+#' @return `TRUE` if all constraints are satisfied, else `FALSE`
+#' @examples
+#' \dontrun{
+#' # Test whether Chimp and Altai are a clade with respect to all populations X and Y:
+#' # (whether f4("Chimp", "Altai"; X, Y) is 0 for all pairs of X and Y)
+#' zero_f4 = expand_grid(pop1 = "Chimp", pop2 = "Altai", pop3 = X, pop4 = Y)
+#' satisfies_zerof4(random_admixturegraph(5, 2), zero_f4)
+#' }
+satisfies_zerof4 = function(graph, zero_f4) {
+
+  if(is.null(zero_f4) || nrow(zero_f4) == 0) return(TRUE)
+  unexpected_f4 = zero_f4 %>% normalize_zerof4 %>%
+    anti_join(summarize_zerof4(graph)) %>% suppressMessages()
+  nrow(unexpected_f4) == 0
+}
+
 
 satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 
@@ -3651,29 +3742,8 @@ which_eventorder = function(graph, eventorder, strict = TRUE) {
 }
 
 
-#' Test f4 constraints on a graph
-#'
-#' This function returns `TRUE` if and only if the admixture graph is compatible with
-#' the f4-statistics listed in `nonzero_f4` being non-zero
-#' @export
-#' @param graph An admixture graph
-#' @param nonzero_f4 A data frame or matrix with four columns. One row for each f4-statistic which is
-#' observed to be significantly non-zero
-#' @return `TRUE` if all constraints are satisfied, else `FALSE`
-#' @examples
-#' \dontrun{
-#' # Test whether f4(A,B; C,D) is expected to be non-zero in this graph:
-#' constrain_f4 = matrix(c('A', 'B', 'C', 'D'), 1)
-#' satisfies_zerof4(random_admixturegraph(5, 2), constrain_f4)
-#' }
-satisfies_zerof4 = function(graph, nonzero_f4) {
 
-  if(is.null(nonzero_f4) || nrow(nonzero_f4) == 0) return(TRUE)
-  unexpected_f4 = nonzero_f4 %>% inner_join(summarize_zerof4(graph)) %>% suppressMessages()
-  nrow(unexpected_f4) == 0
-}
-
-#' List the number of admixture events for each population
+#' List number of admixture events for each population
 #'
 #' @export
 #' @param graph An admixture graph
@@ -3690,6 +3760,23 @@ summarize_numadmix = function(graph) {
   graph %>% get_leafnames %>% set_names %>%
     map(~all_simple_paths(graph, root, ., mode = 'out') %>% map_dbl(~length(intersect(adm, names(.)))) %>% max) %>%
     unlist %>% enframe('pop', 'nadmix')
+}
+
+#' List number of admixture events for each population in a list of graphs
+#'
+#' @export
+#' @param graphlist A list of admixture graphs
+#' @return A data frame with columns `pop`, `mean`, `mean_nonzero`, `min`, `max`
+#' @examples
+#' \dontrun{
+#' summarize_numadmix_list(graphlist)
+#' }
+summarize_numadmix_list = function(graphlist) {
+
+  tot = length(graphlist)
+  graphlist %>% map(summarize_numadmix) %>% bind_rows(.id = 'g') %>% group_by(pop) %>%
+    summarize(mean = mean(nadmix), mean_nonzero = mean(nadmix != 0),
+              min = min(nadmix), max = max(nadmix), .groups = 'drop')
 }
 
 
