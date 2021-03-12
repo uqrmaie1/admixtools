@@ -160,6 +160,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 
   #----------------- prepare f4 stats -----------------
   f2_blocks = NULL
+  args = list(...)
   if(is.null(f4blocks)) {
     if(all(file.exists(left, right))) {
       left %<>% readLines
@@ -170,11 +171,16 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
       f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
       f4blocks = f4blockdat %>% mutate(n = length) %>% f4blockdat_to_f4blocks()
       if(verbose) {
-        alert_info('Number of SNPs used for each f4-statistic:\n')
-        f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>% summarize(n = sum(n)) %>% ungroup %>% as.data.frame %>% print
-        alert_info(paste0('Number of SNPs used in total after excluding blocks with missing data: ',count_snps(f4blocks),'\n'))
+        snptab = f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>% summarize(n = sum(n))
+        if(isTRUE(args$allsnps)) {
+          alert_info('"allsnps = TRUE" uses different SNPs for each f4-statistic\n  Number of SNPs used for each f4-statistic:\n')
+          snptab %>% ungroup %>% as.data.frame %>% print
+        } else {
+          alert_info(paste0('Number of SNPs after excluding those with missing data: ', unique(snptab$n),'\n'))
+        }
       }
     } else {
+      if(isTRUE(args$allsnps)) stop('"allsnps = TRUE" is only effective when reading data from genotype files!')
       if(verbose) alert_info('Computing f4 stats...\n')
       f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE, verbose = verbose)
       f4blocks = f2blocks_to_f4blocks(f2_blocks, left, right)
