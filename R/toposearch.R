@@ -4110,21 +4110,26 @@ consistent_with_qpadm = function(graph, left, right, target) {
 #' @param allpops Only consider models which include all populations in the graph
 #' @param more_right Only consider models where the number of right populations is greater than the number of left populations
 #' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_models}}
+#' @param ... Arguments passed to \code{\link{qpadm_models}}
 #' @return A data frame with one qpadm model per row
 #' @examples
 #' \dontrun{
 #' qpadm_models(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
 #' }
-qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data = NULL) {
+qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
 
   pops = get_leafnames(graph)
   pops2 = setdiff(pops, target)
-  models = tibble(l = power_set(pops2)) %>% rowwise
-  if(allpops) models %<>% mutate(r = list(setdiff(pops2, l)))
-  else models %<>% mutate(r = list(power_set(setdiff(pops2, l)))) %>% unnest(r)
+  models = tibble(l = power_set(pops2))
+  if(allpops) {
+    models %<>% rowwise %>% mutate(r = list(setdiff(pops2, l)))
+  } else {
+    models %<>% rowwise %>% mutate(r = list(power_set(setdiff(pops2, l)))) %>% unnest(r)
+  }
   models %<>% rowwise %>% filter(length(r) > 0) %>% ungroup
   if(more_right) models %<>% rowwise %>% filter(length(r) > length(l)) %>% ungroup
 
+  internal = setdiff(names(V(graph)), pops)
   dest = graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
     pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% group_by(from) %>% filter(target %in% to) %>% ungroup
 
@@ -4135,7 +4140,7 @@ qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data =
   out = models %>% rowwise %>% filter(fun(dest, l, r)) %>% ungroup %>%
     transmute(target, left = l, right = r)
   if(is.null(data)) return(out)
-  qpadm_multi(data, out, full_results = FALSE)
+  qpadm_multi(data, out, full_results = FALSE, verbose = FALSE, ...)
 }
 
 

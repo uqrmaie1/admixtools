@@ -652,7 +652,7 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
     f4dat = f2blocks_to_f4stats(f2_blocks, left, right, boot = boot)
   } else {
     f4dat = f4blocks_to_f4stats(f4blocks)
-    rnk = dim(f4blocks)[1] - 2
+    rnk = dim(f4blocks)[1] - 1
   }
   f4_est = f4dat$est
   f4_var = f4dat$var
@@ -872,6 +872,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
     f2blocks = data %>% get_f2(pops, pops2, afprod = TRUE)
     f4blocks = models %>% rowwise %>% mutate(f4blocks = list(f2blocks_to_f4blocks(f2blocks, left, right))) %>% pull
   }
+  if('target' %in% names(models)) models %<>% rowwise %>% mutate(left = list(setdiff(left, target))) %>% ungroup
 
   if(full_results) fun = function(...) qpadm(..., verbose = FALSE)
   else fun = qpadm_p
