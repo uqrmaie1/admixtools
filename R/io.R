@@ -2529,7 +2529,13 @@ edges_to_treemix = function(edges, outpref) {
     write_delim(paste0(outpref, '.vertices.gz'), col_names = FALSE, delim = ' ')
 }
 
-
+#' Read graph in dot format
+#' @export
+#' @param dotfile Name of a file with a dot formatted admixture graph
+#' @examples
+#' \dontrun{
+#' graph = parse_dot("/my/graph.dot")
+#' }
 parse_dot = function(dotfile) {
   dotfile %>%
     read_lines %>%

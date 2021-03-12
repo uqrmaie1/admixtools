@@ -1120,7 +1120,6 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
-#' @export
 #' @param data Input data in one of three forms:
 #' \enumerate{
 #' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
@@ -1954,13 +1953,10 @@ generate_all_trees = function(leaves) {
 #' @export
 #' @param leaves The leaf nodes
 #' @param nadmix The number of admixture nodes
-#' @param sure Confirm large number of graphs
 #' @param verbose Print progress updates
 #' @return A list of graphs in `igraph` format
-generate_all_graphs = function(leaves, nadmix = 0, sure = FALSE, verbose = TRUE) {
-  #if(numtot > 1000 && !sure) stop(paste0('If you really want to generate ', numtot, ' graphs, set sure to TRUE'))
+generate_all_graphs = function(leaves, nadmix = 0, verbose = TRUE) {
   nleaves = length(leaves)
-  if(nleaves > 5 || nadmix > 2 && !sure) stop("If you really want to generate that many graphs, set 'sure' to TRUE")
   if(verbose) alert_info(paste0('Generating ', numtrees(nleaves),' trees...\n'))
   trees = generate_all_trees(leaves)
   if(verbose) alert_info(paste0('Adding all possible admixutre edges...\n'))
@@ -1995,6 +1991,33 @@ add_edges_rec = function(graph, nadmix) {
   newgraphs = graph %>% graph_plusone %>% pull(graph)
   flatten(map(newgraphs, ~add_edges_rec(., nadmix-1)))
 }
+
+# all_tree_topos = function(n, topolist = list(NULL, NULL, matrix(c('n3_0', 'n3_0', 'n3_1', 'n3_1', 'n3_2', 'n3_1', 'n3_3', 'n3_4'), 4))) {
+#   # l <= r
+#   if(n == 3) return()
+#   if(length(topolist) == n-1) {
+#     topolist[[n]] =
+#   }
+#   if(length(topolist) < n) {
+#     topos = all_tree_topos(n-1, topolist)
+#     topolist[[n]] =
+#   }
+#
+#   topolist = rerun(n, list())
+#   topolist[[1]] = list(matrix(NA_character_, 0, 2))
+#   topolist[[2]] = list(matrix(c('n2_0', 'n2_0', 'n2_1', 'n2_2'), 2))
+#   topolist[[3]] = list(matrix(c('n3_0', 'n3_0', 'n3_1', 'n3_1', 'n3_2', 'n3_1', 'n3_3', 'n3_4'), 4))
+#   for(i in 4:n) {
+#     for(j in 1:ceiling(i/2)) {
+#       l = topolist[[j]]
+#       r = topolist[[i-j]]
+#       newrows = matrix(c(rep(paste0('n', i), 2), paste0('n', i-1, c('l','r'))), 2)
+#       newt = expand_grid(l, r) %>% rowwise %>% mutate(tree = list(rbind(newrows, l, r))) %>% pull(tree)
+#       topolist[[i]] = c(topolist[[i]], newt)
+#     }
+#   }
+#
+# }
 
 
 #' Return all graphs created from permuting a subclade
@@ -4121,6 +4144,7 @@ qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data =
   pops = get_leafnames(graph)
   pops2 = setdiff(pops, target)
   models = tibble(l = power_set(pops2))
+  if(!is.logical(allpops)) stop('"allpops" should be TRUE or FALSE!')
   if(allpops) {
     models %<>% rowwise %>% mutate(r = list(setdiff(pops2, l)))
   } else {
