@@ -1409,7 +1409,7 @@ isomorphism_classes2 = function(igraphlist) {
 #' qpadm_models(igraph2, add_outgroup = TRUE)
 #' qpadm_models(igraph2, add_outgroup = TRUE) %>% slice(1) %$% list(target, left, right)
 #' }
-qpadm_models = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
+qpadm_models_old = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   # don't do this for large models
 
   outgroup = get_outpop(graph)
@@ -4090,3 +4090,53 @@ graph_distances = function(graphlist) {
   expand_grid(graph1 = seq_len(numgraphs), graph2 = seq_len(numgraphs)) %>% filter(graph1 < graph2) %>%
     rowwise %>% mutate(dist = mean((pp[[graph1]] - pp[[graph2]])^2)) %>% ungroup
 }
+
+
+consistent_with_qpadm = function(graph, left, right, target) {
+
+  pops = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), pops)
+  graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right', to %in% target ~ 'target')) %>% group_by(from) %>% filter('right' %in% type & 'target' %in% type & !'left' %in% type) %>% nrow %>% equals(0)
+
+}
+
+#' Get all qpadm models for a graph
+#'
+#' This function returns all valid qpadm models for a graph and a given target population, and evaluates them if `data` is provided.
+#' @export
+#' @param graph An admixture graph
+#' @param target Name of the target population
+#' @param allpops Only consider models which include all populations in the graph
+#' @param more_right Only consider models where the number of right populations is greater than the number of left populations
+#' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_models}}
+#' @return A data frame with one qpadm model per row
+#' @examples
+#' \dontrun{
+#' qpadm_models(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
+#' }
+qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data = NULL) {
+
+  pops = get_leafnames(graph)
+  pops2 = setdiff(pops, target)
+  models = tibble(l = power_set(pops2)) %>% rowwise
+  if(allpops) models %<>% mutate(r = list(setdiff(pops2, l)))
+  else models %<>% mutate(r = list(power_set(setdiff(pops2, l)))) %>% unnest(r)
+  models %<>% rowwise %>% filter(length(r) > 0) %>% ungroup
+  if(more_right) models %<>% rowwise %>% filter(length(r) > length(l)) %>% ungroup
+
+  dest = graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% group_by(from) %>% filter(target %in% to) %>% ungroup
+
+  fun = function(dest, left, right) {
+    dest %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right')) %>%
+      group_by(from) %>% filter('right' %in% type & !'left' %in% type) %>% nrow %>% equals(0)
+  }
+  out = models %>% rowwise %>% filter(fun(dest, l, r)) %>% ungroup %>%
+    transmute(target, left = l, right = r)
+  if(is.null(data)) return(out)
+  qpadm_multi(data, out, full_results = FALSE)
+}
+
+
+

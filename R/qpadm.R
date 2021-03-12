@@ -642,12 +642,18 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 #' target = 'Denisova.DG'
 #' qpadm_p(example_f2_blocks, left, right, target)
 qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = FALSE,
-                   constrained = FALSE, rnk = length(setdiff(left, target)) - 1, cpp = TRUE) {
+                   constrained = FALSE, rnk = length(setdiff(left, target)) - 1, cpp = TRUE,
+                   f4blocks = NULL) {
 
   #force(rnk)
-  if(!is.null(target)) left = c(target, setdiff(left, target))
-  f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
-  f4dat = f2blocks_to_f4stats(f2_blocks, left, right, boot = boot)
+  if(is.null(f4blocks)) {
+    if(!is.null(target)) left = c(target, setdiff(left, target))
+    f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
+    f4dat = f2blocks_to_f4stats(f2_blocks, left, right, boot = boot)
+  } else {
+    f4dat = f4blocks_to_f4stats(f4blocks)
+    rnk = dim(f4blocks)[1] - 2
+  }
   f4_est = f4dat$est
   f4_var = f4dat$var
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
@@ -845,7 +851,7 @@ qpadmmodels_to_popcombs = function(models) {
 #'            target = c('pop10', 'pop10'))
 #' results = qpadm_multi('/my/geno/prefix', models)
 #' }
-qpadm_multi = function(data, models, allsnps = FALSE, verbose = TRUE, ...) {
+qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbose = TRUE, ...) {
 
   if(!'left' %in% names(models) || !'right' %in% names(models))
     stop("'models' should have elements 'left' and 'right'!")
@@ -867,11 +873,16 @@ qpadm_multi = function(data, models, allsnps = FALSE, verbose = TRUE, ...) {
     f4blocks = models %>% rowwise %>% mutate(f4blocks = list(f2blocks_to_f4blocks(f2blocks, left, right))) %>% pull
   }
 
+  if(full_results) fun = function(...) qpadm(..., verbose = FALSE)
+  else fun = qpadm_p
+
   if(verbose) alert_info('Running models...\n')
-  f4blocks %>%
+  out = f4blocks %>%
     furrr::future_map(function(.x, ...)
-      qpadm(NULL, NULL, NULL, target = TRUE, f4blocks = .x, verbose = FALSE, ...),
+      fun(NULL, NULL, NULL, target = TRUE, f4blocks = .x, ...),
       .progress = verbose, ...)
+  if(!full_results) out = bind_cols(models, out %<>% bind_rows)
+  out
 }
 
 

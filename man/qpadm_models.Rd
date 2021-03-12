@@ -2,27 +2,29 @@
 % Please edit documentation in R/toposearch.R
 \name{qpadm_models}
 \alias{qpadm_models}
-\title{Return all valid qpAdm models for an admixturegraph}
+\title{Get all qpadm models for a graph}
 \usage{
-qpadm_models(graph, add_outgroup = FALSE, nested = TRUE, abbr = -1)
+qpadm_models(graph, target, allpops = TRUE, more_right = TRUE, data = NULL)
 }
 \arguments{
-\item{graph}{An admixture graph as igraph object}
+\item{graph}{An admixture graph}
 
-\item{add_outgroup}{Should the graph outgroup be added to the qpAdm right populations?
-Technically this shouldn't be an informative outgroup for qpAdm.}
+\item{target}{Name of the target population}
 
-\item{nested}{Should a nested data frame be returned (\code{TRUE}), or should populations be concatenated
-into strings (\code{FALSE})?}
+\item{allpops}{Only consider models which include all populations in the graph}
 
-\item{abbr}{Maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.}
+\item{more_right}{Only consider models where the number of right populations is greater than the number of left populations}
+
+\item{data}{If \code{data} is set, all models will be evaluated using \code{\link{qpadm_models}}}
+}
+\value{
+A data frame with one qpadm model per row
 }
 \description{
-For large admixturegraph, there may be a large number of valid qpAdm models!
+This function returns all valid qpadm models for a graph and a given target population, and evaluates them if \code{data} is provided.
 }
 \examples{
 \dontrun{
-qpadm_models(igraph2, add_outgroup = TRUE)
-qpadm_models(igraph2, add_outgroup = TRUE) \%>\% slice(1) \%$\% list(target, left, right)
+qpadm_models(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
 }
 }

@@ -4,7 +4,14 @@
 \alias{qpadm_multi}
 \title{Run multiple qpadm models}
 \usage{
-qpadm_multi(data, models, allsnps = FALSE, verbose = TRUE, ...)
+qpadm_multi(
+  data,
+  models,
+  allsnps = FALSE,
+  full_results = TRUE,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{data}{The input data in the form of:
