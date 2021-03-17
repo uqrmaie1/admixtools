@@ -2,8 +2,8 @@
 # number of all binary trees with a given number of leaf nodes (== doublefactorial(2*n-3))
 numtrees = function(n) factorial(2*n-2)/(2^(n-1)*factorial(n-1))
 
-# number of all binary tree topologies
-numtreestop = function(n) factorial(2*n)/factorial(n+1)/factorial(n)
+# Catalan number
+catalan = function(n) factorial(2*n)/factorial(n+1)/factorial(n)
 
 # number of possible DAGs
 numdags = function(n) {
@@ -19,6 +19,7 @@ numadmixplacements = function(numedges, nadmix) {
   if(nadmix == 0) return(1)
   choose(numedges, 2) * numadmixplacements(numedges+3, nadmix-1)
 }
+
 
 doublefactorial = function(n) {
   if(n %% 2 == 0) {
@@ -1604,7 +1605,9 @@ graph_plusone = function(graph, ntry = Inf) {
 
   desimplify = !is_simplified(graph)
   if(desimplify) graph %<>% simplify_graph
-  out = graph %>% find_newedges %>% slice_sample(n = ntry) %>% rowwise %>%
+  out = graph %>% find_newedges
+  if(is.finite(ntry)) out %<>% slice_sample(n = ntry)
+  out %<>% rowwise %>%
     mutate(g = list(insert_admix(graph, source_from, source_to, dest_from, dest_to)))
   if(desimplify) out %<>% mutate(g = list(desimplify_graph(g)))
   out %>% ungroup %>% rename(graph = g)
@@ -1992,32 +1995,20 @@ add_edges_rec = function(graph, nadmix) {
   flatten(map(newgraphs, ~add_edges_rec(., nadmix-1)))
 }
 
-# all_tree_topos = function(n, topolist = list(NULL, NULL, matrix(c('n3_0', 'n3_0', 'n3_1', 'n3_1', 'n3_2', 'n3_1', 'n3_3', 'n3_4'), 4))) {
-#   # l <= r
-#   if(n == 3) return()
-#   if(length(topolist) == n-1) {
-#     topolist[[n]] =
-#   }
-#   if(length(topolist) < n) {
-#     topos = all_tree_topos(n-1, topolist)
-#     topolist[[n]] =
-#   }
-#
-#   topolist = rerun(n, list())
-#   topolist[[1]] = list(matrix(NA_character_, 0, 2))
-#   topolist[[2]] = list(matrix(c('n2_0', 'n2_0', 'n2_1', 'n2_2'), 2))
-#   topolist[[3]] = list(matrix(c('n3_0', 'n3_0', 'n3_1', 'n3_1', 'n3_2', 'n3_1', 'n3_3', 'n3_4'), 4))
-#   for(i in 4:n) {
-#     for(j in 1:ceiling(i/2)) {
-#       l = topolist[[j]]
-#       r = topolist[[i-j]]
-#       newrows = matrix(c(rep(paste0('n', i), 2), paste0('n', i-1, c('l','r'))), 2)
-#       newt = expand_grid(l, r) %>% rowwise %>% mutate(tree = list(rbind(newrows, l, r))) %>% pull(tree)
-#       topolist[[i]] = c(topolist[[i]], newt)
-#     }
-#   }
-#
-# }
+
+permutations = function(vec) {
+
+  if(length(vec) == 1) return(vec)
+  out = list()
+  for(i in seq_len(length(vec))) {
+    new = map(permutations(vec[-i]), ~c(vec[i], .))
+    out = c(out, new)
+  }
+  out
+}
+
+
+
 
 
 #' Return all graphs created from permuting a subclade
@@ -3941,17 +3932,6 @@ pair_admix = function(graph) {
 triplet_proportions = function(fit) {
 
   graph = fit %>% edges_to_igraph()
-  trees = graph_splittrees(graph, return_admix = TRUE)
-  trees %>% unnest(admedges) %>%
-    left_join(fit, by = c('from', 'to')) %>%
-    group_by(name) %>% summarize(graph = graph[1], weight = prod(weight))
-
-}
-
-
-triplet_proportions2 = function(fit) {
-
-  graph = fit %>% edges_to_igraph()
   triples = path_triples(graph)
   adm = fit %>% filter(type == 'admix') %>%
     transmute(e = paste0(from, '|', to), weight) %>% deframe
@@ -3963,7 +3943,7 @@ triplet_proportions2 = function(fit) {
   x = prop %>% select(1:3) %>% distinct
   miss = bind_rows(x %>% mutate(og = pop1), x %>% mutate(og = pop2), x %>% mutate(og = pop3)) %>%
     mutate(sm = 0) %>% anti_join(prop, by = c('pop1', 'pop2', 'pop3', 'og'))
-  prop %>% bind_rows(miss) %>% arrange(pop1, pop2, pop3)
+  prop %>% bind_rows(miss) %>% arrange(pop1, pop2, pop3) %>% rename(outgroup = og, proportion = sm)
 }
 
 
@@ -3986,13 +3966,6 @@ tree_isoutgroup = function(tree, outgroup, pop1, pop2) {
   length(intersect(p1, og)) < length(intersect(p1, p2))
 }
 
-triplet_proportions1 = function(fit, outgroup, pop1, pop2) {
-
-  tp = triplet_proportions(fit)
-  graph = fit$edges %>% edges_to_igraph()
-  tp %>% rowwise %>% mutate(og = tree_isoutgroup(graph, outgroup, pop1, pop2)) %>%
-    filter(og) %$% sum(weight)
-}
 
 
 place_root = function(graph, from, to, outpop = NULL) {
@@ -4129,7 +4102,7 @@ consistent_with_qpadm = function(graph, left, right, target) {
 #' This function returns all valid qpadm models for a graph and a given target population, and evaluates them if `data` is provided.
 #' @export
 #' @param graph An admixture graph
-#' @param target Name of the target population
+#' @param target Name of the target population. If `NULL`, it will cycle through all admixed populations.
 #' @param allpops Only consider models which include all populations in the graph
 #' @param more_right Only consider models where the number of right populations is greater than the number of left populations
 #' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_models}}
@@ -4139,7 +4112,15 @@ consistent_with_qpadm = function(graph, left, right, target) {
 #' \dontrun{
 #' qpadm_models(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
 #' }
-qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
+qpadm_models = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
+
+  if(is.null(target)) target = graph %>% summarize_numadmix %>% filter(nadmix > 0) %>% pull(pop)
+  target %>% set_names %>%
+    map(~qpadm_models_single(graph, target = ., allpops = allpops,
+                             more_right = more_right, data = data, ...)) %>% bind_rows
+}
+
+qpadm_models_single = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
 
   pops = get_leafnames(graph)
   pops2 = setdiff(pops, target)
@@ -4167,5 +4148,22 @@ qpadm_models = function(graph, target, allpops = TRUE, more_right = TRUE, data =
   qpadm_multi(data, out, full_results = FALSE, verbose = FALSE, ...)
 }
 
+
+consistent_with_qpwave = function(graph, left, right) {
+
+  edges = graph %>% delete_vertices(pops) %>% {attr(E(.), 'vnames')}
+
+  out = tibble()
+  for(i in 1:3) {
+    ecomb = t(combn(edges, i))
+    new = map(seq_len(nrow(ecomb)), ~{
+      comp = components(delete_edges(graph, ecomb[.,]))
+      if(comp$no == 2 && min(comp$csize) > 1) comp$membership %>% enframe %>%
+        filter(name %in% pops) %$% split(name, value) %>% enframe %>% rowwise %>% mutate(len = length(value))
+    }) %>% bind_rows(.id = 'comp') %>% group_by(comp) %>% filter(min(len) > 1) %>% select(-len) %>% pivot_wider(names_from = name, values_from = value) %>% ungroup %>% transmute(num = i, l = `1`, r = `2`)
+    out %<>% bind_rows(new)
+  }
+
+}
 
 
