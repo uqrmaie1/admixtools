@@ -198,17 +198,17 @@ In this graph, all of the drift lengths and admixture weights are unidentifiable
 To see what this means in practice, we simulate data under this admixture graph, and the test whether we can recover the correct parameters:
 
 ```{r, eval = FALSE, echo = FALSE}
-example_f2sim1 = f2_from_simulation(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python')
+example_f2sim1 = f2_from_msprime(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python')
 dates = pseudo_dates(g, 1000)
 dates['C'] = 0
-example_f2sim2 = f2_from_simulation(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python', time = dates)
+example_f2sim2 = f2_from_msprime(g, nsnps = 1e5, run = '/Users/robert/anaconda2/bin/python', time = dates)
 ```
 
 
 Not providing any additional simulation parameters will default to all drift edges being of equal length (except the one going to the outgroup), and all admixture nodes to be in 50/50 proportions.
 
 ```{r, eval = FALSE, echo = TRUE}
-example_f2sim1 = f2_from_simulation(g, nsnps = 1e5)
+example_f2sim1 = f2_from_msprime(g, nsnps = 1e5)
 ```
 ```{r}
 qpgraph(example_f2sim1, g)$edges %>% plotly_graph(fix = TRUE)
@@ -220,7 +220,7 @@ However, this is because of the symmetry of this graph. Let's see what happens i
 ```{r, eval = FALSE, echo = TRUE}
 dates = pseudo_dates(g, 1000)
 dates['C'] = 0
-example_f2sim2 = f2_from_simulation(g, nsnps = 1e5, time = dates)
+example_f2sim2 = f2_from_msprime(g, nsnps = 1e5, time = dates)
 ```
 
 ```{r}

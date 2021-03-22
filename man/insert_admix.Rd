@@ -10,7 +10,8 @@ insert_admix(
   source_to = NULL,
   dest_from = NULL,
   dest_to = NULL,
-  substitute = FALSE
+  substitute = FALSE,
+  fix_outgroup = TRUE
 )
 }
 \arguments{

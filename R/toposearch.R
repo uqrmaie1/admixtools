@@ -204,7 +204,7 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = TRUE, outpop = N
       random_newick(outpop = outpop) %>%
       newick_to_edges %>%
       graph_from_edgelist %>%
-      insert_admix_n(numadmix)
+      insert_admix_n(numadmix, fix_outgroup = !is.null(outpop))
     if(all(map_lgl(list(nonzero_f4, admix_constraints, event_order), is.null)) ||
        satisfies_constraints(graph, nonzero_f4 = nonzero_f4, admix_constraints = admix_constraints,
                              event_order = event_order)) break
@@ -714,7 +714,8 @@ insert_admix_random = function(graph, nadmix) {
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
 #' @return Adxmiture graph with inserted edge
 #' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_n}}
-insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL, substitute = FALSE) {
+insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL,
+                        substitute = FALSE, fix_outgroup = TRUE) {
   # assumes graph is simplified
 
   if(length(source_to) > 1) {
@@ -727,7 +728,7 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
   leaves = sort(get_leafnames(graph))
   nodes = names(V(graph))
   if(is.null(source_to) || is.null(dest_to) || length(setdiff(c(source_to, dest_to), nodes)) > 0 && substitute) {
-    e = graph %>% find_newedges %>% slice_sample
+    e = graph %>% find_newedges(fix_outgroup = fix_outgroup) %>% slice_sample
     source_from = e$source_from
     dest_from = e$dest_from
     source_to = e$source_to
@@ -760,7 +761,7 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
 #' @return Admixture graph with inserted edges
 #' @seealso \code{\link{insert_admix}} \code{\link{delete_admix}}
-insert_admix_n = function(graph, n = 1) {
+insert_admix_n = function(graph, n = 1, fix_outgroup = TRUE) {
 
   # if(all(map_lgl(list(source_from, source_to, dest_from, dest_to), is.null))) {
   #   f = function(x, y) insert_admix(x)
@@ -774,7 +775,7 @@ insert_admix_n = function(graph, n = 1) {
   #   n = length(source_from)
   #   f = function(x, y) insert_admix(x, source_from[y], source_to[y], dest_from[y], dest_to[y])
   # }
-  f = function(x, y) insert_admix(x, substitute = TRUE)
+  f = function(x, y) insert_admix(x, substitute = TRUE, fix_outgroup = fix_outgroup)
   seq_len(n) %>% reduce(f, .init = graph)
 }
 
@@ -904,7 +905,7 @@ move_admixedge_once = function(graph, fix_outgroup = TRUE) {
       }
     }
   }
-  if(nadmix > 0) warning('no suitable attachment points found for admixture edge')
+  #if(nadmix > 0) warning('no suitable attachment points found for admixture edge')
   if(desimplify) graph = desimplify_graph(graph)
   return(graph)
 }
@@ -1406,8 +1407,8 @@ isomorphism_classes2 = function(igraphlist) {
 #' @param abbr Maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.
 #' @examples
 #' \dontrun{
-#' qpadm_models(igraph2, add_outgroup = TRUE)
-#' qpadm_models(igraph2, add_outgroup = TRUE) %>% slice(1) %$% list(target, left, right)
+#' qpadm_models_old(igraph2, add_outgroup = TRUE)
+#' qpadm_models_old(igraph2, add_outgroup = TRUE) %>% slice(1) %$% list(target, left, right)
 #' }
 qpadm_models_old = function(graph, add_outgroup=FALSE, nested = TRUE, abbr = -1) {
   # don't do this for large models
@@ -1754,14 +1755,14 @@ graph_addleaf = function(graph, pop) {
 #'   and end above `to` could be inserted
 #' @export
 #' @seealso \code{\link{find_normedges}} \code{\link{find_admixedges}}
-find_newedges = function(graph, fix_outpop = TRUE, all = TRUE) {
+find_newedges = function(graph, fix_outgroup = TRUE, all = TRUE) {
   # edge pairs are defined by 4 vertex names
   # todo: implement remove_redundant
 
   if(!all) return(find_newedges_cautiously(graph))
   dmat = igraph::distances(graph, mode = 'out')
   edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('source_from', 'source_to'))
-  if(fix_outpop) {
+  if(fix_outgroup) {
     root = get_rootname(graph)
     outpop = get_outpop(graph)
     if(!is.null(outpop)) edges %<>% filter(source_from != root | source_to != outpop)
@@ -2775,7 +2776,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       newmod %<>%
         transmute(g, hash = map_chr(g, graph_hash), lasthash = sel$hash[[1]], mutfun)
       if(nodups) newmod %<>% filter(!duplicated(hash), !hash %in% models$hash)
-      if(!is.null(outpop)) newmod %<>% rowwise %>% filter(get_outpop(g) == outpop) %>% ungroup
+      tryCatch({
+      if(!is.null(outpop) && nrow(newmod) > 0) newmod %<>% rowwise %>% mutate(og = list(get_outpop(g))) %>%
+        filter(!is.null(og) && og == outpop) %>% ungroup
+      }, error = function(e) browser())
       if(nrow(newmod) == 0) {
         alert_danger('No new models!\n')
         next
@@ -4105,22 +4109,22 @@ consistent_with_qpadm = function(graph, left, right, target) {
 #' @param target Name of the target population. If `NULL`, it will cycle through all admixed populations.
 #' @param allpops Only consider models which include all populations in the graph
 #' @param more_right Only consider models where the number of right populations is greater than the number of left populations
-#' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_models}}
-#' @param ... Arguments passed to \code{\link{qpadm_models}}
+#' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_multi}}
+#' @param ... Arguments passed to \code{\link{qpadm_multi}}
 #' @return A data frame with one qpadm model per row
 #' @examples
 #' \dontrun{
-#' qpadm_models(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
+#' graph_to_qpadm(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
 #' }
-qpadm_models = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
+graph_to_qpadm = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
 
   if(is.null(target)) target = graph %>% summarize_numadmix %>% filter(nadmix > 0) %>% pull(pop)
   target %>% set_names %>%
-    map(~qpadm_models_single(graph, target = ., allpops = allpops,
+    map(~graph_to_qpadm_single(graph, target = ., allpops = allpops,
                              more_right = more_right, data = data, ...)) %>% bind_rows
 }
 
-qpadm_models_single = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
+graph_to_qpadm_single = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
 
   pops = get_leafnames(graph)
   pops2 = setdiff(pops, target)
@@ -4164,6 +4168,51 @@ consistent_with_qpwave = function(graph, left, right) {
     out %<>% bind_rows(new)
   }
 
+}
+
+#' List leaf nodes for all internal nodes
+#'
+#' @export
+#' @param graph An admixture graphs
+#' @return A data frame with columns `from`, `to`, `id`
+#' @examples
+#' \dontrun{
+#' summarize_descendants(graph)
+#' }
+summarize_descendants = function(graph) {
+
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>%
+    select(-order) %>% group_by(from) %>% mutate(id = paste(sort(to), collapse = ' ')) %>% ungroup
+}
+
+#' List leaf nodes for all internal nodes in a list of graphs
+#'
+#' @export
+#' @param graphlist A list of admixture graphs
+#' @return A data frame with columns `graph`, `from`, `n`, `frac`
+#' @examples
+#' \dontrun{
+#' summarize_descendants_list(graphlist)
+#' }
+summarize_descendants_list = function(graphlist, rename = FALSE) {
+
+  ngraphs = length(graphlist)
+  dat = graphlist %>% map(summarize_descendants) %>% bind_rows(.id = 'graph') %>% select(-to) %>% distinct
+  counts = dat %>% select(-from) %>% distinct %>% count(id)
+  out = dat %>% left_join(counts, by = 'id') %>% select(-id) %>% mutate(frac = n/ngraphs)
+  if(rename) {
+    pops = get_leafnames(graphlist[[1]])
+    out = map2(graphlist, split(out, out$graph), ~{
+    nam = .y %>% transmute(from, to = paste0(from, ' (', round(frac, 2), ')')) %>%
+      bind_rows(tibble(from = pops, to = pops)) %>% deframe
+    .x %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
+      mutate(from = nam[from], to = nam[to]) %>% edges_to_igraph
+  })
+  }
+  out
 }
 
 

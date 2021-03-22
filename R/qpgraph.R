@@ -674,6 +674,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 #' @param verbose Print progress updates
 #' @param ... Arguments passed to \code{\link{qpgraph}}
 #' @return A list of same length as `graphlist` with data frames with \code{\link{qpgraph}} results for each iteration of bootstrap resampled f2-statistics
+#' @examples
 #' \dontrun{
 #' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
 #' compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
@@ -682,9 +683,11 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, ...) {
 
   boo = boo_list(f2_blocks, nboot = nboot)
-  f3pre = map(graphlist, ~qpgraph_precompute_f3(f2_blocks, get_leafnames(.))$ppinv)
-  map2(graphlist, f3pre, function(.x, .y, ...) qpgraph_resample_snps2(
-    boo$boo, .x, boo$test, ppinv = .y, verbose = verbose, ...), ...)
+  #f3pre = map(graphlist, ~qpgraph_precompute_f3(f2_blocks, get_leafnames(.))$ppinv)
+  #map2(graphlist, f3pre, function(.x, .y, ...) qpgraph_resample_snps2(
+  #  boo$boo, .x, boo$test, ppinv = .y, verbose = verbose, ...), ...)
+  map(graphlist, function(.x, ...) qpgraph_resample_snps2(
+    boo$boo, .x, boo$test, verbose = verbose, ...), ...)
 }
 
 

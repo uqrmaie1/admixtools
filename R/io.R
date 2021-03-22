@@ -1043,6 +1043,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = auto_only, poly_only = FALSE)
   afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
+  if(sum(afdat$snpfile$poly) == 0) stop('There are no informative SNPs!')
 
   if(verbose) alert_warning(paste0(nrow(afdat$afs), ' SNPs remain after filtering. ',
                                    sum(afdat$snpfile$poly),' are polymorphic.\n'))

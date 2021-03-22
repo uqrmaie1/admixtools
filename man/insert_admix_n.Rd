@@ -4,7 +4,7 @@
 \alias{insert_admix_n}
 \title{Insert admixture edges into graph}
 \usage{
-insert_admix_n(graph, n = 1)
+insert_admix_n(graph, n = 1, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}

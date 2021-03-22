@@ -4,14 +4,12 @@
 \alias{generate_all_graphs}
 \title{Generate all graphs}
 \usage{
-generate_all_graphs(leaves, nadmix = 0, sure = FALSE, verbose = TRUE)
+generate_all_graphs(leaves, nadmix = 0, verbose = TRUE)
 }
 \arguments{
 \item{leaves}{The leaf nodes}
 
 \item{nadmix}{The number of admixture nodes}
-
-\item{sure}{Confirm large number of graphs}
 
 \item{verbose}{Print progress updates}
 }

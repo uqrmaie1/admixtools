@@ -4,7 +4,7 @@
 \alias{pseudo_dates}
 \title{Get pseudo dates for graph nodes}
 \usage{
-pseudo_dates(graph, time = 1)
+pseudo_dates(graph, time = 1000)
 }
 \arguments{
 \item{graph}{An admixture graph}

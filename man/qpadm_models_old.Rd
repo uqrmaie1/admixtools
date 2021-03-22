@@ -22,7 +22,7 @@ For large admixturegraph, there may be a large number of valid qpAdm models!
 }
 \examples{
 \dontrun{
-qpadm_models(igraph2, add_outgroup = TRUE)
-qpadm_models(igraph2, add_outgroup = TRUE) \%>\% slice(1) \%$\% list(target, left, right)
+qpadm_models_old(igraph2, add_outgroup = TRUE)
+qpadm_models_old(igraph2, add_outgroup = TRUE) \%>\% slice(1) \%$\% list(target, left, right)
 }
 }

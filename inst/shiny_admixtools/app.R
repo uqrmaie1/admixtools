@@ -327,20 +327,13 @@ server = function(input, output, session) {
 
   output$dirout = renderText({global$countdir})
   output$dirout = renderText({str_replace(global$countdir, '/Users/robert', '')})
-  #shinyjs::hide('show_extract')
-  #shinyjs::hide('show_popadjust')
-  #shinyjs::hide('show_indselect')
+
   output$show_popadjust = renderText({as.numeric(show_popadjust())})
   output$show_extract = renderText({as.numeric(show_extract())})
   output$show_indselect = renderText({as.numeric(show_indselect())})
   output$genofile1out = renderText({parseFilePaths(eval(volumes), input$genofile1)$datapath %>% str_replace('\\.geno$', '') %>% str_replace('/Users/robert', '')})
 
-  # mydir = '/Users/robert/Downloads/test04/'
-  # global$countdir = mydir
-  # global$iscountdata = F
-  # global$isf2data = T
-  # global$allinds = list.dirs(mydir,F,F)
-  # global$poplist = list.dirs(mydir,F,F) %>% purrr::set_names()
+
 
   observeEvent(input$dir, {
     #if (!"path" %in% names(dir())) return()
@@ -378,6 +371,7 @@ server = function(input, output, session) {
 
   observeEvent(input$textdir, {
 
+    justcreated = FALSE
     if(!dir.exists(input$textdirinput)) {
       #shinyalert('Could not find directory!', "Please write the path of a directory into the box. This should be an empty directory if you haven't extracted f2-statistics/counts yet, or otherwise the directory with extracted data.")
       dir.create(input$textdirinput)
@@ -1677,34 +1671,6 @@ server = function(input, output, session) {
     else div()
     })
 
-  # qpg_right_fit = reactive({
-  #   tabsetPanel(tabPanel('f2', dto('f2')),
-  #               tabPanel('f3', dto('f3')),
-  #               tabPanel('f4', dto('f4')),
-  #               tabPanel('opt', dto('opt')),
-  #               tabPanel('similar', tabsetPanel(tabPanel('-1', dto('minus1')),
-  #                                               tabPanel('+1', dto('plus1')),
-  #                                               tabPanel('flip', dto('flipadmix')))),
-  #               tabPanel('history', dto('history')),
-  #               id = 'qpgraph_tabset')
-  # })
-  #
-  # qpg_right = reactive({
-  #   print('qpg_right!')
-  #   print(global$qpg_right_show)
-  #   if(global$qpg_right_show == 'fit') return(qpg_right_fit())
-  #   else if(global$qpg_right_show == 'minus1') {
-  #     global$qpg_right = plotlyOutput('graphcomparison')
-  #     return(plotlyOutput('graphcomparison'))
-  #   }
-  #   else shinyalert('Error!')
-  # })
-
-
-  # qpg_right = reactive({
-  #
-  # })
-
   get_loaddata = reactive({
     print('load_data')
     input$textdirinput
@@ -1712,23 +1678,18 @@ server = function(input, output, session) {
     div(
       fluidRow(
         box(width=4, height=bh, background = cols[1], h4('Select data directory'),
-            #div(splitLayout(shinyDirButton('dir', 'Browse', 'Upload'),verbatimTextOutput('dirout', placeholder = TRUE))),
             div(splitLayout(textInput('textdirinput', NULL, placeholder = 'Data directory'),
                             actionButton('textdir', 'Create')))),
         conditionalPanel('output.show_extract == "1"',
                          fluidRow(box(width=4, height=bh, background = cols[2], h4('Extract data'),
                                       splitLayout(
                                         div(
-                                          #shinyFilesButton('genofile1', 'Geno file', 'Select Packedancestrymap geno file', FALSE),
-                                          #verbatimTextOutput('genofile1out', placeholder = TRUE)
                                           textInput('textgenofile1', NULL, placeholder = 'genotype file')
                                           ),
                                         actionButton('extract_data', 'Extract data'))))),
         conditionalPanel('output.show_indselect == "1"', (
           box(width=4, height=bh, background = cols[3], h4('Select .ind or .fam file'),
               div(fileInput('popfile', NULL, placeholder = '', buttonLabel = 'Ind file'), id = 'popfilediv')))),
-        #column(3, box(width=12, height=bh, background = cols[4], h4('Select graph file'),
-        #    div(fileInput('graphfile', NULL, placeholder = '', buttonLabel = 'Graph file'), id = 'graphfilediv'))),
         fluidRow(column(12, conditionalPanel('input.extract_data > 0', verbatimTextOutput('console')))),
         #box(width=6, textOutput('console')),
         div(style = 'visibility: hidden', verbatimTextOutput('show_popadjust')),
@@ -1747,8 +1708,6 @@ server = function(input, output, session) {
       shinyalert('Error!', 'Please provide path and name for a .geno or .bed file!')
       return()
     }
-    #volumes %<>% eval
-    #pref = parseFilePaths(volumes, input$genofile1)$datapath %>% str_replace('\\.geno$|\\.bed$', '')
     pref = input$textgenofile1 %>% str_replace('\\.geno$|\\.bed$', '')
 
     oldnam = names(global$poplist)

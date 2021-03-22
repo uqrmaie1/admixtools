@@ -952,7 +952,7 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 #' @param graph An admixture graph
 #' @param time Scalar by which y-coordinate values will be multiplied to get dates
 #' @return A named vector with pseudo dates for each graph node
-pseudo_dates = function(graph, time = 1) {
+pseudo_dates = function(graph, time = 1000) {
 
   edges = graph %>% as_edgelist()
   pdat = graph_to_plotdat(edges)$eg
@@ -1113,7 +1113,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
 #' @inheritParams msprime_sim
 #' @seealso \code{\link{msprime_sim}}
 #' @export
-f2_from_simulation = function(..., blgsize = 0.05, cleanup = TRUE, verbose = TRUE) {
+f2_from_msprime = function(..., blgsize = 0.05, cleanup = TRUE, verbose = TRUE) {
 
   ell = list(...)
   if(!'outpref' %in% names(ell)) ell$outpref = tempfile()
@@ -1235,6 +1235,53 @@ sfs_to_f2 = function(sfs) {
   }) %>% bind_rows() %>% select(pop1, pop2, f2, fst)
 }
 
+# f2_from_sfs = function(sfs, nblocks = 100) {
+#
+#   pops = setdiff(colnames(sfs), 'n')
+#   nsnps = sum(sfs$n)
+#   n2 = map(sfs$n, ~if(.==0) rep(0, nblocks) else diff(sort(c(0, sample(seq_len(.), nblocks-1, replace=T), .)))) %>%
+#     do.call(rbind, .)
+#   x = map(seq_len(nblocks), ~mutate(sfs, n = n2[,.])) %>% map(sfs_to_f2) %>% bind_rows(.id = 'block') %>%
+#     transmute(block = as.numeric(block), pop1, pop2, f2) %>% bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+#     bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
+#     arrange(block, pop1, pop2)
+#   array(x$f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep(paste0('l', round(nsnps/nblocks)), nblocks)))
+# }
+
+f2_from_fastsimcoal = function(graph, nblocks = 100, verbose = TRUE, ...) {
+
+  #sfs = map(seq_len(nblocks), ~fastsimcoal_sim_dsfs(graph, ...), ...)
+  sfs = list()
+  for(i in seq_len(nblocks)) {
+    sfs[[i]] = fastsimcoal_sim_dsfs(graph, ..., verbose = FALSE)
+  }
+  if(verbose) alert_info('fastsimcoal sfs done. Computing f2 from sfs...\n')
+  sfs %>% map(sfs_to_f2) %>% bind_rows(.id = 'block') %>% f2dat_to_f2blocks()
+}
+
+f2dat_to_f2blocks = function(f2dat) {
+  # f2dat has columns pop1, pop2, f2, block
+
+  pops = sort(union(f2dat$pop1, f2dat$pop2))
+  nblocks = length(unique(f2dat$block))
+  f2dat %>% select(pop1, pop2, f2, block) %>% mutate(block = as.numeric(block)) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+    bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
+    arrange(block, pop1, pop2) %$%
+    array(f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep('l1', nblocks)))
+}
+
+f2dat_to_f2blocks2 = function(f2dat, nblocks = 1000, cv = 0.1) {
+
+  pops = sort(union(f2dat$pop1, f2dat$pop2))
+  f2dat %>% select(pop1, pop2, f2) %>% filter(pop1 < pop2) %>% expand_grid(block = seq_len(nblocks)) %>%
+    rowwise %>% mutate(f2 = rnorm(1, f2, f2*cv)) %>% ungroup %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+    bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
+    arrange(block, pop1, pop2) %$%
+    array(f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep('l1', nblocks)))
+}
+
 write_fastsimcoal_obs = function(afs, outfile = stdout()) {
 
   popcounts = apply(afs$counts, 2, max)
@@ -1246,18 +1293,17 @@ write_fastsimcoal_obs = function(afs, outfile = stdout()) {
 }
 
 
-write_fastsimcoal_files = function(graph, outpref, tpl = FALSE, num_snps = 10000000,
-                                   recombination_rate = 0.00000001, mutation_rate = 0.00000002) {
+write_fastsimcoal_files = function(graph, outpref, tpl = FALSE, nsnps = 10000000,
+                                   recombination_rate = 0.00000001, mutation_rate = 0.00000002, time = 1000) {
 
-  tm = 1000
   pops = get_leafnames(graph)
   nodes = names(V(graph))
   npop = length(pops)
   nnode = length(nodes)
-  dates = pseudo_dates(graph) %>% enframe('node', 'date')
+  dates = if(length(time) > 1) time else pseudo_dates(graph, time) %>% enframe('node', 'date')
   edges = graph %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>% mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n) %>% left_join(dates %>% transmute(from = node, fromdate = date)) %>% left_join(dates %>% transmute(to = node, todate = date)) %>% suppressMessages() %>%
     mutate(weight = ifelse(type == 'admix' & !duplicated(to), 0.5, 1)) %>%
-    mutate(time = ifelse(type == 'admix', fromdate, fromdate)*tm, source = match(to, nodes)-1, sink = match(from, nodes)-1, migrants = weight, size = 1, gr = 0, migmat = 0,
+    mutate(time = ifelse(type == 'admix', fromdate, fromdate), source = match(to, nodes)-1, sink = match(from, nodes)-1, migrants = weight, size = 1, gr = 0, migmat = 0,
            gr = ifelse(type == 'admix', 0, paste0('G_', 1:nrow(.), '$')),
            epar = ifelse(type == 'admix', paste0('T_', from, '$'), paste0('T_', from, '$')),
            epar2 = paste0('T_', to, '$'),
@@ -1270,7 +1316,7 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE, num_snps = 10000
     apar = paste0('A', seq_len(nadm), '$')[seq_len(nadm)]
     edges$migrants[edges$migrants < 1] = apar
     #edges$time = edges$epar
-    edges$time = edges$todate*1000
+    edges$time = edges$todate
 
     est = "// Priors and rules file
   // *********************
@@ -1313,8 +1359,8 @@ write_fastsimcoal_files = function(graph, outpref, tpl = FALSE, num_snps = 10000
   out %<>% paste0('\n//Per chromosome: Number of linkage blocks\n')
   out %<>% paste0('1')
   out %<>% paste0('\n//per Block: data type, num loci, rec. rate and mut rate + optional parameters\n')
-  if(tpl) out %<>% paste0('FREQ ', num_snps,' ', recombination_rate,' ', mutation_rate,'\n')
-  else out %<>% paste0('SNP ', num_snps,' ', recombination_rate,' ', mutation_rate,'\n')
+  if(tpl) out %<>% paste0('FREQ ', nsnps,' ', recombination_rate,' ', mutation_rate,'\n')
+  else out %<>% paste0('SNP ', nsnps,' ', recombination_rate,' ', mutation_rate,'\n')
   #out %<>% paste0('DNA 10000000 0.00000001 0.00000002 0.33\n')
   #out %<>% paste0('STANDARD 10000000 0.00000001 0.00000002\n')
 
@@ -1336,14 +1382,14 @@ parse_fastsimcoal_dsfs = function(obs_file, popcounts) {
   expand_grid(!!!popcounts %>% map(~0:.)) %>% mutate(n = cnt)
 }
 
-fastsimcoal_sim_dsfs = function(graph, outpref, run = './fsc26', popcounts = 1, num_snps = 10000000,
+fastsimcoal_sim_dsfs = function(graph, outpref, run = './fsc26', popcounts = 1, nsnps = 10000000,
                                 recombination_rate = 0.00000001, mutation_rate = 0.00000002, verbose = TRUE) {
 
-  write_fastsimcoal_files(graph, outpref, tpl = FALSE, num_snps = num_snps, recombination_rate = recombination_rate,
+  write_fastsimcoal_files(graph, outpref, tpl = FALSE, nsnps = nsnps, recombination_rate = recombination_rate,
                           mutation_rate = mutation_rate)
   if(file.exists(run)) {
     obs_file = paste0(outpref, '/', basename(outpref), '_DSFS.obs')
-    if(file.exists(obs_file)) rm(obs_file)
+    if(file.exists(obs_file)) file.remove(obs_file)
     else dir.create(outpref, showWarnings = FALSE)
     cmd = paste0(run, ' -i ', outpref,'.par -n1 -d -u -s0 -k 100000000 > ', outpref, '.txt')
     if(verbose) alert_info(paste0('Running "', cmd, '"...\n'))

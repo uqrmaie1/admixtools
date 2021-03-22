@@ -131,6 +131,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
 
 
     if(!is.null(outdir)) {
+      if(!isTRUE(all.equal(dim(f2), dim(counts)))) browser()
       write_f2(f2, counts, outdir = outdir, id = 'f2', overwrite = overwrite)
       bl = paste0(outdir, '/block_lengths_f2.rds')
       if(!file.exists(bl) || overwrite) saveRDS(block_lengths_f2, file = bl)
@@ -141,7 +142,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
         if(!file.exists(bl) || overwrite) saveRDS(block_lengths_ap, file = bl)
       }
       if(fst) {
-        write_f2(fstarr, counts, outdir = outdir, id = 'fst', overwrite = overwrite)
+        write_f2(fstarr, countsfst, outdir = outdir, id = 'fst', overwrite = overwrite)
         bl = paste0(outdir, '/block_lengths_fst.rds')
         if(!file.exists(bl) || overwrite) saveRDS(block_lengths_fst, file = bl)
       }

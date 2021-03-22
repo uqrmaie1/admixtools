@@ -600,7 +600,6 @@ qpadm_fit = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
   }
   out = qpadm_evaluate_fit(xmat, qinv, fit$A, fit$B, rnk)
   if(addweights && length(fit$weights) == nrow(xmat)) {
-    #out %<>% bind_cols(fit$weights %>% t %>% as_data_frame %>% set_names(rownames(xmat)))
     out %<>% bind_cols(fit$weights %>% t %>% as_tibble(.name_repair = ~rownames(xmat)))
   }
   out
@@ -804,6 +803,27 @@ qpadm_rotate = function(f2_blocks, leftright, target, rightfix = NULL, full_resu
   qpadm_eval_rotate(f2_blocks, target, lr, rightfix, full_results = full_results, verbose = verbose)
 
 }
+
+#' Rotate populations between left and right
+#'
+#' This functions creates a data frame with population combinations which can be used as the input for \code{\link{qpadm_multi}}
+#' @export
+#' @param leftright Populations which will be distributed between left and right
+#' @param rightfix Populations which will be on the right side in all models
+#' @param target Target population
+#' @return A data frame with Chi-squared statistics and p-values for each population combination
+#' @examples
+#' \dontrun{
+#' pops = dimnames(example_f2_blocks)[[1]]
+#' rotate_models(leftright = pops[1:4],
+#'              target = pops[5], rightfix = pops[6:7])
+#' }
+rotate_models = function(leftright, target, rightfix = NULL) {
+
+  all_lr2(leftright, length(rightfix)) %>% as_tibble %>% rowwise %>%
+    mutate(right = list(c(right, rightfix)), target = target) %>% ungroup
+}
+
 
 qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, full_results = FALSE, verbose = TRUE) {
   if(full_results) fun = function(...) qpadm(..., verbose = FALSE)
