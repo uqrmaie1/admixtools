@@ -258,15 +258,23 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
   } else {
-    if(is.data.frame(data)) {
-      # should not be used for real applications; sets f3 covariance matrix to identity matrix
-      f2mat = data %>% select(1:3) %>% set_colnames(c('pop1', 'pop2', 'f2')) %>% bind_rows(rename(., pop1=pop2,pop2=pop1)) %>% bind_rows(tibble(pop1=pops,pop2=pops,f2=0)) %>% arrange(pop1,pop2) %>% pivot_wider(names_from=pop2, values_from=f2) %>% column_to_rownames('pop1') %>% as.matrix
+    if(is.data.frame(data) || is.matrix(data)) {
+      # sets f3 covariance matrix to identity matrix
+      if(is.data.frame(data)) {
+        data %<>% select(1:3) %>% set_colnames(c('pop1', 'pop2', 'f2')) %>% filter(pop1 < pop2) %>%
+          bind_rows(rename(., pop1=pop2,pop2=pop1)) %>% bind_rows(tibble(pop1=pops,pop2=pops,f2=0)) %>%
+          arrange(pop1,pop2)
+        f2mat = data %>% pivot_wider(names_from=pop2, values_from=f2) %>% column_to_rownames('pop1') %>%
+          as.matrix
+      } else {
+        f2mat = data
+      }
       f2mat = f2mat[pops,pops]
       precomp = list()
       f3mat = (t(t(-f2mat + f2mat[,1])+f2mat[,1])/2)[-1,-1]
       precomp$f3_est = c(f3mat[!upper.tri(f3mat)])
       precomp$ppinv = diag(choose(length(pops), 2))
-      precomp$f3out = data %>% transmute(pop1,pop2,est=f2,se=1)
+      precomp$f3out = data %>% transmute(pop1,pop2,est=f2,se=1) %>% filter(pop1 < pop2)
     } else {
     f2_blocks = get_f2(data, pops, afprod = FALSE, verbose = verbose)
     precomp = qpgraph_precompute_f3(f2_blocks, pops, f3basepop = f3basepop, lambdascale = lambdascale, boot = boot,
@@ -437,9 +445,9 @@ qpgraph_precompute_f3 = function(data, pops, f3basepop = NULL, lambdascale = 1, 
                  est = f2[[1]][lower.tri(f2[[1]])],
                  se = sqrt(f2[[2]][lower.tri(f2[[2]])]))
 
-  f3_blocks = (f2_blocks[,rep(1, npop),] + f2_blocks[rep(1, npop),,] - f2_blocks)/2
+  f3_blocks = (f2_blocks[,rep(1, npop),,drop=F] + f2_blocks[rep(1, npop),,,drop=F] - f2_blocks)/2
   #f3_blocks = array(pmax(0, f3_blocks), dim(f3_blocks), dimnames(f3_blocks))
-  f3_blocks_2d = arr3d_to_pairmat(f3_blocks[-1,-1,])
+  f3_blocks_2d = arr3d_to_pairmat(f3_blocks[-1,-1,,drop=F])
   f3dat = matstatfun(f3_blocks_2d, block_lengths)
   #f3dat = jack_mat_stats(f3_blocks_2d, block_lengths)
   f3_est = f3dat$est

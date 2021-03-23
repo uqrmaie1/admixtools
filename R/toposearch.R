@@ -4206,7 +4206,7 @@ summarize_descendants_list = function(graphlist, rename = FALSE) {
   if(rename) {
     pops = get_leafnames(graphlist[[1]])
     out = map2(graphlist, split(out, out$graph), ~{
-    nam = .y %>% transmute(from, to = paste0(from, ' (', round(frac, 2), ')')) %>%
+    nam = .y %>% transmute(from, to = paste0(from, ' (', round(frac*100), ')')) %>%
       bind_rows(tibble(from = pops, to = pops)) %>% deframe
     .x %>% as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       mutate(from = nam[from], to = nam[to]) %>% edges_to_igraph

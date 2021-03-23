@@ -277,12 +277,16 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
                                                'transversion', NA))) %>%
       select(-a1, -a2, -aa1, -aa2, -a)
   }
+  if(auto_only) {
+    snpdat %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR)))
+    if(any(is.na(snpdat$CHR))) stop("Could not parse chromosome numbers! Set 'auto_only = FALSE' to ignore chromosome labels!")
+  }
   snpdat %>%
     filter(
     miss <= maxmiss,
     between(maf, minmaf, maxmaf),
     outgroupaf > 0 & outgroupaf < 1,
-    !auto_only | as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22,
+    !auto_only | CHR <= 22,
     !poly_only | poly == 1,
     transitions | mutation != 'transition',
     transversions | mutation != 'transversion'

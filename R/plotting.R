@@ -122,12 +122,13 @@ plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TR
                       arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
     gl = geom_label(data=pdat$nodes, aes_string(label = 'name'), col = 'black', size = textsize)
   }
+  gl2 = if(is.null(pdat$internal)) NULL else geom_text(data=pdat$internal, aes_string(label = 'name'), size = textsize, nudge_x = -.1, nudge_y = .1)
 
   plt = pdat$eg %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
     gs +
     geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize) +
-    gl +
+    gl + gl2 +
     theme(panel.background = element_blank(),
           axis.line = element_blank(),
           axis.text = element_blank(),
@@ -159,6 +160,7 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
     names(edges)[1:2] = c('V1', 'V2')
     graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
   }
+  leaves = get_leafnames(graph)
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
@@ -170,7 +172,7 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(get_leafnames(graph)) < 10) eg = fix_layout(eg, graph)
+  if(isTRUE(fix) || is.null(fix) && length(leaves) < 10) eg = fix_layout(eg, graph)
   if(fix_down) eg = fix_shiftdown(eg, graph)
 
   if(!'label' %in% names(edges)) {
@@ -181,10 +183,14 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
     edges %<>% mutate(label = lab)
   }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
-  nodes = eg %>% filter(to %in% get_leafnames(graph)) %>% rename(x=xend, y=yend, xend=x, yend=y) %>%
-    transmute(name = to, x, y, xend, yend)
-
-  namedList(eg, nodes)
+  if(any(str_detect(eg$name, ' \\(100\\)'))) {
+    internal = eg %>% filter(!to %in% leaves) %>%
+      rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend) %>%
+      mutate(name = str_replace_all(name, '.+\\(|\\)', ''))
+  } else internal = NULL
+  nodes = eg %>% filter(to %in% leaves) %>%
+      rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
+  namedList(eg, nodes, internal)
 }
 
 
