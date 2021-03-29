@@ -268,6 +268,8 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
           as.matrix
       } else {
         f2mat = data
+        data = f2mat %>% as_tibble(rownames = 'pop1') %>%
+          pivot_longer(-pop1, names_to = 'pop2', values_to = 'f2')
       }
       f2mat = f2mat[pops,pops]
       precomp = list()

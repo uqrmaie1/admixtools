@@ -2622,17 +2622,18 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = initgraph
     numadmix = numadmix(graph)
   }
+  f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
-      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = opt_worst_residual, ...)
+      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = opt_worst_residual, f3precomp = f3precomp, ...)
       res$score = res$worst_residual
       res$worst_residual = res$f4 = NULL
       res
       }
   } else {
-    qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
+    #qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
+    qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
   }
-  #qpgfun = function(graph, ...) list(score = runif(1), edges = as_tibble(as_edgelist(graph), .name_repair = ~c('from', 'to')) %>% mutate(weight = rnorm(n()), type = 'edge'))
   stop_at = Sys.time() + stop_sec
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
   dfuns = namedList(rearrange_negdrift)
@@ -4213,6 +4214,37 @@ summarize_descendants_list = function(graphlist, rename = FALSE) {
   })
   }
   out
+}
+
+
+partition_fit = function(fit) {
+
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  dest = graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order)
+}
+
+
+summarize_driftpartition = function(edges, all = FALSE) {
+
+  graph = edges %>% edges_to_igraph()
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  desc = graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>%
+    select(-order) %>% group_by(from) %>% mutate(id = paste(sort(to), collapse = ' ')) %>% ungroup
+
+  out = edges %>% filter(type == 'edge') %>% select(from, to, weight) %>% left_join(desc %>% select(-to) %>% distinct, by = c('to' = 'from')) %>% mutate(id = ifelse(is.na(id), to, id)) %>% rowwise %>% mutate(id2 = paste0(sort(setdiff(pops, str_split(id, ' ')[[1]])), collapse = ' ')) %>% ungroup %>% mutate(s1 = pmin(id, id2), s2 = pmax(id, id2)) %>% group_by(s1, s2) %>% summarize(weight = sum(weight), .groups = 'drop') %>% bind_rows(rename(., s1=s2, s2=s1)) %>% rowwise %>% transmute(s1, s2, c1 = str_count(s1, ' ')+1, c2 = str_count(s2, ' ')+1, weight) %>% ungroup
+  if(all) {
+    x = tibble(s1 = head(power_set(sort(leaves)), -1)) %>% rowwise %>%
+      mutate(s2 = list(sort(setdiff(leaves, s1))),
+             c1 = length(s1), c2 = length(s2),
+             s1 = paste0(s1, collapse = ' '),
+             s2 = paste0(s2, collapse = ' '), weight = 0) %>% ungroup
+    out = x %>% anti_join(out, by = c('s1', 's2')) %>% bind_rows(out)
+  }
+  out %>% arrange(s1, s2)
 }
 
 

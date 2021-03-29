@@ -2432,7 +2432,7 @@ geno_to_treemix = function(pref, outfile = paste0(pref, '.txt.gz'), pops = NULL,
 }
 
 
-graph_to_treemix = function(edges, outpref) {
+graph_to_treemix = function(edges, outpref = NULL) {
 
   # doesn't work for complex graphs. have to define tree from graph first; test how much choice of tree affects fit
 
@@ -2457,19 +2457,27 @@ graph_to_treemix = function(edges, outpref) {
 
   mig = edges %>% filter(mig) %>% pull(from)
 
-  edges %>%
+  edges = edges %>%
     transmute(from = match(from, nodes), to = match(to, nodes),
               l = ifelse(mig, 0, 1),
               w = ifelse(n > 1, weight, 1),
-              m = ifelse(mig, 'MIG', 'NOT_MIG')) %>% #arrange(desc(m)) %>%
-    write_delim(paste0(outpref, '.edges.gz'), col_names = FALSE, delim = ' ')
+              m = ifelse(mig, 'MIG', 'NOT_MIG'))
 
-  tibble(i = (1:length(nodes)), nodes,
+  #tree = edges %>% filter(m == 'NOT_MIG') %>% mutate(from = paste0('n', from), to = paste0('n', to)) %>%
+  #  edges_to_igraph()
+  #parents = map(V(tree), ~names(neighbors(tree, ., mode = 'in')))
+  nodes = tibble(i = (1:length(nodes)), nodes,
          r = ifelse(nodes == root, 'ROOT', 'NOT_ROOT'),
          m = ifelse(nodes %in% mig, 'MIG', 'NOT_MIG'),
          t = ifelse(nodes %in% leaves, 'TIP', 'NOT_TIP')) %>%
-    mutate(nodes = ifelse(nodes %in% leaves, nodes, NA)) %>%
-    write_delim(paste0(outpref, '.vertices.gz'), col_names = FALSE, delim = ' ')
+    mutate(nodes = ifelse(nodes %in% leaves, nodes, NA))
+
+  if(!is.null(outpref)) {
+    write_delim(edges, paste0(outpref, '.edges.gz'), col_names = FALSE, delim = ' ')
+    write_delim(nodes, paste0(outpref, '.vertices.gz'), col_names = FALSE, delim = ' ')
+  } else {
+    return(namedList(edges, nodes))
+  }
 }
 
 

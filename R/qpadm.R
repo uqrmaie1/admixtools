@@ -913,3 +913,5 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 }
 
 
+
+

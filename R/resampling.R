@@ -341,6 +341,7 @@ get_block_lengths = function(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE) {
   } else if(length(unique(dat$cm)) < 2) {
     if(length(unique(dat$POS)) > 2) {
       blgsize = 2e6
+      distcol = 'POS'
       warning(paste0("No genetic linkage map found! Defining blocks by base pair distance of ", blgsize))
     } else {
       warning(paste0("No genetic linkage map or base positions found! ",

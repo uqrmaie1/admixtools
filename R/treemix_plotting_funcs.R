@@ -534,3 +534,43 @@ plot_resid_internal = function(d, o = NA, max = 0.009, min = -0.009, cex =0.5, w
 }
 
 
+
+
+plot_graph_treemix = function(edges, o = NA, cex = 1, disp = 0.003, plus = 0.01, flip = vector(), arrow = 0.05, scale = T, ybar = 0.1, mbar = T, plotmig = T, plotnames = T, xmin = 0, lwd = 1, font = 1){
+
+  dat = graph_to_treemix(edges)
+  e = dat$edges
+  n = dat$nodes
+
+  if (!is.na(o)){
+    o = read.table(o, as.is = T, comment.char = "", quote = "")
+  }
+  e[,3] = e[,3]*e[,4]
+  e[,3] = e[,3]*e[,4]
+
+  #se = read.table(gzfile(se), as.is = T, comment.char = "", quote = "")
+  #m1 = apply(se, 1, mean)
+  #m = mean(m1)
+  m = 0
+  for(i in seq_along(flip)){
+    d = flip_node(d, flip[i])
+  }
+  d$x = "NA"
+  d$y = "NA"
+  d$ymin = "NA"
+  d$ymax = "NA"
+  d$x = as.numeric(d$x)
+  d$y = as.numeric(d$y)
+  d$ymin = as.numeric(d$ymin)
+  d$ymax = as.numeric(d$ymax)
+
+  d = set_y_coords(d)
+  d = set_x_coords(d, e)
+  #print(d)
+  d = set_mig_coords(d, e)
+  plot_tree_internal(d, e, o = o, cex = cex, xmin = xmin, disp = disp, plus = plus, arrow = arrow, ybar = ybar, mbar = mbar, mse = m, scale = scale, plotmig = plotmig, plotnames = plotnames, lwd = lwd, font = font)
+  invisible(list( d= d, e = e))
+}
+
+
+

@@ -1090,7 +1090,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
 
   out = paste0(out, "\n\nwith open('",outpref,".snp', 'w') as f:")
   out = paste0(out, "\n  for i in range(nsnps):")
-  out = paste0(out, "\n    bytes = f.write('.\\t1\\t' + str(i*50/float(nsnps-1)) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
+  out = paste0(out, "\n    bytes = f.write('rs'+str(i+1)+'\\t1\\t' + str(i*50/float(nsnps-1)) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
   out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
   out = paste0(out, "\n  for i in range(len(indnam)):")
   out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')\n")
@@ -1252,6 +1252,9 @@ f2_from_fastsimcoal = function(graph, nblocks = 100, verbose = TRUE, ...) {
 
   #sfs = map(seq_len(nblocks), ~fastsimcoal_sim_dsfs(graph, ...), ...)
   sfs = list()
+  run = list(...)$run
+  if(is.null(run)) stop("Need to pass fastsimcoal path to 'run'!")
+  if(!file.exists(run)) stop(paste0(run, ' not found!'))
   for(i in seq_len(nblocks)) {
     sfs[[i]] = fastsimcoal_sim_dsfs(graph, ..., verbose = FALSE)
   }
