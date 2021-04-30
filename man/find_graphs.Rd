@@ -78,7 +78,7 @@ As soon as one graph happens to satisfy these constraints, all subsequently gene
 See \code{\link{satisfies_eventorder}}
 As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.}
 
-\item{reject_f4z}{If this is a number greater than zero, all f4-statistics with \code{z > reject_f4z} will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.}
+\item{reject_f4z}{If this is a number greater than zero, all f4-statistics with \code{abs(z) > reject_f4z} will be used to constrain the search space of admixture graphs: Any graphs in which f4-statistics greater than \code{reject_f4z} are expected to be zero will not be evaluated.}
 
 \item{max_admix}{Maximum number of admixture edges. By default, this number is equal to \code{numadmix}, or to the number of admixture edges in \code{initgraph}, so the number of admixture edges stays constant. Setting this to a higher number will lead to more admixture edges being added occasionally (see \code{plusminus_generations}). Graphs with additional admixture edges will only be accepted if they improve the score by 5\% or more.}
 

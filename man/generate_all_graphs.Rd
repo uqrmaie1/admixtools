@@ -17,5 +17,19 @@ generate_all_graphs(leaves, nadmix = 0, verbose = TRUE)
 A list of graphs in \code{igraph} format
 }
 \description{
-This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes.
+This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{\link[admixturegraph]{all_graphs}} function in the \code{admixturegraph} package, but there are a few differences:
+\itemize{
+\item The function does not return graphs with fewer than \code{nadmix} admixture events
+\item The function does not return most graphs which are unidentifiable and would have equal fits as simpler identifiable graphs (for example it does not return graphs where a node is expanded to a loop)
+\item The function does not return duplicated graphs, as identified by the \code{\link{graph_hash}} function
+\item The function generates unique graphs which are missing in the output of \code{\link[admixturegraph]{all_graphs}}
+}
+}
+\examples{
+\dontrun{
+graphs = generate_all_graphs(letters[1:4], 1)
+}
+}
+\seealso{
+\code{\link[admixturegraph]{all_graphs}}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
 }

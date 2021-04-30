@@ -15,7 +15,8 @@ qpgraph(
   numstart = 10,
   seed = NULL,
   cpp = TRUE,
-  return_f4 = FALSE,
+  return_fstats = FALSE,
+  return_pvalue = FALSE,
   f3precomp = NULL,
   f3basepop = NULL,
   constrained = TRUE,
@@ -57,7 +58,7 @@ Both of these options do not take the covariance of f3-statistics into account. 
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 
-\item{return_f4}{Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to \code{FALSE} because this can be slow.}
+\item{return_fstats}{Return estimated and fitted f2- and f4-statistics, as well as the worst f4-statistic residual Z-score. Defaults to \code{FALSE} because this can be slow.}
 
 \item{f3precomp}{Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of \code{data}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
 
@@ -77,11 +78,11 @@ the column \code{weight} is the estimated edge length, and for admixture edges, 
 \item \code{score}: The likelihood score of the fitted graph. Lower values correspond to better fits.
 The score is calculated as the inner product of the residuals (difference between estimated and
 fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{\link{qpgraph_score}}
-\item \code{f2}: Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.
+\item \code{f2}: Estimated and fitted f2 statistics (if \code{return_fstats = TRUE}). p-values and z-scores test the significance of the difference.
 \item \code{f3}: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
-\item \code{f4}: Estimated and fitted f4 statistics (if \code{return_f4 = TRUE}). p-values and z-scores test the significance of the difference.
+\item \code{f4}: Estimated and fitted f4 statistics (if \code{return_fstats = TRUE}). p-values and z-scores test the significance of the difference.
 \item \code{opt}: A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column \code{value} contains the score for each set of starting weights. Columns starting with \code{x} denote initial weights, and columns starting with \code{y} denote fitted weights.
-\item \code{worst_residual}: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_f4 = TRUE})
+\item \code{worst_residual}: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if \code{return_fstats = TRUE})
 }
 }
 \description{

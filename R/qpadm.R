@@ -892,7 +892,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
     f4blockdat = data %>% f4blockdat_from_geno(popcombs, allsnps = allsnps, verbose = verbose)
     f4blocks = f4blockdat %>% split(.$model) %>% furrr::future_map(quietly(f4blockdat_to_f4blocks)) %>% map('result')
   } else {
-    if(verbose && !allsnps) alert_warning('allsnps = FALSE is not effective when using precomputed f2 statistics\n')
+    if(verbose && allsnps) alert_warning('allsnps = TRUE is not effective when using precomputed f2 statistics\n')
     pops = models %>% select(any_of(c('target', 'left'))) %>% unlist %>% unique
     pops2 = models %>% select(right) %>% unlist %>% unique
     f2blocks = data %>% get_f2(pops, pops2, afprod = TRUE)

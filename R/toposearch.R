@@ -1079,12 +1079,12 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
   if(opt_worst_residual) {
     kp = c(kp, 'worst_residual')
     qpgfun = function(graph) qpgraph(data = precomp, graph = graph,
-                                     numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+                                     numstart = numstart, return_fstats = opt_worst_residual, verbose = FALSE, ...)[kp]
   } else {
     # qpgfun = function(graph) qpgraph(data = NULL, graph = graph, f3precomp = precomp,
-    #                                  numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+    #                                  numstart = numstart, return_fstats = opt_worst_residual, verbose = FALSE, ...)[kp]
     qpgfun = function(graph) qpgraph(data = precomp, graph = graph,
-                                     numstart = numstart, return_f4 = opt_worst_residual, verbose = FALSE, ...)[kp]
+                                     numstart = numstart, return_fstats = opt_worst_residual, verbose = FALSE, ...)[kp]
   }
 
   # qpgfun = possibly(qpgfun, otherwise = NULL)
@@ -1952,13 +1952,23 @@ generate_all_trees = function(leaves) {
 
 #' Generate all graphs
 #'
-#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes.
-#'
+#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{\link[admixturegraph]{all_graphs}} function in the \code{admixturegraph} package, but there are a few differences:
+#' \itemize{
+#' \item The function does not return graphs with fewer than `nadmix` admixture events
+#' \item The function does not return most graphs which are unidentifiable and would have equal fits as simpler identifiable graphs (for example it does not return graphs where a node is expanded to a loop)
+#' \item The function does not return duplicated graphs, as identified by the \code{\link{graph_hash}} function
+#' \item The function generates unique graphs which are missing in the output of \code{\link[admixturegraph]{all_graphs}}
+#' }
 #' @export
 #' @param leaves The leaf nodes
 #' @param nadmix The number of admixture nodes
 #' @param verbose Print progress updates
 #' @return A list of graphs in `igraph` format
+#' @seealso \code{\link[admixturegraph]{all_graphs}}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
+#' @examples
+#' \dontrun{
+#' graphs = generate_all_graphs(letters[1:4], 1)
+#' }
 generate_all_graphs = function(leaves, nadmix = 0, verbose = TRUE) {
   nleaves = length(leaves)
   if(verbose) alert_info(paste0('Generating ', numtrees(nleaves),' trees...\n'))
@@ -2585,7 +2595,7 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' @param event_constraints A data frame with constraints on the order of events in an admixture graph.
 #' See \code{\link{satisfies_eventorder}}
 #' As soon as one graph happens to satisfy these constraints, all subsequently generated graphs will be required to also satisfy them.
-#' @param reject_f4z If this is a number greater than zero, all f4-statistics with `z > reject_f4z` will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.
+#' @param reject_f4z If this is a number greater than zero, all f4-statistics with `abs(z) > reject_f4z` will be used to constrain the search space of admixture graphs: Any graphs in which f4-statistics greater than `reject_f4z` are expected to be zero will not be evaluated.
 #' @param max_admix Maximum number of admixture edges. By default, this number is equal to `numadmix`, or to the number of admixture edges in `initgraph`, so the number of admixture edges stays constant. Setting this to a higher number will lead to more admixture edges being added occasionally (see `plusminus_generations`). Graphs with additional admixture edges will only be accepted if they improve the score by 5% or more.
 #' @param verbose Print progress updates
 #' @param ... Additional arguments passed to \code{\link{qpgraph}}
@@ -2625,7 +2635,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
   f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
-      res = qpgraph(f2_blocks, graph, numstart = 1, return_f4 = opt_worst_residual, f3precomp = f3precomp, ...)
+      res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, f3precomp = f3precomp, ...)
       res$score = res$worst_residual
       res$worst_residual = res$f4 = NULL
       res
@@ -3457,6 +3467,12 @@ graph_jacobian = function(graph, ge = NULL, args = NULL) {
   jac
 }
 
+graph_rank = function(graph) {
+
+  jac = graph_jacobian(graph)
+  qr(jac)$rank
+}
+
 
 #' Find all unidentifiable edges
 #'
@@ -4193,6 +4209,7 @@ summarize_descendants = function(graph) {
 #'
 #' @export
 #' @param graphlist A list of admixture graphs
+#' @param rename If `FALSE` (default), the output will be a data frame indicating how often each node in each graph is observed in all other graphs. If `TRUE`, the output will be a list, where the inner nodes will be renamed to have these percentages as part of their name. \code{\link{plot_graph}} will print the percentages of graphs renamed in this way.
 #' @return A data frame with columns `graph`, `from`, `n`, `frac`
 #' @examples
 #' \dontrun{
@@ -4201,9 +4218,10 @@ summarize_descendants = function(graph) {
 summarize_descendants_list = function(graphlist, rename = FALSE) {
 
   ngraphs = length(graphlist)
-  dat = graphlist %>% map(summarize_descendants) %>% bind_rows(.id = 'graph') %>% select(-to) %>% distinct
+  dat = graphlist %>% map(summarize_descendants) %>% bind_rows(.id = 'graph') %>% select(-to) %>% distinct %>%
+    mutate(graph = as.numeric(graph))
   counts = dat %>% select(-from) %>% distinct %>% count(id)
-  out = dat %>% left_join(counts, by = 'id') %>% select(-id) %>% mutate(frac = n/ngraphs)
+  out = dat %>% left_join(counts, by = 'id') %>% mutate(frac = n/ngraphs)
   if(rename) {
     pops = get_leafnames(graphlist[[1]])
     out = map2(graphlist, split(out, out$graph), ~{
@@ -4247,4 +4265,88 @@ summarize_driftpartition = function(edges, all = FALSE) {
   out %>% arrange(s1, s2)
 }
 
+
+
+
+graph_boot_score = function(bootfit, graph = NULL, f2_blocks = NULL) {
+
+  if(is.null(bootfit)) bootfit = qpgraph_resample_snps(f2_blocks, boot = 100, graph = graph, numstart = 5, return_fstats = TRUE)
+  if(!'f4' %in% names(bootfit)) stop("Need to run with `return_fstats = TRUE`!")
+  x = bootfit$f4 %>% bind_rows(.id = 'id') %>% mutate(id = as.numeric(id)) %>%
+    filter(pop1 == pop3, pop2 == pop4) %>% select(-pop3, -pop4) %>% arrange(id, pop1, pop2) %>%
+    transmute(id, p = paste(pop1, pop2), diff)
+  means = x %>% group_by(p) %>% summarize(mn = mean(diff), var = var(diff), .groups = 'drop')
+
+  covmat = x %>% left_join(x, by = 'id') %>%
+    group_by(p.x, p.y) %>% summarize(cv = cov(diff.x, diff.y), .groups = 'drop') %>%
+    pivot_wider(p.x, names_from = p.y, values_from = cv) %>% select(-p.x) %>% as.matrix
+
+  stat = means$mn %*% (pracma::pinv(covmat)) %*% means$mn
+  stat[1,1]
+
+}
+
+
+graph_boot_pval = function(bootfit) {
+
+  stat = graph_boot_score(bootfit)
+  rnk = bootfit$edges[[1]] %>% edges_to_igraph() %>% graph_rank()
+  pchisq(stat, rnk, lower.tail = F)
+}
+
+#' Convert agraph to igraph
+#'
+#' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
+#' @export
+#' @param agraph An admixture graph in \code{\link{agraph}} format
+#' @return An admixture graph in \code{\link{igraph}} format
+#' @examples
+#' \dontrun{
+#' agraph_to_igraph(agraph)
+#' }
+agraph_to_igraph = function(agraph) {
+  igraph::graph_from_adjacency_matrix(agraph$children)
+}
+
+#' Convert igraph to agraph
+#'
+#' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
+#' @export
+#' @param agraph An admixture graph in \code{\link{igraph}} format
+#' @return An admixture graph in \code{\link{agraph}} format
+#' @examples
+#' \dontrun{
+#' igraph_to_agraph(example_igraph)
+#' }
+igraph_to_agraph = function(igraph) {
+
+  leaves = get_leafnames(igraph)
+  inner_nodes = setdiff(names(V(igraph)), leaves)
+  e = igraph %>% as_edgelist() %>% `[`(,c(2,1)) %>% cbind(NA)
+  admixturegraph::agraph(leaves, inner_nodes, e)
+}
+
+
+
+rename_internal = function(graph) {
+
+  isedge = FALSE
+  if(!'igraph' %in% class(graph)) {
+    isedge = TRUE
+    edges = graph
+    graph %<>% edges_to_igraph()
+  }
+
+  leaves = get_leafnames(graph)
+  nammap = graph %>% distances(names(V(graph)), leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>%
+    select(-order) %>% group_by(from) %>% mutate(id = paste(sort(to), collapse = '\n')) %>% ungroup %>%
+    select(-to) %>% distinct %>% group_by(id) %>%
+    mutate(n = 1:n(), id = ifelse(n == n(), id, paste(id, n, sep = '_'))) %>% select(-n) %>% deframe
+  if(isedge) {
+    edges %<>% mutate(from = nammap[from], to = nammap[to])
+    return(edges)
+  }
+  graph %>% set_vertex_attr('name', value = nammap[names(V(graph))])
+}
 

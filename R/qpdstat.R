@@ -284,16 +284,16 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   out = NULL
   nam = c('pop1', 'pop2', 'pop3', 'pop4')[1:fnum]
   maxcomb = 1e6
-  if(is_geno_prefix(f2_data) && is.null(pop1)) {
-    if(is_ancestrymap_prefix(f2_data)) {
-      indend = '.ind'
-      popcol = 3
-    } else {
-      indend = '.fam'
-      popcol = 1
-    }
-    pop1 = read_table2(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
-  }
+  # if(is_geno_prefix(f2_data) && is.null(pop1)) {
+  #   if(is_ancestrymap_prefix(f2_data)) {
+  #     indend = '.ind'
+  #     popcol = 3
+  #   } else {
+  #     indend = '.fam'
+  #     popcol = 1
+  #   }
+  #   pop1 = read_table2(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
+  # }
   if(!is.null(pop2)) {
     ncomb = length(pop1) * length(pop2) * max(1, length(pop3)) * max(1, length(pop4))
     if(ncomb > maxcomb & !sure) {
@@ -302,7 +302,9 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     }
     out = expand_grid(pop1, pop2, pop3, pop4)
   } else if(is.null(pop1)) {
-    if(is.character(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
+    if(is_precomp_dir(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
+    else if(is_plink_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
+    else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
     else pop1 = dimnames(f2_data)[[1]]
   } else if(is.character(pop1) && file.exists(pop1)) {
     pop1 = read_table2(pop1, col_names = FALSE)
@@ -500,8 +502,9 @@ f4_from_afdat = function(afdat, popcombs) {
     p4 = popcombs$pop4[i]
     afdat %<>% mutate(!!paste0('f4_', i) := (!!sym(p1)-!!sym(p2))*(!!sym(p3)-!!sym(p4)))
   }
-  afdat %>% select(group_cols(), any_of(c('CHR', 'cm', 'POS', 'block')), starts_with('f4_')) %>%
-    snpdat_to_jackest %>% arrange(.col, gr) %>% left_join(popcombs %>% mutate(.col = paste0('f4_', 1:n()))) %>%
-    transmute(pop1, pop2, pop3, pop4, est, se = sqrt(var), z = est/se, cnt)
+  gr = groups(afdat)
+  afdat %>% select(!!!gr, any_of(c('CHR', 'cm', 'POS', 'block')), starts_with('f4_')) %>%
+    snpdat_to_jackest %>% arrange(.col, !!!gr) %>% left_join(popcombs %>% mutate(.col = paste0('f4_', 1:n()))) %>%
+    transmute(!!!gr, pop1, pop2, pop3, pop4, est, se = sqrt(var), z = est/se, cnt)
 }
 

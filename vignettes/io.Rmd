@@ -88,6 +88,12 @@ While there are other R packages for reading and writing binary *PLINK* files ([
 Note that the functions below impose the restriction than individual IDs may not be duplicated across populations or families.
 
 
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(magrittr)
+library(tidyverse)
+library(admixtools)
+```
+
 
 ```{r, eval = FALSE}
 geno = read_plink("plink/prefix")
@@ -138,6 +144,121 @@ packedancestrymap_to_plink("packedancestrymap_input_prefix", "plink_output_prefi
 ```
 
 
+## Admixture graph formats
+
+There are several ways in which admixture graphs can be represented. Some of them are useful because they can be stored as human readable text files, and others are useful because they make it easier for R to process graphs. *ADMIXTOOLS 2* has several function for importing, exporting and converting between formats.
+
+Before fitting an admixture graph, the graph only has nodes and edges. After fitting a graph, each edge has a weight associated with it, and maybe some other information. Here I mostly show examples of graphs that are not fitted yet.
+
+### Edge list format
+
+The simplest way to represent a graph in a text file is by writing each edge in the graph in a separate line:
+
+```
+R      O
+R      n1
+n1     n2
+n1     n3
+n2     A
+n2     admix
+n3     B
+n3     n4
+n4     C
+n4     admix
+admix  D
+```
+
+We can save this in a text file `graph.txt` and read it into R like this:
+
+```{r, eval = FALSE}
+graph_el = read_table2('~/Downloads/graph.tsv', col_names = F)
+plotly_graph(graph_el)
+```
+```{r, echo = FALSE}
+graph_el = tribble(~from, ~to,
+'R', 'O',
+'R', 'n1',
+'n1', 'n2',
+'n1', 'n3',
+'n2', 'A',
+'n2', 'admix',
+'n3', 'B',
+'n3', 'n4',
+'n4', 'C',
+'n4', 'admix',
+'admix', 'D')
+plotly_graph(graph_el)
+```
 
 
+`qpgraph()` uses this format to represent fitted graphs. In addition to the first two columns (`from` and `to`), there will be additional columns to indicate the type of edge, its estimated weight, and possibly more information.
+
+```{r}
+qpgraph(example_f2_blocks, example_igraph)$edges %>% head
+```
+
+
+### igraph format
+
+Many *ADMIXTOOLS 2* functions use the `igraph` package, which has its own graph format. The most important *ADMIXTOOLS 2* functions work with graphs in either the edge list or the `igraph` format, but some only work with graphs in the `igraph` format. It's easy to convert between the two formats:
+
+
+```{r}
+class(graph_el)
+graph = edges_to_igraph(graph_el)
+class(graph)
+graph_el2 = as.data.frame(igraph::as_edgelist(graph))
+class(graph_el2)
+```
+
+
+### Original ADMIXTOOLS format
+
+The text representation of the graph above in the original *ADMIXTOOLS* software would look like this:
+
+```
+vertex              R
+vertex              O
+vertex              n1
+vertex              n2
+vertex              n3
+vertex              A
+vertex              admix
+vertex              B
+vertex              n4
+vertex              C
+vertex              D
+label               O                   O
+label               A                   A
+label               B                   B
+label               C                   C
+label               D                   D
+edge                R_O                 R                   O
+edge                R_n1                R                   n1
+edge                n1_n2               n1                  n2
+edge                n1_n3               n1                  n3
+edge                n2_A                n2                  A
+edge                n3_B                n3                  B
+edge                n3_n4               n3                  n4
+edge                n4_C                n4                  C
+edge                admix_D             admix               D
+admix               admix               n2                  n4
+```
+
+If this is stored in a file called `graph.txt`, it can be imported into R like this:
+
+```{r, eval = FALSE}
+graph_el = parse_qpgraph_graphfile('graph.txt')
+```
+
+### DOT format
+
+DOT format is often used for plotting admixture graphs. You can export a fitted admixture graph like this:
+
+```{r}
+fit = qpgraph(example_f2_blocks, example_igraph)$edges
+write_dot(fit, 'graph.dot')
+```
+
+*ADMIXTOOLS 2* currently doesn't have a function for reading DOT files.
 

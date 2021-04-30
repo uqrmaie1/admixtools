@@ -713,7 +713,8 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @examples
 #' plotly_graph(example_graph)
 plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE,
-                        print_highlow = FALSE, highlight_unidentifiable = FALSE, pos = NULL) {
+                        print_highlow = FALSE, highlight_unidentifiable = FALSE, pos = NULL,
+                        nudge_y = -0.1, annot = '') {
 
 
   if(class(graph)[1] == 'igraph') {
@@ -732,8 +733,12 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
   graph = edges %>% select(1:2) %>% as.matrix %>% igraph::graph_from_edgelist()
 
-  if(is.null(pos)) pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
-    set_colnames(c('node', 'x', 'y'))
+  if(is.null(pos)) {
+    #coordmat = dot_coords(graph)
+    coordmat = igraph::layout_as_tree(graph)
+    pos = data.frame(names(V(graph)), coordmat, stringsAsFactors = F) %>%
+      set_colnames(c('node', 'x', 'y'))
+  }
 
   eg = edges %>% left_join(pos, by=c('from'='node')) %>%
     left_join(pos %>% transmute(to=node, xend=x, yend=y), by='to') %>%
@@ -800,9 +805,36 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
     gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
                             size = textsize) +
       geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)', from = NA),
-                        size = textsize, nudge_y = -0.1)
+                        size = textsize, nudge_y = nudge_y) + expand_limits(y = c(0,1)) +
+      annotate('text', min(eg$x), max(eg$y), label = annot)
   })
   plt = plotly::ggplotly(gg, tooltip=c('text'))
   plt
 }
+
+
+
+dot_coords = function(graph) {
+
+  z = Rgraphviz::agopen(igraph.to.graphNEL(graph), 'bla', layoutType = 'dot')
+  map(seq_along(z@AgNode), ~{coords = z@AgNode[[.]]@center; c(coords@x, coords@y)}) %>%
+    do.call(rbind, .) %>% divide_by(100)
+}
+
+
+static_coords = function(graph, pops = NULL) {
+
+  if(is.null(pops)) pops = get_leafnames(graph)
+  pcs = map(1:length(pops), ~apply(combn(pops, .), 2, function(x) paste(x, collapse = ' ')))
+  internal = setdiff(names(V(graph)), pops)
+
+  coord = graph %>% distances(names(V(graph)), pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>%
+    select(-order) %>% group_by(from) %>% summarize(id = paste(to, collapse = ' '), n = n()) %>% rowwise %>% mutate(xx = match(id, pcs[[n]])/length(pcs[[n]])-1/(length(pcs[[n]])+1))
+
+  enframe(names(V(graph))) %>% left_join(coord, by = c('value' = 'from')) %>%
+    mutate(n = (length(pops)-n)/length(pops), xx=xx*2*pi) %>% transmute(node = value, x = n, y = xx) #%>%
+    #mutate(xx = x*cos(y), yy = x*sin(y)) %>% transmute(node, x = xx, y = yy)
+}
+
 

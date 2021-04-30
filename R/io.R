@@ -917,7 +917,7 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
   arr = fun(am1, am2, cm1, cm2, block_lengths, snpwt)
   counts = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths)
   if(chunk1 == chunk2) for(i in 1:dim(arr)[1]) arr[i, i, ] = 0
-  write_f2(arr, counts, outdir = outdir, id = type)
+  write_f2(arr, counts, outdir = outdir, id = type, overwrite = overwrite)
 }
 
 
@@ -1038,7 +1038,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
     outdir = normalizePath(outdir, mustWork = FALSE)
     if(length(list.files(outdir)) > 0 && !overwrite) stop('Output directory not empty! Set overwrite to TRUE if you want to overwrite files!')
   }
-  if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".')
+  if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".\n')
 
   if(is.null(inds)) pops = union(pops, pops2)
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
@@ -2018,6 +2018,10 @@ is_plink_prefix = function(input) {
 
 is_geno_prefix = function(input) {
   is_ancestrymap_prefix(input) || is_plink_prefix(input)
+}
+
+is_precomp_dir = function(input) {
+  is.character(input) && dir.exists(input) && file.exists(paste0(input, '/block_lengths_f2.rds'))
 }
 
 #' Convert *EIGENSTRAT* or *PACKEDANCESTRYMAP* to *PLINK*

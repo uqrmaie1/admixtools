@@ -16,6 +16,7 @@ vignette: >
 This tutorial gives an overview of the basic workflow for computing *f*-statistics, and for using *qpWave*, *qpAdm*, and *qpGraph*.
 Documentation for each *ADMIXTOOLS 2* function can be found under *Reference*, and more detailed information about specific topics under *Articles*.
 
+
 For the examples here and on the other pages, the following R packages need to be loaded.
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -23,11 +24,12 @@ library(admixtools)
 library(tidyverse)
 ```
 
-While this website focuses on the R command line interface of *ADMIXTOOLS 2*, there is also a browser application that can be launched from R with the following command:
+This tutorial focuses on the R command line interface of *ADMIXTOOLS 2*. Some basic familiarity with R is helpful for using *ADMIXTOOLS 2*, but not required. If you are not familiar with R, have a look at the browser application. To launch it, open R and type the following command:
 ```{r, eval = FALSE}
-run_shiny_admixtools()
+admixtools::run_shiny_admixtools()
 ```
 
+You can also check out these [Recipes](recipes.html), which contain code that you should be able to copy and paste to get the results you want.
 
 
 ## Introduction
@@ -407,7 +409,7 @@ The output of `qpgraph()` is a list with several items:
 * **opt** A data frame with details from the weight optimization, with one row per set of starting values.
 * **ppinv** The inverse of the $f_3$-statistics covariance matrix
 
-Optionally, fitted and estimated $f_4$-statistics are returned as **f4** and the worst residual z-score as **worst_residual** if `return_f4` is set to `TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
+Optionally, fitted and estimated $f_4$-statistics are returned as **f4** and the worst residual z-score as **worst_residual** if `return_fstats` is set to `TRUE`. When `f2_blocks_test` is provided, an out-of-sample score is computed and returned as **score_test**.
 
 The fitted graph can be plotted like this:
 

@@ -11,7 +11,9 @@ plotly_graph(
   shift_down = TRUE,
   print_highlow = FALSE,
   highlight_unidentifiable = FALSE,
-  pos = NULL
+  pos = NULL,
+  nudge_y = -0.1,
+  annot = ""
 )
 }
 \arguments{

@@ -187,7 +187,7 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' @param numstart Number of random initializations of starting weights. Defaults to 10. Increasing this number will make the optimization slower, but reduce the risk of not finding the optimal weights. Check the `opt` output to see how much the optimization depends on the starting weights.
 #' @param seed Random seed for generating starting weights.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
-#' @param return_f4 Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to `FALSE` because this can be slow.
+#' @param return_fstats Return estimated and fitted f2- and f4-statistics, as well as the worst f4-statistic residual Z-score. Defaults to `FALSE` because this can be slow.
 #' @param f3precomp Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of `data`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
 #' @param f3basepop Optional f3-statistics base population. Inference will be based on f3-statistics of the form `f3(f3basepop; i, j)` for all population pairs `(i, j)`. Defaults to the outgroup population if the graph has one. This option is ignored if `f3precomp` is provided. Changing `f3basepop` should make very little difference.
 #' @param ppinv Optional inverse f3-statistics covariance matrix
@@ -200,11 +200,11 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' \item `score`: The likelihood score of the fitted graph. Lower values correspond to better fits.
 #' The score is calculated as the inner product of the residuals (difference between estimated and
 #' fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{\link{qpgraph_score}}
-#' \item `f2`: Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.
+#' \item `f2`: Estimated and fitted f2 statistics (if `return_fstats = TRUE`). p-values and z-scores test the significance of the difference.
 #' \item `f3`: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
-#' \item `f4`: Estimated and fitted f4 statistics (if `return_f4 = TRUE`). p-values and z-scores test the significance of the difference.
+#' \item `f4`: Estimated and fitted f4 statistics (if `return_fstats = TRUE`). p-values and z-scores test the significance of the difference.
 #' \item `opt`: A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column `value` contains the score for each set of starting weights. Columns starting with `x` denote initial weights, and columns starting with `y` denote fitted weights.
-#' \item `worst_residual`: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if `return_f4 = TRUE`)
+#' \item `worst_residual`: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if `return_fstats = TRUE`)
 #' }
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 #' @seealso \code{\link{qpgraph_wrapper}} for a wrapper functions which calls the original *qpGraph* program.
@@ -212,7 +212,8 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' out = qpgraph(example_f2_blocks, example_graph)
 #' plot_graph(out$edges)
 qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag_f3 = 1e-5,
-                   lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_f4 = FALSE, f3precomp = NULL,
+                   lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_fstats = FALSE,
+                   return_pvalue = FALSE, f3precomp = NULL,
                    f3basepop = NULL, constrained = TRUE, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
 
   #----------------- process graph -----------------
@@ -227,7 +228,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   } else stop(paste0('Cannot parse graph of class ', class(graph),'!'))
   if(lambdascale == -1) lambdascale = 1
   if(!lambdascale > 0) stop("'lambdascale' has to be > 0!")
-  if(!isFALSE(return_f4) && is.null(data)) stop("Can't compute f4 without f2 data!")
+  if(!isFALSE(return_fstats) && is.null(data)) stop("Can't compute f4 without f2 data!")
 
   if(cpp) {
     optimweightsfun = cpp_optimweightsfun
@@ -363,20 +364,22 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   f2 = precomp$f2out
   f3 = precomp$f3out %>% mutate(fit = c(f3_fit), diff = est - fit, z = diff/se, p = ztop(z))
 
-  out = namedList(edges, score, f2, f3, opt, ppinv)
+  out = namedList(edges, score, f3, opt, ppinv)
   if(!is.null(f2_blocks_test)) {
     out[['score_test']] = score_test
     out[['f3_test']] = precomp_test$f3out
   }
-  if(isTRUE(return_f4) || return_f4 == 'f4') {
+  if(isTRUE(return_fstats) || return_fstats == 'f4') {
     if(verbose) alert_info(paste0('Computing f4\n'))
     out$f4 = fitf4(f2_blocks[pops, pops, ], f2, f3)
+    out$f2 = out$f4 %>% filter(pop1 == pop3, pop2 == pop4) %>% select(-pop3, -pop4)
     out$worst_residual = max(abs(out$f4$z))
-  } else if(return_f4 == 'f2') {
+  } else if(return_fstats == 'f2') {
     out$worst_residual = fitf2(f2_blocks[pops, pops, ], f2, f3)$z %>% abs %>% max
-  } else if(return_f4 == 'f3') {
+  } else if(return_fstats == 'f3') {
     out$worst_residual = max(abs(f3$z))
   }
+  if(return_pvalue) out$p.value = qpgraph_pvalue(f2_blocks, graph)
   out
 }
 
@@ -698,6 +701,19 @@ qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, .
   #  boo$boo, .x, boo$test, ppinv = .y, verbose = verbose, ...), ...)
   map(graphlist, function(.x, ...) qpgraph_resample_snps2(
     boo$boo, .x, boo$test, verbose = verbose, ...), ...)
+}
+
+qpgraph_pvalue = function(f2_blocks, graph, nboot = 100, ...) {
+
+  boo = boo_list(f2_blocks, nboot = nboot)
+  score_fit = qpgraph_resample_snps2(boo$boo, graph, boo$test, numstart = 1, ...)$score_test
+
+  pops = get_leafnames(graph)
+  precomp_train = map(boo$boo, ~qpgraph_precompute_f3(., pops))
+  precomp_test = map(boo$test, ~qpgraph_precompute_f3(., pops))
+  score_emp = map2_dbl(precomp_train, precomp_test, ~qpgraph_score(.x$f3_est, .y$f3_est, .x$ppinv))
+  out = tibble(rep = 1:nboot, score_fit, score_emp) %>% mutate(diff = score_fit - score_emp)
+  t.test(out$diff, alternative = 'greater')$p.value
 }
 
 

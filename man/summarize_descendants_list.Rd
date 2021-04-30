@@ -8,6 +8,8 @@ summarize_descendants_list(graphlist, rename = FALSE)
 }
 \arguments{
 \item{graphlist}{A list of admixture graphs}
+
+\item{rename}{If \code{FALSE} (default), the output will be a data frame indicating how often each node in each graph is observed in all other graphs. If \code{TRUE}, the output will be a list, where the inner nodes will be renamed to have these percentages as part of their name. \code{\link{plot_graph}} will print the percentages of graphs renamed in this way.}
 }
 \value{
 A data frame with columns \code{graph}, \code{from}, \code{n}, \code{frac}

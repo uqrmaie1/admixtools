@@ -223,7 +223,7 @@ ui = function(request) {
                                                            splitLayout(numericInput('lambdascale', 'lambdascale', value = 1, step = 0.001),
                                                            numericInput('seed', 'Random seed', value = NULL)),
                                                            splitLayout(checkboxInput('lsqmode', 'lsqmode'),
-                                                           checkboxInput('return_f4', 'return_f4'))),
+                                                           checkboxInput('return_fstats', 'return_fstats'))),
                                                   menuItem('Modify', expandedName = 'qpgraph_modify', id = 'qpgraph_modify', tabName = 'qpgraph_modify',
                                                            hr(),
                                                            p('Selected'),
@@ -774,13 +774,13 @@ server = function(input, output, session) {
       if(is.null(lambdascale) || length(lambdascale) == 0) lambdascale = 1
       diag = input$qpgraph_diag
       lsqmode = input$lsqmode
-      return_f4 = input$return_f4
+      return_fstats = input$return_fstats
       print(paste('qpgraphfun:', numstart, seed, diag, lsqmode, lambdascale))
       function(x, y, ...) {
         args = list(...)
         if(!'numstart' %in% names(args)) args[['numstart']] = numstart
         args = c(list(x, y), args, diag = diag, lambdascale = lambdascale, lsqmode = lsqmode,
-                 seed = seed, f3precomp = list(f3precomp), return_f4 = return_f4)
+                 seed = seed, f3precomp = list(f3precomp), return_fstats = return_fstats)
         do.call(quietly(qpgraph), args)$result
       }
     #})
@@ -1627,7 +1627,7 @@ server = function(input, output, session) {
   observeEvent(input$aconstraints_update,  {global$useconstraints = TRUE})
 
   dto = function(x) div(DT::DTOutput(x), style = dtstyle)
-  #dtof4 = reactive({ if(input$return_f4) dto('f4') else renderText("Activate 'return_f4' under 'Fit'!") })
+  #dtof4 = reactive({ if(input$return_fstats) dto('f4') else renderText("Activate 'return_fstats' under 'Fit'!") })
 
   observeEvent(input$qpadm_fit, {global$qpadm_rightpanel = qpadm_rightpanel_fit()})
 
@@ -2123,7 +2123,7 @@ server = function(input, output, session) {
 
   output$f2 = dtfun({format_table(get_fit()$f2)})
   output$f3 = dtfun({format_table(get_fit()$f3)})
-  output$f4 = dtfun({if(is.null(get_fit()$f4)) as.data.frame("Activate 'return_f4' under 'Fit'!") %>% slice(-1) else format_table(get_fit()$f4)})
+  output$f4 = dtfun({if(is.null(get_fit()$f4)) as.data.frame("Activate 'return_fstats' under 'Fit'!") %>% slice(-1) else format_table(get_fit()$f4)})
   output$opt = dtfun({format_table(get_fit()$opt)})
   output$history = dtfun({format_table(get_history() %>% select(-graph, -edges))})
   output$minus1 = dtfun({format_table(get_minus1())})
