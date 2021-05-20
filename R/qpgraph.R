@@ -190,6 +190,8 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' @param return_fstats Return estimated and fitted f2- and f4-statistics, as well as the worst f4-statistic residual Z-score. Defaults to `FALSE` because this can be slow.
 #' @param f3precomp Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of `data`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
 #' @param f3basepop Optional f3-statistics base population. Inference will be based on f3-statistics of the form `f3(f3basepop; i, j)` for all population pairs `(i, j)`. Defaults to the outgroup population if the graph has one. This option is ignored if `f3precomp` is provided. Changing `f3basepop` should make very little difference.
+#' @param constrained Constrain estimated drift edge weights to be non-negative, and admixture edge weights to be between zero and one.
+#' @param allsnps Compute f3 from different SNPs for each population triplet (if data is missing for some SNPs and populations). This only has an effect when `data` is the prefix of genotype files.
 #' @param ppinv Optional inverse f3-statistics covariance matrix
 #' @param f2_blocks_test An optional 3d array of f2-statistics used for computing an out-of-sample score. This should contain only SNP blocks which are not part of `f2_blocks`. This allows to estimate the fit of a graph without overfitting and will not be used during the optimization step
 #' @param verbose Print progress updates
@@ -213,8 +215,8 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' plot_graph(out$edges)
 qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag_f3 = 1e-5,
                    lsqmode = FALSE, numstart = 10, seed = NULL, cpp = TRUE, return_fstats = FALSE,
-                   return_pvalue = FALSE, f3precomp = NULL,
-                   f3basepop = NULL, constrained = TRUE, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
+                   return_pvalue = FALSE, f3precomp = NULL, f3basepop = NULL,
+                   constrained = TRUE, allsnps = FALSE, ppinv = NULL, f2_blocks_test = NULL, verbose = FALSE) {
 
   #----------------- process graph -----------------
   if('matrix' %in% class(graph)) {
@@ -258,6 +260,11 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     precomp$ppinv = precomp$ppinv[pairmatch, pairmatch]
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
+  } else if(is_geno_prefix(data)) {
+    precomp = qpgraph_precompute_f3_geno(data, pops, f3basepop, allsnps = allsnps, outgroupmode = TRUE,
+                                         apply_corr = 2, poly_only = FALSE)
+    #precomp = qpgraph_precompute_f3_geno(data, pops, f3basepop, ...)
+    baseind = if(is.null(f3basepop)) 1 else which(pops == f3basepop)
   } else {
     if(is.data.frame(data) || is.matrix(data)) {
       # sets f3 covariance matrix to identity matrix
@@ -471,6 +478,58 @@ qpgraph_precompute_f3 = function(data, pops, f3basepop = NULL, lambdascale = 1, 
   f3_est %<>% structure(pops = pops)
   ppinv %<>% structure(pops = pops)
   namedList(f3_est, ppinv, f2out, f3out, f3_blocks_2d)
+}
+
+qpgraph_precompute_f3_geno = function(data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
+                                      seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE, outgroupmode = FALSE,
+                                      poly_only = FALSE, apply_corr = TRUE, allsnps = FALSE, verbose = TRUE) {
+
+  if(!is.null(f3basepop)) pops = c(f3basepop, setdiff(pops, f3basepop))
+  f3basepop = pops[1]
+
+  popcombs = expand_grid(pop1 = pops[1], pop2 = pops[-1], pop3 = pops[-1]) %>%
+    filter(pop2 <= pop3)
+  f3blockdat = f3blockdat_from_geno(data, popcombs, outgroupmode = outgroupmode, apply_corr = apply_corr,
+                                    poly_only = poly_only,
+                                    allsnps = allsnps, verbose = verbose)
+
+  f3blocks = f3blockdat %>% select(-pop1) %>% rename(pop1 = pop2, pop2 = pop3, f2 = est) %>%
+    f2dat_to_f2blocks(fill_diag = FALSE)
+  #f3blocks = f3blocks[pops[-1],pops[-1],-apply(f3blocks, 3, function(x) any(is.na(x)))]
+  f3blocks = f3blocks[pops[-1],pops[-1],]
+
+  if(!is.null(seed)) set.seed(seed)
+  samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
+  matstatfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+  arrstatfun = ifelse(boot, boot_arr_stats, jack_arr_stats)
+  f3blocks = f3blocks %>% samplefun
+  block_lengths = parse_number(dimnames(f3blocks)[[3]])
+
+  npop = length(pops)
+  npair = choose(npop, 2)
+  cmb = combn(0:(npop-1), 2)+(1:0)
+
+  f3 = arrstatfun(f3blocks, block_lengths)
+  f3_blocks_2d = arr3d_to_pairmat(f3blocks)
+  f3dat = matstatfun(f3_blocks_2d, block_lengths)
+  f3_est = f3dat$est
+  f3_var = f3dat$var
+  f3out = tibble(pop1 = pops[1],
+                 pop2 = pops[cmb[1,]+1],
+                 pop3 = pops[cmb[2,]+1],
+                 est = f3_est, se = sqrt(diag(f3_var)))
+  # est = f3[[1]][lower.tri(f3[[1]],T)],
+  # se = sqrt(f3[[2]][lower.tri(f3[[2]],T)]))
+  add_diag = sum(diag(f3_var)) * diag_f3
+  diag(f3_var) = diag(f3_var) + add_diag
+  # in qpGraph diag_f3 is 1e-5; has large effect on magnitude of likelihood score
+  if(lsqmode == 2) ppinv = diag(nrow(f3_var))
+  else if(lsqmode) ppinv = diag(nrow(f3_var)) / add_diag
+  else ppinv = solve(f3_var)
+
+  f3_est %<>% structure(pops = pops)
+  ppinv %<>% structure(pops = pops)
+  namedList(f3_est, ppinv, f3out, f3_blocks_2d)
 }
 
 get_pairindex = function(perm) {

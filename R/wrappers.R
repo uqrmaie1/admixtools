@@ -412,7 +412,7 @@ qpgraph_wrapper = function(pref, graph, bin = '~np29/o2bin/qpGraph', parfile = N
     } else {
       igraph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
     }
-    edg = as_tibble(graph) %>% set_colnames(c('from', 'to'))
+    edg = as_tibble(graph, .name_repair = ~c('from', 'to'))
     edg %<>% group_by(to) %>% mutate(type = ifelse(n()==1, 'edge', 'admix')) %>% ungroup
     e1 = (edg %>% filter(type == 'edge'))$from
     e2 = (edg %>% filter(type == 'edge'))$to
@@ -1262,16 +1262,24 @@ f2_from_fastsimcoal = function(graph, nblocks = 100, verbose = TRUE, ...) {
   sfs %>% map(sfs_to_f2) %>% bind_rows(.id = 'block') %>% f2dat_to_f2blocks()
 }
 
-f2dat_to_f2blocks = function(f2dat) {
+f2dat_to_f2blocks = function(f2dat, fill_diag = TRUE) {
   # f2dat has columns pop1, pop2, f2, block
 
   pops = sort(union(f2dat$pop1, f2dat$pop2))
   nblocks = length(unique(f2dat$block))
-  f2dat %>% select(pop1, pop2, f2, block) %>% mutate(block = as.numeric(block)) %>%
-    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
-    bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
+  if('length' %in% names(f2dat)) {
+    bl = f2dat %>% filter(pop1 == f2dat$pop1[1], pop2 == f2dat$pop2[1]) %>% pull(length) %>% paste0('l', .)
+  } else {
+    rep('l1', nblocks)
+  }
+  out = f2dat %>% select(pop1, pop2, f2, block) %>% mutate(block = as.numeric(block)) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>% distinct
+  if(fill_diag) {
+    out %<>% bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1))
+  }
+  out %>%
     arrange(block, pop1, pop2) %$%
-    array(f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep('l1', nblocks)))
+    array(f2, c(length(pops), length(pops), nblocks), list(pops, pops, bl))
 }
 
 f2dat_to_f2blocks2 = function(f2dat, nblocks = 1000, cv = 0.1) {

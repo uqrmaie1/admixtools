@@ -26,6 +26,7 @@ f2_from_geno(
   format = NULL,
   adjust_pseudohaploid = TRUE,
   remove_na = TRUE,
+  apply_corr = TRUE,
   verbose = TRUE
 )
 }

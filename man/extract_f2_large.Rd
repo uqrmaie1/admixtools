@@ -26,6 +26,7 @@ extract_f2_large(
   afprod = TRUE,
   fst = TRUE,
   poly_only = c("f2"),
+  apply_corr = TRUE,
   verbose = TRUE
 )
 }

@@ -16,6 +16,7 @@ afs_to_f2_blocks(
   afprod = TRUE,
   fst = TRUE,
   poly_only = c("f2"),
+  apply_corr = apply_corr,
   verbose = TRUE
 )
 }

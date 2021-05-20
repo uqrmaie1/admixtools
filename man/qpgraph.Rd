@@ -20,6 +20,7 @@ qpgraph(
   f3precomp = NULL,
   f3basepop = NULL,
   constrained = TRUE,
+  allsnps = TRUE,
   ppinv = NULL,
   f2_blocks_test = NULL,
   verbose = FALSE
@@ -63,6 +64,10 @@ Both of these options do not take the covariance of f3-statistics into account. 
 \item{f3precomp}{Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of \code{data}. This can speed things up if many graphs are evaluated using the same set of f3-statistics.}
 
 \item{f3basepop}{Optional f3-statistics base population. Inference will be based on f3-statistics of the form \verb{f3(f3basepop; i, j)} for all population pairs \verb{(i, j)}. Defaults to the outgroup population if the graph has one. This option is ignored if \code{f3precomp} is provided. Changing \code{f3basepop} should make very little difference.}
+
+\item{constrained}{Constrain estimated drift edge weights to be non-negative, and admixture edge weights to be between zero and one.}
+
+\item{allsnps}{Compute f3 from different SNPs for each population triplet (if data is missing for some SNPs and populations). This only has an effect when \code{data} is the prefix of genotype files.}
 
 \item{ppinv}{Optional inverse f3-statistics covariance matrix}
 

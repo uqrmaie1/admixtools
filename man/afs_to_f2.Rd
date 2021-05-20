@@ -15,6 +15,7 @@ afs_to_f2(
   type = "f2",
   poly_only = FALSE,
   snpdat = NULL,
+  apply_corr = TRUE,
   verbose = TRUE
 )
 }

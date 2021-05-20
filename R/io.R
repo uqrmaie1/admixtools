@@ -871,7 +871,7 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #'   })})
 #'   }
 afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL, overwrite = FALSE,
-                     type = 'f2', poly_only = FALSE, snpdat = NULL, verbose = TRUE) {
+                     type = 'f2', poly_only = FALSE, snpdat = NULL, apply_corr = TRUE, verbose = TRUE) {
   # reads data from afdir, computes f2 jackknife blocks, and writes output to outdir
 
   if(is.null(snpdat)) {
@@ -914,7 +914,7 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
   fun = get(paste0('mats_to_', type, 'arr'))
   if(sum(block_lengths) != nrow(am1)) stop("block_lengths and am1 don't match!")
 
-  arr = fun(am1, am2, cm1, cm2, block_lengths, snpwt)
+  arr = fun(am1, am2, cm1, cm2, block_lengths, snpwt, apply_corr = apply_corr)
   counts = mats_to_ctarr(am1, am2, cm1, cm2, block_lengths)
   if(chunk1 == chunk2) for(i in 1:dim(arr)[1]) arr[i, i, ] = 0
   write_f2(arr, counts, outdir = outdir, id = type, overwrite = overwrite)
@@ -1021,7 +1021,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, fst = TRUE, afprod = TRUE,
-                      poly_only = c('f2'), verbose = TRUE) {
+                      poly_only = c('f2'), apply_corr = TRUE, verbose = TRUE) {
 
   if(!is.null(cols_per_chunk)) {
     stopifnot(is.null(pops2))
@@ -1055,7 +1055,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   if(isTRUE(poly_only)) poly_only = c('f2', 'ap', 'fst')
   arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = poly_only,
                           pops1 = pops, pops2 = pops2, outpop = if(outpop_scale) outpop else NULL,
-                          blgsize = blgsize, afprod = afprod, fst = fst, verbose = verbose)
+                          blgsize = blgsize, afprod = afprod, fst = fst, apply_corr = apply_corr,
+                          verbose = verbose)
 
   if(is.null(outdir)) return(arrs)
 
@@ -1077,14 +1078,14 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
                         transitions = TRUE, transversions = TRUE,
                         auto_only = TRUE, keepsnps = NULL, afprod = FALSE, fst = FALSE, poly_only = c("f2"),
                         format = NULL,
-                        adjust_pseudohaploid = TRUE, remove_na = TRUE, verbose = TRUE) {
+                        adjust_pseudohaploid = TRUE, remove_na = TRUE, apply_corr = TRUE, verbose = TRUE) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, pops2 = pops2, outpop = outpop,
              outpop_scale = outpop_scale, transitions = transitions, transversions = transversions,
              auto_only = auto_only, keepsnps = keepsnps, format = format,
              adjust_pseudohaploid = adjust_pseudohaploid, fst = fst, afprod = afprod,
-             poly_only = poly_only, verbose = verbose)
+             poly_only = poly_only, apply_corr = apply_corr, verbose = verbose)
   if(afprod) {
     if(verbose) alert_info(paste0('Returning allele frequency product blocks\n'))
     #blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
@@ -1150,7 +1151,8 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
                             maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
                             transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL,
-                            adjust_pseudohaploid = TRUE, afprod = TRUE, fst = TRUE, poly_only = c('f2'), verbose = TRUE) {
+                            adjust_pseudohaploid = TRUE, afprod = TRUE, fst = TRUE, poly_only = c('f2'),
+                            apply_corr = TRUE, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
   snpdat = extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
@@ -1173,7 +1175,8 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
     for(j in i:numchunks) {
       if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
       afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
-                snpwt = snpwt, overwrite = overwrite, type = 'f2', poly_only = 'f2' %in% poly_only)
+                snpwt = snpwt, overwrite = overwrite, type = 'f2', poly_only = 'f2' %in% poly_only,
+                apply_corr = apply_corr)
       if(afprod) afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
                            snpwt = snpwt, overwrite = overwrite, type = 'ap', poly_only = 'ap' %in% poly_only)
       if(fst) afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
@@ -2107,7 +2110,8 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
-                                block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE, ...) {
+                                block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
+                                poly_only = FALSE, verbose = TRUE, ...) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -2199,12 +2203,17 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     at = gmat_to_aftable(gmat, popvec)
     if(!allsnps) {
       usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
+      if(poly_only) {
+        #fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1)+0
+        fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1 | !max(na.omit(x)) %in% c(0,1))+0
+        usesnps = (usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
+      }
     }
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
     numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
     cnt[i,] = c(num$cnt)
     if(!f4mode) {
-      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
       denom[i,] = unname(rowMeans(den, na.rm = TRUE))
     }
   }
@@ -2221,6 +2230,150 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     mutate(length = block_lengths[block], est = if_else(is.finite(est) & n > 0, est, NA_real_))
 }
 
+#' f3 from genotype data
+#'
+#' Compute per-block f3-statistics directly from genotype data
+#' @export
+#' @param pref Prefix of genotype files
+#' @param popcombs A data frame with one population combination per row, and columns `pop1`, `pop2`, `pop3`, `pop4`. If there is an additional integer column named `model` and `allsnps = FALSE`, only SNPs present in every population in any given model will be used to compute f4-statistics for that model.
+#' @param auto_only Use only chromosomes 1 to 22.
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
+#' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
+#' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
+#' @param verbose Print progress updates
+#' @return A data frame with per-block f4-statistics for each population quadruple.
+f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
+                                blgsize = 0.05,
+                                block_lengths = NULL, allsnps = FALSE,
+                                poly_only = FALSE, apply_corr = TRUE, outgroupmode = FALSE, verbose = TRUE) {
+
+  if(is.matrix(popcombs)) {
+    if(ncol(popcombs) != 4) stop("'popcombs' is a matrix but doens't have four columns!")
+    popcombs %<>% as_tibble(.name_repair = ~paste0('pop', 1:4))
+  }
+
+  if('model' %in% names(popcombs)) {
+    hasmodels = TRUE
+  } else {
+    hasmodels = FALSE
+    popcombs %<>% mutate(model = 1)
+  }
+  if(allsnps) {
+    modelvec = 0
+    pc = popcombs %>% select(pop1:pop3) %>% distinct
+  } else {
+    modelvec = popcombs$model
+    pc = popcombs
+  }
+
+  if(verbose) alert_info('Reading metadata...\n')
+  pref = normalizePath(pref, mustWork = FALSE)
+  l = format_info(pref)
+
+  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  cpp_read_geno = l$cpp_read_geno
+  fl = paste0(pref, l$genoend)
+
+  nsnpall = nrow(snpfile)
+  nindall = nrow(indfile)
+  snpfile$keep = TRUE
+  if(auto_only) snpfile %<>% mutate(keep = as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
+  #if('keepsnps' %in% names(list(...))) snpfile %<>% mutate(keep = keep & SNP %in% list(...)$keepsnps)
+  #if(!is.null(keepsnps)) snpfile %<>% mutate(keep = keep & SNP %in% keepsnps)
+  nsnpaut = sum(snpfile$keep)
+  pops = unique(c(popcombs$pop1, popcombs$pop2, popcombs$pop3))
+
+  if(!all(pops %in% indfile$pop))
+    stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
+  if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
+    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
+  if(any(duplicated(indfile$ind)))
+    stop('Duplicate individual IDs are not allowed!')
+
+  allinds = indfile$ind
+  allpops = indfile$pop
+  indfile %<>% filter(pop %in% pops)
+  indvec = (allinds %in% indfile$ind)+0
+  popvec = match(indfile$pop, pops)
+  p1 = match(pc$pop1, pops)
+  p2 = match(pc$pop2, pops)
+  p3 = match(pc$pop3, pops)
+
+  if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
+  if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile %>% filter(keep), blgsize = blgsize)
+  numblocks = length(block_lengths)
+
+  snpfile$block = NA; snpfile$block[snpfile$keep] = rep(1:length(block_lengths), block_lengths)
+  snpfile %<>% fill(block, .direction = 'updown')
+  snpind = split(snpfile$keep, snpfile$block)
+  bl = rle(snpfile$block)$lengths
+  start = lag(cumsum(bl), default = 0)
+  end = cumsum(bl)
+
+  popind = popcombs %>%
+    group_by(model) %>%
+    summarize(pp = list(unique(c(pop1, pop2, pop3)))) %>%
+    mutate(popind = map(pp, ~match(., pops))) %$% popind
+  usesnps = matrix(0)
+
+  numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
+  for(i in 1:numblocks) {
+    if(verbose) alert_info(paste0('Computing ', nrow(pc),' f3-statistics for block ',
+                                  i, ' out of ', numblocks, '...\r'))
+    # replace following two lines with cpp_geno_to_afs?
+    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]]]
+    ref = rowsum(gmat, popvec, na.rm = TRUE)
+    at = ref / rowsum((!is.na(gmat))+0, popvec) / 2
+    if(!allsnps) {
+      # get SNP index matrix which will be used for all f-stats
+      # otherwise, delegate decision to cpp_aftable_to_dstatnum and choose different snps for each f-stat
+      usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
+      if(poly_only) {
+        fun = function(mat) {
+          #apply(mat, 2, function(x) length(na.omit(unique(x))) > 1)+0
+          apply(mat, 2, function(x) length(na.omit(unique(x))) > 1 | !suppressWarnings(max(na.omit(x))) %in% c(0,1))+0
+        }
+        usesnps2 = popind %>% map(~fun(at)) %>% do.call(rbind, .)
+        usesnps = usesnps & usesnps2
+      }
+    }
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only)
+    if(apply_corr || !outgroupmode) {
+      alt = rowsum(2-gmat, popvec, na.rm = TRUE)
+      tot = ref+alt
+      h = (ref*alt)/(tot*(tot-1))
+      h1 = h[p1,,drop=F]
+      if(apply_corr) {
+        corr1 = h1/tot[p1,,drop=F]
+        corr1[p1 == p2 | p1 == p3,] = 0
+        num$num = num$num - corr1
+      }
+      if(apply_corr == 2) {
+        corr2 = h[p2,,drop=F]/tot[p2,,drop=F]
+        corr2[p2 != p3,] = 0
+        num$num = num$num - corr2
+      }
+      if(!outgroupmode) {
+        h1[c(!is.finite(num$num))] = NA
+        denom[i,] = unname(rowSums(2*h1, na.rm = TRUE))
+      }
+    }
+    if(outgroupmode) denom[i,] = rowSums(is.finite(num$num))
+    numer[i,] = unname(rowSums(num$num, na.rm = TRUE))
+    cnt[i,] = c(num$cnt)
+  }
+  if(verbose) cat('\n')
+  out = pc %>%
+    expand_grid(block = 1:numblocks) %>%
+    mutate(numer = c(numer/cnt), denom = c(denom/cnt), est = numer/denom, n = c(cnt))
+  if(allsnps) out = popcombs %>% left_join(out, by = paste0('pop', 1:3))
+  if(!hasmodels) out$model = NULL
+
+  out %>%
+    mutate(length = block_lengths[block], est = if_else(is.finite(est) & n > 0, est, NA_real_))
+}
+
 
 f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                      blgsize = 0.05, maxf4 = 1e5,
@@ -2231,17 +2384,11 @@ f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right =
   right = unique(c(popcombs$pop3, popcombs$pop4))
   pc = expand_grid(pop1 = left, pop2 = left) %>%
       expand_grid(expand_grid(pop3 = right, pop4 = right))
-  # } else {
-  #   pops = popcombs %>% select(pop1:pop4) %>% unlist %>% unique
-  #   pc = expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
-  #     filter(pop1 != pop2, pop1 != pop3, pop1 != pop4, pop2 != pop3, pop2 != pop4, pop3 != pop4)
-  # }
-  #pc %<>% filter(pop1 == pop3 & pop2 == pop4 | runif(n()) < maxf4/n())
+
   pc %<>% slice_sample(n = maxf4)
   pc %<>% mutate(model = 1:n())
 
-  f4blockdat = f4blockdat_from_geno(pref, pc, auto_only = auto_only, blgsize = blgsize, block_lengths = block_lengths,
-                                    f4mode = f4mode, verbose = verbose) %>% #average_f4blockdat %>%
+  f4blockdat = f4blockdat_from_geno(pref, pc, auto_only = auto_only, blgsize = blgsize, block_lengths = block_lengths, f4mode = f4mode, verbose = verbose) %>% #average_f4blockdat %>%
     #mutate(est = est_avg, n = n_avg) %>%
     select(-model)
   popcombs %>% left_join(f4blockdat, by = paste0('pop', 1:4))

@@ -13,6 +13,8 @@ qp3pop(
   boot = FALSE,
   sure = FALSE,
   unique_only = TRUE,
+  blgsize = NULL,
+  block_lengths = NULL,
   verbose = FALSE,
   ...
 )
@@ -50,13 +52,13 @@ from accidently computing all combinations if that number is large.}
 
 \item{verbose}{Print progress updates}
 
-\item{...}{Additional arguments passed to \code{\link{f2_from_geno}} when \code{data} is a genotype prefix}
+\item{...}{Additional arguments passed to \code{\link{f3blockdat_from_geno}} if \code{data} is a genotype prefix, or to \code{\link{get_f2}} otherwise}
 }
 \value{
 \code{qp3pop} returns a data frame with f3 statistics
 }
 \description{
-Computes f3 statistics from f2 blocks of the form \eqn{f3(A; B, C)}. Equivalent to
+Computes f3 statistics of the form \eqn{f3(A; B, C)}. When using the same SNPs for all populations, this is equivalent to
 \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
 }
 \section{Alias}{

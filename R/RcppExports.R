@@ -5,8 +5,8 @@ cpp_aftable_to_dstatnum_old <- function(aftable, p1, p2, p3, p4) {
     .Call('_admixtools_cpp_aftable_to_dstatnum_old', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4)
 }
 
-cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps) {
-    .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only) {
+    .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
 }
 
 cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps) {
@@ -25,8 +25,8 @@ cpp_outer_array_minus <- function(m1, m2) {
     .Call('_admixtools_cpp_outer_array_minus', PACKAGE = 'admixtools', m1, m2)
 }
 
-cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2) {
-    .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2)
+cpp_mats_to_f2_arr <- function(afmat1, afmat2, countmat1, countmat2, apply_corr) {
+    .Call('_admixtools_cpp_mats_to_f2_arr', PACKAGE = 'admixtools', afmat1, afmat2, countmat1, countmat2, apply_corr)
 }
 
 row_prods <- function(x) {

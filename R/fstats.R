@@ -33,7 +33,8 @@
 #' }
 afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
                             pops1 = NULL, pops2 = NULL, outpop = NULL, outdir = NULL,
-                            overwrite = FALSE, afprod = TRUE, fst = TRUE, poly_only = c('f2'), verbose = TRUE) {
+                            overwrite = FALSE, afprod = TRUE, fst = TRUE, poly_only = c('f2'),
+                            apply_corr = apply_corr, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
@@ -108,7 +109,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     cm1 = countmat[, s1]
     cm2 = countmat[, s2]
 
-    f2 = mats_to_f2arr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2, snpwt)
+    f2 = mats_to_f2arr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2, snpwt, apply_corr = apply_corr)
     counts = mats_to_ctarr(am1[sf2,], am2[sf2,], cm1[sf2,], cm2[sf2,], block_lengths_f2)
     if(isTRUE(all.equal(s1, s2))) for(j in 1:dim(f2)[1]) f2[j, j, ] = 0
 
@@ -215,7 +216,8 @@ make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, verbose = 
 }
 
 
-mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = TRUE) {
+mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths,
+                         snpwt = NULL, cpp = TRUE, apply_corr = TRUE) {
 
   nc1 = ncol(countmat1)
   nc2 = ncol(countmat2)
@@ -225,15 +227,18 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
   stopifnot(all.equal(ncol(afmat2), nc2))
 
   if(cpp) {
-    out = cpp_mats_to_f2_arr(afmat1, afmat2, countmat1, countmat2)
+    out = cpp_mats_to_f2_arr(afmat1, afmat2, countmat1, countmat2, apply_corr)
   } else {
     denom1 = matrix(pmax(1, countmat1-1), nrow(countmat1))
     denom2 = matrix(pmax(1, countmat2-1), nrow(countmat2))
     #denom1 = countmat1-1
     #denom2 = countmat2-1
-    corr1 = afmat1*(1-afmat1)/denom1
-    corr2 = afmat2*(1-afmat2)/denom2
-    out = (outer_array(afmat1, afmat2, `-`)^2 - outer_array(corr1, corr2, `+`))
+    out = outer_array(afmat1, afmat2, `-`)^2
+    if(apply_corr) {
+      corr1 = afmat1*(1-afmat1)/denom1
+      corr2 = afmat2*(1-afmat2)/denom2
+      out = (out - outer_array(corr1, corr2, `+`))
+    }
   }
   if(!is.null(snpwt)) {
     stopifnot(length(snpwt) == nrow(afmat1))
@@ -244,7 +249,8 @@ mats_to_f2arr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, sn
   out
 }
 
-mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = TRUE) {
+mats_to_aparr = function(afmat1, afmat2, countmat1, countmat2, block_lengths,
+                         snpwt = NULL, cpp = TRUE, apply_corr = TRUE) {
 
   stopifnot(all.equal(nrow(afmat1), nrow(afmat2), nrow(countmat1), nrow(countmat2)))
   stopifnot(all.equal(ncol(afmat1), ncol(countmat1)))
@@ -278,7 +284,8 @@ mats_to_ctarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, cp
   out
 }
 
-mats_to_fstarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths, snpwt = NULL, cpp = FALSE) {
+mats_to_fstarr = function(afmat1, afmat2, countmat1, countmat2, block_lengths,
+                          snpwt = NULL, cpp = FALSE, apply_corr = TRUE) {
 
   nc1 = ncol(countmat1)
   nc2 = ncol(countmat2)

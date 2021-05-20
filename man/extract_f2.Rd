@@ -28,6 +28,7 @@ extract_f2(
   fst = TRUE,
   afprod = TRUE,
   poly_only = c("f2"),
+  apply_corr = TRUE,
   verbose = TRUE
 )
 }

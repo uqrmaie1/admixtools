@@ -376,6 +376,51 @@ f4blockdat_to_f4out = function(f4blockdat, boot) {
     left_join(totn, by = c('pop1', 'pop2', 'pop3', 'pop4'))
 }
 
+f3blockdat_to_f3out = function(f3blockdat, boot) {
+
+  if('numer' %in% names(f3blockdat)) {
+    if(boot) warning('boot argument will being ignored')
+    return(f3blockdat_to_f3out_numden(f3blockdat))
+  }
+  samplefun = ifelse(boot, function(...) est_to_boo_dat(...), est_to_loo_dat)
+  datstatfun = ifelse(boot, boot_dat_stats, jack_dat_stats)
+  totn = f3blockdat %>%
+    group_by(pop1, pop2, pop3) %>%
+    summarize(n = sum(n, na.rm=T))
+
+  f3out = f3blockdat %>%
+      group_by(pop1, pop2, pop3) %>%
+      samplefun()
+
+  f3out %>%
+    datstatfun %>%
+    ungroup %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    transmute(pop1, pop2, pop3, est, se, z, p) %>%
+    left_join(totn, by = c('pop1', 'pop2', 'pop3'))
+}
+
+f3blockdat_to_f3out_numden = function(f3blockdat) {
+
+  totn = f3blockdat %>%
+    group_by(pop1, pop2, pop3) %>%
+    summarize(n = sum(n, na.rm=T))
+
+  loo = f3blockdat %>% select(-est) %>%
+    pivot_longer(c(numer, denom), names_to = 'type', values_to = 'est') %>%
+    group_by(pop1, pop2, pop3, type) %>%
+    est_to_loo_dat() %>% select(-est) %>%
+    pivot_wider(id_cols = c(pop1:pop3, block, n, length), names_from = 'type', values_from = 'loo') %>%
+    mutate(loo = numer/denom)
+
+  loo %>%
+    jack_dat_stats %>%
+    ungroup %>%
+    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
+    transmute(pop1, pop2, pop3, est, se, z, p) %>%
+    left_join(totn, by = c('pop1', 'pop2', 'pop3'))
+}
+
 
 
 lazadm_old = function(f2_data, left, right, target = NULL,

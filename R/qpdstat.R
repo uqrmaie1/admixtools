@@ -116,12 +116,12 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 
 #' Estimate f3 statistics
 #'
-#' Computes f3 statistics from f2 blocks of the form \eqn{f3(A; B, C)}. Equivalent to
+#' Computes f3 statistics of the form \eqn{f3(A; B, C)}. When using the same SNPs for all populations, this is equivalent to
 #' \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
 #' @export
 #' @inheritParams f2
 #' @param pop3 A vector of population labels
-#' @param ... Additional arguments passed to \code{\link{f2_from_geno}} when `data` is a genotype prefix
+#' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise
 #' @return `qp3pop` returns a data frame with f3 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
@@ -137,19 +137,27 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' qp3pop(f2_dir, pop1, pop2, pop3)
 #' }
 qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
-                  boot = FALSE, sure = FALSE, unique_only = TRUE, verbose = FALSE, ...) {
+                  boot = FALSE, sure = FALSE, unique_only = TRUE,
+                  blgsize = NULL, block_lengths = NULL, verbose = FALSE, ...) {
 
   stopifnot(is.null(pop2) & is.null(pop3) | !is.null(pop2) & !is.null(pop3))
   stopifnot(!is_geno_prefix(data) || !is.null(pop1))
 
   out = fstat_get_popcombs(data, pop1 = pop1, pop2 = pop2, pop3 = pop3,
                            sure = sure, unique_only = unique_only, fnum = 3)
-  pops = unique(c(out$pop1, out$pop2, out$pop3))
 
+  if(is_geno_prefix(data)) {
+    if(verbose) alert_info('Computing from f3 from genotype data...\n')
+    return(qp3pop_geno(data, out, blgsize = ifelse(is.null(blgsize), 0.05, blgsize),
+                       block_lengths = block_lengths, boot = boot,
+                       verbose = verbose, ...))
+  }
+
+  pops = unique(c(out$pop1, out$pop2, out$pop3))
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(data, pops, ...) %>% samplefun
-  block_lengths = parse_number(dimnames(f2_blocks)[[3]])
+  f2_blocks = get_f2(data, pops, verbose = verbose, ...) %>% samplefun
+  if(is.null(block_lengths)) block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f3 -----------------
   if(verbose) alert_info('Computing f3-statistics\n')
@@ -315,7 +323,8 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     }
   } else if('data.frame' %in% class(pop1) || is.matrix(pop1)) {
     if(ncol(pop1) != fnum) stop(paste0("Wrong number of columns in 'pop1'! (Is ",ncol(pop1)," should be ",fnum,")"))
-    out = pop1 %>% set_colnames(nam) %>% as_tibble
+    if(is.matrix(pop1)) out = pop1 %>% set_colnames(nam) %>% as_tibble
+    else out = pop1 %>% select(paste0('pop', 1:fnum))
   }
 
   if(is.null(out)) {
@@ -384,15 +393,27 @@ gmat_to_aftable = function(gmat, popvec) {
 
 
 qpdstat_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
-                        f4mode = TRUE, boot = FALSE, allsnps = TRUE, verbose = TRUE, ...) {
+                        f4mode = TRUE, boot = FALSE, allsnps = TRUE, poly_only = FALSE, verbose = TRUE, ...) {
 
   pref = normalizePath(pref, mustWork = FALSE)
   f4blockdat = f4blockdat_from_geno(pref, popcombs, blgsize = blgsize, block_lengths = block_lengths,
-                                    f4mode = f4mode, allsnps = allsnps, verbose = verbose, ...)
+                                    f4mode = f4mode, allsnps = allsnps, poly_only = poly_only, verbose = verbose, ...)
 
   if(verbose) alert_info('Summarize across blocks...\n')
   out = f4blockdat %>% f4blockdat_to_f4out(boot)
   popcombs %>% left_join(out, by = c('pop1', 'pop2', 'pop3', 'pop4'))
+}
+
+qp3pop_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
+                       boot = FALSE, allsnps = TRUE, poly_only = FALSE, verbose = TRUE, ...) {
+
+  pref = normalizePath(pref, mustWork = FALSE)
+  f3blockdat = f3blockdat_from_geno(pref, popcombs, blgsize = blgsize, block_lengths = block_lengths,
+                                    allsnps = allsnps, poly_only = poly_only, verbose = verbose, ...)
+
+  if(verbose) alert_info('Summarize across blocks...\n')
+  out = f3blockdat %>% f3blockdat_to_f3out(boot)
+  popcombs %>% left_join(out, by = c('pop1', 'pop2', 'pop3'))
 }
 
 
