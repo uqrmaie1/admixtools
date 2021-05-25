@@ -3,3 +3,4 @@
 language: R
 cache: packages
 r_check_args: "--no-build-vignettes --ignore-vignettes"
+r_build_args: "--no-build-vignettes"
