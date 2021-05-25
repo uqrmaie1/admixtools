@@ -61,7 +61,7 @@ List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, a
         } else {
           // original admixtools only excludes polymorphic SNPs if they are all 0 or all 1
           uni = na_omit(unique(NumericVector::create(w, x, y, z)));
-          if(poly_only == 0 || uni.length() > 1 || poly_only == 2 && (max(uni) > 0.0001 && max(uni) < 0.9999)) {
+          if(poly_only == 0 || uni.length() > 1 || (poly_only == 2 && (max(uni) > 0.0001 && max(uni) < 0.9999))) {
             valid = 1;
           }
         }

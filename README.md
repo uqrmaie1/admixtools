@@ -1,5 +1,10 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file --->
+<!-- badges: start -->
+
+[![Travis build
+status](https://travis-ci.com/uqrmaie1/admixtools.svg?branch=master)](https://travis-ci.com/uqrmaie1/admixtools)
+<!-- badges: end -->
 
 # ADMIXTOOLS 2
 
@@ -177,14 +182,14 @@ f4(f2_blocks)
     #>    <chr>       <chr>        <chr>   <chr>         <dbl>   <dbl>  <dbl>     <dbl>
     #>  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229
     #>  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277
-    #>  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0.       
+    #>  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0        
     #>  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152
     #>  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254
-    #>  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0.       
+    #>  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0        
     #>  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164
     #>  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229
-    #>  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0.       
-    #> 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0.       
+    #>  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0        
+    #> 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0        
     #> # … with 95 more rows
 
 ## Interactive browser app
