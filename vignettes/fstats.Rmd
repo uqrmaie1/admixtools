@@ -20,10 +20,13 @@ Here, I give a summary of the basic theory behind *f*-statistics, and practical 
 
 ## *f*~2~
 
-$f_2$ is the expected squared difference in allele frequencies between two populations $A$ and $B$.
+$f_2$ is the expected squared difference of allele frequencies between two populations.
+Let's assume we have $M$ SNPs with allele frequency $a_j$ in population $A$ and $b_j$ in population $B$.
 
-In the simplest case, we can estimate $f_2$ across $M$ SNPs like this:
+We can then estimate $f_2$ like this:
+
 $$f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}$$
+The actual estimator is a bit more complicated, because we need to account for the fact that allele frequencies are estimated imprecisely when using a small number of samples (see [Biases]).
 
 $f_2$ is closely related to the more widely used pairwise $F_{ST}$. $f_2$ is the genetic variance between populations, and $F_{ST}$ is the ratio of between-population variance ($f_2$) to total variance (which is itself the sum of between- and average within- population variance).
 
@@ -130,7 +133,7 @@ In most cases, $n$, the number of independently sampled alleles, will be twice t
 
 2. Inbreeding
 
-    If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, $n$ can therefore be less than two.
+    If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, $n$ can therefore be less than two (because the two parental chromosome are not sampled independently from each other).
 
 Some of the programs in the original *ADMIXTOOLS* have an `inbreed` option which uses an estimator of $f_2$ that is robust to inbreeding. This option is also recommended to use for pseudohaploid data.
 *ADMIXTOOLS 2* automatically detects pseudohaploid samples by checking if any heterozyous genotypes are observed among the first 1000 SNPs. If not, the sample is assumed to be pseudohaploid.

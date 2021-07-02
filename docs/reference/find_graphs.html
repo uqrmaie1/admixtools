@@ -106,7 +106,7 @@ to find well fitting admixturegraphs." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -150,7 +150,7 @@ to find well fitting admixturegraphs." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -289,7 +289,7 @@ As soon as one graph happens to satisfy these constraints, all subsequently gene
     </tr>
     <tr>
       <th>reject_f4z</th>
-      <td><p>If this is a number greater than zero, all f4-statistics with <code>z &gt; reject_f4z</code> will be used to constrain the search space of admixture graphs: Any graphs in which any of the relevant f4-statistics are expected to be zero will not be evaluated.</p></td>
+      <td><p>If this is a number greater than zero, all f4-statistics with <code>abs(z) &gt; reject_f4z</code> will be used to constrain the search space of admixture graphs: Any graphs in which f4-statistics greater than <code>reject_f4z</code> are expected to be zero will not be evaluated.</p></td>
     </tr>
     <tr>
       <th>max_admix</th>

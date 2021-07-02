@@ -80,7 +80,7 @@ List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, a
 
 // [[Rcpp::export]]
 arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4,
-                                  arma::vec& modelvec, arma::mat& usesnps, bool allsnps) {
+                                  arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only) {
 
   mat den(p1.n_elem, aftable.n_cols);
   den.fill(NA_REAL);

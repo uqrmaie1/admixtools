@@ -748,8 +748,8 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
   if(remove_na || verbose) {
     keep = apply(f2_blocks, 3, function(x) sum(!is.finite(x)) == 0)
     if(!all(keep)) {
-      if(sum(keep) == 0) stop("No blocks remain after discarding blocks with missing values! If you want to compute FST for pseudohaploid samples, set `adjust_pseudohaploid = FALSE`")
       if(remove_na) {
+        if(sum(keep) == 0) stop("No blocks remain after discarding blocks with missing values! If you want to compute FST for pseudohaploid samples, set `adjust_pseudohaploid = FALSE`")
         warning(paste0('Discarding ', sum(!keep), ' block(s) due to missing values!\n',
                        'Discarded block(s): ', paste0(which(!keep), collapse = ', ')))
         f2_blocks = f2_blocks[,, keep, drop = FALSE]
@@ -1007,9 +1007,19 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param fst Write files with pairwise FST for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
 #' @param afprod  Write files with allele frequency products for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
 #' @param poly_only Specify whether SNPs with identical allele frequencies in every population should be discarded (`poly_only = TRUE`), or whether they should be used (`poly_only = FALSE`). By default (`poly_only = c("f2")`), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).
+#' @param apply_corr Apply small-sample-size correction when computing f2-statistics (default `TRUE`)
+#' @param qpfstats Compute smoothed f2-statistics (default `FALSE`). In the presence
+#' of large amounts of missing data, this option can be used to retain information
+#' from all SNPs while introducing less bias than setting `maxmiss` to values greater
+#' than 0. When setting `qpfstats = TRUE`, most other options to `extract_f2` will
+#' be ignored. See \code{\link{qpfstats}} for more information. Arguments to
+#' \code{\link{qpfstats}} can be passed via `...`
+#' @param n_cores Parallelize computation across `n_cores` cores via the `doParallel` package.
 #' @param verbose Print progress updates
+#' @param ... Pass arguments to \code{\link{qpfstats}}
 #' @return SNP metadata (invisibly)
-#' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
+#' @seealso \code{\link{f2_from_precomp}} for reading the stored f2-statistics back
+#' into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
 #' @examples
 #' \dontrun{
 #' pref = 'my/genofiles/prefix'
@@ -1021,7 +1031,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, fst = TRUE, afprod = TRUE,
-                      poly_only = c('f2'), apply_corr = TRUE, verbose = TRUE) {
+                      poly_only = c('f2'), apply_corr = TRUE, qpfstats = FALSE, n_cores = 1, verbose = TRUE, ...) {
 
   if(!is.null(cols_per_chunk)) {
     stopifnot(is.null(pops2))
@@ -1040,6 +1050,28 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   }
   if(is.null(inds) && is.null(pops) && verbose && max(file.info(paste0(pref, '.geno'))$size, file.info(paste0(pref, '.bed'))$size, na.rm = T)/1e9 > 1) alert_danger('No poplations or individuals provided. Extracting f2-stats for all population pairs. If that takes too long, you can either specify the "pops" or "inds" parameter, or follow the example in "afs_to_f2".\n')
 
+  if(qpfstats) {
+    #if(!is.null(inds)) stop('"qpfstats" option is incompatible with "inds" option!')
+    warning("Most `extract_f2` options will be ignored when using the `qpfstats` option!")
+    if(is.null(pops)) {
+      fi = format_info(pref)
+      pops = unique(read_table2(paste0(pref, fi$indend), col_names=F, col_types = fi$indtype)[[which(fi$indnam == 'pop')]])
+    }
+    f2blocks = qpfstats(pref, pops, ...)
+    if(is.null(outdir)) {
+      return(list(f2_blocks = f2blocks))
+    }
+    else {
+      block_lengths = parse_number(dimnames(f2blocks)[[3]])
+      counts = array(1, dim(f2blocks))
+      write_f2(f2blocks, counts, outdir, overwrite = overwrite)
+      write_f2(f2blocks, counts, outdir, overwrite = overwrite, id = 'ap')
+      saveRDS(block_lengths, paste0(outdir, '/block_lengths_f2.rds'))
+      saveRDS(block_lengths, paste0(outdir, '/block_lengths_ap.rds'))
+      return()
+    }
+  }
+
   if(is.null(inds)) pops = union(pops, pops2)
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
@@ -1056,7 +1088,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   arrs = afs_to_f2_blocks(afdat, outdir = outdir, overwrite = overwrite, maxmem = maxmem, poly_only = poly_only,
                           pops1 = pops, pops2 = pops2, outpop = if(outpop_scale) outpop else NULL,
                           blgsize = blgsize, afprod = afprod, fst = fst, apply_corr = apply_corr,
-                          verbose = verbose)
+                          n_cores = n_cores, verbose = verbose)
 
   if(is.null(outdir)) return(arrs)
 
@@ -1070,7 +1102,13 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' computes allele frequencies and blocked f2-statistics for selected populations, and returns them as a 3d array.
 #' @export
 #' @inheritParams extract_f2
-#' @param afprod Return negative average allele frequency products instead of f2-statistics. Setting `afprod = TRUE` will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
+#' @param afprod Return negative average allele frequency products instead of f2-statistics.
+#' Setting `afprod = TRUE` will result in more precise f4-statistics when the original data
+#' had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}}
+#' and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup
+#' (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared
+#' to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly
+#' less than bias in regular f3-statistics introduced by large amounts of missing data.
 #' @return A 3d array of f2-statistics (or scaled allele frequency products if `afprod = TRUE`)
 #' @seealso \code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
@@ -1078,14 +1116,14 @@ f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem =
                         transitions = TRUE, transversions = TRUE,
                         auto_only = TRUE, keepsnps = NULL, afprod = FALSE, fst = FALSE, poly_only = c("f2"),
                         format = NULL,
-                        adjust_pseudohaploid = TRUE, remove_na = TRUE, apply_corr = TRUE, verbose = TRUE) {
+                        adjust_pseudohaploid = TRUE, remove_na = TRUE, apply_corr = TRUE, qpfstats = FALSE, verbose = TRUE, ...) {
 
   arrs = extract_f2(pref, outdir = NULL, inds = inds, pops = pops, blgsize = blgsize, maxmem = maxmem,
              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, pops2 = pops2, outpop = outpop,
              outpop_scale = outpop_scale, transitions = transitions, transversions = transversions,
              auto_only = auto_only, keepsnps = keepsnps, format = format,
              adjust_pseudohaploid = adjust_pseudohaploid, fst = fst, afprod = afprod,
-             poly_only = poly_only, apply_corr = apply_corr, verbose = verbose)
+             poly_only = poly_only, apply_corr = apply_corr, qpfstats = qpfstats, verbose = verbose, ...)
   if(afprod) {
     if(verbose) alert_info(paste0('Returning allele frequency product blocks\n'))
     #blocks = scale_ap_blocks(arrs$ap_blocks, from = min(arrs$f2_blocks, na.rm=T), to = max(arrs$f2_blocks, na.rm=T))
@@ -2248,8 +2286,8 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
                                 poly_only = FALSE, apply_corr = TRUE, outgroupmode = FALSE, verbose = TRUE) {
 
   if(is.matrix(popcombs)) {
-    if(ncol(popcombs) != 4) stop("'popcombs' is a matrix but doens't have four columns!")
-    popcombs %<>% as_tibble(.name_repair = ~paste0('pop', 1:4))
+    if(ncol(popcombs) != 3) stop("'popcombs' is a matrix but doens't have three columns!")
+    popcombs %<>% as_tibble(.name_repair = ~paste0('pop', 1:3))
   }
 
   if('model' %in% names(popcombs)) {
@@ -2375,162 +2413,109 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
 }
 
 
-f4blockdat_from_geno_qpfs = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
-                                     blgsize = 0.05, maxf4 = 1e5,
-                                     block_lengths = NULL, f4mode = TRUE, allsnps = FALSE, verbose = TRUE) {
 
-  #if(is.null(popcombs)) {
-  left = unique(c(popcombs$pop1, popcombs$pop2))
-  right = unique(c(popcombs$pop3, popcombs$pop4))
-  pc = expand_grid(pop1 = left, pop2 = left) %>%
-      expand_grid(expand_grid(pop3 = right, pop4 = right))
+construct_fstat_matrix = function(popcomb) {
 
-  pc %<>% slice_sample(n = maxf4)
-  pc %<>% mutate(model = 1:n())
+  pops = unique(unlist(popcomb))
+  npop = length(pops)
+  n2 = choose(npop, 2)
 
-  f4blockdat = f4blockdat_from_geno(pref, pc, auto_only = auto_only, blgsize = blgsize, block_lengths = block_lengths, f4mode = f4mode, verbose = verbose) %>% #average_f4blockdat %>%
-    #mutate(est = est_avg, n = n_avg) %>%
-    select(-model)
-  popcombs %>% left_join(f4blockdat, by = paste0('pop', 1:4))
+  indmat = matrix(NA, npop, npop)
+  indmat[lower.tri(indmat)] = 1:choose(npop,2)
+  indmat = t(indmat)
+  indmat[lower.tri(indmat)] = 1:choose(npop,2)
+
+  out = matrix(0, nrow(popcomb), n2)
+  ind4 = apply(as.matrix(popcomb), 2, function(x) match(x, pops))
+  for(i in 1:nrow(popcomb)) {
+    x = ind4[i,]
+    out[i, indmat[x[1],x[4]]] = 1
+    out[i, indmat[x[2],x[3]]] = 1
+    out[i, indmat[x[1],x[3]]] = -1
+    out[i, indmat[x[2],x[4]]] = -1
+    if(popcomb[i,1] == popcomb[i,3] && popcomb[i,2] == popcomb[i,4]) out[i,] = out[i,]*2
+  }
+  out/2
 }
 
 
-extract_f2_qpfs = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, maxmem = 8000,
-                           maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
-                           transitions = TRUE, transversions = TRUE,
-                           auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
-                           adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
+#' Get smoothed f2-statistics
+#'
+#' This function returns an array of (pseudo-) f2-statistics which are computed by
+#' taking into account other f2-, f3-, and f4-statistics. The advantage of doing that
+#' is that f3- and f4-statistics computed from these smoothed f2-statistics can be
+#' more accurate for populations with large amounts of missing data. The function
+#' uses SNPs which are missing in some populations in a manner which tends to introduce
+#' less bias than setting `maxmiss` to values greater than 0.
+#' @export
+#' @param pref Prefix of genotype files
+#' @param pops Populations for which to compute f2-statistics
+#' @param include_f2 Should f2-statistics be used to get smoothed f2-statistics?
+#' If `include_f2` is a positive integer, it specifies how many randomly chosen f2-statistics should be used.
+#' @param include_f3 Should f3-statistics be used to get smoothed f2-statistics?
+#' If `include_f3` is a positive integer, it specifies how many randomly chosen f3-statistics should be used.
+#' @param include_f4 Should f4-statistics be used to get smoothed f2-statistics?
+#' If `include_f4` is a positive integer, it specifies how many randomly chosen f4-statistics should be used.
+#' @return A 3d-array of smoothed f2-statistics
+#' @examples
+#' \dontrun{
+#' f2_blocks = qpfstats(geno_prefix, mypops)
+#' }
+qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4 = TRUE, verbose = TRUE) {
 
-
+  popcomb = tibble()
   sp = sort(pops)
-  popcombs = expand_grid(pop1 = sp, pop2 = sp, pop3 = sp, pop4 = sp)
+  npop = length(pops)
+  if(include_f2) {
+    pcf2 = expand_grid(pop1 = sp, pop2 = sp) %>% filter(pop1 < pop2) %>%
+      mutate(pop3 = pop1, pop4 = pop2)
+    if(is.numeric(include_f2)) pcf2 %<>% slice_sample(n = include_f2)
+    popcomb %<>% bind_rows(pcf2)
+  }
+  if(include_f3) {
+    pcf3 = fstat_get_popcombs(NULL, pops, fnum = 3) %>%
+      transmute(pop1, pop2, pop4 = pop3, pop3 = pop1)
+    if(is.numeric(include_f3)) pcf3 %<>% slice_sample(n = include_f3)
+    popcomb %<>% bind_rows(pcf3)
+  }
+  if(include_f4) {
+    pcf4 = fstat_get_popcombs(NULL, pops, fnum = 4)
+    if(is.numeric(include_f4)) pcf4 %<>% slice_sample(n = include_f4)
+    popcomb %<>% bind_rows(pcf4)
+  }
+  f4blockdat = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE)
+  f4pass1 = f4blockdat %>% f4blockdat_to_f4out(FALSE)
 
-  pc = apply(combn(sp, 2), 2, paste0, collapse = ' ')
+  if(verbose) alert_info(paste0('Constructing matrix...\n'))
+  x = construct_fstat_matrix(popcomb)
+  ymat = f4blockdat %>%
+    select(pop1:pop4, block, est) %>%
+    pivot_wider(c(1:4), block, values_from = est) %>% select(-1:-4) %>% as.matrix
+  y = f4pass1$est
+  #ymat = ymat/f4pass1$se
+  #x = x/f4pass1$se
+  if(verbose) alert_info(paste0('Running regression...\n'))
+  lh = solve((t(x) %*% x) + diag(ncol(x))*0.00001) %*% t(x)
+  b = lh %*% ymat
+  bglob = lh %*% y
 
-  f4blockdat = f4blockdat_from_geno_qpfs(pref, popcombs, maxf4 = maxf4, verbose = verbose) %>% filter(!is.na(est))
-  diags = expand_grid(pop1 = sp, block = seq_len(max(f4blockdat$block, na.rm=T))) %>% mutate(pop2 = pop1, est = 0, n = 0, length = 0)
-  dat = f4blockdat %>%
-    filter(pop1 != pop3, pop2 != pop4) %>%
-    transmute(est, block,
-      p13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)),
-      p24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)),
-      p14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)),
-      p23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>%
-    expand_grid(pc) %>% mutate(coef = (pc == p14) + (pc == p23) - (pc == p13) - (pc == p24)) %>%
-    pivot_wider(names_from = pc, values_from = coef) %>%
-    select(-p13:-p23) %>%
-    group_by(block) %>% group_modify(~broom::tidy(lm(est ~ ., data = ., na.action=na.exclude))[-1, c('term', 'estimate')]) %>%
-    ungroup %>% mutate(term = str_replace_all(term, '`', '')) %>% separate(term, c('pop1', 'pop2'), ' ', T, T) %>%
-    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
-    bind_rows(diags %>% transmute(pop1, pop2, block, estimate = est)) %>%
-    mutate(n = 0) %>%
-    arrange(block, pop2, pop1)
-  if(length(table(table(dat$block))) > 1) stop('Increase maxf4!')
+  nblocks = ncol(b)
+  bl = f4blockdat %>% slice(1:nblocks) %>% pull(length)
+  f2blocks = array(0, c(npop, npop, nblocks), list(sp, sp, paste0('l', bl)))
+  m = matrix(1:npop^2, npop, npop)
+  m2 = matrix(1:npop^2, npop, npop, byrow = T)
+  add = rep((0:(nblocks-1))*npop^2, each = choose(npop,2))
+  ind1 = rep(m2[lower.tri(m2)], nblocks) + add
+  ind2 = rep(m[lower.tri(m)], nblocks) + add
+  f2blocks[ind1] = f2blocks[ind2] = c(b)
 
-  # f2blockdat = f4blockdat %>%
-  #   filter(pop1 == pop3, pop2 == pop4, !is.na(block)) %>% select(pop1, pop2, block, est, n, length) %>%
-  #   #bind_rows(rename(., pop2 = pop1, pop1 = pop2)) %>%
-  #   bind_rows(diags) %>%
-  #   left_join(dat, by = c('pop1', 'pop2', 'block')) %>%
-  #   arrange(block, pop2, pop1)
+  f2mat = f2mat2 = matrix(0, npop, npop)
+  f2mat[m2[lower.tri(m2)]] = f2mat[m[lower.tri(m)]] = bglob
+  f2mat2[m2[lower.tri(m2)]] = f2mat2[m[lower.tri(m)]] = f2(f2blocks)$est
+  f2blocks2 = f2blocks - c(f2mat2) + c(f2mat)
 
-  d1 = d2 = length(pops)
-  d3 = length(unique(dat$block))
-  dm = c(d1, d2, d3)
-  nam = list(sp, sp, paste0('l', seq_len(d3)))
-
-  arrs = list(
-    f2 = array(dat$estimate, dm, nam)[pops,pops,,drop=F],
-    afprod = array(dat$estimate, dm, nam)[pops,pops,,drop=F],
-    counts = array(dat$n, dm, nam)[pops,pops,,drop=F],
-    countsap = array(dat$n, dm, nam)[pops,pops,,drop=F]
-  )
-
-  if(is.null(outdir)) return(arrs)
-
-  write_f2(arrs, outdir, overwrite = overwrite)
-
-  if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
-  #invisible(afdat$snpfile)
+  f2blocks2
 }
-
-
-extract_f2_qpfs2 = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, maxmem = 8000,
-                           maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
-                           transitions = TRUE, transversions = TRUE,
-                           auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
-                           adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, verbose = TRUE) {
-
-
-  sp = sort(pops)
-  popcombs = expand_grid(pop1 = sp, pop2 = sp, pop3 = sp, pop4 = sp)
-  pcf4 = popcombs %>%
-    rowwise %>%
-    filter(length(unique(c(pop1,pop2,pop3,pop4))) == 4) %>%
-    ungroup %>%
-    slice_sample(n = maxf4)
-  pcf2 = popcombs %>% filter(pop1 == pop3, pop2 == pop4, pop1 != pop2)
-
-  f4blockdat = f4blockdat_from_geno(pref, pcf4, allsnps = TRUE)
-
-  f4pass1 = pcf4 %>%
-    left_join(f4blockdat %>% admixtools:::f4blockdat_to_f4out(FALSE), by = c('pop1', 'pop2', 'pop3', 'pop4'))
-
-  denom = 2
-  f4dat = f4blockdat %>%
-    left_join(f4pass1 %>% select(pop1:pop4, se), by = paste0('pop', 1:4)) %>%
-    bind_rows(pcf2 %>% expand_grid(block = seq_len(max(f4blockdat$block))) %>%
-                mutate(est = NA, se = NA, n = NA, length = NA)) %>%
-    group_by(block, pop1, pop3) %>% mutate(e13 = weighted.mean(est, 1/se^2, na.rm=T), n13 = mean(n)) %>%
-    group_by(block, pop2, pop4) %>% mutate(e24 = weighted.mean(est, 1/se^2, na.rm=T), n24 = mean(n)) %>%
-    group_by(block, pop2, pop3) %>% mutate(e23 = weighted.mean(est, 1/se^2, na.rm=T), n23 = mean(n)) %>%
-    group_by(block, pop1, pop4) %>% mutate(e14 = weighted.mean(est, 1/se^2, na.rm=T), n14 = mean(n)) %>%
-    ungroup %>%
-    mutate(across(e13:n14, ~replace_na(., 0)),
-      est_avg = (e13 + e24 + e23 + e14) / denom,
-      n_avg =   (n13 + n24 + n23 + n14) / 4) %>%
-    select(-e13:-n14)
-
-  dat = f4blockdat %>%
-    filter(pop1 != pop3, pop2 != pop4) %>%
-    left_join(f4pass1 %>% select(pop1:pop4, se), by = paste0('pop', 1:4)) %>%
-    transmute(est = est/se, se, block,
-              p13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)),
-              p24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)),
-              p14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)),
-              p23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>%
-    expand_grid(pc) %>% mutate(coef = ((pc == p14) + (pc == p23) - (pc == p13) - (pc == p24))/se) %>%
-    pivot_wider(names_from = pc, values_from = coef) %>%
-    select(-p13:-p23, -se) %>%
-    group_by(block) %>% group_modify(~broom::tidy(lm(est ~ ., data = ., na.action=na.exclude))[-1, c('term', 'estimate')]) %>%
-    ungroup %>% mutate(term = str_replace_all(term, '`', '')) %>% separate(term, c('pop1', 'pop2'), ' ', T, T) %>%
-    bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
-    bind_rows(diags %>% transmute(pop1, pop2, block, estimate = est)) %>%
-    mutate(n = 0) %>%
-    arrange(block, pop2, pop1)
-  if(length(table(table(dat$block))) > 1) stop('Increase maxf4!')
-
-  d1 = d2 = length(pops)
-  d3 = length(unique(f4dat$block))
-  dm = c(d1, d2, d3)
-  nam = list(sp, sp, paste0('l', seq_len(d3)))
-  dat = f4dat %>% filter(pop1 == pop3, pop2 == pop4) %>%
-    bind_rows(expand_grid(pop1 = pops, block = seq_len(d3)) %>% mutate(pop2 = pop1, est_avg = 0)) %>%
-    arrange(block, pop2, pop1)
-
-  arrs = list(
-    f2 = array(dat$est_avg, dm, nam)[pops,pops,,drop=F],
-    afprod = array(dat$est_avg, dm, nam)[pops,pops,,drop=F],
-    counts = array(dat$n_avg, dm, nam)[pops,pops,,drop=F],
-    countsap = array(dat$n_avg, dm, nam)[pops,pops,,drop=F]
-  )
-
-  if(is.null(outdir)) return(arrs)
-  write_f2(arrs, outdir, overwrite = overwrite)
-  if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
-  #invisible(afdat$snpfile)
-}
-
 
 
 
@@ -2543,7 +2528,8 @@ extract_f2_qpfs2 = function(pref, outdir, pops, maxf4 = 1e5, blgsize = 0.05, max
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
-write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10) {
+write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
+                     title = '', dot2pdf = FALSE) {
   # writes qpgraph output to a dot format file
 
   if('igraph' %in% class(graph)) {
@@ -2552,16 +2538,27 @@ write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10) {
   } else edges = graph
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
 
+  leaves = setdiff(edges$to, edges$from)
+  root = setdiff(edges$from, edges$to)
+  internal = setdiff(c(edges$from, edges$to), c(leaves))
   edges = mutate(edges, lab = ifelse(type == 'edge',
                                      paste0(' [ label = "', round(weight * 1000), '" ];'),
                                      paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''), to = str_replace_all(to, '[\\.-]', ''))
-  out = 'digraph G {\n'
+                 from = str_replace_all(from, '[\\.-]', ''),
+                 to = str_replace_all(to, '[\\.-]', ''))
+  nodes = paste0(internal, ' [shape = point];', collapse = '\n')
+
+  out = paste0('digraph G {\nlabel = "',title,'";\nlabelloc=t;\nlabeljust=l;\n')
   out = paste0(out, 'size = "',size1,',',size2,'";\n')
+  out = paste0(out, nodes, '\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
 
   writeLines(out, outfile)
+  if(dot2pdf) {
+    outpdf = str_replace(outfile, '\\..*$', '.pdf')
+    system(paste0('dot -Tpdf < ', outfile,' > ', outpdf))
+  }
 }
 
 

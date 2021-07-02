@@ -16,6 +16,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/afs_to_f2_blocks.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/agraph_to_igraph.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/boo_list.html</loc>
   </url>
   <url>
@@ -106,13 +109,19 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_geno.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_msprime.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_precomp.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_simulation.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2dat_f4dat.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2dat_f4dat.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f3blockdat_from_geno.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_afdat.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_f2.html</loc>
@@ -169,6 +178,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_addleaf.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_distances.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_equations.html</loc>
   </url>
   <url>
@@ -193,10 +205,16 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_splittrees.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graph_to_qpadm.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/graphmod_pavel.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/group_samples.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/igraph_to_agraph.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix.html</loc>
@@ -262,6 +280,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/packedancestrymap_to_plink.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_dot.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qp3pop_output.html</loc>
   </url>
   <url>
@@ -319,7 +340,7 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_models.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_models_old.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_multi.html</loc>
@@ -344,6 +365,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpf4ratio_wrapper.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpfstats.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpgraph.html</loc>
@@ -394,6 +418,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/resample_snps.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/rotate_models.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/run_shiny_admixtools.html</loc>
   </url>
   <url>
@@ -401,6 +428,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_eventorder.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_nonzerof4.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_numadmix.html</loc>
@@ -427,7 +457,16 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/spr_leaves.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_descendants.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_descendants_list.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_eventorder.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_eventorder_list.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_fits.html</loc>
@@ -436,13 +475,22 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_numadmix.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_numadmix_list.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_proxies.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_proxies_list.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_triples.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_zerof4.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_zerof4_list.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/swap_leaves.html</loc>

@@ -4,7 +4,7 @@
 \alias{f2dat_f4dat}
 \title{Turn f2 data to f4 data}
 \usage{
-f2dat_f4dat(f2dat)
+f2dat_f4dat(f2dat, popcomb = NULL)
 }
 \arguments{
 \item{f2dat}{A data frame of f2-statistics with columns \code{pop1}, \code{pop2}, \code{f2}}

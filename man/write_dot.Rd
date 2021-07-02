@@ -4,7 +4,14 @@
 \alias{write_dot}
 \title{Convert graph to dot format}
 \usage{
-write_dot(graph, outfile = stdout(), size1 = 7.5, size2 = 10)
+write_dot(
+  graph,
+  outfile = stdout(),
+  size1 = 7.5,
+  size2 = 10,
+  title = "",
+  dot2pdf = FALSE
+)
 }
 \arguments{
 \item{graph}{Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')}

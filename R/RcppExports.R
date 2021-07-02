@@ -9,8 +9,8 @@ cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, 
     .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
 }
 
-cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps) {
-    .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps)
+cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only) {
+    .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
 }
 
 cpp_outer_array_mul <- function(m1, m2) {

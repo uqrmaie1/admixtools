@@ -20,7 +20,7 @@ qpgraph(
   f3precomp = NULL,
   f3basepop = NULL,
   constrained = TRUE,
-  allsnps = TRUE,
+  allsnps = FALSE,
   ppinv = NULL,
   f2_blocks_test = NULL,
   verbose = FALSE

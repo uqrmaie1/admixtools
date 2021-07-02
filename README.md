@@ -1,10 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file --->
-<!-- badges: start -->
-
-[![Travis build
-status](https://travis-ci.com/uqrmaie1/admixtools.svg?branch=master)](https://travis-ci.com/uqrmaie1/admixtools)
-<!-- badges: end -->
+<!-- badges: start 
+  [![Travis build status](https://travis-ci.com/uqrmaie1/admixtools.svg?branch=master)](https://travis-ci.com/uqrmaie1/admixtools)
+  badges: end -->
 
 # ADMIXTOOLS 2
 
@@ -258,7 +256,8 @@ only because others have cleared the path for you, by bringing problems
 to my attention. In no particular order, I want to thank Ornob Alam,
 Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias Göllner, Christian
 Huber, Kale, Ted Kandell, Fraser Combe, Matthew Williams, Lenny Dykstra,
-Kristján Moore, Dilawer Khan, Lareb Humayoun, and Sánta Benedek
+Kristján Moore, Dilawer Khan, Lareb Humayoun, Sánta Benedek, Steven
+Rosenberg, Daniel Tabin, and Benjamin Peter
 
 If you expected to see your name here but I failed to include it, please
 let me know about it!

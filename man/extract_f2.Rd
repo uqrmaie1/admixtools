@@ -29,7 +29,10 @@ extract_f2(
   afprod = TRUE,
   poly_only = c("f2"),
   apply_corr = TRUE,
-  verbose = TRUE
+  qpfstats = FALSE,
+  n_cores = 1,
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -81,7 +84,20 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 
 \item{poly_only}{Specify whether SNPs with identical allele frequencies in every population should be discarded (\code{poly_only = TRUE}), or whether they should be used (\code{poly_only = FALSE}). By default (\code{poly_only = c("f2")}), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).}
 
+\item{apply_corr}{Apply small-sample-size correction when computing f2-statistics (default \code{TRUE})}
+
+\item{qpfstats}{Compute smoothed f2-statistics (default \code{FALSE}). In the presence
+of large amounts of missing data, this option can be used to retain information
+from all SNPs while introducing less bias than setting \code{maxmiss} to values greater
+than 0. When setting \code{qpfstats = TRUE}, most other options to \code{extract_f2} will
+be ignored. See \code{\link{qpfstats}} for more information. Arguments to
+\code{\link{qpfstats}} can be passed via \code{...}}
+
+\item{n_cores}{Parallelize computation across \code{n_cores} cores via the \code{doParallel} package.}
+
 \item{verbose}{Print progress updates}
+
+\item{...}{Pass arguments to \code{\link{qpfstats}}}
 }
 \value{
 SNP metadata (invisibly)
@@ -98,5 +114,6 @@ extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 }
 }
 \seealso{
-\code{\link{f2_from_precomp}} for reading the stored f2-statistics back into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
+\code{\link{f2_from_precomp}} for reading the stored f2-statistics back
+into R, \code{\link{f2_from_geno}} to skip writting f2-statistics to disk and return them directly
 }

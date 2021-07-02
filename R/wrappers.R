@@ -572,8 +572,7 @@ fit_to_qpgraph_format = function(edges, decimals = 3, sep = '\t') {
 
 igraph_to_qpgraph = function(graph, outfile, sep = '\t') {
   edges = igraph::as_edgelist(graph) %>%
-    set_colnames(c('from', 'to')) %>%
-    as_tibble %>%
+    as_tibble(.name_repair = ~c('from', 'to')) %>%
     add_count(to) %>%
     mutate(type = ifelse(n == 2, 'admix', 'edge'))
   leaves = setdiff(edges$to, edges$from)
@@ -914,14 +913,48 @@ parse_qpfstats_output = function(outfile) {
   else jest = NULL
 
   dfstat = dat %>% str_subset('^fstat:')
-  if(length(dfstat) > 0) fstat = dfstat %>% str_squish %>% str_split(' ') %>% do.call(rbind, .) %>% `[`(,-1) %>% apply(2, as.numeric) %>% as_tibble(.name_repair = ~nam2) %>% mutate(across(p1:p4, ~pops[.+1]))
+  if(length(dfstat) > 0) fstat = dfstat %>% str_squish %>% str_split(' ') %>% do.call(rbind, .) %>% `[`(,-1) %>% apply(2, as.numeric) %>% as_tibble(.name_repair = ~nam2) %>% mutate(across(p1:p4, ~pops[.+1])) %>%
+    rename(pop1 = p1, pop2 = p2, pop3 = p3, pop4 = p4)
   else fstat = NULL
 
-  basis = dat %>% str_subset('^basis:') %>% str_squish %>% str_split(' ') %>% do.call(rbind, .) %>% `[`(,-c(1,6)) %>% apply(2, as.numeric) %>% as_tibble(.name_repair = ~nam3) %>% mutate(across(p1:p2, ~pops[.+1]))
+  basis = dat %>% str_subset('^basis:') %>% str_squish %>% str_split(' ') %>% do.call(rbind, .) %>% `[`(,-c(1,6)) %>% apply(2, as.numeric) %>% as_tibble(.name_repair = ~nam3) %>% mutate(across(p1:p2, ~pops[.+1])) %>%
+    rename(pop1 = p1, pop2 = p2)
 
   namedList(jest, fstat, basis)
 }
 
+parse_qpfstats = function(outfile) {
+
+  dat = read_lines(outfile) %>% str_squish()
+  len = str_split(dat, '\\s+') %>% map_dbl(length)
+  basepop = str_split(dat[1], '\\s+')[[1]][3]
+
+  f3est = dat[len == 3] %>% str_split('\\s+') %>% do.call(rbind, .) %>%
+    as_tibble(.name_repair = ~c('pop2', 'pop3', 'est')) %>%
+    add_column(pop1 = basepop, .before = 1) %>% mutate(est = as.numeric(est)/1e3)
+
+  f3cov = dat[len == 5] %>% str_split('\\s+') %>% do.call(rbind, .) %>%
+    as_tibble(.name_repair = ~c('pop11', 'pop12', 'pop21', 'pop22', 'cov')) %>%
+    mutate(cov = as.numeric(cov)/1e6)
+  f3se = f3cov %>% filter(pop11 == pop21, pop12 == pop22) %>%
+    transmute(pop2 = pop11, pop3 = pop12, se = sqrt(cov))
+
+  f3est %<>% left_join(f3se, by = c('pop2', 'pop3'))
+
+  namedList(f3est, f3cov)
+}
+
+parse_qpfmv_output = function(outfile) {
+
+  outfile %>%
+    read_lines %>%
+    str_subset('^result:') %>%
+    str_split('\\s+') %>%
+    do.call(rbind, .) %>%
+    as_tibble(.name_repair = ~c('X1', paste0('pop', 1:4), 'est', 'z', 'X2')) %>%
+    select(-X1, -X2) %>%
+    mutate(est = as.numeric(est), z = as.numeric(z))
+}
 
 # for Nick
 parse_qpff3base_output = function(outfile, denom = 1000) {

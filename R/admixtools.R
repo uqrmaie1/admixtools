@@ -9,6 +9,7 @@
 #' @importFrom magrittr set_colnames "%$%" "%<>%"
 #' @importFrom abind abind
 #' @importFrom crayon blue red green bold italic
+#' @importFrom foreach foreach "%dopar%"
 #' @importFrom tibble as_tibble deframe enframe add_column rownames_to_column
 # @importFrom stats na.omit setNames runif
 #' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths

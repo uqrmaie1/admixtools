@@ -105,7 +105,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -149,7 +149,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -200,6 +200,10 @@
   overwrite <span class='op'>=</span> <span class='cn'>FALSE</span>,
   format <span class='op'>=</span> <span class='cn'>NULL</span>,
   adjust_pseudohaploid <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  afprod <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  fst <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  poly_only <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"f2"</span><span class='op'>)</span>,
+  apply_corr <span class='op'>=</span> <span class='cn'>TRUE</span>,
   verbose <span class='op'>=</span> <span class='cn'>TRUE</span>
 <span class='op'>)</span></pre>
 
@@ -275,6 +279,22 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     <tr>
       <th>adjust_pseudohaploid</th>
       <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+    </tr>
+    <tr>
+      <th>afprod</th>
+      <td><p>Write files with allele frequency products for every population pair. Setting this to FALSE can make <code>extract_f2</code> faster and will require less memory.</p></td>
+    </tr>
+    <tr>
+      <th>fst</th>
+      <td><p>Write files with pairwise FST for every population pair. Setting this to FALSE can make <code>extract_f2</code> faster and will require less memory.</p></td>
+    </tr>
+    <tr>
+      <th>poly_only</th>
+      <td><p>Specify whether SNPs with identical allele frequencies in every population should be discarded (<code>poly_only = TRUE</code>), or whether they should be used (<code>poly_only = FALSE</code>). By default (<code>poly_only = c("f2")</code>), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).</p></td>
+    </tr>
+    <tr>
+      <th>apply_corr</th>
+      <td><p>Apply small-sample-size correction when computing f2-statistics (default <code>TRUE</code>)</p></td>
     </tr>
     <tr>
       <th>verbose</th>

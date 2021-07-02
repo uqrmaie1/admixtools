@@ -41,8 +41,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_aftable_to_dstatden
-arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP) {
+arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -54,7 +54,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec& >::type modelvec(modelvecSEXP);
     Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
     Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps));
+    Rcpp::traits::input_parameter< int >::type poly_only(poly_onlySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -418,7 +419,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_aftable_to_dstatnum_old", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_old, 5},
     {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 9},
-    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 8},
+    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 9},
     {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
     {"_admixtools_cpp_outer_array_plus", (DL_FUNC) &_admixtools_cpp_outer_array_plus, 2},
     {"_admixtools_cpp_outer_array_minus", (DL_FUNC) &_admixtools_cpp_outer_array_minus, 2},

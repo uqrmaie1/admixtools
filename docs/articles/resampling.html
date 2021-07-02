@@ -53,7 +53,7 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -97,7 +97,7 @@
 <ul class="nav navbar-nav navbar-right">
 <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -117,14 +117,13 @@
 
       
 
-      </header><script src="resampling_files/header-attrs-2.5/header-attrs.js"></script><link href="resampling_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
-<script src="resampling_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
+      </header><script src="resampling_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Standard errors</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2021-02-23</h4>
+            <h4 class="date">2021-07-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/resampling.Rmd"><code>vignettes/resampling.Rmd</code></a></small>
       <div class="hidden name"><code>resampling.Rmd</code></div>
@@ -137,14 +136,18 @@
 <div id="quantifying-uncertainty" class="section level2">
 <h2 class="hasAnchor">
 <a href="#quantifying-uncertainty" class="anchor"></a>Quantifying uncertainty</h2>
-<p>The estimates produced by <em>ADMIXTOOLS 2</em> (and by any other software) have high, but still limited precision, and it’s often important to know what those limits are. There are several reasons why there is uncertainty in an estimate, but the two major ones in our case are the random sampling of individuals, and the random sampling (or rather the random drift) of SNPs: How different would the results be if we had used DNA from different individuals (from the same populations)? And how different would the results be if we could replay the same history, while letting the SNPs drift randomly another time?</p>
-<p>We can answer these questions with resampling procedures such as jackknife and bootstrap. The original <em>ADMIXTOOLS</em> software uses jackknife to estimate standard errors of <em>f</em>-statistic estimates and other parameters, while <em>ADMIXTOOLS 2</em> can also compute bootstrap standard errors. See <strong>add section</strong> for a comparison of the two methods. Unless otherwhise mentioned, standard errors estimate the uncertainty due to the random sampling of SNPs, although <em>ADMIXTOOLS 2</em> also has functions that estimate the uncertainty due to the random sampling of individuals.</p>
+<p>The estimates produced by <em>ADMIXTOOLS 2</em> (and by any other software) have high, but still limited precision, and it’s important to know what those limits are. There are several reasons why there is uncertainty in an estimate, but the two major ones in our case are the random sampling of individuals, and the random sampling (or rather the random drift) of SNPs. Quantifying this uncertainty is the same as asking these questions: How different would the results be if we had used DNA from different individuals (from the same populations)? And how different would the results be if we could replay the same history, while letting the SNPs drift randomly another time?</p>
+<p>We can answer these questions with resampling procedures such as jackknife and bootstrap. The original <em>ADMIXTOOLS</em> software uses jackknife to estimate standard errors of <em>f</em>-statistic estimates and other parameters, while <em>ADMIXTOOLS 2</em> can also compute bootstrap standard errors. Unless otherwise mentioned, standard errors estimate the uncertainty due to the random sampling of SNPs, although <em>ADMIXTOOLS 2</em> also has functions that estimate the uncertainty due to the random sampling of individuals.</p>
+<p>Resampling SNPs, SNP blocks, or whole chromosomes is a very common method for quantifying uncertainty across many methods used in genetics. In the context of ancient DNA, jackknifing SNP blocks is how f-statistic standard errors are usually computed. What is less common, is to apply the same principle not just to determine the precision with which we can estimate a single statistic, but to determine the precision of the whole analysis. This is arguably at least as interesting as the confidence interval of one statistic, but it requires much more time, because the whole analysis has to be repeated hundreds of times on different subsets of the data. With the performance gains and dedicated functions for resampling SNPs in <em>ADMIXTOOLS 2</em>, it is much easier than it was before.</p>
+<p>The concept of estimating the uncertainty of an analysis is not only relevant for data with low coverage, where intuitive that fewer SNPs and less information lead to more uncertainty. It is just as relevant when we have perfect data for every SNP in the genome, because we still rely on the randomness of genetic drift in a finite number of SNPs across 23 chromosomes. If our goal was only to describe what we observe in this finite set of SNPs, resampling might not be necessary. But since our goal is to make statements about demographic history by using random drift in these SNPs, we should not treat them as fixed, and instead ask how much our results are influenced by that randomness.</p>
+<p>Before we’ll go over how resampling SNPs can be used to determine the robustness of a whole analysis, let’s look at how the concept is applied to derive standard errors and <em>p</em>-values for single <span class="math inline">\(f_4\)</span>-statistics.</p>
 </div>
 <div id="standard-errors-and-hypothesis-testing" class="section level2">
 <h2 class="hasAnchor">
 <a href="#standard-errors-and-hypothesis-testing" class="anchor"></a>Standard errors and hypothesis testing</h2>
-<p>Let’s say we want to know whether populations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> form a clade relative to <span class="math inline">\(C\)</span> and <span class="math inline">\(D\)</span>. We can reject the null hypothesis that they do form a clade if <span class="math inline">\(f_4(A, B; C, D)\)</span> significantly deviates from zero – if there is a significant covariance between the allele frequency differences <span class="math inline">\(A-B\)</span> and <span class="math inline">\(C-D\)</span>.</p>
-<p>To test whether this covariance is significant, we have to estimate its standard error, which will allow us to calculate a <em>p</em>-value – the probability to observe this or a more extreme <span class="math inline">\(f_4\)</span> statistic under the null hypothesis (the two population pairs form a clade and the true covariance is zero).</p>
+<p>Let’s say we want to know whether two population pairs – <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span> and <span class="math inline">\(C\)</span>, <span class="math inline">\(D\)</span> form two clades with respect to each other. We can reject the null hypothesis that they do form a clade if <span class="math inline">\(f_4(A, B; C, D)\)</span> significantly deviates from zero – if there is a significant covariance between the allele frequency differences <span class="math inline">\(A-B\)</span> and <span class="math inline">\(C-D\)</span>.</p>
+<p>To test whether this covariance is significant, we have to estimate its standard error (a measure of the sampling variance). From the estimate and its standard error, we can calculate a z-score and <em>p</em>-value – the probability to observe this or a more extreme <span class="math inline">\(f_4\)</span> statistic under the null hypothesis (which is that the two population pairs form a clade and the true covariance is zero).</p>
+<p>To estimate the standard error, we can apply jackknife or bootstrap resampling: computing <span class="math inline">\(f_4(A, B; C, D)\)</span> many times on different subsets of SNPs to see how different those estimates are from each other.</p>
 </div>
 <div id="jackknife-and-bootstrap" class="section level2">
 <h2 class="hasAnchor">
@@ -182,17 +185,15 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">snpres</span> <span class="op">=</span> <span class="fu"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, graph <span class="op">=</span> <span class="va">example_graph</span>, boot <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span><span class="op">(</span><span class="va">snpres</span><span class="op">$</span><span class="va">score</span>, <span class="fl">100</span><span class="op">)</span></code></pre></div>
-</div>
-<div id="resampling-individuals" class="section level3">
-<h3 class="hasAnchor">
-<a href="#resampling-individuals" class="anchor"></a>Resampling individuals</h3>
-<p>We can also test how robust a model is to changes in the individuals that make up a population. The <code>resample_inds</code> functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">pops</span> <span class="op">=</span> <span class="fu"><a href="../reference/get_leafnames.html">get_leafnames</a></span><span class="op">(</span><span class="va">example_igraph</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html">rep</a></span><span class="op">(</span><span class="fl">4</span>,<span class="fl">4</span><span class="op">)</span>, <span class="fl">5</span><span class="op">:</span><span class="fl">7</span><span class="op">)</span><span class="op">]</span>
-<span class="va">indres</span> <span class="op">=</span> <span class="fu"><a href="../reference/resample_inds.html">qpgraph_resample_inds</a></span><span class="op">(</span><span class="va">my_counts_dir</span>, inds <span class="op">=</span> <span class="va">inds</span>, pops <span class="op">=</span> <span class="va">pops</span>, graph <span class="op">=</span> <span class="va">example_graph</span><span class="op">)</span>
-<span class="fu">ggplot</span><span class="op">(</span><span class="va">indres</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">score</span>, <span class="va">score</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_text</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>label <span class="op">=</span> <span class="va">ind</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population.</p>
-<p><br></p>
+<!-- ### Resampling individuals -->
+<!-- We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals. -->
+<!-- ```{r, eval = FALSE} -->
+<!-- pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)] -->
+<!-- indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph) -->
+<!-- ggplot(indres, aes(score, score)) + geom_text(aes(label = ind)) -->
+<!-- ``` -->
+<!-- For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population. -->
+<!-- <br> -->
 </div>
 </div>
   </div>

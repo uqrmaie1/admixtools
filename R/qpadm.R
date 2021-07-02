@@ -351,9 +351,10 @@ f4blockdat_to_f4out = function(f4blockdat, boot) {
 
   samplefun = ifelse(boot, function(...) est_to_boo_dat(...), est_to_loo_dat)
   datstatfun = ifelse(boot, boot_dat_stats, jack_dat_stats)
+  popcomb = f4blockdat %>% filter(block == 1) %>% select(pop1:pop4)
   totn = f4blockdat %>%
     group_by(pop1, pop2, pop3, pop4) %>%
-    summarize(n = sum(n, na.rm=T))
+    summarize(n = sum(n, na.rm=T), .groups = 'drop')
 
   if(!'den' %in% names(f4blockdat)) {
     f4out = f4blockdat %>%
@@ -368,12 +369,13 @@ f4blockdat_to_f4out = function(f4blockdat, boot) {
       pivot_wider(names_from = type, values_from = c(est, loo)) %>%
       mutate(loo = loo_num/loo_den)
   }
-  f4out %>%
+  out = f4out %>%
     datstatfun %>%
     ungroup %>%
     mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
     transmute(pop1, pop2, pop3, pop4, est, se, z, p) %>%
-    left_join(totn, by = c('pop1', 'pop2', 'pop3', 'pop4'))
+    left_join(totn, by = paste0('pop', 1:4))
+  popcomb %>% left_join(out, by = paste0('pop', 1:4))
 }
 
 f3blockdat_to_f3out = function(f3blockdat, boot) {

@@ -34,7 +34,7 @@
 afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
                             pops1 = NULL, pops2 = NULL, outpop = NULL, outdir = NULL,
                             overwrite = FALSE, afprod = TRUE, fst = TRUE, poly_only = c('f2'),
-                            apply_corr = apply_corr, verbose = TRUE) {
+                            apply_corr = apply_corr, n_cores = 1, verbose = TRUE) {
 
   # splits afmat into blocks by column, computes snp blocks on each pair of population blocks,
   #   and combines into 3d array
@@ -52,7 +52,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
   if(verbose) alert_info(paste0('Allele frequency matrix for ', nrow(afmat), ' SNPs and ',
                          length(pops), ' populations is ', round(mem/1e6), ' MB\n'))
 
-  chunks = make_chunks(pops, mem, maxmem, pops1, pops2, verbose = verbose)
+  chunks = make_chunks(pops, mem, maxmem, pops1, pops2, n_cores = n_cores, verbose = verbose)
   popvecs1 = chunks$popvecs1
   popvecs2 = chunks$popvecs2
 
@@ -100,7 +100,10 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     block_lengths_fst = block_lengths_n
   }
 
-  for(i in 1:length(popvecs1)) {
+  doParallel::registerDoParallel(n_cores)
+  `%dopar%` = foreach::`%dopar%`
+  #for(i in 1:length(popvecs1)) {
+  foreach::foreach(i=1:length(popvecs1)) %dopar% {
     if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
@@ -165,7 +168,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
 }
 
 
-make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, verbose = TRUE) {
+make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, n_cores = 1, verbose = TRUE) {
   # determines start and end positions of each chunk
 
   if(isTRUE(all.equal(pops1, pops2))) {
@@ -571,17 +574,21 @@ joint_spectrum = function(afs) {
 #' @export
 #' @param f2dat A data frame of f2-statistics with columns `pop1`, `pop2`, `f2`
 #' @return A data frame with f4-statistics
-f2dat_f4dat = function(f2dat) {
+f2dat_f4dat = function(f2dat, popcomb = NULL) {
 
   pops = unique(c(f2dat$pop1, f2dat$pop2))
-  f2dat %<>% bind_rows(rename(., pop1=pop2, pop2=pop1)) %>% bind_rows(tibble(pop1 = pops, pop2 = pops, f2 = 0))
-  expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
-    #filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
-    filter(pop1 != pop2, pop3 != pop4) %>%
-    left_join(f2dat %>% rename(pop1 = pop1, pop3 = pop2, f13 = f2)) %>%
-    left_join(f2dat %>% rename(pop2 = pop1, pop4 = pop2, f24 = f2)) %>%
-    left_join(f2dat %>% rename(pop1 = pop1, pop4 = pop2, f14 = f2)) %>%
-    left_join(f2dat %>% rename(pop2 = pop1, pop3 = pop2, f23 = f2)) %>%
+  if(is.null(popcomb)) {
+    popcomb = expand_grid(pop1 = pops, pop2 = pops, pop3 = pops, pop4 = pops) %>%
+      #filter(pop1 < pop2, pop1 < pop3, pop1 < pop4, pop3 < pop4, pop2 != pop3, pop2 != pop4) %>%
+      filter(pop1 != pop2, pop3 != pop4)
+  }
+  f2dat %<>% bind_rows(rename(., pop1=pop2, pop2=pop1)) %>%
+    bind_rows(tibble(pop1 = pops, pop2 = pops, f2 = 0)) %>% rename(p1 = pop1, p2 = pop2) %>% distinct
+  popcomb %>%
+    left_join(f2dat %>% transmute(pop1 = p1, pop3 = p2, f13 = f2)) %>%
+    left_join(f2dat %>% transmute(pop2 = p1, pop4 = p2, f24 = f2)) %>%
+    left_join(f2dat %>% transmute(pop1 = p1, pop4 = p2, f14 = f2)) %>%
+    left_join(f2dat %>% transmute(pop2 = p1, pop3 = p2, f23 = f2)) %>%
     mutate(f4 = (f14 + f23 - f13 - f24)/2) %>% ungroup %>% select(pop1:pop4, f4) %>% suppressMessages
 }
 
@@ -595,3 +602,16 @@ f2dat_f4dat = function(f2dat) {
 count_snps = function(f2_blocks) {
   sum(parse_number(dimnames(f2_blocks)[[3]]))
 }
+
+
+complete_f4dat = function(dat) {
+  # dat has columns pop1:pop4, est
+
+  dat %>% bind_rows(rename(., pop1 = pop2, pop2 = pop1) %>%
+                      mutate(across(any_of(c('est', 'z', 'Z', 'f4')), ~-.))) %>%
+    bind_rows(rename(., pop1 = pop2, pop2 = pop1, pop3 = pop4, pop4 = pop3)) %>%
+    bind_rows(rename(., pop1 = pop3, pop3 = pop1, pop2 = pop4, pop4 = pop2)) %>%
+    distinct
+}
+
+

@@ -51,7 +51,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(data, pops, verbose = verbose, ...) %>% samplefun
+  f2_blocks = get_f2(data, pops, verbose = verbose, outpop_scale = FALSE, poly_only = FALSE, ...) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f2 -----------------
@@ -363,25 +363,6 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     }
   }
   out %>% distinct
-}
-
-
-qpfstats = function(f2_blocks) {
-
-  pops = dimnames(f2_blocks)[[1]]
-  pairs = t(combn(sort(pops), 2))
-  pp = paste(pairs[,1], pairs[,2])
-
-  a = f4(f2_blocks, verbose = FALSE) %>% select(pop1:pop4, est, se, z) %>% mutate(est = ifelse((pop1 > pop2) == (pop3 > pop4), est, -est), f13 = paste(pmin(pop1, pop3), pmax(pop1, pop3)), f24 = paste(pmin(pop2, pop4), pmax(pop2, pop4)), f14 = paste(pmin(pop1, pop4), pmax(pop1, pop4)), f23 = paste(pmin(pop2, pop3), pmax(pop2, pop3))) %>% expand_grid(pp) %>% mutate(coef = ifelse(pp == f14 | pp == f23, 1, ifelse(pp  == f13 | pp == f24, -1, 0))) %>% pivot_wider(pop1:z, names_from = pp, values_from = coef) %>%
-    #mutate(est = -est*2) %>%
-    select(-pop1:-pop4) %>% lm(as.formula(paste0('est ~ 0 + ', paste('`', colnames(.)[-1:-3], '`', sep = '', collapse = ' + '))), data = .)
-
-
-  summary(a)$coefficients %>% as_tibble(rownames = 'pp') %>% mutate(pp = str_replace_all(pp, '`', '')) %>% separate(pp, c('pop1', 'pop2'), sep = ' ') %>% left_join(f2(f2_blocks[sort(pops), sort(pops),]), by = c('pop1', 'pop2')) %>% ggplot(aes(Estimate, est)) + geom_point() + geom_abline()
-
-
-  ff2 = f2(f2_blocks[sort(pops), sort(pops),]) %>% bind_rows(rename(., pop1=pop2, pop2=pop1)) %>% rename(p1 = pop1, p2 = pop2)
-
 }
 
 

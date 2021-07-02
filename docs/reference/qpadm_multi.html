@@ -105,7 +105,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -149,7 +149,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -181,7 +181,14 @@
     <p>This function runs multiple qpadm models, re-using f4-statistics where possible. Supports parallel evaluation of models, which can be turned on with <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan('multisession')</a></code> or similar, and turned off with <code><a href='https://rdrr.io/pkg/future/man/plan.html'>future::plan('sequential')</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_multi</span><span class='op'>(</span><span class='va'>data</span>, <span class='va'>models</span>, allsnps <span class='op'>=</span> <span class='cn'>FALSE</span>, verbose <span class='op'>=</span> <span class='cn'>TRUE</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>qpadm_multi</span><span class='op'>(</span>
+  <span class='va'>data</span>,
+  <span class='va'>models</span>,
+  allsnps <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  full_results <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  verbose <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

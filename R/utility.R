@@ -1,18 +1,24 @@
 
 
-catfun = function(colfun, ...) {
-  if(shiny::isRunning()) {
-    l = list(..., appendLF = FALSE)
-    do.call(message, l[-1])
-  } else {
-    cat(colfun(...))
-  }
-}
+# catfun = function(colfun, ...) {
+#   if(shiny::isRunning()) {
+#     l = list(..., appendLF = FALSE)
+#     do.call(message, l[-1])
+#   } else {
+#     cat(colfun(...))
+#   }
+# }
+#
+# alert_success = function(msg) catfun(crayon::green, cli::symbol$tick, msg)
+# alert_info = function(msg) catfun(crayon::cyan, cli::symbol$info, msg)
+# alert_warning = function(msg) catfun(crayon::yellow, '!', msg)
+# alert_danger = function(msg) catfun(crayon::red, cli::symbol$cross, msg)
 
-alert_success = function(msg) catfun(crayon::green, cli::symbol$tick, msg)
-alert_info = function(msg) catfun(crayon::cyan, cli::symbol$info, msg)
-alert_warning = function(msg) catfun(crayon::yellow, '!', msg)
-alert_danger = function(msg) catfun(crayon::red, cli::symbol$cross, msg)
+alert_success = function(msg) cat(crayon::green(cli::symbol$tick, msg))
+alert_info = function(msg) cat(crayon::cyan(cli::symbol$info, msg))
+alert_warning = function(msg) cat(crayon::yellow('!', msg))
+alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
+
 
 gg_color_hue = function(n, l=65, c=100) {
   hues = seq(15, 375, length=n+1)

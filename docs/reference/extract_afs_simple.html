@@ -106,7 +106,7 @@ and computes allele frequencies for selected populations and stores it as .rds f
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -150,7 +150,7 @@ and computes allele frequencies for selected populations and stores it as .rds f
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -263,6 +263,10 @@ and computes allele frequencies for selected populations and stores it as <code>
       <th>format</th>
       <td><p>Supply this if the prefix can refer to genotype data in different formats
 and you want to choose which one to read. Should be <code>plink</code> to read <code>.bed</code>, <code>.bim</code>, <code>.fam</code> files, or <code>eigenstrat</code>, or <code>packedancestrymap</code> to read <code>.geno</code>, <code>.snp</code>, <code>.ind</code> files.</p></td>
+    </tr>
+    <tr>
+      <th>poly_only</th>
+      <td><p>Specify whether SNPs with identical allele frequencies in every population should be discarded (<code>poly_only = TRUE</code>), or whether they should be used (<code>poly_only = FALSE</code>). By default (<code>poly_only = c("f2")</code>), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).</p></td>
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>

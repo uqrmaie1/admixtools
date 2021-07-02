@@ -73,6 +73,8 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 
 \item{poly_only}{Specify whether SNPs with identical allele frequencies in every population should be discarded (\code{poly_only = TRUE}), or whether they should be used (\code{poly_only = FALSE}). By default (\code{poly_only = c("f2")}), these SNPs will be used to compute FST and allele frequency products, but not to compute f2 (this is the default option in the original ADMIXTOOLS).}
 
+\item{apply_corr}{Apply small-sample-size correction when computing f2-statistics (default \code{TRUE})}
+
 \item{verbose}{Print progress updates}
 }
 \value{

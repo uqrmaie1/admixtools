@@ -27,7 +27,9 @@ f2_from_geno(
   adjust_pseudohaploid = TRUE,
   remove_na = TRUE,
   apply_corr = TRUE,
-  verbose = TRUE
+  qpfstats = FALSE,
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -62,7 +64,13 @@ f2_from_geno(
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{afprod}{Return negative average allele frequency products instead of f2-statistics. Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.}
+\item{afprod}{Return negative average allele frequency products instead of f2-statistics.
+Setting \code{afprod = TRUE} will result in more precise f4-statistics when the original data
+had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}}
+and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup
+(for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared
+to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly
+less than bias in regular f3-statistics introduced by large amounts of missing data.}
 
 \item{fst}{Write files with pairwise FST for every population pair. Setting this to FALSE can make \code{extract_f2} faster and will require less memory.}
 
@@ -73,7 +81,18 @@ and you want to choose which one to read. Should be \code{plink} to read \code{.
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} treats all samples as diploid and is equivalent to the \emph{ADMIXTOOLS} \code{inbreed: NO} option.}
 
+\item{apply_corr}{Apply small-sample-size correction when computing f2-statistics (default \code{TRUE})}
+
+\item{qpfstats}{Compute smoothed f2-statistics (default \code{FALSE}). In the presence
+of large amounts of missing data, this option can be used to retain information
+from all SNPs while introducing less bias than setting \code{maxmiss} to values greater
+than 0. When setting \code{qpfstats = TRUE}, most other options to \code{extract_f2} will
+be ignored. See \code{\link{qpfstats}} for more information. Arguments to
+\code{\link{qpfstats}} can be passed via \code{...}}
+
 \item{verbose}{Print progress updates}
+
+\item{...}{Pass arguments to \code{\link{qpfstats}}}
 }
 \value{
 A 3d array of f2-statistics (or scaled allele frequency products if \code{afprod = TRUE})

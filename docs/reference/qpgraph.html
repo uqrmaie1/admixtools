@@ -105,7 +105,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -149,7 +149,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -192,10 +192,12 @@
   numstart <span class='op'>=</span> <span class='fl'>10</span>,
   seed <span class='op'>=</span> <span class='cn'>NULL</span>,
   cpp <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  return_f4 <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  return_fstats <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  return_pvalue <span class='op'>=</span> <span class='cn'>FALSE</span>,
   f3precomp <span class='op'>=</span> <span class='cn'>NULL</span>,
   f3basepop <span class='op'>=</span> <span class='cn'>NULL</span>,
   constrained <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  allsnps <span class='op'>=</span> <span class='cn'>FALSE</span>,
   ppinv <span class='op'>=</span> <span class='cn'>NULL</span>,
   f2_blocks_test <span class='op'>=</span> <span class='cn'>NULL</span>,
   verbose <span class='op'>=</span> <span class='cn'>FALSE</span>
@@ -254,8 +256,8 @@ The covariance matrix of f3 statistics will be computed using bootstrap resampli
       <td><p>Use C++ functions. Setting this to <code>FALSE</code> will be slower but can help with debugging.</p></td>
     </tr>
     <tr>
-      <th>return_f4</th>
-      <td><p>Return all f4-statistics, as well as the z-score of the worst f4-statistic residual. Defaults to <code>FALSE</code> because this can be slow.</p></td>
+      <th>return_fstats</th>
+      <td><p>Return estimated and fitted f2- and f4-statistics, as well as the worst f4-statistic residual Z-score. Defaults to <code>FALSE</code> because this can be slow.</p></td>
     </tr>
     <tr>
       <th>f3precomp</th>
@@ -264,6 +266,14 @@ The covariance matrix of f3 statistics will be computed using bootstrap resampli
     <tr>
       <th>f3basepop</th>
       <td><p>Optional f3-statistics base population. Inference will be based on f3-statistics of the form <code>f3(f3basepop; i, j)</code> for all population pairs <code>(i, j)</code>. Defaults to the outgroup population if the graph has one. This option is ignored if <code>f3precomp</code> is provided. Changing <code>f3basepop</code> should make very little difference.</p></td>
+    </tr>
+    <tr>
+      <th>constrained</th>
+      <td><p>Constrain estimated drift edge weights to be non-negative, and admixture edge weights to be between zero and one.</p></td>
+    </tr>
+    <tr>
+      <th>allsnps</th>
+      <td><p>Compute f3 from different SNPs for each population triplet (if data is missing for some SNPs and populations). This only has an effect when <code>data</code> is the prefix of genotype files.</p></td>
     </tr>
     <tr>
       <th>ppinv</th>
@@ -287,11 +297,11 @@ the column <code>weight</code> is the estimated edge length, and for admixture e
 <li><p><code>score</code>: The likelihood score of the fitted graph. Lower values correspond to better fits.
 The score is calculated as the inner product of the residuals (difference between estimated and
 fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See <code>qpgraph_score</code></p></li>
-<li><p><code>f2</code>: Estimated and fitted f2 statistics. p-values and z-scores test the significance of the difference.</p></li>
+<li><p><code>f2</code>: Estimated and fitted f2 statistics (if <code>return_fstats = TRUE</code>). p-values and z-scores test the significance of the difference.</p></li>
 <li><p><code>f3</code>: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.</p></li>
-<li><p><code>f4</code>: Estimated and fitted f4 statistics (if <code>return_f4 = TRUE</code>). p-values and z-scores test the significance of the difference.</p></li>
+<li><p><code>f4</code>: Estimated and fitted f4 statistics (if <code>return_fstats = TRUE</code>). p-values and z-scores test the significance of the difference.</p></li>
 <li><p><code>opt</code>: A data frame with details of the weight-fitting step, including the randomly sampled starting weights. The column <code>value</code> contains the score for each set of starting weights. Columns starting with <code>x</code> denote initial weights, and columns starting with <code>y</code> denote fitted weights.</p></li>
-<li><p><code>worst_residual</code>: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if <code>return_f4 = TRUE</code>)</p></li>
+<li><p><code>worst_residual</code>: The highest absolute z-score of f4-statistics residuals (fitted - estimated f4); (returned if <code>return_fstats = TRUE</code>)</p></li>
 </ul>
 
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>

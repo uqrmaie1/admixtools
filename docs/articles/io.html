@@ -53,7 +53,7 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -97,7 +97,7 @@
 <ul class="nav navbar-nav navbar-right">
 <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -117,14 +117,15 @@
 
       
 
-      </header><script src="io_files/header-attrs-2.5/header-attrs.js"></script><link href="io_files/anchor-sections-1.0/anchor-sections.css" rel="stylesheet">
-<script src="io_files/anchor-sections-1.0/anchor-sections.js"></script><div class="row">
+      </header><script src="io_files/header-attrs-2.9/header-attrs.js"></script><script src="io_files/htmlwidgets-1.5.3/htmlwidgets.js"></script><script src="io_files/plotly-binding-4.9.4.1/plotly.js"></script><script src="io_files/typedarray-0.1/typedarray.min.js"></script><script src="io_files/jquery-3.5.1/jquery.min.js"></script><link href="io_files/crosstalk-1.1.1/css/crosstalk.css" rel="stylesheet">
+<script src="io_files/crosstalk-1.1.1/js/crosstalk.min.js"></script><link href="io_files/plotly-htmlwidgets-css-1.57.1/plotly-htmlwidgets.css" rel="stylesheet">
+<script src="io_files/plotly-main-1.57.1/plotly-latest.min.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Data formats</h1>
                         <h4 class="author">Robert Maier</h4>
             
-            <h4 class="date">2021-02-23</h4>
+            <h4 class="date">2021-07-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/io.Rmd"><code>vignettes/io.Rmd</code></a></small>
       <div class="hidden name"><code>io.Rmd</code></div>
@@ -227,6 +228,104 @@ rs28765502 1    0.022137    832918  T   C</code></pre>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/packedancestrymap_to_plink.html">eigenstrat_to_plink</a></span><span class="op">(</span><span class="st">"eigenstrat_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span>
 <span class="fu"><a href="../reference/packedancestrymap_to_plink.html">packedancestrymap_to_plink</a></span><span class="op">(</span><span class="st">"packedancestrymap_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="admixture-graph-formats" class="section level2">
+<h2 class="hasAnchor">
+<a href="#admixture-graph-formats" class="anchor"></a>Admixture graph formats</h2>
+<p>There are several ways in which admixture graphs can be represented. Some of them are useful because they can be stored as human readable text files, and others are useful because they make it easier for R to process graphs. <em>ADMIXTOOLS 2</em> has several function for importing, exporting and converting between formats.</p>
+<p>Before fitting an admixture graph, the graph only has nodes and edges. After fitting a graph, each edge has a weight associated with it, and maybe some other information. Here I mostly show examples of graphs that are not fitted yet.</p>
+<div id="edge-list-format" class="section level3">
+<h3 class="hasAnchor">
+<a href="#edge-list-format" class="anchor"></a>Edge list format</h3>
+<p>The simplest way to represent a graph in a text file is by writing each edge in the graph in a separate line:</p>
+<pre><code>R      O
+R      n1
+n1     n2
+n1     n3
+n2     A
+n2     admix
+n3     B
+n3     n4
+n4     C
+n4     admix
+admix  D</code></pre>
+<p>We can save this in a text file <code>graph.txt</code> and read it into R like this:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">graph_el</span> <span class="op">=</span> <span class="fu">read_table2</span><span class="op">(</span><span class="st">'~/Downloads/graph.tsv'</span>, col_names <span class="op">=</span> <span class="cn">F</span><span class="op">)</span>
+<span class="fu"><a href="../reference/plotly_graph.html">plotly_graph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></code></pre></div>
+<div id="htmlwidget-54f41a2729ce2f203d45" style="width:700px;height:432.632880098888px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-54f41a2729ce2f203d45">{"x":{"data":[{"x":[2,0],"y":[1,0],"text":"n4 -> admix","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(163,165,0,1)","dash":"dot"},"hoveron":"points","name":"(admix,1)","legendgroup":"(admix,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,0],"y":[2,0],"text":"n2 -> admix","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,125,1)","dash":"dot"},"hoveron":"points","name":"(admix,2)","legendgroup":"(admix,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0],"y":[0,-1],"text":"admix -> D","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(normal,0)","legendgroup":"(normal,0)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2,2],"y":[1,0],"text":"n4 -> C","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(163,165,0,1)","dash":"solid"},"hoveron":"points","name":"(normal,1)","legendgroup":"(normal,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,-1,null,1.5,1,null,1.5,2],"y":[2,1,null,2,1,null,2,1],"text":["n2 -> A","n2 -> A",null,"n3 -> B","n3 -> B",null,"n3 -> n4","n3 -> n4"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,125,1)","dash":"solid"},"hoveron":"points","name":"(normal,2)","legendgroup":"(normal,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0.5,-0.5,null,0.5,1.5],"y":[3,2,null,3,2],"text":["n1 -> n2","n1 -> n2",null,"n1 -> n3","n1 -> n3"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,176,246,1)","dash":"solid"},"hoveron":"points","name":"(normal,3)","legendgroup":"(normal,3)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,-0.5,null,0,0.5],"y":[4,3,null,4,3],"text":["R -> O","R -> O",null,"R -> n1","R -> n1"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(231,107,243,1)","dash":"solid"},"hoveron":"points","name":"(normal,4)","legendgroup":"(normal,4)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0.5,-0.5,1.5,2,0],"y":[4,3,2,2,1,0],"text":["R","n1","n2","n3","n4","admix"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","opacity":0,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.25,0.25,0,1,-0.75,-0.25,1.25,1.75,2,1,0],"y":[3.5,3.5,2.5,2.5,1.5,1,1.5,1.5,0.5,0.5,-0.5],"text":["","","","","","","","","","",""],"hovertext":["R -> O","R -> n1","n1 -> n2","n1 -> n3","n2 -> A","n2 -> admix","n3 -> B","n3 -> n4","n4 -> C","n4 -> admix","admix -> D"],"textfont":{"size":9.4488188976378,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0],"y":[-1.1],"text":"D","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(248,118,109,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(0,1)","legendgroup":"(0,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2],"y":[-0.1],"text":"C","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(163,165,0,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"1","legendgroup":"1","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1,1],"y":[0.9,0.9],"text":["A","B"],"hovertext":["",""],"textfont":{"size":9.4488188976378,"color":"rgba(0,191,125,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(2,1)","legendgroup":"(2,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[2.9],"text":"O","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(231,107,243,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(4,1)","legendgroup":"(4,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"visible":false,"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[4],"text":"","hovertext":"","textfont":{"size":14.6645669291339,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":27.8246364188244,"r":7.30593607305936,"b":15.4776044553541,"l":10.958904109589},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.4,2.4],"tickmode":"array","ticktext":["-1","0","1","2"],"tickvals":[-1,0,1,2],"categoryorder":"array","categoryarray":["-1","0","1","2"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.355,4.255],"tickmode":"array","ticktext":["-1","0","1","2","3","4"],"tickvals":[-1,0,1,2,3,4],"categoryorder":"array","categoryarray":["-1","0","1","2","3","4"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"86755c1530f":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"linetype":{},"colour":{},"text":{},"type":"scatter"},"8675573400bc":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"text":{}},"8675171c635e":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"text":{}},"867548bfbc2c":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"colour":{}},"867523db1204":{"y":{}},"867537bd700":{"x":{},"y":{}}},"cur_data":"86755c1530f","visdat":{"86755c1530f":["function (y) ","x"],"8675573400bc":["function (y) ","x"],"8675171c635e":["function (y) ","x"],"867548bfbc2c":["function (y) ","x"],"867523db1204":["function (y) ","x"],"867537bd700":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><p><code><a href="../reference/qpgraph.html">qpgraph()</a></code> uses this format to represent fitted graphs. In addition to the first two columns (<code>from</code> and <code>to</code>), there will be additional columns to indicate the type of edge, its estimated weight, and possibly more information.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span> <span class="op">%&gt;%</span> <span class="va">head</span></code></pre></div>
+<pre><code>## # A tibble: 6 x 6
+##   from  to                   type   weight   low  high
+##   &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 R     Chimp.REF            edge  0.0724     NA    NA
+## 2 R     N4N                  edge  0.0724     NA    NA
+## 3 N0N   Altai_Neanderthal.DG edge  0.00321    NA    NA
+## 4 N0N   N3N0                 edge  0.0111     NA    NA
+## 5 N1N   N0N                  edge  0.0841     NA    NA
+## 6 N1N   N3N1                 edge  0.0362     NA    NA</code></pre>
+</div>
+<div id="igraph-format" class="section level3">
+<h3 class="hasAnchor">
+<a href="#igraph-format" class="anchor"></a>igraph format</h3>
+<p>Many <em>ADMIXTOOLS 2</em> functions use the <code>igraph</code> package, which has its own graph format. The most important <em>ADMIXTOOLS 2</em> functions work with graphs in either the edge list or the <code>igraph</code> format, but some only work with graphs in the <code>igraph</code> format. It’s easy to convert between the two formats:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></code></pre></div>
+<pre><code>## [1] "tbl_df"     "tbl"        "data.frame"</code></pre>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">graph</span> <span class="op">=</span> <span class="fu"><a href="../reference/edges_to_igraph.html">edges_to_igraph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span></code></pre></div>
+<pre><code>## [1] "igraph"</code></pre>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">graph_el2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/as_edgelist.html">as_edgelist</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span><span class="op">)</span>
+<span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph_el2</span><span class="op">)</span></code></pre></div>
+<pre><code>## [1] "data.frame"</code></pre>
+</div>
+<div id="original-admixtools-format" class="section level3">
+<h3 class="hasAnchor">
+<a href="#original-admixtools-format" class="anchor"></a>Original ADMIXTOOLS format</h3>
+<p>The text representation of the graph above in the original <em>ADMIXTOOLS</em> software would look like this:</p>
+<pre><code>vertex              R
+vertex              O
+vertex              n1
+vertex              n2
+vertex              n3
+vertex              A
+vertex              admix
+vertex              B
+vertex              n4
+vertex              C
+vertex              D
+label               O                   O
+label               A                   A
+label               B                   B
+label               C                   C
+label               D                   D
+edge                R_O                 R                   O
+edge                R_n1                R                   n1
+edge                n1_n2               n1                  n2
+edge                n1_n3               n1                  n3
+edge                n2_A                n2                  A
+edge                n3_B                n3                  B
+edge                n3_n4               n3                  n4
+edge                n4_C                n4                  C
+edge                admix_D             admix               D
+admix               admix               n2                  n4</code></pre>
+<p>If this is stored in a file called <code>graph.txt</code>, it can be imported into R like this:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">graph_el</span> <span class="op">=</span> <span class="fu"><a href="../reference/parse_qpgraph_graphfile.html">parse_qpgraph_graphfile</a></span><span class="op">(</span><span class="st">'graph.txt'</span><span class="op">)</span></code></pre></div>
+</div>
+<div id="dot-format" class="section level3">
+<h3 class="hasAnchor">
+<a href="#dot-format" class="anchor"></a>DOT format</h3>
+<p>DOT format is often used for plotting admixture graphs. You can export a fitted admixture graph like this:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span>
+<span class="fu"><a href="../reference/write_dot.html">write_dot</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">'graph.dot'</span><span class="op">)</span></code></pre></div>
+<p><em>ADMIXTOOLS 2</em> currently doesn’t have a function for reading DOT files.</p>
+</div>
 </div>
   </div>
 

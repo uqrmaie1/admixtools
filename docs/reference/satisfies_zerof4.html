@@ -106,7 +106,7 @@ the f4-statistics listed in nonzero_f4 being non-zero" />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -150,7 +150,7 @@ the f4-statistics listed in nonzero_f4 being non-zero" />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -183,7 +183,7 @@ the f4-statistics listed in nonzero_f4 being non-zero" />
 the f4-statistics listed in <code>nonzero_f4</code> being non-zero</p>
     </div>
 
-    <pre class="usage"><span class='fu'>satisfies_zerof4</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>nonzero_f4</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>satisfies_zerof4</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>zero_f4</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -193,9 +193,9 @@ the f4-statistics listed in <code>nonzero_f4</code> being non-zero</p>
       <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>nonzero_f4</th>
+      <th>zero_f4</th>
       <td><p>A data frame or matrix with four columns. One row for each f4-statistic which is
-observed to be significantly non-zero</p></td>
+expected to be zero</p></td>
     </tr>
     </table>
 
@@ -205,9 +205,10 @@ observed to be significantly non-zero</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='co'># Test whether f4(A,B; C,D) is expected to be non-zero in this graph:</span>
-<span class='va'>constrain_f4</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>matrix</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>'A'</span>, <span class='st'>'B'</span>, <span class='st'>'C'</span>, <span class='st'>'D'</span><span class='op'>)</span>, <span class='fl'>1</span><span class='op'>)</span>
-<span class='fu'>satisfies_zerof4</span><span class='op'>(</span><span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>)</span>, <span class='va'>constrain_f4</span><span class='op'>)</span>
+<span class='co'># Test whether Chimp and Altai are a clade with respect to all populations X and Y:</span>
+<span class='co'># (whether f4("Chimp", "Altai"; X, Y) is 0 for all pairs of X and Y)</span>
+<span class='va'>zero_f4</span> <span class='op'>=</span> <span class='fu'>expand_grid</span><span class='op'>(</span>pop1 <span class='op'>=</span> <span class='st'>"Chimp"</span>, pop2 <span class='op'>=</span> <span class='st'>"Altai"</span>, pop3 <span class='op'>=</span> <span class='va'>X</span>, pop4 <span class='op'>=</span> <span class='va'>Y</span><span class='op'>)</span>
+<span class='fu'>satisfies_zerof4</span><span class='op'>(</span><span class='fu'><a href='random_admixturegraph.html'>random_admixturegraph</a></span><span class='op'>(</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>)</span>, <span class='va'>zero_f4</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

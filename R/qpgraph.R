@@ -481,7 +481,7 @@ qpgraph_precompute_f3 = function(data, pops, f3basepop = NULL, lambdascale = 1, 
 }
 
 qpgraph_precompute_f3_geno = function(data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
-                                      seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE, outgroupmode = FALSE,
+                                      seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE, outgroupmode = TRUE,
                                       poly_only = FALSE, apply_corr = TRUE, allsnps = FALSE, verbose = TRUE) {
 
   if(!is.null(f3basepop)) pops = c(f3basepop, setdiff(pops, f3basepop))
