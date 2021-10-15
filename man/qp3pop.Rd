@@ -21,7 +21,7 @@ qp3pop(
 }
 \arguments{
 \item{data}{Input data in one of three forms: \enumerate{
-\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}} (fastest option)
 \item A directory which contains pre-computed f2-statistics
 \item The prefix of genotype files (slowest option)
 }}

@@ -575,7 +575,7 @@ est_to_boo_dat = function(dat, nboot = 1000) {
     #summarize(loo = mean(est, na.rm = TRUE)) %>%
     summarize(loo = weighted.mean(est, length, na.rm = TRUE)) %>%
     select(-.rep) %>%
-    mutate(length = 1)
+    mutate(length = 1, n = 1)
 }
 
 # Takes a function `qpfun` which takes f2_blocks as input

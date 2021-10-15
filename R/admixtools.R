@@ -12,7 +12,7 @@
 #' @importFrom foreach foreach "%dopar%"
 #' @importFrom tibble as_tibble deframe enframe add_column rownames_to_column
 # @importFrom stats na.omit setNames runif
-#' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths
+#' @importFrom igraph V E neighbors subcomponent get.edge.ids degree incident_edges all_simple_paths distances
 #' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices delete_vertices
 #' add_edges delete_edges difference set_vertex_attr
 #' @useDynLib admixtools

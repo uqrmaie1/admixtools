@@ -16,6 +16,7 @@ f4blockdat_from_geno(
   allsnps = FALSE,
   poly_only = FALSE,
   verbose = TRUE,
+  snpwt = NULL,
   ...
 )
 }

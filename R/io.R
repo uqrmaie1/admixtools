@@ -506,7 +506,7 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   #keepinds = unique(fam[[is.null(pops)+1]][indvec > 0])
 
   if(verbose) {
-    alert_info(paste0(basename(pref), '.geno has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
+    alert_info(paste0(basename(pref), '.bed has ', nindall, ' samples and ', nsnpall, ' SNPs\n'))
     alert_info(paste0('Calculating allele frequencies from ', sum(indvec != 0), ' samples in ', length(upops), ' populations\n'))
     alert_info(paste0('Expected size of allele frequency data: ', 2*round((nsnpall*length(upops)*8+nsnpall*112)/1e6), ' MB\n'))
     # 8, 112: estimated scaling factors for AF columns and annotation columns
@@ -639,8 +639,9 @@ read_plink = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
   #indvec2 = which(fam[[2]] %in% inds)
   keepinds = fam[[2]][indvec2]
 
-  g = 2 * cpp_read_plink_afs(normalizePath(bedfile), indvec=indvec, indvec2,
-                             adjust_pseudohaploid = TRUE, verbose = verbose)[[1]]
+  # g = 2 * cpp_read_plink_afs(normalizePath(bedfile), indvec=indvec, indvec2,
+  #                            adjust_pseudohaploid = TRUE, verbose = verbose)[[1]]
+  g = cpp_read_plink(normalizePath(bedfile), nrow(bim), nrow(fam), (indvec > 0)+0, 0, nrow(bim), F, verbose)
   rownames(g) = bim$SNP
   colnames(g) = keepinds
 
@@ -2149,7 +2150,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
                                 block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
-                                poly_only = FALSE, verbose = TRUE, ...) {
+                                poly_only = FALSE, verbose = TRUE, snpwt = NULL, ...) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -2192,6 +2193,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
+
   snpfile$keep = TRUE
   if(auto_only) snpfile %<>% mutate(keep = as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
   if('keepsnps' %in% names(list(...))) snpfile %<>% mutate(keep = keep & SNP %in% list(...)$keepsnps)
@@ -2248,6 +2250,9 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
       }
     }
     num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
+    if(!is.null(snpwt)) {
+      num$num = t(t(num$num) * snpwt[(start[i]+1):end[i]])
+    }
     numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
     cnt[i,] = c(num$cnt)
     if(!f4mode) {
@@ -2256,6 +2261,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     }
   }
   if(verbose) cat('\n')
+
   out = pc %>%
     expand_grid(block = 1:numblocks) %>%
     mutate(est = c(numer), n = c(cnt))

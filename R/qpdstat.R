@@ -9,7 +9,7 @@ f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
 #' @export
 #' @param data Input data in one of three forms: \enumerate{
-#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}} (fastest option)
 #' \item A directory which contains pre-computed f2-statistics
 #' \item The prefix of genotype files (slowest option)
 #' }
@@ -71,6 +71,12 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 #' This function reads Fst from a directory with precomputed f2-statistics, and turns per-block data
 #' into estimates and standard errors for each population pair. See `details` for how Fst is computed.
 #' @export
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked Fst, output of \code{\link{f2_from_precomp}} with `fst = TRUE`
+#' \item A directory which contains pre-computed Fst
+#' \item The prefix of genotype files
+#' }
 #' @inheritParams f2
 #' @details The Hudson Fst estimator used here is described in the two publications below.
 #' For two populations with estimated allele frequency vectors `p1` and `p2`,
@@ -432,7 +438,7 @@ f4_from_f2 = function(f2_data, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL) {
 #' @export
 #' @param data Input data in one of three forms:
 #' \enumerate{
-#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}} (fastest option)
 #' \item A directory which contains pre-computed f2-statistics
 #' \item The prefix of genotype files (slowest option)
 #' }

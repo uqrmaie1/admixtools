@@ -27,8 +27,7 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
 
   if(!in) {
-    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
@@ -125,8 +124,7 @@ NumericVector cpp_packedancestrymap_ploidy(String genofile, int nsnp, int nind, 
   ntest = std::min(ntest, nsnp);
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
   if(!in) {
-    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   len = (long long)in.tellg();
@@ -190,8 +188,7 @@ List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVe
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
 
   if(!in) {
-    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
@@ -298,8 +295,7 @@ NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVe
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
 
   if(!in) {
-    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes

@@ -102,8 +102,8 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
 
   doParallel::registerDoParallel(n_cores)
   `%dopar%` = foreach::`%dopar%`
-  #for(i in 1:length(popvecs1)) {
-  foreach::foreach(i=1:length(popvecs1)) %dopar% {
+  for(i in 1:length(popvecs1)) {
+  #foreach::foreach(i=1:length(popvecs1)) %dopar% {
     if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
@@ -568,6 +568,68 @@ joint_spectrum = function(afs) {
     left_join(obs, by = 'pattern') %>%
     arrange(pattern)
 }
+
+
+
+#' Joint site frequency spectrum
+#'
+#' This function computes the joint site frequency spectrum from genotype files or allele frequency and count matrices.
+#' The joint site frequency spectrum lists how often each combination of haplotypes is observed.
+#' The number of combinations is equal to the product of one plus the number of haplotypes in each population.
+#' For example, five populations with a single diploid individual each have 3^5 possible combinations.
+#' @export
+#' @param afs A named list of length two where the first element (`afs`) contains the allele frequency matrix,
+#' and the second element (`counts`) contains the allele count matrix.
+#' @param pref Instead of `afs`, the prefix of genotype files can be provided.
+#' @return A data frame with the number of times each possible combination of allele counts is observed.
+#' @examples
+#' \dontrun{
+#' dat = plink_to_afs('/my/plink/file', pops = c('pop1', 'pop2', 'pop3', 'pop4', 'pop5'))
+#' joint_sfs(dat)
+#' }
+joint_sfs = function(afs, pref = NULL) {
+
+  if(!is.null(pref)) {
+    if(!is.null(afs)) stop("'afs' and 'pref' can't be provided at the same time!")
+    afs = geno_to_afs(pref)
+  }
+  popcounts = apply(afs$counts, 2, max)
+  obs = (afs$afs * afs$counts) %>% as_tibble() %>% group_by_all %>% count %>% ungroup
+  expand_grid(!!!popcounts %>% map(~0:.)) %>% left_join(obs) %>% mutate(n = replace_na(n, 0)) %>% suppressMessages()
+}
+
+sfs_to_f2 = function(sfs) {
+
+  sfs2 = sfs %>% mutate(across(all_of('n'), ~./sum(.)), across(!all_of('n'), ~./max(.)))
+  pops = colnames(sfs)[-ncol(sfs)]
+  nvec = apply(sfs[-ncol(sfs)], 2, max, na.rm=TRUE)
+  cmb = t(combn(1:length(pops), 2))
+  map(1:nrow(cmb), ~{
+    x1 = cmb[.,1]
+    x2 = cmb[.,2]
+    n1 = nvec[x1]
+    n2 = nvec[x2]
+    sfs2 %>% select(x1, x2, n) %>% set_colnames(c('p1', 'p2', 'n')) %>%
+      mutate(f2 = (p1-p2)^2 - p1*(1-p1)/max(1,n1-1) - p2*(1-p2)/max(1,n2-1),
+             denom = p1 + p2 - 2*p1*p2) %>%
+      summarize(f2 = sum(n*f2), fst = sum(n*f2)/sum(n*denom)) %>%
+      mutate(pop1 = pops[x1], pop2 = pops[x2])
+  }) %>% bind_rows() %>% select(pop1, pop2, f2, fst)
+}
+
+# f2_from_sfs = function(sfs, nblocks = 100) {
+#
+#   pops = setdiff(colnames(sfs), 'n')
+#   nsnps = sum(sfs$n)
+#   n2 = map(sfs$n, ~if(.==0) rep(0, nblocks) else diff(sort(c(0, sample(seq_len(.), nblocks-1, replace=T), .)))) %>%
+#     do.call(rbind, .)
+#   x = map(seq_len(nblocks), ~mutate(sfs, n = n2[,.])) %>% map(sfs_to_f2) %>% bind_rows(.id = 'block') %>%
+#     transmute(block = as.numeric(block), pop1, pop2, f2) %>% bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
+#     bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
+#     arrange(block, pop1, pop2)
+#   array(x$f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep(paste0('l', round(nsnps/nblocks)), nblocks)))
+# }
+
 
 #' Turn f2 data to f4 data
 #'

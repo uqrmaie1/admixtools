@@ -7,10 +7,11 @@
 fst(data, pop1 = NULL, pop2 = NULL, boot = FALSE, verbose = FALSE, ...)
 }
 \arguments{
-\item{data}{Input data in one of three forms: \enumerate{
-\item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{extract_f2}} (fastest option)
-\item A directory which contains pre-computed f2-statistics
-\item The prefix of genotype files (slowest option)
+\item{data}{Input data in one of three forms:
+\enumerate{
+\item A 3d array of blocked Fst, output of \code{\link{f2_from_precomp}} with \code{fst = TRUE}
+\item A directory which contains pre-computed Fst
+\item The prefix of genotype files
 }}
 
 \item{pop1}{One of the following four:

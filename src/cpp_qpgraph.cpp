@@ -69,6 +69,44 @@ arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
   return pwts;
 }
 
+// // [[Rcpp::export]]
+// NumericMatrix cpp_fill_pwts(NumericMatrix pwts, const NumericVector weights,
+//                         const NumericMatrix path_edge_table,
+//                         const NumericMatrix path_admixedge_table, int numpaths) {
+//   // puts weights onto pwts, using index matrix and vectors
+//   // returns pwts to be consistent with R function. However, it edits pwts in place. Used to return NULL.
+//
+//   if(weights.length() == 0) return pwts;
+//
+//   // vec pathweights(numpaths, fill::ones);
+//   // vec pwtsfill(pwts.n_elem, fill::zeros);
+//   // vec pwtsfillind(pwts.n_elem, fill::zeros);
+//   NumericVector pathweights(numpaths);
+//   pathweights.fill(1);
+//   NumericVector pwtsfill(pwts.length());
+//   NumericVector pwtsfillind(pwts.length());
+//
+//   int path, admixedge, row, column, elem;
+//   for(int i=0; i<path_admixedge_table.nrow(); i++) {
+//     path = path_admixedge_table(i, 0)-1;
+//     admixedge = path_admixedge_table(i, 1)-1;
+//     if(admixedge % 2 == 0) pathweights(path) *= weights(admixedge/2);
+//     else pathweights(path) *= 1-weights(admixedge/2);
+//   }
+//   for(int i=0; i<path_edge_table.nrow(); i++) {
+//     row = path_edge_table(i, 2)-1;
+//     column = path_edge_table(i, 4)-1;
+//     path = path_edge_table(i, 0)-1;
+//     elem = row + pwts.nrow()*column;
+//     pwtsfill(elem) += pathweights(path);
+//     pwtsfillind(elem) = 1;
+//   }
+//   for(int i=0; i<pwts.length(); i++) {
+//     if(pwtsfillind(i) > 0) pwts[i] = pwtsfill(i);
+//   }
+//   return pwts;
+// }
+
 
 
 // [[Rcpp::export]]

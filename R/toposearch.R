@@ -2635,7 +2635,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
   f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
-      res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, f3precomp = f3precomp, ...)
+      res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, ...)
       res$score = res$worst_residual
       res$worst_residual = res$f4 = NULL
       res
@@ -3222,7 +3222,7 @@ all_node_events = function(graph) {
 #' }
 summarize_eventorder = function(graph, unique_only = TRUE) {
 
-  node_pairs = graph %>% distances(mode = 'out') %>% as_tibble(rownames = 'from') %>%
+  node_pairs = graph %>% igraph::distances(mode = 'out') %>% as_tibble(rownames = 'from') %>%
     pivot_longer(-from, names_to = 'to', values_to = 'order') %>%
     mutate(order = is.finite(order)+0) %>% filter(order > 0, from != to) %>%
     bind_rows(rename(., from = to, to = from) %>% mutate(order = -order))
@@ -3730,10 +3730,10 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 #' Test f4 constraints on a graph
 #'
 #' This function returns `TRUE` if and only if the admixture graph is compatible with
-#' all event orders listed in event_order
+#' all event orders listed in eventorder
 #' @export
 #' @param graph An admixture graph
-#' @param event_order A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
+#' @param eventorder A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
 #' @param strict What to do in case some events are not determined by the graph.
 #' If `strict = TRUE` (the default), the function will only return `TRUE` if there are no ambiguous constraints.
 #' Otherwise, `TRUE` will be returned as long as no constraint is directly contradicted.
@@ -4239,7 +4239,7 @@ partition_fit = function(fit) {
 
   leaves = get_leafnames(graph)
   internal = setdiff(names(V(graph)), leaves)
-  dest = graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+  dest = graph %>% igraph::distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
     pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order)
 }
 
@@ -4249,11 +4249,11 @@ summarize_driftpartition = function(edges, all = FALSE) {
   graph = edges %>% edges_to_igraph()
   leaves = get_leafnames(graph)
   internal = setdiff(names(V(graph)), leaves)
-  desc = graph %>% distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
+  desc = graph %>% igraph::distances(internal, leaves, mode = 'out') %>% as_tibble(rownames = 'from') %>%
     pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>%
     select(-order) %>% group_by(from) %>% mutate(id = paste(sort(to), collapse = ' ')) %>% ungroup
 
-  out = edges %>% filter(type == 'edge') %>% select(from, to, weight) %>% left_join(desc %>% select(-to) %>% distinct, by = c('to' = 'from')) %>% mutate(id = ifelse(is.na(id), to, id)) %>% rowwise %>% mutate(id2 = paste0(sort(setdiff(pops, str_split(id, ' ')[[1]])), collapse = ' ')) %>% ungroup %>% mutate(s1 = pmin(id, id2), s2 = pmax(id, id2)) %>% group_by(s1, s2) %>% summarize(weight = sum(weight), .groups = 'drop') %>% bind_rows(rename(., s1=s2, s2=s1)) %>% rowwise %>% transmute(s1, s2, c1 = str_count(s1, ' ')+1, c2 = str_count(s2, ' ')+1, weight) %>% ungroup
+  out = edges %>% filter(type == 'edge') %>% select(from, to, weight) %>% left_join(desc %>% select(-to) %>% distinct, by = c('to' = 'from')) %>% mutate(id = ifelse(is.na(id), to, id)) %>% rowwise %>% mutate(id2 = paste0(sort(setdiff(leaves, str_split(id, ' ')[[1]])), collapse = ' ')) %>% ungroup %>% mutate(s1 = pmin(id, id2), s2 = pmax(id, id2)) %>% group_by(s1, s2) %>% summarize(weight = sum(weight), .groups = 'drop') %>% bind_rows(rename(., s1=s2, s2=s1)) %>% rowwise %>% transmute(s1, s2, c1 = str_count(s1, ' ')+1, c2 = str_count(s2, ' ')+1, weight) %>% ungroup
   if(all) {
     x = tibble(s1 = head(power_set(sort(leaves)), -1)) %>% rowwise %>%
       mutate(s2 = list(sort(setdiff(leaves, s1))),
@@ -4348,5 +4348,47 @@ rename_internal = function(graph) {
     return(edges)
   }
   graph %>% set_vertex_attr('name', value = nammap[names(V(graph))])
+}
+
+
+label_internal = function(edges) {
+
+  # assigns leaf nodes to internal nodes, if the internal node contributes more to one leaf than to all others
+
+  graph = edges %>% edges_to_igraph()
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  wvec = edges %>% mutate(weight = ifelse(type == 'admix', weight, 1)) %>% transmute(e = paste(from, to, sep = '|'), weight) %>% deframe
+
+  iweights = imap_dfr(internal, ~{
+    node = .x
+    igraph::all_simple_paths(graph, node, leaves) %>%
+      set_names(map_chr(., ~attr(tail(., 1), 'name'))) %>%
+      map(admixtools:::vs_to_es) %>% map(~wvec[.]) %>% map(prod) %>%
+      enframe %>% unnest(value) %>% group_by(name) %>%
+      summarize(weight = sum(value)) %>% transmute(from = node, to = name, weight)
+  })
+
+  int_labels = iweights %>% complete(to, from, fill = list(weight = 0)) %>% group_by(from) %>% arrange(-weight) %>% slice_head(n = 2) %>% mutate(diff = weight[1]-weight[2]) %>% filter(diff > 0) %>% slice_head(n=1) %>% ungroup
+
+}
+
+leaf_internal_ancestry = function(edges) {
+
+  # returns data frame with all leaf nodes with ancestry that has been mapped to
+  # another leaf node by 'label_internal'
+
+  graph = edges %>% edges_to_igraph()
+  leaves = get_leafnames(graph)
+  internal = setdiff(names(V(graph)), leaves)
+  root = get_rootname(graph)
+
+  int_labels = label_internal(edges)
+  map_dfr(leaves, ~{
+    node = .
+    x = igraph::all_simple_paths(graph, root, node) %>% unlist %>% names %>% unique
+    from = int_labels %>% filter(to != node, from %in% x) %>% pull(to) %>% unique
+    tibble(from = from, to = node)
+  })
 }
 

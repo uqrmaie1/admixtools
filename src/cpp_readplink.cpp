@@ -90,119 +90,26 @@ void decode_plink(unsigned char *out,
 
 
 // [[Rcpp::export]]
-List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2,
-                        bool adjust_pseudohaploid, bool verbose) {
-  // indvec: assignes each individual to population; indvec2: which individuals to keep
-
-  NumericMatrix X, afmat, countmat, scanmat;
-  unsigned int N, p;
-  unsigned long long len;
-  unsigned int np, nsnps;
-
-  N = indvec.length();
-  p = 0;
-  nsnps = 0;
-
-  int val, k, pop, npop, nind;
-  npop = max(indvec);
-  nind = indvec2.length();
-  std::ifstream in(bedfile.get_cstring(), std::ios::in | std::ios::binary);
-
-  if(!in) {
-    Rcout << "[read_afs] Error reading file " << bedfile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
-  }
-  in.seekg(0, std::ifstream::end);
-  // file size in bytes, ignoring first 3 bytes (2byte magic number + 1byte mode)
-  len = (long)in.tellg() - 3;
-  // size of packed data, in bytes, per SNP
-  np = (long)ceil((double)N / PACK_DENSITY);
-  nsnps = len / np;
-  in.seekg(3, std::ifstream::beg);
-  unsigned char* tmp = new unsigned char[np];
-
-  // Allocate more than the sample size since data must take up whole bytes
-  unsigned char* tmp2 = new unsigned char[np * PACK_DENSITY];
-  afmat = NumericMatrix(nsnps, npop);
-  countmat = NumericMatrix(nsnps, npop);
-
-  // if(verbose) std::cout << ">>> Detected BED file: " << this->bedfile <<
-  //     " with " << len << " bytes, " << N << " samples, " << nsnps
-  //              << " SNPs." << std::endl;
-  NumericVector popafs(npop), popsum(npop), poptot(npop);
-
-  // determine ploidy
-  NumericVector ploidy(nind);
-  ploidy.fill(1);
-  int nscan = 1000;
-  for(unsigned int j = 0; j < nscan; j++) {
-    if(j == nsnps) break;
-    in.read((char*)tmp, sizeof(char) * np);
-    decode_plink(tmp2, tmp, np);
-    for(unsigned int i = 0; i < nind; i++) {
-      k = indvec2(i)-1;
-      val = (double)tmp2[k];
-      if(val == 1 || !adjust_pseudohaploid) ploidy(i) = 2;
-      //ploidy(i) = 2;
-    }
-  }
-
-  in.seekg(3, std::ifstream::beg);
-  for(unsigned int j = 0 ; j < nsnps ; j++) {
-    if(verbose && j % 1000 == 0) Rcout << "\r" << j/1000 << "k SNPs read...";
-    popsum = NumericVector(npop);
-    poptot = NumericVector(npop);
-
-    // read raw genotypes
-    in.read((char*)tmp, sizeof(char) * np);
-
-    // decode the genotypes
-    decode_plink(tmp2, tmp, np);
-    for(unsigned int i = 0; i < nind; i++) {
-      k = indvec2(i)-1;
-      pop = indvec(k)-1;
-      val = (double)tmp2[k];
-      if(val == PLINK_NA) val = 0;
-      else poptot(pop) += ploidy(i);
-      popsum(pop) += val/(3-ploidy(i));
-    }
-
-    for(unsigned int i = 0; i < npop; i++) {
-      if(poptot(i) > 0) popafs(i) = popsum(i)/poptot(i);
-      else popafs(i) = NA_REAL;
-    }
-    afmat.row(j) = popafs;
-    countmat.row(j) = poptot;
-  }
-  if(verbose) Rcout << std::endl;
-
-  delete[] tmp;
-  delete[] tmp2;
-
-  in.close();
-
-  return Rcpp::List::create(_["afmat"] = afmat, _["countmat"] = countmat);
-}
-
-
-// [[Rcpp::export]]
 NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec,
                              int first, int last, bool transpose = false, bool verbose = true) {
 
   int val;
   long len, bytespersnp;
   int readsnps = last - first;
+  int headersize = 3;
 
   std::ifstream in(bedfile.get_cstring(), std::ios::in | std::ios::binary);
 
   if(!in) {
-    Rcout << "Error reading file " << bedfile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
   len = (long)in.tellg();
   bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  if((len-headersize) != nsnp*bytespersnp) {
+    stop("Unexpected bed file size!");
+  }
 
   int nindused = 0;
   int* blockused = new int[bytespersnp];
@@ -289,12 +196,14 @@ NumericVector cpp_plink_ploidy(String genofile, int nsnp, int nind, IntegerVecto
   ntest = std::min(ntest, nsnp);
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
   if(!in) {
-    Rcout << "Error reading file " << genofile.get_cstring() << std::endl;
-    throw std::runtime_error("io error");
+    stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
   len = (long)in.tellg();
-  bytespersnp = (len-headersize)/nsnp;
+  bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  if((len-headersize) != nsnp*bytespersnp) {
+    stop("Unexpected bed file size!");
+  }
 
   NumericVector ploidy(nind);
   ploidy.fill(1.0);
@@ -359,7 +268,10 @@ List cpp_plink_to_afs(String genofile, int nsnp, int nind, IntegerVector indvec,
   in.seekg(0, std::ifstream::end);
   // file size in bytes
   len = (long)in.tellg();
-  bytespersnp = (len-headersize)/nsnp;
+  bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  if((len-headersize) != nsnp*bytespersnp) {
+    stop("Unexpected bed file size!");
+  }
 
   int numpop = max(indvec)+1;
 

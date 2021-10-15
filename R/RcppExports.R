@@ -85,10 +85,6 @@ cpp_read_eigenstrat <- function(genofile, nsnp, nind, indvec, first, last, trans
     .Call('_admixtools_cpp_read_eigenstrat', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
 
-cpp_read_plink_afs <- function(bedfile, indvec, indvec2, adjust_pseudohaploid, verbose) {
-    .Call('_admixtools_cpp_read_plink_afs', PACKAGE = 'admixtools', bedfile, indvec, indvec2, adjust_pseudohaploid, verbose)
-}
-
 cpp_read_plink <- function(bedfile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
     .Call('_admixtools_cpp_read_plink', PACKAGE = 'admixtools', bedfile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
@@ -107,5 +103,9 @@ cpp_get_block_lengths <- function(chr, pos, blgsize = 0.05) {
 
 cpp_jack_vec_stats <- function(loo_vec, block_lengths, tot = NA_real_) {
     .Call('_admixtools_cpp_jack_vec_stats', PACKAGE = 'admixtools', loo_vec, block_lengths, tot)
+}
+
+timesTwo <- function(x) {
+    .Call('_admixtools_timesTwo', PACKAGE = 'admixtools', x)
 }
 

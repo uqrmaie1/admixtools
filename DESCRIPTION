@@ -46,6 +46,7 @@ Imports:
     tidyr  (>= 1.0.0),
     utils
 Suggests:
+    DT,
     genio,
     gridExtra,
     htmlwidgets,

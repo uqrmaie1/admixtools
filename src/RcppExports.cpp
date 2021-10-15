@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // cpp_aftable_to_dstatnum_old
 List cpp_aftable_to_dstatnum_old(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
 RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum_old(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
@@ -322,21 +327,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_read_plink_afs
-List cpp_read_plink_afs(String bedfile, const NumericVector indvec, const NumericVector indvec2, bool adjust_pseudohaploid, bool verbose);
-RcppExport SEXP _admixtools_cpp_read_plink_afs(SEXP bedfileSEXP, SEXP indvecSEXP, SEXP indvec2SEXP, SEXP adjust_pseudohaploidSEXP, SEXP verboseSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< String >::type bedfile(bedfileSEXP);
-    Rcpp::traits::input_parameter< const NumericVector >::type indvec(indvecSEXP);
-    Rcpp::traits::input_parameter< const NumericVector >::type indvec2(indvec2SEXP);
-    Rcpp::traits::input_parameter< bool >::type adjust_pseudohaploid(adjust_pseudohaploidSEXP);
-    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_read_plink_afs(bedfile, indvec, indvec2, adjust_pseudohaploid, verbose));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_read_plink
 NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_plink(SEXP bedfileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
@@ -415,6 +405,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// timesTwo
+NumericVector timesTwo(NumericVector x);
+RcppExport SEXP _admixtools_timesTwo(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_aftable_to_dstatnum_old", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_old, 5},
@@ -438,12 +439,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_packedancestrymap_ploidy", (DL_FUNC) &_admixtools_cpp_packedancestrymap_ploidy, 5},
     {"_admixtools_cpp_packedancestrymap_to_afs", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_afs, 9},
     {"_admixtools_cpp_read_eigenstrat", (DL_FUNC) &_admixtools_cpp_read_eigenstrat, 8},
-    {"_admixtools_cpp_read_plink_afs", (DL_FUNC) &_admixtools_cpp_read_plink_afs, 5},
     {"_admixtools_cpp_read_plink", (DL_FUNC) &_admixtools_cpp_read_plink, 8},
     {"_admixtools_cpp_plink_ploidy", (DL_FUNC) &_admixtools_cpp_plink_ploidy, 5},
     {"_admixtools_cpp_plink_to_afs", (DL_FUNC) &_admixtools_cpp_plink_to_afs, 9},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 3},
+    {"_admixtools_timesTwo", (DL_FUNC) &_admixtools_timesTwo, 1},
     {NULL, NULL, 0}
 };
 
