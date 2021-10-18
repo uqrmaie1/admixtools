@@ -405,17 +405,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// timesTwo
-NumericVector timesTwo(NumericVector x);
-RcppExport SEXP _admixtools_timesTwo(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_aftable_to_dstatnum_old", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_old, 5},
@@ -444,7 +433,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_plink_to_afs", (DL_FUNC) &_admixtools_cpp_plink_to_afs, 9},
     {"_admixtools_cpp_get_block_lengths", (DL_FUNC) &_admixtools_cpp_get_block_lengths, 3},
     {"_admixtools_cpp_jack_vec_stats", (DL_FUNC) &_admixtools_cpp_jack_vec_stats, 3},
-    {"_admixtools_timesTwo", (DL_FUNC) &_admixtools_timesTwo, 1},
     {NULL, NULL, 0}
 };
 
