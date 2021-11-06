@@ -2739,9 +2739,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       newmod %<>% slice_min(score, with_ties = FALSE)
       }, error = function(e) stop('fg error 2'))
       mf = 'plusnadmix'
-      if(numadmix(graph) == max_admix) {
+      excess_admix = numadmix(newmod$graph[[1]]) - max_admix
+      if(excess_admix > 0) {
         mf = 'plusminusn'
-        newmod = eval_minusnadmix(newmod$graph[[1]], qpgfun, n = 1, ntry = numgraphs*10,
+        newmod = eval_minusnadmix(newmod$graph[[1]], qpgfun, n = excess_admix, ntry = numgraphs*10,
                                   nonzero_f4 = nzf4, admix_constraints = admixc,
                                   event_order = eventc, verbose = verbose)
         if(nrow(newmod) == 0) next

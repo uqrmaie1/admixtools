@@ -51,7 +51,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
 
   samplefun = ifelse(boot, function(x) est_to_boo(x, boot), est_to_loo)
   statfun = ifelse(boot, cpp_boot_vec_stats, cpp_jack_vec_stats)
-  f2_blocks = get_f2(data, pops, verbose = verbose, outpop_scale = FALSE, poly_only = FALSE, ...) %>% samplefun
+  f2_blocks = get_f2(data, pops, verbose = verbose, ...) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
   #----------------- compute f2 -----------------

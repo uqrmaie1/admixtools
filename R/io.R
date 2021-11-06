@@ -2343,6 +2343,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
   p3 = match(pc$pop3, pops)
+  ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, 1000)
 
   if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
   if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile %>% filter(keep), blgsize = blgsize)
@@ -2384,7 +2385,13 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
     }
     num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only)
     if(apply_corr || !outgroupmode) {
-      alt = rowsum(2-gmat, popvec, na.rm = TRUE)
+      gmatinv = 2-gmat
+      gmatplo = gmat
+      gmatploinv = gmatinv
+      gmatplo[ploidy[indvec == 1] == 1, ] = gmatplo[ploidy[indvec == 1] == 1, ]/2
+      gmatploinv[ploidy[indvec == 1] == 1, ] = gmatploinv[ploidy[indvec == 1] == 1, ]/2
+      ref = rowsum(gmatplo, popvec, na.rm = TRUE)
+      alt = rowsum(gmatploinv, popvec, na.rm = TRUE)
       tot = ref+alt
       h = (ref*alt)/(tot*(tot-1))
       h1 = h[p1,,drop=F]

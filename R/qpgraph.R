@@ -671,6 +671,7 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 #' }
 compare_fits = function(scores1, scores2) {
 
+  if(length(scores1) != length(scores2)) stop('Length of scores1 and scores2 differ!')
   scorediff = scores1 - scores2
   ci_low = unname(quantile(scorediff, 0.025, na.rm = T))
   ci_high = unname(quantile(scorediff, 0.975, na.rm = T))

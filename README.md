@@ -257,7 +257,7 @@ to my attention. In no particular order, I want to thank Ornob Alam,
 Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias Göllner, Christian
 Huber, Kale, Ted Kandell, Fraser Combe, Matthew Williams, Lenny Dykstra,
 Kristján Moore, Dilawer Khan, Lareb Humayoun, Sánta Benedek, Steven
-Rosenberg, Daniel Tabin, and Benjamin Peter
+Rosenberg, Daniel Tabin, Benjamin Peter, and Ahmad Bekhit.
 
 If you expected to see your name here but I failed to include it, please
 let me know about it!
