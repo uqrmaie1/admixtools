@@ -180,7 +180,7 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
 
 
-discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
+discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
   # afdat is list with 'snpfile', 'afs', 'counts'
   # returns same list with SNPs removed
@@ -191,6 +191,8 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, ou
   else snpdat %<>% mutate(miss = 0)
   if(minmaf > 0 | maxmaf < 0.5) snpdat %<>% mutate(af = weighted_row_means(afdat$afs, afdat$counts), maf = pmin(af, 1-af))
   else snpdat %<>% mutate(af = 0.2, maf = 0.2)
+  if(minac2) snpdat %<>% mutate(minac = apply(afdat$counts, 1, min))
+  else snpdat %<>% mutate(minac = 2)
 
   if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
   else snpdat %<>% mutate(poly = TRUE)
@@ -201,7 +203,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, ou
   } else snpdat %<>% mutate(outgroupaf = 0.5)
 
   remaining = discard_snps(snpdat, maxmiss = maxmiss, auto_only = auto_only, poly_only = poly_only,
-                           minmaf = minmaf, maxmaf = maxmaf,
+                           minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
   if(length(remaining) == 0) stop("No SNPs remain! Increase 'maxmiss', or select fewer populations!")
@@ -252,7 +254,7 @@ discard_from_geno = function(geno, maxmiss = 0, auto_only = TRUE, poly_only = FA
 }
 
 discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, poly_only = FALSE,
-                        minmaf = 0, maxmaf = 0.5, transitions = TRUE, transversions = TRUE) {
+                        minmaf = 0, maxmaf = 0.5, minac2 = FALSE, transitions = TRUE, transversions = TRUE) {
   # input is a data frame with columns 'SNP', 'CHR', 'A1', 'A2', 'miss', 'maf'
   # output is vector of remaining row indices
 
@@ -286,6 +288,7 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
     miss <= maxmiss,
     between(maf, minmaf, maxmaf),
     outgroupaf > 0 & outgroupaf < 1,
+    !minac2 | minac > 1,
     !auto_only | CHR <= 22,
     !poly_only | poly == 1,
     transitions | mutation != 'transition',
@@ -993,6 +996,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
+#' @param minac2 Discard SNPs with allele count lower than 2 in any population (default `FALSE`). This option should be set to `TRUE` when computing f3-statistics where the first population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. The `minac2` option not necessary when the f3-estimates are used for qpgraph. While the `minac2` option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).
 #' @param pops2 If specified, only a pairs between `pops` and `pops2` will be computed
 #' @param outpop Keep only SNPs which are heterozygous in this population
 #' @param outpop_scale Scale f2-statistics by the inverse `outpop` heteroygosity (`1/(p*(1-p))`). Providing `outpop` and setting `outpop_scale` to `TRUE` will give the same results as the original *qpGraph* when the `outpop` parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.
@@ -1028,7 +1032,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' extract_f2(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
-                      maxmiss = 0, minmaf = 0, maxmaf = 0.5, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
+                      maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, pops2 = NULL, outpop = NULL, outpop_scale = TRUE,
                       transitions = TRUE, transversions = TRUE,
                       auto_only = TRUE, keepsnps = NULL, overwrite = FALSE, format = NULL,
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, fst = TRUE, afprod = TRUE,
@@ -1038,7 +1042,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
     stopifnot(is.null(pops2))
     snpfile = extract_f2_large(pref, outdir, inds = inds, pops = pops, blgsize = blgsize,
                                cols_per_chunk = cols_per_chunk, maxmiss = maxmiss,
-                               minmaf = minmaf, maxmaf = maxmaf, outpop = outpop, outpop_scale = outpop_scale,
+                               minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2, outpop = outpop, outpop_scale = outpop_scale,
                                transitions = transitions, transversions = transversions,
                                keepsnps = keepsnps, snpblocks = snpblocks, overwrite = overwrite,
                                format = format, adjust_pseudohaploid = adjust_pseudohaploid,
@@ -1076,7 +1080,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   if(is.null(inds)) pops = union(pops, pops2)
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2, outpop = outpop,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = auto_only, poly_only = FALSE)
   afdat$snpfile %<>% mutate(poly = as.logical(cpp_is_polymorphic(afdat$afs)))
@@ -2284,11 +2288,12 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
                                 blgsize = 0.05,
-                                block_lengths = NULL, allsnps = FALSE,
+                                block_lengths = NULL, allsnps = FALSE, adjust_pseudohaploid = TRUE,
                                 poly_only = FALSE, apply_corr = TRUE, outgroupmode = FALSE, verbose = TRUE) {
 
   if(is.matrix(popcombs)) {
@@ -2343,7 +2348,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
   p3 = match(pc$pop3, pops)
-  ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, 1000)
+  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, 1000)
 
   if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
   if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile %>% filter(keep), blgsize = blgsize)
@@ -2388,8 +2393,10 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
       gmatinv = 2-gmat
       gmatplo = gmat
       gmatploinv = gmatinv
-      gmatplo[ploidy[indvec == 1] == 1, ] = gmatplo[ploidy[indvec == 1] == 1, ]/2
-      gmatploinv[ploidy[indvec == 1] == 1, ] = gmatploinv[ploidy[indvec == 1] == 1, ]/2
+      if(adjust_pseudohaploid) {
+        gmatplo[ploidy[indvec == 1] == 1, ] = gmatplo[ploidy[indvec == 1] == 1, ]/2
+        gmatploinv[ploidy[indvec == 1] == 1, ] = gmatploinv[ploidy[indvec == 1] == 1, ]/2
+      }
       ref = rowsum(gmatplo, popvec, na.rm = TRUE)
       alt = rowsum(gmatploinv, popvec, na.rm = TRUE)
       tot = ref+alt

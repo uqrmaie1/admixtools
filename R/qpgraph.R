@@ -261,8 +261,9 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     precomp$f3out %<>% slice(pairmatch)
     baseind = which(pops == f3pops[1])
   } else if(is_geno_prefix(data)) {
+    if(!isFALSE(return_fstats)) stop("The 'return_fstats' option currently doesn't work when the first argument is the prefix of a genotype file!")
     precomp = qpgraph_precompute_f3_geno(data, pops, f3basepop, allsnps = allsnps, outgroupmode = TRUE,
-                                         apply_corr = 2, poly_only = FALSE)
+                                         apply_corr = 2, poly_only = FALSE, adjust_pseudohaploid = FALSE)
     #precomp = qpgraph_precompute_f3_geno(data, pops, f3basepop, ...)
     baseind = if(is.null(f3basepop)) 1 else which(pops == f3basepop)
   } else {
@@ -481,7 +482,7 @@ qpgraph_precompute_f3 = function(data, pops, f3basepop = NULL, lambdascale = 1, 
 }
 
 qpgraph_precompute_f3_geno = function(data, pops, f3basepop = NULL, lambdascale = 1, boot = FALSE,
-                                      seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE, outgroupmode = TRUE,
+                                      seed = NULL, diag_f3 = 1e-5, lsqmode = FALSE, outgroupmode = TRUE, adjust_pseudohaploid = FALSE,
                                       poly_only = FALSE, apply_corr = TRUE, allsnps = FALSE, verbose = TRUE) {
 
   if(!is.null(f3basepop)) pops = c(f3basepop, setdiff(pops, f3basepop))
@@ -490,7 +491,7 @@ qpgraph_precompute_f3_geno = function(data, pops, f3basepop = NULL, lambdascale 
   popcombs = expand_grid(pop1 = pops[1], pop2 = pops[-1], pop3 = pops[-1]) %>%
     filter(pop2 <= pop3)
   f3blockdat = f3blockdat_from_geno(data, popcombs, outgroupmode = outgroupmode, apply_corr = apply_corr,
-                                    poly_only = poly_only,
+                                    poly_only = poly_only, adjust_pseudohaploid = adjust_pseudohaploid,
                                     allsnps = allsnps, verbose = verbose)
 
   f3blocks = f3blockdat %>% select(-pop1) %>% rename(pop1 = pop2, pop2 = pop3, f2 = est) %>%
