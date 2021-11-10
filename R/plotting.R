@@ -103,12 +103,14 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param color Plot it in color or greyscale
 #' @param textsize Size of edge and node labels
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
+#' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
-plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE) {
+plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5,
+                      highlight_unidentifiable = FALSE, pos = NULL) {
 
-  pdat = graph_to_plotdat(graph, fix = fix, fix_down = TRUE)
+  pdat = graph_to_plotdat(graph, fix = fix, fix_down = TRUE, pos = pos)
 
   if(color) {
     gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
@@ -148,7 +150,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
 }
 
 
-graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
+graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE, pos = NULL) {
 
   if(class(graph)[1] == 'igraph') {
     graph = graph
@@ -163,8 +165,10 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE) {
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
-  pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
-    set_colnames(c('node', 'x', 'y'))
+  if(is.null(pos)) {
+    pos = data.frame(names(V(graph)), igraph::layout_as_tree(graph), stringsAsFactors = F) %>%
+      set_colnames(c('node', 'x', 'y'))
+  }
   eg = graph %>% igraph::as_edgelist() %>%
     as_tibble(.name_repair = ~c('V1', 'V2')) %>%
     left_join(pos, by=c('V1'='node')) %>%
@@ -732,7 +736,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
   graph = edges %>% select(1:2) %>% as.matrix %>% igraph::graph_from_edgelist()
 
   if(is.null(pos)) {
-    #coordmat = dot_coords(graph)
+    #pos = dot_coords(graph)
     coordmat = igraph::layout_as_tree(graph)
     pos = data.frame(names(V(graph)), coordmat, stringsAsFactors = F) %>%
       set_colnames(c('node', 'x', 'y'))
@@ -814,9 +818,11 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
 
 dot_coords = function(graph) {
 
-  z = Rgraphviz::agopen(igraph.to.graphNEL(graph), 'bla', layoutType = 'dot')
-  map(seq_along(z@AgNode), ~{coords = z@AgNode[[.]]@center; c(coords@x, coords@y)}) %>%
+  z = Rgraphviz::agopen(igraph::igraph.to.graphNEL(graph), 'bla', layoutType = 'dot')
+  coordmat = map(seq_along(z@AgNode), ~{coords = z@AgNode[[.]]@center; c(coords@x, coords@y)}) %>%
     do.call(rbind, .) %>% divide_by(100)
+  data.frame(names(V(graph)), coordmat, stringsAsFactors = F) %>%
+    set_colnames(c('node', 'x', 'y'))
 }
 
 
