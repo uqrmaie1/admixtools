@@ -56,7 +56,7 @@
 
 <meta property="og:title" content="Test f4 constraints on a graph — satisfies_eventorder" />
 <meta property="og:description" content="This function returns TRUE if and only if the admixture graph is compatible with
-all event orders listed in event_order" />
+all event orders listed in eventorder" />
 
 
 
@@ -180,7 +180,7 @@ all event orders listed in event_order" />
 
     <div class="ref-description">
     <p>This function returns <code>TRUE</code> if and only if the admixture graph is compatible with
-all event orders listed in event_order</p>
+all event orders listed in eventorder</p>
     </div>
 
     <pre class="usage"><span class='fu'>satisfies_eventorder</span><span class='op'>(</span><span class='va'>graph</span>, <span class='va'>eventorder</span>, strict <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
@@ -193,14 +193,14 @@ all event orders listed in event_order</p>
       <td><p>An admixture graph</p></td>
     </tr>
     <tr>
+      <th>eventorder</th>
+      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code></p></td>
+    </tr>
+    <tr>
       <th>strict</th>
       <td><p>What to do in case some events are not determined by the graph.
 If <code>strict = TRUE</code> (the default), the function will only return <code>TRUE</code> if there are no ambiguous constraints.
 Otherwise, <code>TRUE</code> will be returned as long as no constraint is directly contradicted.</p></td>
-    </tr>
-    <tr>
-      <th>event_order</th>
-      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code></p></td>
     </tr>
     </table>
 

@@ -99,7 +99,6 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param fix If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
-#' @param fix_down Shift nodes down
 #' @param title Plot title
 #' @param color Plot it in color or greyscale
 #' @param textsize Size of edge and node labels
@@ -107,9 +106,9 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
-plot_graph = function(graph, fix = NULL, fix_down = TRUE, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE) {
+plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE) {
 
-  pdat = graph_to_plotdat(graph, fix = NULL, fix_down = TRUE)
+  pdat = graph_to_plotdat(graph, fix = fix, fix_down = TRUE)
 
   if(color) {
     gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
@@ -706,13 +705,12 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param fix If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
-#' @param shift_down Shift descendent nodes down
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
 #' @return A plotly object
 #' @examples
 #' plotly_graph(example_graph)
-plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down = TRUE,
+plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
                         print_highlow = FALSE, highlight_unidentifiable = FALSE, pos = NULL,
                         nudge_y = -0.1, annot = '') {
 
@@ -747,7 +745,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE, shift_down =
   if(fix) {
     eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
-  if(shift_down) {
+  if(TRUE) {
       eg = fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
 

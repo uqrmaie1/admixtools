@@ -193,6 +193,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
   maxmiss <span class='op'>=</span> <span class='fl'>0</span>,
   minmaf <span class='op'>=</span> <span class='fl'>0</span>,
   maxmaf <span class='op'>=</span> <span class='fl'>0.5</span>,
+  minac2 <span class='op'>=</span> <span class='cn'>FALSE</span>,
   pops2 <span class='op'>=</span> <span class='cn'>NULL</span>,
   outpop <span class='op'>=</span> <span class='cn'>NULL</span>,
   outpop_scale <span class='op'>=</span> <span class='cn'>TRUE</span>,
@@ -253,6 +254,10 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     <tr>
       <th>maxmaf</th>
       <td><p>Discard SNPs with minor allele frequency greater than than <code>maxmaf</code></p></td>
+    </tr>
+    <tr>
+      <th>minac2</th>
+      <td><p>Discard SNPs with allele count lower than 2 in any population (default <code>FALSE</code>). This option should be set to <code>TRUE</code> when computing f3-statistics where the first population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. The <code>minac2</code> option not necessary when the f3-estimates are used for qpgraph. While the <code>minac2</code> option discards SNPs with allele count lower than 2 in any population, the <code><a href='qp3pop.html'>qp3pop</a></code> function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).</p></td>
     </tr>
     <tr>
       <th>pops2</th>

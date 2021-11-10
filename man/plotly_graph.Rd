@@ -8,7 +8,6 @@ plotly_graph(
   graph,
   collapse_threshold = 0,
   fix = FALSE,
-  shift_down = TRUE,
   print_highlow = FALSE,
   highlight_unidentifiable = FALSE,
   pos = NULL,
@@ -24,8 +23,6 @@ plotly_graph(
 \item{fix}{If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
-
-\item{shift_down}{Shift descendent nodes down}
 
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 

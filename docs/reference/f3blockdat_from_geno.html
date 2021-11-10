@@ -188,6 +188,7 @@
   blgsize <span class='op'>=</span> <span class='fl'>0.05</span>,
   block_lengths <span class='op'>=</span> <span class='cn'>NULL</span>,
   allsnps <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  adjust_pseudohaploid <span class='op'>=</span> <span class='cn'>TRUE</span>,
   poly_only <span class='op'>=</span> <span class='cn'>FALSE</span>,
   apply_corr <span class='op'>=</span> <span class='cn'>TRUE</span>,
   outgroupmode <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -220,6 +221,10 @@
     <tr>
       <th>allsnps</th>
       <td><p>Use all SNPs with allele frequency estimates in every population of any given population quadruple. If <code>FALSE</code> (the default) only SNPs which are present in all populations in <code>popcombs</code> (or any given model in it) will be used. Setting <code>allsnps = TRUE</code> in the presence of large amounts of missing data might lead to false positive results.</p></td>
+    </tr>
+    <tr>
+      <th>adjust_pseudohaploid</th>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> is equivalent to the ADMIXTOOLS <code>inbreed: NO</code> option.</p></td>
     </tr>
     <tr>
       <th>verbose</th>

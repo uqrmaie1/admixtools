@@ -9,18 +9,18 @@ satisfies_eventorder(graph, eventorder, strict = TRUE)
 \arguments{
 \item{graph}{An admixture graph}
 
+\item{eventorder}{A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}}
+
 \item{strict}{What to do in case some events are not determined by the graph.
 If \code{strict = TRUE} (the default), the function will only return \code{TRUE} if there are no ambiguous constraints.
 Otherwise, \code{TRUE} will be returned as long as no constraint is directly contradicted.}
-
-\item{event_order}{A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}}
 }
 \value{
 \code{TRUE} if all constraints are satisfied, else \code{FALSE}
 }
 \description{
 This function returns \code{TRUE} if and only if the admixture graph is compatible with
-all event orders listed in event_order
+all event orders listed in eventorder
 }
 \examples{
 \dontrun{

@@ -7,7 +7,6 @@
 plot_graph(
   graph,
   fix = NULL,
-  fix_down = TRUE,
   title = "",
   color = TRUE,
   textsize = 2.5,
@@ -21,8 +20,6 @@ those values will displayed on the edges}
 \item{fix}{If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
-
-\item{fix_down}{Shift nodes down}
 
 \item{title}{Plot title}
 
