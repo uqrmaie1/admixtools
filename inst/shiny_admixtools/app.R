@@ -811,6 +811,7 @@ server = function(input, output, session) {
                           upper = map_dbl(eid2, ~replace_null(input[[.]][2], 1e9))) %>%
           mutate(upper = ifelse(type == 'normal', upper/edgemul, upper),
                  lower = ifelse(type == 'normal', lower/edgemul, lower)) %>% select(-type, -eid2)
+        #print(edges)
       }
     })
 

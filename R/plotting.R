@@ -820,7 +820,7 @@ dot_coords = function(graph) {
 
   z = Rgraphviz::agopen(igraph::igraph.to.graphNEL(graph), 'bla', layoutType = 'dot')
   coordmat = map(seq_along(z@AgNode), ~{coords = z@AgNode[[.]]@center; c(coords@x, coords@y)}) %>%
-    do.call(rbind, .) %>% divide_by(100)
+    do.call(rbind, .) %>% magrittr::divide_by(100)
   data.frame(names(V(graph)), coordmat, stringsAsFactors = F) %>%
     set_colnames(c('node', 'x', 'y'))
 }

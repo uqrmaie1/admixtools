@@ -4393,3 +4393,26 @@ leaf_internal_ancestry = function(edges) {
   })
 }
 
+#' Count zero-length edges
+#'
+#' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
+#' @param edges Edges data frame from fitted admixture graph
+#' @param epsilon Every edge with length
+#' @return The number of edges with length < epsilon
+#' @examples
+#' \dontrun{
+#' fit = qpgraph(example_f2_blocks, example_igraph)
+#' count_zero_edges(fit$edges)
+#' }
+count_zero_edges = function(edges, epsilon = 1e-6) {
+
+  if(!'type' %in% names(edges)) stop("'edges' should be a data frame with a column named 'type'!")
+  if(!'weight' %in% names(edges)) stop("'edges' should be a data frame with a column named 'weight'!")
+
+  edges %>%
+    filter(weight < epsilon, type == 'edge') %>%
+    nrow()
+}
+
+
+
