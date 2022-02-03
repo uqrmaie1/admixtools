@@ -191,8 +191,14 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, mi
   else snpdat %<>% mutate(miss = 0)
   if(minmaf > 0 | maxmaf < 0.5) snpdat %<>% mutate(af = weighted_row_means(afdat$afs, afdat$counts), maf = pmin(af, 1-af))
   else snpdat %<>% mutate(af = 0.2, maf = 0.2)
-  if(minac2) snpdat %<>% mutate(minac = apply(afdat$counts, 1, min))
-  else snpdat %<>% mutate(minac = 2)
+  if(minac2) {
+    popvec = seq_len(ncol(afdat$counts))
+    if(minac2 == 2) {
+      # only consider non-singleton populations
+      popvec = apply(afdat$counts, 2, max) > 1
+    }
+    snpdat %<>% mutate(minac = apply(afdat$counts[,popvec], 1, min))
+  } else snpdat %<>% mutate(minac = 2)
 
   if(poly_only) snpdat %<>% mutate(poly = cpp_is_polymorphic(afdat$afs))
   else snpdat %<>% mutate(poly = TRUE)
@@ -996,7 +1002,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
-#' @param minac2 Discard SNPs with allele count lower than 2 in any population (default `FALSE`). This option should be set to `TRUE` when computing f3-statistics where the first population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. The `minac2` option not necessary when the f3-estimates are used for qpgraph. While the `minac2` option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).
+#' @param minac2 Discard SNPs with allele count lower than 2 in any population (default `FALSE`). This option should be set to `TRUE` when computing f3-statistics where one population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. `minac2 == 2` will discard SNPs with allele count lower than 2 in any non-singleton population (this option is experimental and is based on the hypothesis that using SNPs with allele count lower than 2 only leads to biases in non-singleton populations). While the `minac2` option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).
 #' @param pops2 If specified, only a pairs between `pops` and `pops2` will be computed
 #' @param outpop Keep only SNPs which are heterozygous in this population
 #' @param outpop_scale Scale f2-statistics by the inverse `outpop` heteroygosity (`1/(p*(1-p))`). Providing `outpop` and setting `outpop_scale` to `TRUE` will give the same results as the original *qpGraph* when the `outpop` parameter has been set, but it has the disadvantage of treating one population different from the others. This may limit the use of these f2-statistics for other models.
