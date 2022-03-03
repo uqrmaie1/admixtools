@@ -2095,6 +2095,8 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
 
   stopifnot(is.null(inds) || is.null(pops))
   stopifnot(is_ancestrymap_prefix(inpref))
+  if(system.file(package = 'genio') == '') stop('Please install the "genio" package!')
+  inpref = normalizePath(inpref, mustWork = F)
   if(!is.null(pops)) {
     inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
@@ -2104,7 +2106,7 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
   dat = read_geno(inpref, inds, verbose = verbose)
 
   genio::write_plink(normalizePath(outpref, mustWork = F),
-                     dat$geno[,dat$ind$X1],
+                     dat$geno[,dat$ind$X1,drop=FALSE],
                      bim = dat$snp %>% set_colnames(c('id', 'chr', 'posg', 'pos', 'ref', 'alt')),
                      fam = dat$ind %>% transmute(fam = X3, id = X1, pat = 0, mat = 0, sex = X2, pheno = -9),
                      verbose = verbose)
@@ -2126,6 +2128,7 @@ eigenstrat_to_plink = packedancestrymap_to_plink
 extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite = FALSE, verbose = TRUE) {
 
   stopifnot(is.null(inds) || is.null(pops))
+  if(system.file(package = 'genio') == '') stop('Please install the "genio" package!')
   if(inpref == outpref && !overwrite)
     stop("If you really want to overwrite the input files, set 'overwrite = TRUE'")
   if(!is.null(pops)) {
