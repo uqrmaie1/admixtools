@@ -2381,7 +2381,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
     if(verbose) alert_info(paste0('Computing ', nrow(pc),' f3-statistics for block ',
                                   i, ' out of ', numblocks, '...\r'))
     # replace following two lines with cpp_geno_to_afs?
-    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]]]
+    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]],drop=F]
     ref = rowsum(gmat, popvec, na.rm = TRUE)
     at = ref / rowsum((!is.na(gmat))+0, popvec) / 2
     if(!allsnps) {

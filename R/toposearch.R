@@ -2771,7 +2771,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
 
       if(remaining > 0) {
         swape = swap_negdrift(graph, e$from, e$to)
-        if(!is.null(swape)) newmod %<>% bind_rows(tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = ceiling(remaining)/2))
+        if(!is.null(swape)) {
+          newswap = tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = min(length(swape), ceiling(remaining/2)))
+          newmod %<>% bind_rows(newswap)
+        }
         remaining = numgraphs - nrow(newmod)
       }
       if(remaining > 0) {
