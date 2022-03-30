@@ -2632,7 +2632,6 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = initgraph
     numadmix = numadmix(graph)
   }
-  f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
       res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, ...)
@@ -2642,7 +2641,14 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       }
   } else {
     #qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
-    qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
+    ell = list(...)
+    if('f3precomp' %in% names(ell)) {
+      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = ell$f3precomp, ...)
+    } else {
+      f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
+      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
+    }
+
   }
   stop_at = Sys.time() + stop_sec
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
