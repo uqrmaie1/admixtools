@@ -1607,7 +1607,7 @@ graph_plusone = function(graph, ntry = Inf) {
   desimplify = !is_simplified(graph)
   if(desimplify) graph %<>% simplify_graph
   out = graph %>% find_newedges
-  if(is.finite(ntry)) out %<>% slice_sample(n = ntry)
+  if(is.finite(ntry)) out %<>% slice_sample(n = ntry, replace = TRUE)
   out %<>% rowwise %>%
     mutate(g = list(insert_admix(graph, source_from, source_to, dest_from, dest_to)))
   if(desimplify) out %<>% mutate(g = list(desimplify_graph(g)))
@@ -1637,7 +1637,7 @@ graph_minusone = function(graph, ntry = Inf) {
   #   simplify_graph
   fn = ~delete_admix(graph, .x, .y)
   if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
-  graph %>% find_admixedges %>% slice_sample(n = ntry) %>% mutate(graph = map2(from, to, fn))
+  graph %>% find_admixedges %>% slice_sample(n = ntry, replace = TRUE) %>% mutate(graph = map2(from, to, fn))
 }
 
 #' Find all graphs which result from adding and removing one admixture edge
@@ -2458,7 +2458,7 @@ eval_plusonepop = function(graph, pop, qpgfun, ntry = Inf, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Found ',nrow(newgraphs),' graphs. Evaluating ', min(nrow(newgraphs), ntry), '...\n'))
   newgraphs %>%
-    slice_sample(n = ntry) %>%
+    slice_sample(n = ntry, replace = TRUE) %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score) %>% select(from, to, graph, score)
 }
