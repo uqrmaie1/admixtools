@@ -1197,7 +1197,7 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
 #' extract_f2_large(pref, f2dir, pops = c('popA', 'popB', 'popC'))
 #' }
 extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                            maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, outpop_scale = TRUE,
+                            maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, outpop_scale = TRUE,
                             transitions = TRUE, transversions = TRUE,
                             keepsnps = NULL, snpblocks = NULL, overwrite = FALSE, format = NULL,
                             adjust_pseudohaploid = TRUE, afprod = TRUE, fst = TRUE, poly_only = c('f2'),
@@ -1205,7 +1205,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
 
   if(verbose) alert_info(paste0('Extracting allele frequencies...\n'))
   snpdat = extract_afs(pref, outdir, inds = inds, pops = pops, cols_per_chunk = cols_per_chunk, numparts = 100,
-              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
+              maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2, outpop = outpop,
               transitions = transitions, transversions = transversions,
               keepsnps = keepsnps, format = format, poly_only = FALSE,
               adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
@@ -1434,13 +1434,13 @@ extract_more_counts = function(pref, outdir, inds = NULL,
 #' extract_afs(pref, outdir)
 #' }
 extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, cols_per_chunk = 10,
-                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, transitions = TRUE, transversions = TRUE,
+                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, transitions = TRUE, transversions = TRUE,
                        keepsnps = NULL, format = NULL, poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   # read data and compute allele frequencies
   afdat = anygeno_to_aftable(pref, inds = inds, pops = pops, format = format,
                              adjust_pseudohaploid = adjust_pseudohaploid, verbose = verbose)
-  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
+  afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2, outpop = outpop,
                                   transitions = transitions, transversions = transversions,
                                   keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 
@@ -1477,7 +1477,7 @@ extract_afs_simple = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 
 #' extract_afs(pref, outdir)
 #' }
 extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 10, numparts = 100,
-                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, outpop = NULL, auto_only = TRUE,
+                       maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, auto_only = TRUE,
                        transitions = TRUE, transversions = TRUE, keepsnps = NULL, format = NULL,
                        poly_only = FALSE, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
@@ -1512,7 +1512,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     colnames(afdat$afs) = colnames(afdat$counts) = ip$upops
     rownames(afdat$afs) = rownames(afdat$counts) = afdat$snpfile$SNP
 
-    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, outpop = outpop,
+    afdat %<>% discard_from_aftable(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2, outpop = outpop,
                                     transitions = transitions, transversions = transversions,
                                     keepsnps = keepsnps, auto_only = TRUE, poly_only = poly_only)
 

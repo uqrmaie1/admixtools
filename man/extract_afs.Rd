@@ -14,6 +14,7 @@ extract_afs(
   maxmiss = 0,
   minmaf = 0,
   maxmaf = 0.5,
+  minac2 = FALSE,
   outpop = NULL,
   auto_only = TRUE,
   transitions = TRUE,
@@ -44,6 +45,8 @@ extract_afs(
 \item{minmaf}{Discard SNPs with minor allele frequency less than \code{minmaf}}
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
+
+\item{minac2}{Discard SNPs with allele count lower than 2 in any population (default \code{FALSE}). This option should be set to \code{TRUE} when computing f3-statistics where one population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. \code{minac2 == 2} will discard SNPs with allele count lower than 2 in any non-singleton population (this option is experimental and is based on the hypothesis that using SNPs with allele count lower than 2 only leads to biases in non-singleton populations). While the \code{minac2} option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).}
 
 \item{outpop}{Keep only SNPs which are heterozygous in this population}
 

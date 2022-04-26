@@ -56,7 +56,7 @@ extract_f2(
 
 \item{maxmaf}{Discard SNPs with minor allele frequency greater than than \code{maxmaf}}
 
-\item{minac2}{Discard SNPs with allele count lower than 2 in any population (default \code{FALSE}). This option should be set to \code{TRUE} when computing f3-statistics where the first population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. The \code{minac2} option not necessary when the f3-estimates are used for qpgraph. While the \code{minac2} option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).}
+\item{minac2}{Discard SNPs with allele count lower than 2 in any population (default \code{FALSE}). This option should be set to \code{TRUE} when computing f3-statistics where one population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. \code{minac2 == 2} will discard SNPs with allele count lower than 2 in any non-singleton population (this option is experimental and is based on the hypothesis that using SNPs with allele count lower than 2 only leads to biases in non-singleton populations). While the \code{minac2} option discards SNPs with allele count lower than 2 in any population, the \code{\link{qp3pop}} function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).}
 
 \item{pops2}{If specified, only a pairs between \code{pops} and \code{pops2} will be computed}
 
