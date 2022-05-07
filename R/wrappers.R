@@ -992,7 +992,7 @@ pseudo_dates = function(graph, time = 1000, fix=TRUE) {
   edges = graph %>% as_edgelist()
   pdat = graph_to_plotdat(edges)$eg
   out = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
-    mutate(y = y - min(y)) %>% distinct %>% deframe %>% multiply_by(time)
+    mutate(y = y - min(y)) %>% distinct %>% deframe %>% magrittr::multiply_by(time)
   if (isTRUE(fix))  out[get_leafnames(graph)] = 0
   out
 }
