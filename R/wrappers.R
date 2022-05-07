@@ -1056,7 +1056,7 @@ random_dates = function(graph, min=1000, max=1000, fix=TRUE){
 #' msprime_sim(results$edges, seq_length=50, recomb_rate=0.1)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000, ind_per_pop = 1, mutation_rate = 1e-3, time = 1000, fix_leaf = FALSE,
-                          admix_default = 0.5, run = FALSE, numcores = NULL, ghost_lineages = TRUE, shorten_admixed_leaves = FALSE) {
+                       admix_default = 0.5, run = FALSE, numcores = NULL, ghost_lineages = TRUE, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   
