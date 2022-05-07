@@ -980,21 +980,22 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 
 #' Get pseudo dates for graph nodes
 #'
-#' This function assigns a date to each node in an admixture graph and is used in \code{\link{msprime_sim}}. The date will correspond to the y-coordinate of each node used for plotting in \code{\link{plotly_graph}}. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by \code{\link{get_leafnames()}} will be set to 0.
+#' This function assigns a date to each node in an admixture graph and is used in \code{\link{msprime_sim}}. 
+#' The date will correspond to the y-coordinate of each node used for plotting in \code{\link{plotly_graph}} 
+#' unless `fix` option is set \code{TRUE}, in which case all leaf nodes returned by \code{\link{get_leafnames()}} will be set to 0.
 #' @export
 #' @param graph An admixture graph
 #' @param time Scalar by which y-coordinate values will be multiplied to get dates
+#' @param fix Boolean specifying if leaf nodes will be fixed to 0. If `TRUE` (default), all samples will be drawn at the end of the simulation (i.e., from today).
 #' @return A named vector with pseudo dates for each graph node
-pseudo_dates = function(graph, time = 1000) {
-
+pseudo_dates = function(graph, time = 1000, fix=TRUE) {
   edges = graph %>% as_edgelist()
   pdat = graph_to_plotdat(edges)$eg
   out = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
-    mutate(y = y - min(y) + 1) %>% distinct %>% deframe %>% multiply_by(time)
-  out[get_leafnames(graph)[1]] = 0
+    mutate(y = y - min(y)) %>% distinct %>% deframe %>% multiply_by(time)
+  if (isTRUE(fix))  out[get_leafnames(graph)] = 0
   out
 }
-
 
 #' Simulate an admixture graph in msprime
 #'
