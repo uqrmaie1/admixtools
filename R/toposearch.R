@@ -1607,7 +1607,7 @@ graph_plusone = function(graph, ntry = Inf) {
   desimplify = !is_simplified(graph)
   if(desimplify) graph %<>% simplify_graph
   out = graph %>% find_newedges
-  if(is.finite(ntry)) out %<>% slice_sample(n = ntry)
+  if(is.finite(ntry)) out %<>% slice_sample(n = ntry, replace = TRUE)
   out %<>% rowwise %>%
     mutate(g = list(insert_admix(graph, source_from, source_to, dest_from, dest_to)))
   if(desimplify) out %<>% mutate(g = list(desimplify_graph(g)))
@@ -1637,7 +1637,7 @@ graph_minusone = function(graph, ntry = Inf) {
   #   simplify_graph
   fn = ~delete_admix(graph, .x, .y)
   if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
-  graph %>% find_admixedges %>% slice_sample(n = ntry) %>% mutate(graph = map2(from, to, fn))
+  graph %>% find_admixedges %>% slice_sample(n = ntry, replace = TRUE) %>% mutate(graph = map2(from, to, fn))
 }
 
 #' Find all graphs which result from adding and removing one admixture edge
@@ -2458,7 +2458,7 @@ eval_plusonepop = function(graph, pop, qpgfun, ntry = Inf, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Found ',nrow(newgraphs),' graphs. Evaluating ', min(nrow(newgraphs), ntry), '...\n'))
   newgraphs %>%
-    slice_sample(n = ntry) %>%
+    slice_sample(n = ntry, replace = TRUE) %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score) %>% select(from, to, graph, score)
 }
@@ -2632,7 +2632,6 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = initgraph
     numadmix = numadmix(graph)
   }
-  f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
       res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, ...)
@@ -2642,7 +2641,14 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       }
   } else {
     #qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
-    qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
+    ell = list(...)
+    if('f3precomp' %in% names(ell)) {
+      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = ell$f3precomp, ...)
+    } else {
+      f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
+      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
+    }
+
   }
   stop_at = Sys.time() + stop_sec
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
@@ -2771,7 +2777,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
 
       if(remaining > 0) {
         swape = swap_negdrift(graph, e$from, e$to)
-        if(!is.null(swape)) newmod %<>% bind_rows(tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = ceiling(remaining)/2))
+        if(!is.null(swape) && length(swape) > 0) {
+          newswap = tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = min(length(swape), ceiling(remaining/2)))
+          newmod %<>% bind_rows(newswap)
+        }
         remaining = numgraphs - nrow(newmod)
       }
       if(remaining > 0) {
