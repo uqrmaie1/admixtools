@@ -11,7 +11,11 @@ plot_graph(
   color = TRUE,
   textsize = 2.5,
   highlight_unidentifiable = FALSE,
-  pos = NULL
+  pos = NULL,
+  dates = NULL,
+  neff = NULL,
+  scale_y = FALSE,
+  hide_weights = FALSE
 )
 }
 \arguments{
@@ -31,6 +35,14 @@ By default this is only done for graphs with fewer than 10 leaves.}
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 
 \item{pos}{Optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
+
+\item{dates}{Optional named vector with dates for each node to plot dates on the y-axis}
+
+\item{neff}{Optional named vector with effective population sizes for each node to show population sizes}
+
+\item{scale_y}{If TRUE, scale the y-axis according to \code{dates} vector. The default is \code{FALSE}.}
+
+\item{hide_weights}{Boolean value specifying if the drift weights that are equal to 1 should be hidden. The default is \code{FALSE}}
 }
 \value{
 A ggplot object
@@ -40,4 +52,8 @@ Plot an admixture graph
 }
 \examples{
 plot_graph(example_graph)
+
+# Plot a random simulation output. Show dates and population sizes on the plot
+out = random_sim(nleaf=5, nadmix=1)
+plot_graph(out$edges, dates=out$dates, neff=out$neff)
 }

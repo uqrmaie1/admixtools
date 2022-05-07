@@ -4,16 +4,20 @@
 \alias{pseudo_dates}
 \title{Get pseudo dates for graph nodes}
 \usage{
-pseudo_dates(graph, time = 1000)
+pseudo_dates(graph, time = 1000, fix = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
 \item{time}{Scalar by which y-coordinate values will be multiplied to get dates}
+
+\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE} (default), all samples will be drawn at the end of the simulation (i.e., from today).}
 }
 \value{
 A named vector with pseudo dates for each graph node
 }
 \description{
-This function assigns a date to each node in an admixture graph and is used in \code{\link{msprime_sim}}. The date will correspond to the y-coordinate of each node used for plotting in \code{\link{plotly_graph}}. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by \code{\link{get_leafnames()}} will be set to 0.
+This function assigns a date to each node in an admixture graph and is used in \code{\link{msprime_sim}}.
+The date will correspond to the y-coordinate of each node used for plotting in \code{\link{plotly_graph}}
+unless \code{fix} option is set \code{TRUE}, in which case all leaf nodes returned by \code{\link{get_leafnames()}} will be set to 0.
 }
