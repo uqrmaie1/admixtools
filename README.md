@@ -9,6 +9,11 @@
 A new, lightning fast implementation of
 [*ADMIXTOOLS*](https://github.com/DReichLab/AdmixTools).
 
+The corresponding manuscript is finally online
+[here](https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1)! My
+personal summary and a few more thoughts can be found
+[here](https://uqrmaie1.github.io/admixtools/articles/paper.html).
+
 ## Overview
 
 *ADMIXTOOLS* is a collection of programs which use genetic data to infer
