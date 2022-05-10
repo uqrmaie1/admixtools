@@ -44,12 +44,12 @@ Alternatively, it can be a named vector with a different value for each populati
 \item{seq_length}{The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
 Alternatively, it can be a vector with a length equal to number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50).}
 
-\item{admix_default}{A float value specifying default admixture proportion for all admixture nodes. The default is \code{0.5} (i.e., 50\\%-50\\%).
+\item{admix_default}{A float value specifying default admixture proportion for all admixture nodes. The default is \code{0.5}.
 If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).}
 
 \item{run}{If \code{FALSE}, the function will terminate after writing the msprime script. If \code{TRUE}, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set \verb{run = /my/python}.}
 
-\item{ghost_lineages}{A boolean value specifying whether there should be a ghost lineages.
+\item{ghost_lineages}{A boolean value specifying whether ghost lineages will be allowed.
 If \code{TRUE}, admixture events occur at time points shown on admixture graph by \code{\link{plot_graph}}.
 If \code{FALSE} (default), admixture occurs at the previous generation.}
 

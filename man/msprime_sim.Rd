@@ -27,7 +27,7 @@ msprime_sim(
 
 \item{nsnps}{The number of SNPs to simulate. All SNPs will be simulated independently of each other.}
 
-\item{neff}{Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).}
+\item{neff}{Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'= <- , 'B'= <- )}).}
 
 \item{ind_per_pop}{The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations.
 Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('A'=10, 'B'=20)} to sample 10 and 20 diploid individuals from populations A and B, respectively).}
@@ -38,14 +38,14 @@ Alternatively, it can be a named vector with a different value for each populati
 
 \item{fix_leaf}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE}, all samples will be drawn at the end of the simulation (i.e., from today).}
 
-\item{admix_default}{A float value specifying default admixture proportion for all admixture nodes. The default is \code{0.5} (i.e., 50\\%-50\\%).
+\item{admix_default}{A float value specifying default admixture proportion for all admixture nodes. The default is \code{0.5}.
 If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).}
 
 \item{run}{If \code{FALSE}, the function will terminate after writing the msprime script. If \code{TRUE}, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set \verb{run = /my/python}.}
 
 \item{numcores}{The number of cores to use when simulating data.}
 
-\item{ghost_lineages}{A boolean value specifying whether there should be a ghost lineages.
+\item{ghost_lineages}{A boolean value specifying whether ghost lineages will be allowed.
 If \code{TRUE}, admixture events occur at time points shown on admixture graph by \code{\link{plot_graph}}.
 If \code{FALSE} (default), admixture occurs at the previous generation.}
 

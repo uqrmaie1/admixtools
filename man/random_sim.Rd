@@ -24,19 +24,19 @@ random_sim(
 )
 }
 \arguments{
-\item{nleaf}{Number of leaf nodes (i.e., number of final populations)}
+\item{nleaf}{Number of leaf nodes}
 
 \item{nadmix}{Number of admixture events}
 
 \item{outpref}{Prefix of output files}
 
-\item{max_depth}{Constraint specifying maximum depth of admixture tree (in generation)}
+\item{max_depth}{Constraint specifying maximum depth of admixture tree (in generations)}
 
 \item{ind_per_pop}{The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.}
 
 \item{mutation_rate}{Mutation rate per site per generation. The default is \code{1.25e-8}.}
 
-\item{admix_weights}{Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value). Alternatively, it can be a range, i.e., \code{c(0.1, 0.4)} specifying lower and upper limits of an uniform distribution from which admixture weight value will be drawn. By default, all admixture edges will have weight 0.5 (i.e., 50\\%-50\\%).}
+\item{admix_weights}{Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value). Alternatively, it can be a range, i.e., \code{c(0.1, 0.4)} specifying lower and upper limits of an uniform distribution from which admixture weight value will be drawn. By default, all admixture edges will have weight 0.5.}
 
 \item{neff}{Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn}
 
