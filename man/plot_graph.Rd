@@ -36,13 +36,15 @@ By default this is only done for graphs with fewer than 10 leaves.}
 
 \item{pos}{Optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
 
-\item{dates}{Optional named vector with dates for each node to plot dates on the y-axis}
+\item{dates}{Optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}).
+If this option is supplied, the y-axis will display dates in generations.}
 
-\item{neff}{Optional named vector with effective population sizes for each node to show population sizes}
+\item{neff}{Optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}).
+If this option is supplied, the effective population size of each population will be shown on the corresponding edge.}
 
-\item{scale_y}{If TRUE, scale the y-axis according to \code{dates} vector. The default is \code{FALSE}.}
+\item{scale_y}{If \code{TRUE}, scale the y-axis according to \code{dates} vector. The default is \code{FALSE}.}
 
-\item{hide_weights}{Boolean value specifying if the drift weights that are equal to 1 should be hidden. The default is \code{FALSE}}
+\item{hide_weights}{Boolean value specifying if the drift weights will be hidden. The default is \code{FALSE}.}
 }
 \value{
 A ggplot object

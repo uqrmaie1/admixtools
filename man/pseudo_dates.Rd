@@ -4,14 +4,14 @@
 \alias{pseudo_dates}
 \title{Get pseudo dates for graph nodes}
 \usage{
-pseudo_dates(graph, time = 1000, fix = TRUE)
+pseudo_dates(graph, time = 1000, fix = FALSE)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
 \item{time}{Scalar by which y-coordinate values will be multiplied to get dates}
 
-\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE} (default), all samples will be drawn at the end of the simulation (i.e., from today).}
+\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE}, all samples will be drawn at the end of the simulation (i.e., from today). The default is \code{FALSE}}
 }
 \value{
 A named vector with pseudo dates for each graph node

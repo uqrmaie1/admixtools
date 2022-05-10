@@ -104,10 +104,12 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param textsize Size of edge and node labels
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
-#' @param dates Optional named vector with dates for each node to plot dates on the y-axis
-#' @param neff Optional named vector with effective population sizes for each node to show population sizes
-#' @param scale_y If TRUE, scale the y-axis according to \code{dates} vector. The default is `FALSE`.
-#' @param hide_weights Boolean value specifying if the drift weights that are equal to 1 should be hidden. The default is `FALSE`
+#' @param dates Optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}). 
+#' If this option is supplied, the y-axis will display dates in generations.
+#' @param neff Optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}). 
+#' If this option is supplied, the effective population size of each population will be shown on the corresponding edge. 
+#' @param scale_y If `TRUE`, scale the y-axis according to \code{dates} vector. The default is `FALSE`.
+#' @param hide_weights Boolean value specifying if the drift weights will be hidden. The default is `FALSE`.
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
@@ -205,7 +207,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
   
   if (isTRUE(hide_weights)){
     pdat$eg %<>%
-      mutate(label = ifelse(label==1000, " ", as.character(label)))
+      mutate(label = ifelse(type == 'normal', "", as.character(label)))
   }
   
   if(color) {

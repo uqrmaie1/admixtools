@@ -4,16 +4,16 @@
 \alias{random_dates}
 \title{Get random dates for graph nodes}
 \usage{
-random_dates(graph, min = 1000, max = 1000, fix = TRUE)
+random_dates(graph, min = 1000, max = 1000, fix = FALSE)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{min}{Lower and upper limit of uniform distribution}
+\item{min}{Lower limit of uniform distribution}
 
 \item{max}{Upper limit of uniform distribution}
 
-\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE} (default), all samples will be drawn at the end of the simulation (i.e., from today).}
+\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE}, all samples will be drawn at the end of the simulation (i.e., from today). The default is \code{FALSE}.}
 }
 \value{
 A named vector with random dates for each graph node
