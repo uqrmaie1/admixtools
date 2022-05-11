@@ -12,7 +12,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-**Under construction**
 
 *f*-statistics are the foundation of *ADMIXTOOLS*. In *ADMIXTOOLS 2*, $f_2$-statistics are of particular importance as $f_3$- and $f_4$-statistics can be computed from $f_2$-statistics. They are conceptually very simple, but estimating them without bias can be complicated.
 

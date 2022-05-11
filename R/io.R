@@ -212,7 +212,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, mi
                            minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
-  if(length(remaining) == 0) stop("No SNPs remain! Increase 'maxmiss', or select fewer populations!")
+  if(length(remaining) == 0) stop("No SNPs remain! Select fewer populations (particularly with low coverage), or use the option 'allsnps'!")
   map(afdat, ~.[remaining,,drop = FALSE])
 }
 
