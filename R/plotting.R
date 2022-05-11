@@ -95,21 +95,21 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' Plot an admixture graph
 #' @export
 #' @param graph An admixture graph. If it's an edge list with a \code{label} column,
-#' those values will displayed on the edges
+#' those values will be displayed on the edges
 #' @param fix If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 #' the number of intersecting edges. This can take very long for large graphs.
 #' By default this is only done for graphs with fewer than 10 leaves.
-#' @param title Plot title
+#' @param title A plot title
 #' @param color Plot it in color or greyscale
 #' @param textsize Size of edge and node labels
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
-#' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
-#' @param dates Optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}). 
+#' @param pos An optional data frame with node coordinates (columns `node`, `x`, `y`)
+#' @param dates An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}). 
 #' If this option is supplied, the y-axis will display dates in generations.
-#' @param neff Optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}). 
-#' If this option is supplied, the effective population size of each population will be shown on the corresponding edge. 
+#' @param neff An optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}). 
+#' If this option is supplied, the effective population size of each population will be shown next to the corresponding edge. 
 #' @param scale_y If `TRUE`, scale the y-axis according to \code{dates} vector. The default is `FALSE`.
-#' @param hide_weights Boolean value specifying if the drift weights will be hidden. The default is `FALSE`.
+#' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)

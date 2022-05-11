@@ -20,13 +20,13 @@ plot_graph(
 }
 \arguments{
 \item{graph}{An admixture graph. If it's an edge list with a \code{label} column,
-those values will displayed on the edges}
+those values will be displayed on the edges}
 
 \item{fix}{If \code{TRUE}, there will be an attempt to rearrange the nodes to minimize
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
 
-\item{title}{Plot title}
+\item{title}{A plot title}
 
 \item{color}{Plot it in color or greyscale}
 
@@ -34,17 +34,17 @@ By default this is only done for graphs with fewer than 10 leaves.}
 
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 
-\item{pos}{Optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
+\item{pos}{An optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
 
-\item{dates}{Optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}).
+\item{dates}{An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}).
 If this option is supplied, the y-axis will display dates in generations.}
 
-\item{neff}{Optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}).
-If this option is supplied, the effective population size of each population will be shown on the corresponding edge.}
+\item{neff}{An optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}).
+If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.}
 
 \item{scale_y}{If \code{TRUE}, scale the y-axis according to \code{dates} vector. The default is \code{FALSE}.}
 
-\item{hide_weights}{Boolean value specifying if the drift weights will be hidden. The default is \code{FALSE}.}
+\item{hide_weights}{A boolean value specifying if the drift values on the edges will be hidden. The default is \code{FALSE}.}
 }
 \value{
 A ggplot object

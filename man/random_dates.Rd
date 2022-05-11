@@ -4,21 +4,23 @@
 \alias{random_dates}
 \title{Get random dates for graph nodes}
 \usage{
-random_dates(graph, min = 1000, max = 1000, fix = FALSE)
+random_dates(graph, min = 1000, max = 1000, fix_leaf = FALSE)
 }
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{min}{Lower limit of uniform distribution}
+\item{min}{A lower limit of uniform distribution}
 
-\item{max}{Upper limit of uniform distribution}
+\item{max}{An upper limit of uniform distribution}
 
-\item{fix}{Boolean specifying if leaf nodes will be fixed to 0. If \code{TRUE}, all samples will be drawn at the end of the simulation (i.e., from today). The default is \code{FALSE}.}
+\item{fix_leaf}{A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time).
+If \code{TRUE}, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is \code{FALSE}.}
 }
 \value{
 A named vector with random dates for each graph node
 }
 \description{
-This function assigns a date to each node in an admixture graph and is used in \code{\link{random_sim}}. The dates will drawn from a uniform distribution with given lower and upper bounds,
-unless \code{fix} option is set \code{TRUE}, in which case all leaf nodes returned by \code{\link{get_leafnames()}} will be set to 0.
+This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{random_sim}}.
+The dates are drawn from a uniform distribution with given lower and upper bounds,
+unless the \code{fix_leaf} option is set to \code{TRUE}, in which case the dates of all leaf nodes returned by \code{\link{get_leafnames}} will be set to 0.
 }

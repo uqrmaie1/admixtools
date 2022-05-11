@@ -979,35 +979,38 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 }
 
 #' Get pseudo dates for graph nodes
-#'
-#' This function assigns a date to each node in an admixture graph and is used in \code{\link{msprime_sim}}. 
-#' The date will correspond to the y-coordinate of each node used for plotting in \code{\link{plotly_graph}} 
-#' unless `fix` option is set \code{TRUE}, in which case all leaf nodes returned by \code{\link{get_leafnames()}} will be set to 0.
+#' 
+#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{msprime_sim}} and \code{\link{msprime_genome}}. 
+#' The date of the node will correspond to the y-coordinate of that node used for plotting in \code{\link{plotly_graph}}, 
+#' unless the `fix_leaf` option is set to `TRUE`, in which case the dates of all leaf nodes returned by \code{\link{get_leafnames}} will be set to 0.
 #' @export
 #' @param graph An admixture graph
-#' @param time Scalar by which y-coordinate values will be multiplied to get dates
-#' @param fix Boolean specifying if leaf nodes will be fixed to 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from today). The default is `FALSE`
+#' @param time A scalar by which y-coordinate values will be multiplied to get dates
+#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time). 
+#' If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is `FALSE`
 #' @return A named vector with pseudo dates for each graph node
-pseudo_dates = function(graph, time = 1000, fix=FALSE) {
+pseudo_dates = function(graph, time = 1000, fix_leaf=FALSE) {
   edges = graph %>% as_edgelist()
   pdat = graph_to_plotdat(edges)$eg
   out = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
     mutate(y = y - min(y)) %>% distinct %>% deframe %>% magrittr::multiply_by(time)
-  if (isTRUE(fix))  out[get_leafnames(graph)] = 0
+  if (isTRUE(fix_leaf))  out[get_leafnames(graph)] = 0
   out
 }
 
 #' Get random dates for graph nodes
 #'
-#' This function assigns a date to each node in an admixture graph and is used in \code{\link{random_sim}}. The dates will drawn from a uniform distribution with given lower and upper bounds,
-#' unless `fix` option is set \code{TRUE}, in which case all leaf nodes returned by \code{\link{get_leafnames()}} will be set to 0.
+#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{random_sim}}.  
+#' The dates are drawn from a uniform distribution with given lower and upper bounds, 
+#' unless the `fix_leaf` option is set to `TRUE`, in which case the dates of all leaf nodes returned by \code{\link{get_leafnames}} will be set to 0.
 #' @export
 #' @param graph An admixture graph
-#' @param min Lower limit of uniform distribution
-#' @param max Upper limit of uniform distribution
-#' @param fix Boolean specifying if leaf nodes will be fixed to 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from today). The default is `FALSE`.
+#' @param min A lower limit of uniform distribution
+#' @param max An upper limit of uniform distribution
+#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time). 
+#' If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is `FALSE`.
 #' @return A named vector with random dates for each graph node
-random_dates = function(graph, min=1000, max=1000, fix=FALSE){
+random_dates = function(graph, min=1000, max=1000, fix_leaf=FALSE){
   edges = graph %>% as_edgelist()
   pdat = graph_to_plotdat(edges)$eg
   y_dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
@@ -1024,43 +1027,39 @@ random_dates = function(graph, min=1000, max=1000, fix=FALSE){
   out = unlist(dates)[as.character(y_dates)]
   names(out) = names(y_dates)
   
-  if (isTRUE(fix)) out[get_leafnames(graph)] = 0
+  if (isTRUE(fix_leaf)) out[get_leafnames(graph)] = 0
   out
 }
 
 #' Simulate an admixture graph in msprime v1.x
 #' 
-#' This function generates an msprime simulation script, and optionally executes it in python
+#' This function generates an msprime simulation script, and optionally executes it in python. Unlike the \code{\link{msprime_genome}} function, this function simulates independent SNP sites.
 #' @export
-#' @param graph Graph as `igraph` object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.
-#' @param outpref Prefix of output files
+#' @param graph A graph as an `igraph` object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.
+#' @param outpref A prefix of output files.
 #' @param nsnps The number of SNPs to simulate. All SNPs will be simulated independently of each other.
-#' @param neff Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'= <- , 'B'= <- )}).
-#' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
+#' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
+#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
 #' Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('A'=10, 'B'=20)} to sample 10 and 20 diploid individuals from populations A and B, respectively).
-#' @param mutation_rate Mutation rate per site per generation. The default is set to a high value (0.001) to obtain more polymorphic SNPs in order to speed up the simulation.
-#' @param time Either a scalar value (1000 by default) which the dates generated by \code{\link{pseudo_dates}}, or a named vector with dates for each graph nodes (in generations).
-#' @param fix_leaf Boolean specifying if leaf nodes will be fixed to 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from today).
+#' @param mutation_rate Mutation rate per site per generation. The default is set to a high value (0.001 per site per generation) to obtain more polymorphic SNPs in order to speed up the simulation.
+#' @param time Either a scalar value (1000 generations by default) with the dates generated by \code{\link{pseudo_dates}} function, or a named vector with dates for each graph nodes (in generations).
+#' @param fix_leaf A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
 #' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`. 
 #' If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).
-#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
+#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
 #' @param numcores The number of cores to use when simulating data.
-#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed. 
-#' If `TRUE`, admixture events occur at time points shown on admixture graph by \code{\link{plot_graph}}. 
-#' If `FALSE` (default), admixture occurs at the previous generation.
+#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed.
+#' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}.
+#' If `FALSE` (default), admixture occurs at the time of the previous split event.
 #' @param shorten_admixed_leaves If `TRUE` simulate the behavior of treemix where drift after admixture is not allowed
 #' @return The file name and path of the simulation script
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
-#' # Simulate 100 independent snps:
 #' msprime_sim(results$edges, nsnps=100)
-#' 
-#' # Simulate 50base long sequence with uniform recombination rate of 0.1
-#' msprime_sim(results$edges, seq_length=50, recomb_rate=0.1)
 #' }
 msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000, ind_per_pop = 1, mutation_rate = 1e-3, time = 1000, fix_leaf = FALSE,
-                       admix_default = 0.5, run = FALSE, numcores = NULL, ghost_lineages = TRUE, shorten_admixed_leaves = FALSE) {
+                       admix_default = 0.5, run = FALSE, numcores = NULL, ghost_lineages = FALSE, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
   
@@ -1212,27 +1211,28 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
 
 #' Simulate an admixture graph in msprime v1.x. 
 #' 
-#' Unlike \code{\link{msprime_sim}}, this function can simulate continuous sequence and multiple chromosomes.
+#' This function generates an msprime simulation script, and optionally executes it in python. 
+#' Unlike \code{\link{msprime_sim}}, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes.
 #' 
 #' @export
-#' @param graph Graph as `igraph` object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.
-#' @param outpref Prefix of output files
-#' @param neff Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
-#' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
+#' @param graph A graph as an `igraph` object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.
+#' @param outpref A prefix of output files.
+#' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
+#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
 #' Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('A'=10, 'B'=20)} to sample 10 and 20 diploid individuals from populations A and B, respectively).
-#' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8`.
-#' @param time Either a scalar value (1000 by default) which the dates generated by \code{\link{pseudo_dates}}, or a named vector with dates for each graph node (in generations).
-#' @param fix_leaf Boolean specifying if leaf nodes will be fixed to 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from today).
+#' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8` per base pair per generation.
+#' @param time Either a scalar value (1000 generations by default) with the dates generated by \code{\link{pseudo_dates}}, or a named vector with dates for each graph node (in generations).
+#' @param fix_leaf A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
 #' @param nchr Number of chromosomes to simulate.
-#' @param recomb_rate_chr A float value specifying recombination rate along the chromosomes. The default is `2e-8`. 
+#' @param recomb_rate_chr A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation. 
 #' @param seq_length The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
-#' Alternatively, it can be a vector with a length equal to number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50).
-#' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`. 
+#' Alternatively, it can be a vector with a length equal to the number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).
+#' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`.
 #' If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).
-#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
-#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed. 
-#' If `TRUE`, admixture events occur at time points shown on admixture graph by \code{\link{plot_graph}}. 
-#' If `FALSE` (default), admixture occurs at the previous generation.
+#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
+#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed.
+#' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}. 
+#' If `FALSE` (default), admixture occurs at the time of the previous split event.
 #' @param shorten_admixed_leaves If `TRUE` simulate the behavior of treemix where drift after admixture is not allowed
 #' @return The file name and path of the simulation script
 #' @examples
@@ -1240,7 +1240,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
 #' # Simulate 3 chromosomes whose lengths are 50, 100 and 100
 #' msprime_genome(results$edges, nchr=3, seq_length=c(50, 100, 100))
 msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_pop = 1, mutation_rate = 1.25e-8, time = 1000, fix_leaf = FALSE, nchr=1,
-                          recomb_rate_chr = 2e-8, seq_length = 1e3,  admix_default = 0.5, run = FALSE, ghost_lineages=TRUE, shorten_admixed_leaves = FALSE){
+                          recomb_rate_chr = 2e-8, seq_length = 1e3,  admix_default = 0.5, run = FALSE, ghost_lineages = FALSE, shorten_admixed_leaves = FALSE){
   outpref %<>% normalizePath(mustWork = FALSE)
   
   if ('igraph' %in% class(graph)){
@@ -1429,37 +1429,39 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
 
 #' Generate a random graph and simulate it in msprime v1.x 
 #'
-#' This is basically a wrapper function around the \code{\link{msprime_genome}} that allows user to create a random history and simulate it in msprime v1.x.
-#' It first generates a random graph that satisfy the `max_depth` constrain using \code{\link{random_admixturegraph}.
-#' Then it simulates a genome using \code{\link{msprime_genome}}.
-#' 
+#' This is basically a wrapper function around the \code{\link{msprime_genome}} that allows user to create a random graph and simulate it in msprime v1.x.
 #' @export
-#' @param nleaf Number of leaf nodes
-#' @param nadmix Number of admixture events
-#' @param outpref Prefix of output files
-#' @param max_depth Constraint specifying maximum depth of admixture tree (in generations)
+#' @param nleaf The number of leaf nodes
+#' @param nadmix The number of admixture events
+#' @param outpref A prefix of output files
+#' @param max_depth A constraint specifying the maximum time depth of the admixture graph (in generations)
 #' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
-#' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8`.
-#' @param admix_weights Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value). Alternatively, it can be a range, i.e., \code{c(0.1, 0.4)} specifying lower and upper limits of an uniform distribution from which admixture weight value will be drawn. By default, all admixture edges will have weight 0.5. 
-#' @param neff Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn 
-#' @param time Time between nodes. Either a scalar value (1000 by default) which the dates generated by \code{\link{pseudo_dates}}, or a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn (see \code{\link{random_dates}}). 
-#' @param fix_leaf Boolean specifying if leaf nodes will be fixed to 0. If TRUE, all samples will be drawn at the end of the simulation (i.e., from today).
-#' @param outpop Name of the outgroup population. 
-#' @param nchr Number of chromosomes to simulate
-#' @param recomb_rate A float value specifying recombination rate along the chromosomes. The default is `2e-8`. 
+#' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8` per base pair per generation.
+#' @param admix_weights Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value). 
+#' Alternatively, it can be a range, i.e., \code{c(0.1, 0.4)} specifying lower and upper limits of a uniform distribution from which the admixture weight value will be drawn. By default, all admixture edges have a weight of 0.5.
+#' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn 
+#' @param time Time between nodes. Either a scalar value (1000 by default) with the dates generated by \code{\link{pseudo_dates}}, or a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of a uniform distribution from which values will be drawn (see \code{\link{random_dates}})
+#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
+#' @param outpop A name of the (optional) outgroup population. 
+#' @param nchr The number of chromosomes to simulate
+#' @param recomb_rate A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation. 
 #' @param seq_length The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
-#' Alternatively, it can be a vector with a length equal to number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50).
-#' @param ghost_lineages If `TRUE` (default), admixture events occur at time points shown on admixture graph (assumes ghost lineages) by \code{\link{plot_graph}}
-#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
-#' @return A list with the path of simulation script, data frame of graph edges, dates and population sizes:
+#' Alternatively, it can be a vector with a length equal to number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).
+#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed. 
+#' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}
+#' If `FALSE` (default), admixture occurs at the time of the previous split event
+#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation. 
+#' If you want to use some other python installation, you can set `run = /my/python`.
+#' @return A list with the path of simulation script, a data frame of graph edges, dates and population sizes:
 #' \itemize{
-#'   \item{out - }{File name and path of simulation script}
-#'   \item{edges - }{An edge dataframe with weights}
-#'   \item{dates - }{A named vector dates for each node}
-#'   \item{neffs - }{A named vector effective population size for each node}
+#'   \item{out - }{A file name and path of the simulation script}
+#'   \item{edges - }{An edge dataframe with admixture weights}
+#'   \item{dates - }{A named vector with a date for each node}
+#'   \item{neffs - }{A named vector with an effective population size for each node}
 #' }
 #' @examples
-#' # Create simulation script that simulates 2 chromosomes that are 50base long where maximum depth of the tree is 5000 generations, and plot the output graph
+#' # Create simulation script that simulates 2 chromosomes that are 50base long 
+#' # where maximum depth of the tree is 5000 generations, and plot the output graph
 #' out = random_sim(nleaf=4, nadmix=0, max_depth=5000, nchr=2, seq_length=50)
 #' plot_graph(out$edges, dates = out$dates, neff = out$neff hide_weights = TRUE)
 random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, ind_per_pop = 1, mutation_rate = 1.25e-8, admix_weights = 0.5, neff = 1000,
