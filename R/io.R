@@ -2426,6 +2426,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
         denom[i,] = unname(rowSums(2*h1, na.rm = TRUE))
       }
     }
+    num$num[!is.finite(num$num)] = NA
     if(outgroupmode) denom[i,] = rowSums(is.finite(num$num))
     numer[i,] = unname(rowSums(num$num, na.rm = TRUE))
     cnt[i,] = c(num$cnt)
