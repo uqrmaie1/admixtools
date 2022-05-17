@@ -5,7 +5,7 @@
 #' @param pref Prefix of packedancestrymap files (files have to end in `.geno`, `.ind`, `.snp`)
 #' @param inds Individuals from which to compute allele frequencies
 #' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param verbose Print progress updates
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
@@ -46,7 +46,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec)
+  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
   afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1,
                                        last = last, ploidy = ploidy,
@@ -149,7 +150,8 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
   fl = normalizePath(paste0(pref, '.geno'))
   if(adjust_pseudohaploid) {
-    geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, 0, min(nsnp, 1000), FALSE, FALSE)
+    ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+    geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, 0, min(nsnp, ntest), FALSE, FALSE)
     ploidy = apply(geno, 2, function(x) max(1, length(unique(na.omit(x)))-1))
   } else ploidy = rep(2, nindall)
 
@@ -526,7 +528,8 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   firsts = round(seq(first, last, length = numblocks))
   lasts = c(firsts[-1]-1, last)
   snp_indices = c()
-  if(adjust_pseudohaploid) ploidy = cpp_plink_ploidy(normalizePath(bedfile), nsnpall, nindall, indvec)
+  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  if(adjust_pseudohaploid) ploidy = cpp_plink_ploidy(normalizePath(bedfile), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
 
   for(i in seq_len(numblocks)) {
@@ -1013,7 +1016,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param overwrite Overwrite existing files in `outdir`
 #' @param format Supply this if the prefix can refer to genotype data in different formats
 #' and you want to choose which one to read. Should be `plink` to read `.bed`, `.bim`, `.fam` files, or `eigenstrat`, or `packedancestrymap` to read `.geno`, `.snp`, `.ind` files.
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` treats all samples as diploid and is equivalent to the *ADMIXTOOLS* `inbreed: NO` option.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` treats all samples as diploid and is equivalent to the *ADMIXTOOLS* `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param cols_per_chunk Number of allele frequency chunks to store on disk. Setting this to a positive integer makes the function slower, but requires less memory. The default value for `cols_per_chunk` in \code{\link{extract_afs}} is 10. Lower numbers will lower the memory requirement but increase the time it takes.
 #' @param fst Write files with pairwise FST for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
 #' @param afprod  Write files with allele frequency products for every population pair. Setting this to FALSE can make `extract_f2` faster and will require less memory.
@@ -1499,7 +1502,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   ends = c(lead(starts)[-numparts], nrow(snpfile))
 
   snpparts = list()
-  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(paste0(pref, l$genoend), nsnpall, nindall, indvec)
+  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(paste0(pref, l$genoend), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
 
   for(i in 1:numparts) {
@@ -2297,7 +2300,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
-#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option.
+#' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
@@ -2357,7 +2360,8 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
   p3 = match(pc$pop3, pops)
-  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, 1000)
+  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, ntest)
 
   if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
   if(is.null(block_lengths)) block_lengths = get_block_lengths(snpfile %>% filter(keep), blgsize = blgsize)
