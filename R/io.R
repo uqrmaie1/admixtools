@@ -46,7 +46,7 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
     # 8, 112: estimated scaling factors for AF columns and annotation columns
   }
 
-  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
   if(adjust_pseudohaploid) ploidy = cpp_packedancestrymap_ploidy(paste0(pref, '.geno'), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
   afdat = cpp_packedancestrymap_to_afs(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1,
@@ -150,7 +150,7 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
   fl = normalizePath(paste0(pref, '.geno'))
   if(adjust_pseudohaploid) {
-    ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+    ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
     geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, 0, min(nsnp, ntest), FALSE, FALSE)
     ploidy = apply(geno, 2, function(x) max(1, length(unique(na.omit(x)))-1))
   } else ploidy = rep(2, nindall)
@@ -528,7 +528,7 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   firsts = round(seq(first, last, length = numblocks))
   lasts = c(firsts[-1]-1, last)
   snp_indices = c()
-  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
   if(adjust_pseudohaploid) ploidy = cpp_plink_ploidy(normalizePath(bedfile), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
 
@@ -1502,6 +1502,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   ends = c(lead(starts)[-numparts], nrow(snpfile))
 
   snpparts = list()
+  ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
   if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(paste0(pref, l$genoend), nsnpall, nindall, indvec, ntest)
   else ploidy = rep(2, nindall)
 
@@ -2360,7 +2361,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
   p3 = match(pc$pop3, pops)
-  ntest = if(isTRUE(adjust_pseudohaploid)) 1000 else adjust_pseudohaploid
+  ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
   if(adjust_pseudohaploid) ploidy = l$cpp_geno_ploidy(fl, nsnpall, nindall, indvec, ntest)
 
   if(verbose) alert_info(paste0('Computing block lengths for ', sum(snpfile$keep),' SNPs...\n'))
