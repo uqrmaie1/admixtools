@@ -41,6 +41,7 @@ Imports:
     readr,
     rlang,
     stats,
+    stringi,
     stringr,
     tibble,
     tidyr  (>= 1.0.0),

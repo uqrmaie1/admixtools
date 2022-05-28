@@ -688,16 +688,19 @@ write_f2 = function(est_arr, count_arr, outdir, id = 'f2', overwrite = FALSE) {
   nam2 = dimnames(est_arr)[[2]]
   for(i in seq_len(d1)) {
     for(j in seq_len(d2)) {
-      pop1 = min(nam1[i], nam2[j])
-      pop2 = max(nam1[i], nam2[j])
-      if(pop1 <= pop2) {
+      min1 = stringi::stri_cmp_le(nam1[i], nam2[j], locale = 'C')
+      pop1 = if(min1) nam1[i] else nam2[j]
+      pop2 = if(min1) nam2[j] else nam1[i]
+      # pop1 = min(nam1[i], nam2[j])
+      # pop2 = max(nam1[i], nam2[j])
+      #if(pop1 <= pop2) {
         mat = cbind(as.vector(est_arr[i, j, ]), as.vector(count_arr[i, j, ]))
         colnames(mat) = c(id, 'counts')
         dir = paste0(outdir, '/', pop1, '/')
         fl = paste0(dir, pop2, '_', id,'.rds')
         if(!dir.exists(dir)) dir.create(dir)
         if(!file.exists(fl) || overwrite) saveRDS(mat, file = fl)
-      }
+      #}
     }
   }
 }
@@ -739,7 +742,10 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
               list(pops, pops2, paste0('l', block_lengths)))
 
   popcomb = expand_grid(pops, pops2) %>%
-    mutate(p1 = pmin(pops, pops2), p2 = pmax(pops, pops2)) %>%
+    #mutate(p1 = pmin(pops, pops2), p2 = pmax(pops, pops2)) %>%
+    mutate(min1 = stringi::stri_cmp_lt(pops, pops2, locale = 'C'),
+           p1 = ifelse(min1, pops, pops2), p2 = ifelse(min1, pops2, pops)) %>%
+    select(-min1) %>%
     add_count(p1, p2) %>%
     filter(!duplicated(paste(p1, p2)))
 
@@ -783,8 +789,11 @@ write_indiv = function(data, ind, outdir, overwrite = FALSE) {
 }
 
 write_pairdat2 = function(data, ind1, ind2, outdir, overwrite = FALSE) {
-  i1 = pmin(ind1, ind2)
-  i2 = pmax(ind1, ind2)
+  min1 = stringi::stri_cmp_lt(ind1, ind2, locale = 'C')
+  i1 = ifelse(min1, ind1, ind2)
+  i2 = ifelse(min1, ind2, ind1)
+  # i1 = pmin(ind1, ind2)
+  # i2 = pmax(ind1, ind2)
   fl = paste0(outdir, '/pairs/', i1, '/', i2, '.rds')
   if(!file.exists(fl) | overwrite) saveRDS(data, file = fl)
 }
@@ -918,7 +927,10 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
   }
 
   filenames = expand_grid(nam1, nam2) %>%
-    transmute(nam = paste0(outdir, '/', pmin(nam1, nam2), '/', pmax(nam1, nam2))) %$%
+    mutate(min1 = stringi::stri_cmp_lt(nam1, nam2, locale = 'C'),
+           p1 = ifelse(min1, nam1, nam2), p2 = ifelse(min1, nam2, nam1)) %>%
+    select(-min1) %>%
+    transmute(nam = paste0(outdir, '/', p1, '/', p2)) %$%
     nam %>% rep(each = 2) %>% paste0('_', type, '.rds')
   if(all(file.exists(filenames)) && !overwrite) return()
 
@@ -977,7 +989,10 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
   nam2 = colnames(xmat2)
 
   pairnames = expand_grid(nam1, nam2) %>%
-    transmute(nam = paste0(outdir, '/pairs/', pmin(nam1, nam2), '/', pmax(nam1, nam2), '.rds')) %$% nam
+    mutate(min1 = stringi::stri_cmp_lt(nam1, nam2, locale = 'C'),
+           p1 = ifelse(min1, nam1, nam2), p2 = ifelse(min1, nam2, nam1)) %>%
+    select(-min1) %>%
+    transmute(nam = paste0(outdir, '/pairs/', p1, '/', p2, '.rds')) %$% nam
   if(all(file.exists(pairnames))) return()
 
   arrs = xmats_to_pairarrs(xmat1, xmat2)
@@ -1620,7 +1635,7 @@ extract_f2_subset = function(from, to, pops, verbose = TRUE) {
     dir = paste0(to, '/', p1)
     if(!dir.exists(dir)) dir.create(dir)
     for(p2 in pops) {
-      if(p1 <= p2) {
+      if(stringi::stri_cmp_le(p1, p2, locale = 'C')) {
         fn1 = paste0(p1, '/', p2, '_f2.rds')
         fn2 = paste0(p1, '/', p2, '_ap.rds')
         file.copy(paste0(from, '/', fn1), paste0(to, '/', fn1))
@@ -1761,7 +1776,7 @@ read_pairs = function(dir, inds, inds2 = inds, block_lengths) {
   pairs = list()
   for(ind1 in inds) {
     for(ind2 in inds2) {
-      if(ind1 <= ind2 || !same) {
+      if(stringi::stri_cmp_le(ind1, ind2, locale = 'C') || !same) {
         fl = paste0(dir, '/pairs/', min(ind1, ind2), '/', max(ind1, ind2), '.rds')
         prods = readRDS(fl)
         if(any(is.na(prods))) warning(paste0('missing values in ', ind1, ' - ', ind2, '!'))
@@ -1803,7 +1818,7 @@ add_pairs = function(pairs, dir, add) {
 
   for(ind1 in inds) {
     for(ind2 in inds) {
-      if(ind1 <= ind2 && (ind1 %in% add || ind2 %in% add)) {
+      if(stringi::stri_cmp_le(ind1, ind2, locale = 'C') && (ind1 %in% add || ind2 %in% add)) {
         fl = paste0(dir, '/pairs/', ind1, '/', ind2, '.rds')
         prods = readRDS(fl)
         if(any(is.na(prods))) warning(paste0('missing values in ', ind1, ' - ', ind2, '!'))
@@ -1895,7 +1910,8 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
 
     if(!overwrite) {
       nam = sort(unique(c(colnames(a1), colnames(a2))))
-      files = expand_grid(n1=nam, n2=nam) %>% filter(n1 <= n2) %$% paste0(outdir, '/pairs/', n1, '/', n2, '.rds')
+      files = expand_grid(n1=nam, n2=nam) %>%
+        filter(stringi::stri_cmp_le(n1, n2, locale = 'C')) %$% paste0(outdir, '/pairs/', n1, '/', n2, '.rds')
       if(all(file.exists(files))) next
     }
     arrs = xmats_to_pairarrs(a1, a2)
@@ -1998,7 +2014,10 @@ group_samples_onepop = function(dir, inds, pop, overwrite = FALSE, verbose = TRU
 
   dir.create(paste0(dir, '/pairs/', pop), showWarnings = FALSE)
   pairsums %>%
-    mutate(p1 = pmin(pop1, pop2), p2 = pmax(pop1, pop2), pop1 = p1, pop2 = p2) %>%
+    mutate(min1 = stringi::stri_cmp_lt(pop1, pop2, locale = 'C'),
+           p1 = ifelse(min1, pop1, pop2), p2 = ifelse(min1, pop2, pop1)) %>%
+    select(-min1) %>% mutate(pop1 = p1, pop2 = p2) %>%
+    #mutate(p1 = pmin(pop1, pop2), p2 = pmax(pop1, pop2), pop1 = p1, pop2 = p2) %>%
     select(-bl, -p1, -p2) %>%
     split(paste(.$pop1, .$pop2, sep = '_')) %>%
     map(~write_pairdat2(data = as.matrix(select(., aa, nn)), ind1 = .$pop1[1], ind2 = .$pop2[2],
