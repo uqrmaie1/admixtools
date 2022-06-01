@@ -756,7 +756,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
     if(verbose) alert_info(paste0('Reading ', type,
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
     fl = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
-    if(!file.exists(fl)) stop(paste0('File ', fl, ' not found!'))
+    if(!file.exists(fl)) stop(paste0('File ', fl, ' not found! You may have to recompute the f-statistics!'))
     dat = readRDS(fl)[,col]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat

@@ -13,7 +13,6 @@ vignette: >
 ---
 
 
-**Under construction**
 
 Admixture graphs are models of the demographic history of a set of individuals or populations. Genetic data, in particular *f*-statistics, are informative about the topology (the shape) and the parameters (drift and admixture weights) of a graph, which allows us to favor some models and to reject others.
 
@@ -524,8 +523,8 @@ An advantage of being able to quickly evaluate a single model using precomputed 
 ### Fully automated graph exploration
 
 
-**I recently made a couple of changes to `find_graphs()`. It's now faster, but the input arguments and output format have changed a bit.
-The old function is still available under the name `find_graphs_old()`. Please let me know if you encounter any problems!**
+<!-- **I recently made a couple of changes to `find_graphs()`. It's now faster, but the input arguments and output format have changed a bit. -->
+<!-- The old function is still available under the name `find_graphs_old()`. Please let me know if you encounter any problems!** -->
 
 The function `find_graphs()` searches for admixture graphs that are compatible with the observed *f*-statistics. It starts with a random admixture graph, and continuously improves it by making random and targeted changes to the graph. The outgroup and the number of admixture edges are held constant.
 
@@ -582,11 +581,11 @@ Rather than modifying admixture graphs manually and only testing a small number 
 The following functions take a graph and return lists of new, similar graphs:
 
 ```{r, eval = FALSE}
-newgraphs = graph_plusone(example_graph)
-newgraphs = graph_minusone(example_graph)
-newgraphs = graph_minusplus(example_graph)
-newgraphs = graph_flipadmix(example_graph)
-newgraphs = graph_splittrees(example_graph)
+newgraphs = graph_plusone(example_igraph)
+newgraphs = graph_minusone(example_igraph)
+newgraphs = graph_minusplus(example_igraph)
+newgraphs = graph_flipadmix(example_igraph)
+newgraphs = graph_splittrees(example_igraph)
 ```
 ```{r, echo = FALSE}
 newgraphs = graph_splittrees(example_igraph)
