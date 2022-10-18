@@ -2572,42 +2572,105 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 }
 
 
-
 #' Convert graph to dot format
 #' @export
 #' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')
 #' @param outfile Output file name
+#' @param fontsize Font size of edge and node labels
+#' @param color A boolean specifying if the plot will be in color or grey scale.
+#' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs.
+#' @param nodesep The minimum space between two adjacent nodes in the same rank, in inches. The default is `0.25`. 
+#' @param ranksep Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is `0.5`.
+#' @param dot2pdf If `FALSE`, the function will terminate after writing the dot file. If `TRUE`, it will try to execute the `dot -Tpdf` comment to create pdf file. 
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
-write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
-                     title = '', dot2pdf = FALSE) {
-  # writes qpgraph output to a dot format file
-
+write_dot = function(graph, outfile = stdout(), fontsize = 14, color = TRUE, hide_weights = FALSE, size1 = 7.5, size2 = 10, 
+                     title = '', highlight_unidentifiable = FALSE, nodesep = 0.25, ranksep = 0.5, dot2pdf = FALSE) {
   if('igraph' %in% class(graph)) {
     edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
   } else edges = graph
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
-
+  if (isTRUE(hide_weights)){
+    edges %<>% mutate(weight = ifelse(type != "admix", " ", round(weight * 100)))
+  } else {
+    edges %<>% mutate(weight = ifelse(type != "admix", round(weight * 1000), round(weight * 100)))
+  }
+  
   leaves = setdiff(edges$to, edges$from)
   root = setdiff(edges$from, edges$to)
   internal = setdiff(c(edges$from, edges$to), c(leaves))
-  edges = mutate(edges, lab = ifelse(type == 'edge',
-                                     paste0(' [ label = "', round(weight * 1000), '" ];'),
-                                     paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''),
-                 to = str_replace_all(to, '[\\.-]', ''))
-  nodes = paste0(internal, ' [shape = point];', collapse = '\n')
-
+  
+  p = plot_graph(graph, fix=F)
+  pp = ggplot_build(p)
+  
+  pdat = graph_to_plotdat(graph)
+  
+  cols = pp$data[[1]] %>%
+    arrange(desc(y)) %>%
+    select(y, colour) %>%
+    distinct() %>%
+    right_join(pdat$eg, by = "y") %>%
+    transmute(from=name, to, colour)
+  
+  leaf_cols = pp$data[[2]] %>%
+    select(label, colour)
+  
+  if (isFALSE(color)){
+    cols = mutate(cols, colour = "Black")
+    leaf_cols$colour = "Black"
+  }
+  
+  if (isTRUE(highlight_unidentifiable)){
+    cols = unidentifiable_edges(graph) %>%
+      transmute(from, to, lab="uniden") %>%
+      right_join(cols, by=c("from", "to")) %>% 
+      replace_na(list(lab = "iden")) %>%
+      mutate(colour2 = colour) %>%
+      mutate(colour = ifelse(lab == "uniden", "Red", colour)) %>% 
+      select(-lab)
+  }
+  
+  edges = edges %>%
+    left_join(cols, by=c("from", "to")) %>%
+    mutate(lab = ifelse(type == 'edge',
+                        paste0(' [ label = "', weight, '", color = "', colour, '", fontsize = "', fontsize, '" ];'),
+                        paste0(' [ style=dotted, label = "', weight, '%", color = "', colour, '", fontsize = "', fontsize, '" ];')),
+           from = str_replace_all(from, '[\\.-]', ''),
+           to = str_replace_all(to, '[\\.-]', ''))
+  
+  if (isTRUE(highlight_unidentifiable)){
+    ints = cols %>%
+      transmute(from, colour = colour2)
+  } else{
+    ints = cols %>%
+      select(from, colour)
+  } 
+  
+  int_nodes = ints %>%
+    distinct() %>%
+    transmute(lab = paste0(from, ' [shape = point, color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+  
+  term_nodes = leaf_cols %>%
+    transmute(lab = paste0(label, ' [color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+  
   out = paste0('digraph G {\nlabel = "',title,'";\nlabelloc=t;\nlabeljust=l;\n')
   out = paste0(out, 'size = "',size1,',',size2,'";\n')
-  out = paste0(out, nodes, '\n')
+  out = paste0(out, 'nodesep = "', nodesep, '";\n')
+  out = paste0(out, 'ranksep = "', ranksep, '";\n')
+  out = paste0(out, int_nodes, '\n')
+  out = paste0(out, term_nodes, '\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
-
+  
   writeLines(out, outfile)
   if(dot2pdf) {
     outpdf = str_replace(outfile, '\\..*$', '.pdf')
