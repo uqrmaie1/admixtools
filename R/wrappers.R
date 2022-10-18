@@ -1465,8 +1465,8 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
 #' \dontrun{
 #' # Create simulation script that simulates 2 chromosomes that are 50base long 
 #' # where maximum depth of the tree is 5000 generations, and plot the output graph
-#' out = random_sim(nleaf=4, nadmix=0, max_depth=5000, nchr=2, seq_length=50)
-#' plot_graph(out$edges, dates = out$dates, neff = out$neff hide_weights = TRUE)
+#' out = random_sim(nleaf=4, nadmix=1, max_depth=5000, nchr=2, seq_length=50)
+#' plot_graph(out$edges, dates = out$dates, neff = out$neff, hide_weights = TRUE)
 #' }
 random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, ind_per_pop = 1, mutation_rate = 1.25e-8, admix_weights = 0.5, neff = 1000,
                       time = 1000, fix_leaf = FALSE, outpop = NULL, nchr = 1, recomb_rate = 2e-8, seq_length = 1000, ghost_lineages = TRUE, run = FALSE){

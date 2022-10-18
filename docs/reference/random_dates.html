@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot an admixture graph — plot_graph • admixtools</title>
+<title>Get random dates for graph nodes — random_dates • admixtools</title>
 
 
 <!-- jquery -->
@@ -45,8 +45,10 @@
 
 
 
-<meta property="og:title" content="Plot an admixture graph — plot_graph" />
-<meta property="og:description" content="Plot an admixture graph" />
+<meta property="og:title" content="Get random dates for graph nodes — random_dates" />
+<meta property="og:description" content="This function assigns a date (in generations) to each node in an admixture graph and is used in random_sim.
+The dates are drawn from a uniform distribution with given lower and upper bounds,
+unless the fix_leaf option is set to TRUE, in which case the dates of all leaf nodes returned by get_leafnames will be set to 0." />
 
 
 
@@ -166,96 +168,45 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot an admixture graph</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/plotting.R'><code>R/plotting.R</code></a></small>
-    <div class="hidden name"><code>plot_graph.Rd</code></div>
+    <h1>Get random dates for graph nodes</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
+    <div class="hidden name"><code>random_dates.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Plot an admixture graph</p>
+    <p>This function assigns a date (in generations) to each node in an admixture graph and is used in <code><a href='random_sim.html'>random_sim</a></code>.
+The dates are drawn from a uniform distribution with given lower and upper bounds,
+unless the <code>fix_leaf</code> option is set to <code>TRUE</code>, in which case the dates of all leaf nodes returned by <code><a href='get_leafnames.html'>get_leafnames</a></code> will be set to 0.</p>
     </div>
 
-    <pre class="usage"><span><span class='fu'>plot_graph</span><span class='op'>(</span></span>
-<span>  <span class='va'>graph</span>,</span>
-<span>  fix <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  title <span class='op'>=</span> <span class='st'>""</span>,</span>
-<span>  color <span class='op'>=</span> <span class='cn'>TRUE</span>,</span>
-<span>  textsize <span class='op'>=</span> <span class='fl'>2.5</span>,</span>
-<span>  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  pos <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  dates <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  neff <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  scale_y <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  hide_weights <span class='op'>=</span> <span class='cn'>FALSE</span></span>
-<span><span class='op'>)</span></span></pre>
+    <pre class="usage"><span><span class='fu'>random_dates</span><span class='op'>(</span><span class='va'>graph</span>, min <span class='op'>=</span> <span class='fl'>1000</span>, max <span class='op'>=</span> <span class='fl'>1000</span>, fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>An admixture graph. If it's an edge list with a <code>label</code> column,
-those values will be displayed on the edges</p></td>
+      <td><p>An admixture graph</p></td>
     </tr>
     <tr>
-      <th>fix</th>
-      <td><p>If <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize
-the number of intersecting edges. This can take very long for large graphs.
-By default this is only done for graphs with fewer than 10 leaves.</p></td>
+      <th>min</th>
+      <td><p>A lower limit of uniform distribution</p></td>
     </tr>
     <tr>
-      <th>title</th>
-      <td><p>A plot title</p></td>
+      <th>max</th>
+      <td><p>An upper limit of uniform distribution</p></td>
     </tr>
     <tr>
-      <th>color</th>
-      <td><p>Plot it in color or greyscale</p></td>
-    </tr>
-    <tr>
-      <th>textsize</th>
-      <td><p>Size of edge and node labels</p></td>
-    </tr>
-    <tr>
-      <th>highlight_unidentifiable</th>
-      <td><p>Highlight unidentifiable edges in red. Can be slow for large graphs. See <code><a href='unidentifiable_edges.html'>unidentifiable_edges</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>pos</th>
-      <td><p>An optional data frame with node coordinates (columns <code>node</code>, <code>x</code>, <code>y</code>)</p></td>
-    </tr>
-    <tr>
-      <th>dates</th>
-      <td><p>An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., <code>c('R'=1000, 'A'=0, 'B'=0)</code>).
-If this option is supplied, the y-axis will display dates in generations.</p></td>
-    </tr>
-    <tr>
-      <th>neff</th>
-      <td><p>An optional named vector with effective population sizes for each population (e.g., <code>c('R'=100, 'A'=100, 'B'=100)</code>).
-If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.</p></td>
-    </tr>
-    <tr>
-      <th>scale_y</th>
-      <td><p>If <code>TRUE</code>, scale the y-axis according to <code>dates</code> vector. The default is <code>FALSE</code>.</p></td>
-    </tr>
-    <tr>
-      <th>hide_weights</th>
-      <td><p>A boolean value specifying if the drift values on the edges will be hidden. The default is <code>FALSE</code>.</p></td>
+      <th>fix_leaf</th>
+      <td><p>A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time).
+If <code>TRUE</code>, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is <code>FALSE</code>.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A ggplot object</p>
+    <p>A named vector with random dates for each graph node</p>
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='r-in'><span><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span></span>
-<span class='r-in'><span><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>example_graph</span><span class='op'>)</span></span></span>
-<span class='r-in'><span></span></span>
-<span class='r-in'><span><span class='co'># Plot a random simulation output. Show dates and population sizes on the plot</span></span></span>
-<span class='r-in'><span><span class='va'>out</span> <span class='op'>=</span> <span class='fu'><a href='random_sim.html'>random_sim</a></span><span class='op'>(</span>nleaf<span class='op'>=</span><span class='fl'>5</span>, nadmix<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span></span></span>
-<span class='r-in'><span><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, dates<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>dates</span>, neff<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span><span class='op'>)</span></span></span>
-<span class='r-in'><span><span class='op'>}</span></span></span>
-</pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

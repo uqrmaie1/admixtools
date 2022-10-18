@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot an admixture graph — plot_graph • admixtools</title>
+<title>Simulate an admixture graph in msprime v1.x. — msprime_genome • admixtools</title>
 
 
 <!-- jquery -->
@@ -45,8 +45,9 @@
 
 
 
-<meta property="og:title" content="Plot an admixture graph — plot_graph" />
-<meta property="og:description" content="Plot an admixture graph" />
+<meta property="og:title" content="Simulate an admixture graph in msprime v1.x. — msprime_genome" />
+<meta property="og:description" content="This function generates an msprime simulation script, and optionally executes it in python.
+Unlike msprime_sim, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes." />
 
 
 
@@ -166,27 +167,31 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot an admixture graph</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/plotting.R'><code>R/plotting.R</code></a></small>
-    <div class="hidden name"><code>plot_graph.Rd</code></div>
+    <h1>Simulate an admixture graph in msprime v1.x.</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
+    <div class="hidden name"><code>msprime_genome.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Plot an admixture graph</p>
+    <p>This function generates an msprime simulation script, and optionally executes it in python.
+Unlike <code><a href='msprime_sim.html'>msprime_sim</a></code>, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes.</p>
     </div>
 
-    <pre class="usage"><span><span class='fu'>plot_graph</span><span class='op'>(</span></span>
+    <pre class="usage"><span><span class='fu'>msprime_genome</span><span class='op'>(</span></span>
 <span>  <span class='va'>graph</span>,</span>
-<span>  fix <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  title <span class='op'>=</span> <span class='st'>""</span>,</span>
-<span>  color <span class='op'>=</span> <span class='cn'>TRUE</span>,</span>
-<span>  textsize <span class='op'>=</span> <span class='fl'>2.5</span>,</span>
-<span>  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  pos <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  dates <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  neff <span class='op'>=</span> <span class='cn'>NULL</span>,</span>
-<span>  scale_y <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  hide_weights <span class='op'>=</span> <span class='cn'>FALSE</span></span>
+<span>  outpref <span class='op'>=</span> <span class='st'>"msprime_sim"</span>,</span>
+<span>  neff <span class='op'>=</span> <span class='fl'>1000</span>,</span>
+<span>  ind_per_pop <span class='op'>=</span> <span class='fl'>1</span>,</span>
+<span>  mutation_rate <span class='op'>=</span> <span class='fl'>1.25e-08</span>,</span>
+<span>  time <span class='op'>=</span> <span class='fl'>1000</span>,</span>
+<span>  fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  nchr <span class='op'>=</span> <span class='fl'>1</span>,</span>
+<span>  recomb_rate_chr <span class='op'>=</span> <span class='fl'>2e-08</span>,</span>
+<span>  seq_length <span class='op'>=</span> <span class='fl'>1000</span>,</span>
+<span>  admix_default <span class='op'>=</span> <span class='fl'>0.5</span>,</span>
+<span>  run <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  ghost_lineages <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  shorten_admixed_leaves <span class='op'>=</span> <span class='cn'>FALSE</span></span>
 <span><span class='op'>)</span></span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -194,66 +199,76 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>An admixture graph. If it's an edge list with a <code>label</code> column,
-those values will be displayed on the edges</p></td>
+      <td><p>A graph as an <code>igraph</code> object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.</p></td>
     </tr>
     <tr>
-      <th>fix</th>
-      <td><p>If <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize
-the number of intersecting edges. This can take very long for large graphs.
-By default this is only done for graphs with fewer than 10 leaves.</p></td>
-    </tr>
-    <tr>
-      <th>title</th>
-      <td><p>A plot title</p></td>
-    </tr>
-    <tr>
-      <th>color</th>
-      <td><p>Plot it in color or greyscale</p></td>
-    </tr>
-    <tr>
-      <th>textsize</th>
-      <td><p>Size of edge and node labels</p></td>
-    </tr>
-    <tr>
-      <th>highlight_unidentifiable</th>
-      <td><p>Highlight unidentifiable edges in red. Can be slow for large graphs. See <code><a href='unidentifiable_edges.html'>unidentifiable_edges</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>pos</th>
-      <td><p>An optional data frame with node coordinates (columns <code>node</code>, <code>x</code>, <code>y</code>)</p></td>
-    </tr>
-    <tr>
-      <th>dates</th>
-      <td><p>An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., <code>c('R'=1000, 'A'=0, 'B'=0)</code>).
-If this option is supplied, the y-axis will display dates in generations.</p></td>
+      <th>outpref</th>
+      <td><p>A prefix of output files.</p></td>
     </tr>
     <tr>
       <th>neff</th>
-      <td><p>An optional named vector with effective population sizes for each population (e.g., <code>c('R'=100, 'A'=100, 'B'=100)</code>).
-If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.</p></td>
+      <td><p>Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., <code>c('R'=100, 'A'=50, 'B'=50)</code>).</p></td>
     </tr>
     <tr>
-      <th>scale_y</th>
-      <td><p>If <code>TRUE</code>, scale the y-axis according to <code>dates</code> vector. The default is <code>FALSE</code>.</p></td>
+      <th>ind_per_pop</th>
+      <td><p>The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations.
+Alternatively, it can be a named vector with a different value for each population (e.g., <code>c('A'=10, 'B'=20)</code> to sample 10 and 20 diploid individuals from populations A and B, respectively).</p></td>
     </tr>
     <tr>
-      <th>hide_weights</th>
-      <td><p>A boolean value specifying if the drift values on the edges will be hidden. The default is <code>FALSE</code>.</p></td>
+      <th>mutation_rate</th>
+      <td><p>Mutation rate per site per generation. The default is <code>1.25e-8</code> per base pair per generation.</p></td>
+    </tr>
+    <tr>
+      <th>time</th>
+      <td><p>Either a scalar value (1000 generations by default) with the dates generated by <code><a href='pseudo_dates.html'>pseudo_dates</a></code>, or a named vector with dates for each graph node (in generations).</p></td>
+    </tr>
+    <tr>
+      <th>fix_leaf</th>
+      <td><p>A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If <code>TRUE</code>, all samples will be drawn at the end of the simulation (i.e., from “today”).</p></td>
+    </tr>
+    <tr>
+      <th>nchr</th>
+      <td><p>Number of chromosomes to simulate.</p></td>
+    </tr>
+    <tr>
+      <th>recomb_rate_chr</th>
+      <td><p>A float value specifying recombination rate along the chromosomes. The default is <code>2e-8</code> per base pair per generation.</p></td>
+    </tr>
+    <tr>
+      <th>seq_length</th>
+      <td><p>The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
+Alternatively, it can be a vector with a length equal to the number of chromosomes (i.e., <code>c(100,50)</code> to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).</p></td>
+    </tr>
+    <tr>
+      <th>admix_default</th>
+      <td><p>A float value specifying default admixture proportion for all admixture nodes. The default is <code>0.5</code>.
+If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).</p></td>
+    </tr>
+    <tr>
+      <th>run</th>
+      <td><p>If <code>FALSE</code>, the function will terminate after writing the msprime script. If <code>TRUE</code>, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set <code>run = /my/python</code>.</p></td>
+    </tr>
+    <tr>
+      <th>ghost_lineages</th>
+      <td><p>A boolean value specifying whether ghost lineages will be allowed.
+If <code>TRUE</code>, admixture happens at the time points defined by the y-axis generated while plotting the graph by <code><a href='plot_graph.html'>plot_graph</a></code>.
+If <code>FALSE</code> (default), admixture occurs at the time of the previous split event.</p></td>
+    </tr>
+    <tr>
+      <th>shorten_admixed_leaves</th>
+      <td><p>If <code>TRUE</code> simulate the behavior of treemix where drift after admixture is not allowed</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A ggplot object</p>
+    <p>The file name and path of the simulation script</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='r-in'><span><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span></span>
-<span class='r-in'><span><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>example_graph</span><span class='op'>)</span></span></span>
-<span class='r-in'><span></span></span>
-<span class='r-in'><span><span class='co'># Plot a random simulation output. Show dates and population sizes on the plot</span></span></span>
-<span class='r-in'><span><span class='va'>out</span> <span class='op'>=</span> <span class='fu'><a href='random_sim.html'>random_sim</a></span><span class='op'>(</span>nleaf<span class='op'>=</span><span class='fl'>5</span>, nadmix<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span></span></span>
-<span class='r-in'><span><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, dates<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>dates</span>, neff<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span><span class='op'>)</span></span></span>
+<span class='r-in'><span><span class='va'>results</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>example_graph</span><span class='op'>)</span></span></span>
+<span class='r-in'><span><span class='co'># Simulate 3 chromosomes whose lengths are 50, 100 and 100</span></span></span>
+<span class='r-in'><span><span class='fu'>msprime_genome</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span>, nchr<span class='op'>=</span><span class='fl'>3</span>, seq_length<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>50</span>, <span class='fl'>100</span>, <span class='fl'>100</span><span class='op'>)</span><span class='op'>)</span></span></span>
 <span class='r-in'><span><span class='op'>}</span></span></span>
 </pre>
   </div>
