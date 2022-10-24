@@ -2593,7 +2593,11 @@ write_dot = function(graph, outfile = stdout(), fontsize = 14, color = TRUE, hid
   if('igraph' %in% class(graph)) {
     edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
-  } else edges = graph
+    ig = graph
+  } else{
+    edges = graph
+    ig = edges_to_igraph(graph)
+  } 
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
   if (isTRUE(hide_weights)){
     edges %<>% mutate(weight = ifelse(type != "admix", " ", round(weight * 100)))
@@ -2626,7 +2630,7 @@ write_dot = function(graph, outfile = stdout(), fontsize = 14, color = TRUE, hid
   }
   
   if (isTRUE(highlight_unidentifiable)){
-    cols = unidentifiable_edges(graph) %>%
+    cols = unidentifiable_edges(ig) %>%
       transmute(from, to, lab="uniden") %>%
       right_join(cols, by=c("from", "to")) %>% 
       replace_na(list(lab = "iden")) %>%
