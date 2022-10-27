@@ -2582,7 +2582,7 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs.
 #' @param nodesep The minimum space between two adjacent nodes in the same rank, in inches. The default is `0.25`. 
 #' @param ranksep Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is `0.5`.
-#' @param replace_dot A boolean value specifying if the dots (.) in population names should be replaced with underscore. The default is `FALSE`.
+#' @param fix_names If `TRUE`, replaces the dots (.) and dashes (-) in population names with underscores. The default is `FALSE`.
 #' @param dot2pdf If `FALSE`, the function will terminate after writing the dot file. If `TRUE`, it will try to execute the `dot -Tpdf` comment to create pdf file. 
 #' @examples
 #' \dontrun{
@@ -2590,15 +2590,18 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 #' write_dot(results$edges)
 #' }
 write_dot = function(graph, outfile = stdout(), fontsize = 14, color = TRUE, hide_weights = FALSE, size1 = 7.5, size2 = 10, 
-                     title = '', highlight_unidentifiable = FALSE, nodesep = 0.25, ranksep = 0.5, replace_dot = FALSE, dot2pdf = FALSE) {
-  if (isTRUE(replace_dot)){
+                     title = '', highlight_unidentifiable = FALSE, nodesep = 0.25, ranksep = 0.5, fix_names = FALSE, dot2pdf = FALSE) {
+  if (isTRUE(fix_names)){
     if('igraph' %in% class(graph)) {
       graph %<>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
         mutate_all(list(function(x) gsub("\\.", "_", x))) %>%
+        mutate_all(list(function(y) gsub("-", "_", y))) %>%
         edges_to_igraph()
     }
     else{
-      graph %<>% mutate_at(c("from", "to"), function(x) gsub("\\.", "_", x))
+      graph %<>% 
+        mutate_at(c("from", "to"), function(x) gsub("\\.", "_", x)) %>%
+        mutate_at(c("from", "to"), function(x) gsub("-", "_", x))
     }
   }
   if('igraph' %in% class(graph)) {
