@@ -13,7 +13,6 @@ vignette: >
 ---
 
 
-**Under construction**
 
 ```{r, warning = FALSE, message = FALSE}
 library(magrittr)

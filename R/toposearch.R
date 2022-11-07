@@ -1637,7 +1637,8 @@ graph_minusone = function(graph, ntry = Inf) {
   #   simplify_graph
   fn = ~delete_admix(graph, .x, .y)
   if(desimplify) fn %<>% compose(desimplify_graph, .dir = 'forward')
-  graph %>% find_admixedges %>% slice_sample(n = ntry, replace = TRUE) %>% mutate(graph = map2(from, to, fn))
+  graph %>% find_admixedges %>% slice_sample(n = min(100, ntry), replace = TRUE) %>%
+    mutate(graph = map2(from, to, fn))
 }
 
 #' Find all graphs which result from adding and removing one admixture edge
@@ -1850,8 +1851,12 @@ delete_admix = function(graph, from = NULL, to = NULL) {
   if(is.null(from)) {
     if(desimplify) graph %<>% simplify_graph
     if(!is_valid(graph)) stop('delete admix error')
-    admix = graph %>% find_admixedges %>% slice_sample
-    if(nrow(admix) == 0) stop("No admix edges found!")
+    admix = graph %>% find_admixedges
+    if(nrow(admix) == 0) {
+      stop("No admix edges found!")
+    } else {
+      admix %<>% slice_sample
+    }
     from = admix$from
     to = admix$to
   }
@@ -2458,7 +2463,7 @@ eval_plusonepop = function(graph, pop, qpgfun, ntry = Inf, verbose = TRUE) {
 
   if(verbose) alert_info(paste0('Found ',nrow(newgraphs),' graphs. Evaluating ', min(nrow(newgraphs), ntry), '...\n'))
   newgraphs %>%
-    slice_sample(n = ntry, replace = TRUE) %>%
+    slice_sample(n = min(100, ntry), replace = TRUE) %>%
     mutate(res = furrr::future_map(graph, qpgfun, .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) %>% arrange(score) %>% select(from, to, graph, score)
 }
@@ -2778,7 +2783,8 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
       if(remaining > 0) {
         swape = swap_negdrift(graph, e$from, e$to)
         if(!is.null(swape) && length(swape) > 0) {
-          newswap = tibble(g = swape, mutfun = 'swap_negdrift') %>% slice_sample(n = min(length(swape), ceiling(remaining/2)))
+          newswap = tibble(g = swape, mutfun = 'swap_negdrift') %>%
+            slice_sample(n = min(length(swape), ceiling(remaining/2)))
           newmod %<>% bind_rows(newswap)
         }
         remaining = numgraphs - nrow(newmod)
@@ -3437,13 +3443,14 @@ graph_to_function3 = function(graph, ge = NULL) {
 #' @param graph An admixture graph
 #' @param admix_default The default weights for admixture edges
 #' @param drift_default The default weights for drift edges
+#' @param random_defaults Set default weights randomly for each edge between 0 and 1
 #' @return A function mapping edge weights to f2-statistics
 #' @examples
 #' \dontrun{
 #' mygraph = graph_f2_function(example_igraph)
 #' mygraph(N3N8 = 0.1, `N2N1|Vindija.DG` = 0.4)
 #' }
-graph_f2_function = function(graph, admix_default = 0.5, drift_default = 0.01) {
+graph_f2_function = function(graph, admix_default = 0.5, drift_default = 0.01, random_defaults = FALSE) {
 
   ge = graph_equations(graph, substitute = FALSE)
   body1 = ge$equations$equation %>% paste(collapse = ', ') %>% paste('dat <- c(', ., '); ') %>% rlang::parse_expr()
@@ -3451,6 +3458,12 @@ graph_f2_function = function(graph, admix_default = 0.5, drift_default = 0.01) {
   body3 = rlang::expr(mutate(d2, f2 = dat))
   body = rlang::expr({!!body1; !!body2; !!body3})
 
+  if(random_defaults) {
+    na = ge$coding %>% filter(type == 'a') %>% nrow
+    ne = ge$coding %>% filter(type == 'e') %>% nrow
+    admix_default = runif(na)
+    drift_default = runif(ne)
+  }
   args = ge$coding %>% filter(type != 'f') %>%
     transmute(edge, val = ifelse(type == 'a', admix_default, drift_default)) %>%
     deframe %>% as.list
@@ -4128,57 +4141,93 @@ consistent_with_qpadm = function(graph, left, right, target) {
 
 }
 
-#' Get all qpadm models for a graph
+#' Partition a list of populations into left and right populations
 #'
-#' This function returns all valid qpadm models for a graph and a given target population, and evaluates them if `data` is provided.
 #' @export
-#' @param graph An admixture graph
-#' @param target Name of the target population. If `NULL`, it will cycle through all admixed populations.
-#' @param allpops Only consider models which include all populations in the graph
-#' @param more_right Only consider models where the number of right populations is greater than the number of left populations
-#' @param data If `data` is set, all models will be evaluated using \code{\link{qpadm_multi}}
-#' @param ... Arguments passed to \code{\link{qpadm_multi}}
+#' @param pops A vector of populations
+#' @param allpops Return only models which use all provided populations
+#' @param more_right Return only models with more right than left populations
 #' @return A data frame with one qpadm model per row
+#' @seealso \code{\link{qpadm_models}}, \code{\link{graph_f2_function}}
 #' @examples
 #' \dontrun{
-#' graph_to_qpadm(example_igraph, 'Mbuti.DG', data = example_f2_blocks)
+#' graph_to_qpadm(get_leafnames(example_igraph))
 #' }
-graph_to_qpadm = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
+qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 
-  if(is.null(target)) target = graph %>% summarize_numadmix %>% filter(nadmix > 0) %>% pull(pop)
-  target %>% set_names %>%
-    map(~graph_to_qpadm_single(graph, target = ., allpops = allpops,
-                             more_right = more_right, data = data, ...)) %>% bind_rows
-}
-
-graph_to_qpadm_single = function(graph, target = NULL, allpops = TRUE, more_right = TRUE, data = NULL, ...) {
-
-  pops = get_leafnames(graph)
-  pops2 = setdiff(pops, target)
-  models = tibble(l = power_set(pops2))
+  models = tibble(l = power_set(pops))
   if(!is.logical(allpops)) stop('"allpops" should be TRUE or FALSE!')
   if(allpops) {
-    models %<>% rowwise %>% mutate(r = list(setdiff(pops2, l)))
+    models %<>% rowwise %>% mutate(r = list(setdiff(pops, l)))
   } else {
-    models %<>% rowwise %>% mutate(r = list(power_set(setdiff(pops2, l)))) %>% unnest(r)
+    models %<>% rowwise %>% mutate(r = list(power_set(setdiff(pops, l)))) %>% unnest(r)
   }
   models %<>% rowwise %>% filter(length(r) > 0) %>% ungroup
   if(more_right) models %<>% rowwise %>% filter(length(r) > length(l)) %>% ungroup
-
-  internal = setdiff(names(V(graph)), pops)
-  dest = graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
-    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% group_by(from) %>% filter(target %in% to) %>% ungroup
-
-  fun = function(dest, left, right) {
-    dest %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right')) %>%
-      group_by(from) %>% filter('right' %in% type & !'left' %in% type) %>% nrow %>% equals(0)
-  }
-  out = models %>% rowwise %>% filter(fun(dest, l, r)) %>% ungroup %>%
-    transmute(target, left = l, right = r)
-  if(is.null(data)) return(out)
-  qpadm_multi(data, out, full_results = FALSE, verbose = FALSE, ...)
+  models
 }
 
+
+#' Get all qpadm models for a graph
+#'
+#' This function tests which qpadm models should be valid for an admixture graph and a target population. By default, all models returned by \code{\link{qpadm_models}} are tested. For large graphs this will be too slow, and you may want test only some models by providing the `models` argument, or only a single model by providing the `left` and `right` arguments.
+#' @details Two validity criteria are tested for each qpadm model: Rank validity and weight validity. Rank validity means that the rank of the f4 statistic matrix for only left and right populations is the same as the rank of the f4 statistic matrix that includes the target population among the left populations. Weight validity means that the estimated admixture weights for all left populations are between 0 and 1.
+#' @export
+#' @param graph An admixture graph
+#' @param target Name of the target population.
+#' @param left Left populations (provide this optionally if you want to test only a single qpadm model)
+#' @param right Right populations (provide this optionally if you want to test only a single qpadm model)
+#' @param models A two column nested data frame with models to be evaluated, one model per row. The first column, `l`, should contain the left populations, the second column, `r`, should contain the right populations. The target population is provided separately in the `target` argument.
+#' @param weights Set this to `FALSE` to speed things up, if you care only about rank validity, not weight validity.
+#' @param allpops Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}
+#' @param return_f4 Include f4 statistic matrices in the results (default `FALSE`)
+#' @return A data frame with one qpadm model per row and columns `valid_rank` and `valid_weights` indicating whether a model should be valid under the graph.
+#' @note An earlier version of this function tried to use the graph topology for identifying valid qpadm models, but this didn't work reliably. Christian Huber had the idea of using the ranks of expected f4 statistic matrices instead.
+#' @seealso \code{\link{qpadm_models}}, \code{\link{graph_f2_function}}
+#' @examples
+#' \dontrun{
+#' graph2 = example_igraph %>% simplify_graph() %>%
+#'   delete_admix('N3N0', 'N3N4') %>% delete_admix('N3N1', 'N3N8')
+#' graph_to_qpadm(graph2, 'Mbuti.DG') %>% filter(valid_rank, valid_weights)
+#' }
+graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NULL,
+                          weights = TRUE, allpops = TRUE, more_right = TRUE, return_f4 = FALSE) {
+
+  if(is.null(models)) {
+    if(!is.null(left) && !is.null(right)) {
+      models = tibble(l = list(left), r = list(right))
+    } else {
+      models = get_leafnames(graph) %>% setdiff(target) %>%
+        qpadm_models(allpops = allpops, more_right = more_right)
+    }
+  }
+  f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
+  out = models %>% rowwise %>%
+    mutate(target,
+           m1 = list(f4dat_f4mat(f4dat, l, r, eps = 1e-10)),
+           m2 = list(f4dat_f4mat(f4dat, c(target, l), r, eps = 1e-10)),
+           rank1 = qr(m1)$rank,
+           rank2 = qr(m2)$rank,
+           valid_rank = rank1 == rank2)
+  if(weights) {
+    out %<>%
+      mutate(w = list(cpp_qpadm_weights(m2, diag(prod(dim(m2))), rnk = min(dim(m2)), qpsolve=qpsolve)$weights),
+             wmin = min(w), wmax = max(w), valid_weights = isTRUE(wmin > 0 & wmax < 1)) %>% select(-w)
+  }
+  if(!return_f4) out %<>% select(-m1, -m2)
+  out %>% ungroup
+}
+
+
+f4dat_f4mat = function(f4dat, left, right, eps = NA) {
+
+  mat = f4dat %>%
+    filter(pop1 == left[1], pop2 %in% left[-1], pop3 == right[1], pop4 %in% right[-1]) %>%
+    select(-pop1,-pop3) %>% pivot_wider(pop2, names_from='pop4', values_from='f4') %>%
+    select(-pop2) %>% as.matrix
+  mat[abs(mat) < eps] = 0
+  mat
+}
 
 consistent_with_qpwave = function(graph, left, right) {
 

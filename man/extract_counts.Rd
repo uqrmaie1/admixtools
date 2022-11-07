@@ -47,7 +47,7 @@ extract_counts(
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
-\item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.}
+\item{maxmem}{Maximum amount of memory to be used. If the required amount of memory exceeds \code{maxmem}, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair. This doesn't put a precise cap on the amount of memory used (it used to at some point). Set this parameter to lower values if you run out of memory while running this function. Set it to higher values if this function is too slow and you have lots of memory.}
 
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
