@@ -11,6 +11,7 @@ qpadm(
   target,
   f4blocks = NULL,
   fudge = 1e-04,
+  fudge_twice = FALSE,
   boot = FALSE,
   getcov = TRUE,
   constrained = FALSE,
@@ -36,6 +37,8 @@ qpadm(
 \item{f4blocks}{Instead of f2 blocks, f4 blocks can be supplied. This is used by \code{\link{qpadm_multi}}}
 
 \item{fudge}{Value added to diagonal matrix elements before inverting}
+
+\item{fudge_twice}{Setting this to \code{TRUE} should result in p-values that better match those in the original qpAdm program}
 
 \item{boot}{If \code{FALSE} (the default), block-jackknife resampling will be used to compute standard errors.
 Otherwise, block-bootstrap resampling will be used to compute standard errors. If \code{boot} is an integer, that number

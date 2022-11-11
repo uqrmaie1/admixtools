@@ -80,46 +80,7 @@ jack_vec_stats2 = function(loo_vec, block_lengths, na.rm = TRUE) {
   namedList(est, var)
 }
 
-jack_vec_stats3 = function(est_vec, block_lengths, na.rm = TRUE) {
-  # input is a vector of blocked estimates
-  # output is list with jackknife mean and covariance
-  # should give same results as 'jack_arr_stats' and 'jack_mat_stats'
 
-  # est == tot; only valid when estimates are additive
-
-  if(na.rm) {
-    fin = is.finite(est_vec)
-    if(sum(fin) == 0) stop("Too many missing values!")
-    block_lengths = block_lengths[fin]
-    est_vec = est_vec[fin]
-  }
-  est = weighted.mean(est_vec, block_lengths, na.rm=na.rm) # only valid when estimates are additive
-  var = mean((est - est_vec)^2/(sum(block_lengths)/block_lengths-1))
-
-  namedList(est, var)
-}
-
-
-jack_mat_stats_proper_na = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
-  # input is matrix (one block per column)
-  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
-  # should give same results as 'jack_arr_stats'
-  # handles NA correctly
-
-  blmat = matrix(block_lengths, nrow(loo_mat), ncol(loo_mat), byrow = TRUE)
-  blmat[is.na(loo_mat)] = NA
-  hmat = rowSums(blmat,na.rm=TRUE)/blmat
-  if(is.null(tot)) tot = weighted_row_means(loo_mat, 1-1/hmat, na.rm=na.rm) # only valid when estimates are additive
-  numblocks = length(block_lengths)
-  est = rowSums(tot - loo_mat, na.rm=na.rm) + weighted_row_means(loo_mat, block_lengths, na.rm=na.rm)
-  estmat = matrix(est, nrow(loo_mat), numblocks)
-  totmat = matrix(tot, nrow(loo_mat), numblocks)
-  taumat = hmat*totmat - (hmat-1)*loo_mat
-  xtau = (taumat - estmat) / sqrt(hmat-1)
-  var = tcrossprod(replace_na(xtau, 0))/tcrossprod(!is.na(xtau))
-
-  namedList(est, var)
-}
 
 jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   # input is matrix (one block per column)
@@ -146,27 +107,6 @@ jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   namedList(est, var)
 }
 
-jack_mat_stats_old = function(loo_mat, block_lengths, na.rm = TRUE) {
-  # input is matrix (one block per column)
-  # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
-
-  # est == tot; only valid when estimates are additive
-
-  if(na.rm) {
-    fin = apply(loo_mat, 2, function(x) sum(!is.finite(x))==0)
-    if(sum(fin) == 0) stop("Too many missing values!")
-    block_lengths = block_lengths[fin]
-    loo_mat = loo_mat[,fin,drop=FALSE]
-  }
-  n = sum(block_lengths)
-  h = n/block_lengths
-  est = weighted_row_means(loo_mat, 1-1/h, na.rm=na.rm)
-  xtau = (est - loo_mat) * sqrt(rep(h, each = nrow(loo_mat))-1)
-  var = tcrossprod(replace_na(xtau, 0)) / tcrossprod(!is.na(xtau))
-
-  namedList(est, var)
-}
-
 jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
   # input is matrix (one block per column)
   # output is list with vector of jackknife means and matrix of pairwise jackknife covariances
@@ -187,34 +127,6 @@ jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
   namedList(est, var)
 }
 
-jack_arr_stats_old = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
-  # input is 3d array (n x n x m) with leave-one-out statistics
-  # output is list with jackknife means and jackknife variances
-  # should give same results as 'jack_mat_stats'
-
-  if(na.rm) {
-    fin = apply(loo_arr, 3, function(x) sum(!is.finite(x))==0)
-    if(sum(fin) == 0) stop("Too many missing values!")
-    block_lengths = block_lengths[fin]
-    loo_arr = loo_arr[,,fin,drop=FALSE]
-  }
-  n = sum(block_lengths)
-  if(is.null(tot)) tot = apply(loo_arr, 1:2, weighted.mean, 1-block_lengths/n, na.rm=na.rm)
-  # above line only valid when estimates are additive
-  numblocks = length(block_lengths)
-  totarr = replicate(numblocks, tot)
-  d1 = dim(loo_arr)[1]
-  d2 = dim(loo_arr)[2]
-  est = apply(totarr - loo_arr, 1:2, mean, na.rm=na.rm)*numblocks +
-    apply(loo_arr, 1:2, weighted.mean, block_lengths, na.rm=na.rm)
-  estarr = replicate(numblocks, est)
-  h = rep(n/block_lengths, each = d1*d2)
-  tau = h*totarr - (h-1)*loo_arr
-  xtau = (tau - estarr)^2 / (h-1)
-  var = apply(xtau, 1:2, mean, na.rm = na.rm)
-
-  namedList(est, var)
-}
 
 jack_arr_stats = function(loo_arr, block_lengths, tot = NULL, na.rm = TRUE) {
   # input is 3d array (n x n x m) with leave-one-out statistics
@@ -380,24 +292,6 @@ get_block_lengths = function(dat, blgsize = 0.05, cpp = TRUE, verbose = TRUE) {
 }
 
 
-
-est_to_loo_old = function(arr, block_lengths = NULL) {
-  # turns block estimates into leave-one-block-out estimates
-  # assumes blocks are along 3rd dimension
-
-  if(is.null(block_lengths)) block_lengths = parse_number(dimnames(arr)[[3]])
-  nam = dimnames(arr)
-  dm = length(dim(arr))
-  if(dm == 0) arr = array(arr, c(1,1,length(arr)))
-  else if(dm == 2) arr = array(c(arr), c(nrow(arr),1,ncol(arr)))
-  tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
-  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
-  out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
-  if(dm == 0) out %<>% c
-  else if(dm == 2) out = matrix(c(out), dim(arr)[1])
-  dimnames(out) = nam
-  out
-}
 
 #' Turn per-block estimates into leave-one-out estimates
 #'

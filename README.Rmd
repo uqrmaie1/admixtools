@@ -4,10 +4,6 @@ output: github_document
 
 <!-- README.md is generated from README.Rmd. Please edit that file --->
 
-<!-- badges: start 
-  [![Travis build status](https://travis-ci.com/uqrmaie1/admixtools.svg?branch=master)](https://travis-ci.com/uqrmaie1/admixtools)
-  badges: end -->
-  
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -53,7 +49,7 @@ The corresponding manuscript is finally online [here](https://www.biorxiv.org/co
 
 ## Installation
 
-*ADMIXTOOLS 2* is currently still under active development. Most of it has already been tested extensively, but functionality is still added and may change here and there. *ADMIXTOOLS 2* is not yet on the CRAN servers (so you can't install it with `install.packages()`), but you can install it from github with the following commands (provided you have R version 3.5 or higher):
+
 
 ```{r, eval=FALSE}
 install.packages("devtools") # if "devtools" is not installed already
@@ -91,7 +87,7 @@ you might be able to solve the problem by installing [Rtools](https://cran.r-pro
 On some Linux distributions, it may be necessary to manually install additional libraries or programs. For example, if you see the error `gfortran: command not found` during installation, you would have to install `gfortan` with `sudo zypper in gfortran` or `sudo apt-get install gfortran`, depending on the Linux distribution.
 
 
-If you get any other errors during installation, please [contact me](mailto:rmaier@broadinstitute.org).
+If you get any other errors during installation, please [contact me](mailto:robertmaier@gmx.net).
 
 
 ## Usage
@@ -179,7 +175,7 @@ For even greater transparency, many of the core functions are implemented twice:
 
 ## Contact
 
-For questions, feature requests, and bug reports, please contact Robert Maier under <rmaier@broadinstitute.org>.
+For questions, feature requests, and bug reports, please contact Robert Maier under <robertmaier@gmx.net>.
 
 ## Acknowledgments
 

@@ -52,7 +52,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
   if(verbose) alert_info(paste0('Allele frequency matrix for ', nrow(afmat), ' SNPs and ',
                          length(pops), ' populations is ', round(mem/1e6), ' MB\n'))
 
-  chunks = make_chunks(pops, mem, maxmem, pops1, pops2, n_cores = n_cores, verbose = verbose)
+  chunks = make_chunks(pops, mem, maxmem/n_cores, pops1, pops2, verbose = verbose)
   popvecs1 = chunks$popvecs1
   popvecs2 = chunks$popvecs2
 
@@ -100,10 +100,14 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     block_lengths_fst = block_lengths_n
   }
 
-  doParallel::registerDoParallel(n_cores)
-  `%dopar%` = foreach::`%dopar%`
-  for(i in 1:length(popvecs1)) {
-  #foreach::foreach(i=1:length(popvecs1)) %dopar% {
+  if(n_cores > 1) {
+    doParallel::registerDoParallel(n_cores)
+    `%do%` = foreach::`%dopar%`
+  } else {
+    `%do%` = foreach::`%do%`
+  }
+  #for(i in 1:length(popvecs1)) {
+  foreach::foreach(i=1:length(popvecs1)) %do% {
     if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
@@ -168,7 +172,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
 }
 
 
-make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, n_cores = 1, verbose = TRUE) {
+make_chunks = function(pops, mem, maxmem, pops1 = pops, pops2 = pops, verbose = TRUE) {
   # determines start and end positions of each chunk
 
   if(isTRUE(all.equal(pops1, pops2))) {

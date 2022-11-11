@@ -102,6 +102,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param target Target population
 #' @param f4blocks Instead of f2 blocks, f4 blocks can be supplied. This is used by \code{\link{qpadm_multi}}
 #' @param fudge Value added to diagonal matrix elements before inverting
+#' @param fudge_twice Setting this to `TRUE` should result in p-values that better match those in the original qpAdm program
 #' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
 #' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
 #' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
@@ -155,7 +156,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' qpadm("/my/geno/prefix", left, right, target, allsnps = TRUE)
 #' }
 qpadm = function(data, left, right, target, f4blocks = NULL,
-                 fudge = 0.0001, boot = FALSE, getcov = TRUE,
+                 fudge = 0.0001, fudge_twice = FALSE, boot = FALSE, getcov = TRUE,
                  constrained = FALSE, cpp = TRUE, verbose = TRUE, ...) {
 
   #----------------- prepare f4 stats -----------------
@@ -169,7 +170,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     if(!is.null(target)) left = c(target, setdiff(left, target))
     if(is_geno_prefix(data)) {
       f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
-      f4blocks = f4blockdat %>% mutate(n = length) %>% f4blockdat_to_f4blocks()
+      f4blocks = f4blockdat %>% f4blockdat_to_f4blocks()
       if(verbose) {
         snptab = f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>% summarize(n = sum(n))
         if(isTRUE(args$allsnps)) {
@@ -206,6 +207,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   f4_lo = f4stats$f4_lo
   block_lengths = f4stats$block_lengths
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
+  if(fudge_twice) diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   qinv = solve(f4_var)
   out = list()
 
