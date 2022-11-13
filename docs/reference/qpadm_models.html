@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Return all valid qpAdm models for an admixturegraph — qpadm_models • admixtools</title>
+<title>Partition a list of populations into left and right populations — qpadm_models • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,8 +54,8 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Return all valid qpAdm models for an admixturegraph — qpadm_models" />
-<meta property="og:description" content="For large admixturegraph, there may be a large number of valid qpAdm models!" />
+<meta property="og:title" content="Partition a list of populations into left and right populations — qpadm_models" />
+<meta property="og:description" content="Partition a list of populations into left and right populations" />
 
 
 
@@ -71,13 +71,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -105,7 +105,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -132,6 +132,9 @@
       <a href="../articles/io.html">Data formats</a>
     </li>
     <li>
+      <a href="../articles/paper.html">Paper notes</a>
+    </li>
+    <li>
       <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
@@ -149,7 +152,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/uqrmaie1/admixtools/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -172,45 +175,44 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Return all valid qpAdm models for an admixturegraph</h1>
+    <h1>Partition a list of populations into left and right populations</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/toposearch.R'><code>R/toposearch.R</code></a></small>
     <div class="hidden name"><code>qpadm_models.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>For large admixturegraph, there may be a large number of valid qpAdm models!</p>
+    <p>Partition a list of populations into left and right populations</p>
     </div>
 
-    <pre class="usage"><span class='fu'>qpadm_models</span><span class='op'>(</span><span class='va'>graph</span>, add_outgroup <span class='op'>=</span> <span class='cn'>FALSE</span>, nested <span class='op'>=</span> <span class='cn'>TRUE</span>, abbr <span class='op'>=</span> <span class='op'>-</span><span class='fl'>1</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>qpadm_models</span><span class='op'>(</span><span class='va'>pops</span>, allpops <span class='op'>=</span> <span class='cn'>TRUE</span>, more_right <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>graph</th>
-      <td><p>An admixture graph as igraph object</p></td>
+      <th>pops</th>
+      <td><p>A vector of populations</p></td>
     </tr>
     <tr>
-      <th>add_outgroup</th>
-      <td><p>Should the graph outgroup be added to the qpAdm right populations?
-Technically this shouldn't be an informative outgroup for qpAdm.</p></td>
+      <th>allpops</th>
+      <td><p>Return only models which use all provided populations</p></td>
     </tr>
     <tr>
-      <th>nested</th>
-      <td><p>Should a nested data frame be returned (<code>TRUE</code>), or should populations be concatenated
-into strings (<code>FALSE</code>)?</p></td>
-    </tr>
-    <tr>
-      <th>abbr</th>
-      <td><p>Maximum number of characters to print for each population. The default (-1) doesn't abbreviate the names.</p></td>
+      <th>more_right</th>
+      <td><p>Return only models with more right than left populations</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A data frame with one qpadm model per row</p>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
+
+    <div class='dont-index'><p><code>qpadm_models</code>, <code><a href='graph_f2_function.html'>graph_f2_function</a></code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
-<span class='fu'>qpadm_models</span><span class='op'>(</span><span class='va'>igraph2</span>, add_outgroup <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
-<span class='fu'>qpadm_models</span><span class='op'>(</span><span class='va'>igraph2</span>, add_outgroup <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span> <span class='op'>%&gt;%</span> <span class='fu'>slice</span><span class='op'>(</span><span class='fl'>1</span><span class='op'>)</span> <span class='op'>%$%</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='va'>target</span>, <span class='va'>left</span>, <span class='va'>right</span><span class='op'>)</span>
+<span class='fu'><a href='graph_to_qpadm.html'>graph_to_qpadm</a></span><span class='op'>(</span><span class='fu'><a href='get_leafnames.html'>get_leafnames</a></span><span class='op'>(</span><span class='va'>example_igraph</span><span class='op'>)</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

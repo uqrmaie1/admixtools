@@ -55,7 +55,9 @@
   <script src="../extra.js"></script>
 
 <meta property="og:title" content="Get pseudo dates for graph nodes — pseudo_dates" />
-<meta property="og:description" content="This function assigns a date to each node in an admixture graph and is used in msprime_sim. The date will correspond to the y-coordinate of each node used for plotting in plotly_graph. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by get_leafnames() will be set to 0." />
+<meta property="og:description" content="This function assigns a date (in generations) to each node in an admixture graph and is used in msprime_sim and msprime_genome.
+The date of the node will correspond to the y-coordinate of that node used for plotting in plotly_graph,
+unless the fix_leaf option is set to TRUE, in which case the dates of all leaf nodes returned by get_leafnames will be set to 0." />
 
 
 
@@ -71,13 +73,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -132,6 +134,9 @@
       <a href="../articles/io.html">Data formats</a>
     </li>
     <li>
+      <a href="../articles/paper.html">Paper notes</a>
+    </li>
+    <li>
       <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
@@ -178,10 +183,12 @@
     </div>
 
     <div class="ref-description">
-    <p>This function assigns a date to each node in an admixture graph and is used in <code><a href='msprime_sim.html'>msprime_sim</a></code>. The date will correspond to the y-coordinate of each node used for plotting in <code><a href='plotly_graph.html'>plotly_graph</a></code>. Because it appears to be necessary for simulations in msprime that at least one leaf node has time 0, the first leaf node returned by <code><a href='get_leafnames.html'>get_leafnames()</a></code> will be set to 0.</p>
+    <p>This function assigns a date (in generations) to each node in an admixture graph and is used in <code><a href='msprime_sim.html'>msprime_sim</a></code> and <code><a href='msprime_genome.html'>msprime_genome</a></code>.
+The date of the node will correspond to the y-coordinate of that node used for plotting in <code><a href='plotly_graph.html'>plotly_graph</a></code>,
+unless the <code>fix_leaf</code> option is set to <code>TRUE</code>, in which case the dates of all leaf nodes returned by <code><a href='get_leafnames.html'>get_leafnames</a></code> will be set to 0.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>pseudo_dates</span><span class='op'>(</span><span class='va'>graph</span>, time <span class='op'>=</span> <span class='fl'>1000</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>pseudo_dates</span><span class='op'>(</span><span class='va'>graph</span>, time <span class='op'>=</span> <span class='fl'>1000</span>, fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -192,7 +199,12 @@
     </tr>
     <tr>
       <th>time</th>
-      <td><p>Scalar by which y-coordinate values will be multiplied to get dates</p></td>
+      <td><p>A scalar by which y-coordinate values will be multiplied to get dates</p></td>
+    </tr>
+    <tr>
+      <th>fix_leaf</th>
+      <td><p>A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time).
+If <code>TRUE</code>, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is <code>FALSE</code></p></td>
     </tr>
     </table>
 

@@ -71,13 +71,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -130,6 +130,9 @@
     </li>
     <li>
       <a href="../articles/io.html">Data formats</a>
+    </li>
+    <li>
+      <a href="../articles/paper.html">Paper notes</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -187,7 +190,12 @@
   title <span class='op'>=</span> <span class='st'>""</span>,
   color <span class='op'>=</span> <span class='cn'>TRUE</span>,
   textsize <span class='op'>=</span> <span class='fl'>2.5</span>,
-  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>
+  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  pos <span class='op'>=</span> <span class='cn'>NULL</span>,
+  dates <span class='op'>=</span> <span class='cn'>NULL</span>,
+  neff <span class='op'>=</span> <span class='cn'>NULL</span>,
+  scale_y <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  hide_weights <span class='op'>=</span> <span class='cn'>FALSE</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -196,7 +204,7 @@
     <tr>
       <th>graph</th>
       <td><p>An admixture graph. If it's an edge list with a <code>label</code> column,
-those values will displayed on the edges</p></td>
+those values will be displayed on the edges</p></td>
     </tr>
     <tr>
       <th>fix</th>
@@ -206,7 +214,7 @@ By default this is only done for graphs with fewer than 10 leaves.</p></td>
     </tr>
     <tr>
       <th>title</th>
-      <td><p>Plot title</p></td>
+      <td><p>A plot title</p></td>
     </tr>
     <tr>
       <th>color</th>
@@ -220,6 +228,28 @@ By default this is only done for graphs with fewer than 10 leaves.</p></td>
       <th>highlight_unidentifiable</th>
       <td><p>Highlight unidentifiable edges in red. Can be slow for large graphs. See <code><a href='unidentifiable_edges.html'>unidentifiable_edges</a></code>.</p></td>
     </tr>
+    <tr>
+      <th>pos</th>
+      <td><p>An optional data frame with node coordinates (columns <code>node</code>, <code>x</code>, <code>y</code>)</p></td>
+    </tr>
+    <tr>
+      <th>dates</th>
+      <td><p>An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=1000, 'A'=0, 'B'=0)</a></code>).
+If this option is supplied, the y-axis will display dates in generations.</p></td>
+    </tr>
+    <tr>
+      <th>neff</th>
+      <td><p>An optional named vector with effective population sizes for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=100, 'A'=100, 'B'=100)</a></code>).
+If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.</p></td>
+    </tr>
+    <tr>
+      <th>scale_y</th>
+      <td><p>If <code>TRUE</code>, scale the y-axis according to <code>dates</code> vector. The default is <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>hide_weights</th>
+      <td><p>A boolean value specifying if the drift values on the edges will be hidden. The default is <code>FALSE</code>.</p></td>
+    </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
@@ -228,7 +258,11 @@ By default this is only done for graphs with fewer than 10 leaves.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>example_graph</span><span class='op'>)</span>
-</div><div class='img'><img src='plot_graph-1.png' alt='' width='700' height='433' /></div></pre>
+</div><div class='img'><img src='plot_graph-1.png' alt='' width='700' height='433' /></div><div class='input'>
+<span class='co'># Plot a random simulation output. Show dates and population sizes on the plot</span>
+<span class='va'>out</span> <span class='op'>=</span> <span class='fu'><a href='random_sim.html'>random_sim</a></span><span class='op'>(</span>nleaf<span class='op'>=</span><span class='fl'>5</span>, nadmix<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span>
+<span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, dates<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>dates</span>, neff<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span><span class='op'>)</span>
+</div><div class='img'><img src='plot_graph-2.png' alt='' width='700' height='433' /></div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

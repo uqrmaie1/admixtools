@@ -55,7 +55,7 @@
   <script src="../extra.js"></script>
 
 <meta property="og:title" content="Compare the fit of two qpgraph models — compare_fits" />
-<meta property="og:description" content="Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other." />
+<meta property="og:description" content="Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly higher or lower than the scores of the other graph." />
 
 
 
@@ -71,13 +71,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -132,6 +132,9 @@
       <a href="../articles/io.html">Data formats</a>
     </li>
     <li>
+      <a href="../articles/paper.html">Paper notes</a>
+    </li>
+    <li>
       <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
@@ -178,7 +181,7 @@
     </div>
 
     <div class="ref-description">
-    <p>Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.</p>
+    <p>Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly higher or lower than the scores of the other graph.</p>
     </div>
 
     <pre class="usage"><span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>scores1</span>, <span class='va'>scores2</span><span class='op'>)</span></pre>
@@ -188,13 +191,23 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>scores1</th>
-      <td><p>Scores for the first graph</p></td>
+      <td><p>Scores for the first graph. Each score should be for same model evaluated on different bootstrap samples of the SNP blocks. See <code><a href='qpgraph_resample_multi.html'>qpgraph_resample_multi</a></code></p></td>
     </tr>
     <tr>
       <th>scores2</th>
-      <td><p>Scores for the second graph</p></td>
+      <td><p>Scores for the second graph, evaluated on the same bootstrap samples as the first graph</p></td>
     </tr>
     </table>
+
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A list with statistics comparing the two models</p><ul>
+<li><p><code>p_emp</code>: The two-sided bootstrap p-value testing whether the scores of one model are higher or lower than the scores of the other model. It is two times the fraction of bootstrap replicates in which model 1 has a lower score than model 2 (or vice-vera, whichever is lower). This is simply a bootstrap test for testing whether some quantity (the the score difference of two models in this case) is significantly different from zero.</p></li>
+<li><p><code>p_emp_nocorr</code>: <code>p_emp</code> is truncated to be no less than the reciprocal of the number of bootstrap iterations (the length of the score vectors). <code>p_emp_nocorr</code> is not truncated and can be equal to 0.</p></li>
+<li><p><code>ci_low</code>: The 2.5% quantile of distribution of score differences</p></li>
+<li><p><code>ci_high</code>: The 97.5% quantile of distribution of score differences</p></li>
+<li><p>The other items in this list are less important and can be ignored. In particular, <code>p</code> is not as reliable as <code>p_emp</code> because it assumes that the score differences follow a normal distribution.</p></li>
+</ul>
 
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
@@ -203,7 +216,7 @@
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='va'>fits</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph_resample_multi.html'>qpgraph_resample_multi</a></span><span class='op'>(</span><span class='va'>f2_blocks</span>, <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='va'>graph1</span>, <span class='va'>graph2</span><span class='op'>)</span>, nboot <span class='op'>=</span> <span class='fl'>100</span><span class='op'>)</span>
-<span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>fits</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score_test</span>, <span class='va'>fits</span><span class='op'>[[</span><span class='fl'>2</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score_test</span><span class='op'>)</span>
+<span class='fu'>compare_fits</span><span class='op'>(</span><span class='va'>fits</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score</span>, <span class='va'>fits</span><span class='op'>[[</span><span class='fl'>2</span><span class='op'>]</span><span class='op'>]</span><span class='op'>$</span><span class='va'>score</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

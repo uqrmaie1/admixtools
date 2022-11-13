@@ -72,13 +72,13 @@ It can be used to estimate whether the left populations explain all genetic vari
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -131,6 +131,9 @@ It can be used to estimate whether the left populations explain all genetic vari
     </li>
     <li>
       <a href="../articles/io.html">Data formats</a>
+    </li>
+    <li>
+      <a href="../articles/paper.html">Paper notes</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -190,6 +193,7 @@ It can be used to estimate whether the left populations explain all genetic vari
   <span class='va'>target</span>,
   f4blocks <span class='op'>=</span> <span class='cn'>NULL</span>,
   fudge <span class='op'>=</span> <span class='fl'>1e-04</span>,
+  fudge_twice <span class='op'>=</span> <span class='cn'>FALSE</span>,
   boot <span class='op'>=</span> <span class='cn'>FALSE</span>,
   getcov <span class='op'>=</span> <span class='cn'>TRUE</span>,
   constrained <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -228,6 +232,10 @@ It can be used to estimate whether the left populations explain all genetic vari
     <tr>
       <th>fudge</th>
       <td><p>Value added to diagonal matrix elements before inverting</p></td>
+    </tr>
+    <tr>
+      <th>fudge_twice</th>
+      <td><p>Setting this to <code>TRUE</code> should result in p-values that better match those in the original qpAdm program</p></td>
     </tr>
     <tr>
       <th>boot</th>

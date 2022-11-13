@@ -3664,7 +3664,7 @@ summarize_zerof4_list = function(graphlist) {
 }
 
 normalize_zerof4 = function(zerof4) {
-  zerof4 %>% as_tibble(.name_repair = ~c('pop1', 'pop2', 'pop3', 'pop4')) %>%
+  zerof4[,1:4] %>% as_tibble(.name_repair = ~c('pop1', 'pop2', 'pop3', 'pop4')) %>%
     transmute(p1 = pmin(pop1, pop2),
               p2 = pmax(pop1, pop2),
               p3 = pmin(pop3, pop4),
@@ -4178,9 +4178,9 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' @param left Left populations (provide this optionally if you want to test only a single qpadm model)
 #' @param right Right populations (provide this optionally if you want to test only a single qpadm model)
 #' @param models A two column nested data frame with models to be evaluated, one model per row. The first column, `l`, should contain the left populations, the second column, `r`, should contain the right populations. The target population is provided separately in the `target` argument.
-#' @param weights Set this to `FALSE` to speed things up, if you care only about rank validity, not weight validity.
 #' @param allpops Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}
 #' @param return_f4 Include f4 statistic matrices in the results (default `FALSE`)
+#' @param eps Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.
 #' @return A data frame with one qpadm model per row and columns `valid_rank` and `valid_weights` indicating whether a model should be valid under the graph.
 #' @note An earlier version of this function tried to use the graph topology for identifying valid qpadm models, but this didn't work reliably. Christian Huber had the idea of using the ranks of expected f4 statistic matrices instead.
 #' @seealso \code{\link{qpadm_models}}, \code{\link{graph_f2_function}}
@@ -4191,7 +4191,7 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' graph_to_qpadm(graph2, 'Mbuti.DG') %>% filter(valid_rank, valid_weights)
 #' }
 graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NULL,
-                          weights = TRUE, allpops = TRUE, more_right = TRUE, return_f4 = FALSE) {
+                          weights = TRUE, allpops = TRUE, more_right = TRUE, return_f4 = FALSE, eps = 1e-10) {
 
   if(is.null(models)) {
     if(!is.null(left) && !is.null(right)) {
@@ -4204,16 +4204,17 @@ graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NUL
   f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
   out = models %>% rowwise %>%
     mutate(target,
-           m1 = list(f4dat_f4mat(f4dat, l, r, eps = 1e-10)),
-           m2 = list(f4dat_f4mat(f4dat, c(target, l), r, eps = 1e-10)),
+           m1 = list(f4dat_f4mat(f4dat, l, r, eps = eps)),
+           m2 = list(f4dat_f4mat(f4dat, c(target, l), r, eps = eps)),
            rank1 = qr(m1)$rank,
            rank2 = qr(m2)$rank,
-           valid_rank = rank1 == rank2)
-  if(weights) {
+           fullrank = length(l)-1 == rank1,
+           stablerank = rank1 == rank2)
     out %<>%
       mutate(w = list(cpp_qpadm_weights(m2, diag(prod(dim(m2))), rnk = min(dim(m2)), qpsolve=qpsolve)$weights),
-             wmin = min(w), wmax = max(w), valid_weights = isTRUE(wmin > 0 & wmax < 1)) %>% select(-w)
-  }
+             wmin = min(w), wmax = max(w), targetadmixed = isTRUE(wmin > 0+eps & wmax < 1-eps),
+             valid = fullrank & stablerank & targetadmixed) #%>% select(-w)
+
   if(!return_f4) out %<>% select(-m1, -m2)
   out %>% ungroup
 }
@@ -4245,6 +4246,58 @@ consistent_with_qpwave = function(graph, left, right) {
   }
 
 }
+
+
+graph_to_afs = function(graph, nsnps = 1e4, drift_default=0.02, admix_default=0.5, leaves_only = FALSE) {
+  # graph can be igraph or fit$edges data frame
+
+  if(is.data.frame(graph)) {
+    weights = graph
+    graph = graph %>% select(from, to) %>% edges_to_igraph
+  } else {
+    weights = graph %>% igraph::as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>% mutate(weight = ifelse(n > 1, admix_default, drift_default)) %>% select(-n)
+  }
+
+  rootaf = runif(nsnps)
+  nodes = names(igraph::V(graph))
+  afs = list()
+  aw = function(graph, node) {
+    parents = names(igraph::neighbors(graph, node, mode = 'in'))
+    children = names(igraph::neighbors(graph, node, mode = 'out'))
+    isadmix = length(parents) > 1
+    if(!isadmix) {
+      if(length(parents) == 0) {
+        afs[[node]] <<- rootaf
+      } else {
+        w = weights %>% filter(from == parents, to == node) %>% pluck('weight', 1)
+        afs[[node]] <<- pmin(1,pmax(0,afs[[parents]] + w*runif(nsnps)))
+      }
+      for(child in children) {
+        aw(graph, child)
+      }
+    } else {
+      if(!is.null(afs[[parents[1]]]) && !is.null(afs[[parents[2]]])) {
+        w1 = weights %>% filter(from == parents[1], to == node) %>% pluck('weight', 1)
+        w2 = weights %>% filter(from == parents[2], to == node) %>% pluck('weight', 1)
+        afs[[node]] <<- afs[[parents[1]]]*w1 + afs[[parents[2]]]*w2
+        for(child in children) {
+          aw(graph, child)
+        }
+      }
+    }
+  }
+  aw(graph, get_rootname(graph))
+  out = afs %>% bind_cols
+  if(leaves_only) out = out[get_leafnames(graph)]
+  out
+}
+
+graph_to_pcs = function(graph) {
+
+  afs = graph_to_afs(graph, leaves_only = TRUE)
+  prcomp(t(as.matrix(afs)))$x %>% as_tibble(rownames = 'pop')
+}
+
 
 #' List leaf nodes for all internal nodes
 #'

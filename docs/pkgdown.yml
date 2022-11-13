@@ -6,11 +6,12 @@ articles:
   fstats: fstats.html
   graphs: graphs.html
   io: io.html
+  paper: paper.html
   parallel: parallel.html
   plotting: plotting.html
   qpadm: qpadm.html
   resampling: resampling.html
-last_built: 2021-11-10T15:51Z
+last_built: 2022-11-12T23:23Z
 urls:
   reference: https://uqrmaie1.github.io/admixtools/index.html/reference
   article: https://uqrmaie1.github.io/admixtools/index.html/articles
