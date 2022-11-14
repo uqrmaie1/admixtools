@@ -4203,7 +4203,7 @@ graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NUL
         qpadm_models(allpops = allpops, more_right = more_right)
     }
   }
-  if(!is.null(f4dat)) f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
+  if(is.null(f4dat)) f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
   out = models %>% rowwise %>%
     mutate(target,
            m1 = list(f4dat_f4mat(f4dat, l, r, eps = eps)),
