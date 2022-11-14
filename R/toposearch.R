@@ -2679,7 +2679,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
               cntm_5 = NA)
   stdat = st_to_dat(st)
   tm = Sys.time()
-  nonzero_f4 = if(reject_f4z > 0) nonzero_f4 = f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
+  nonzero_f4 = if(reject_f4z > 0) f4(f2_blocks) %>% filter(abs(z) > reject_f4z) else NULL
   nzf4 = admixc = eventc = lasttracebacklevel = NULL
   lasttracebackscore = Inf
 
@@ -3886,7 +3886,7 @@ satisfies_numadmix = function(graph, admix_constraints) {
 #' }
 satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = NULL, event_order = NULL) {
 
-  satisfies_zerof4(graph, nonzero_f4) &&
+  satisfies_nonzerof4(graph, nonzero_f4) &&
     satisfies_numadmix(graph, admix_constraints) &&
     satisfies_eventorder(graph, event_order)
 }
@@ -4178,6 +4178,8 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' @param left Left populations (provide this optionally if you want to test only a single qpadm model)
 #' @param right Right populations (provide this optionally if you want to test only a single qpadm model)
 #' @param models A two column nested data frame with models to be evaluated, one model per row. The first column, `l`, should contain the left populations, the second column, `r`, should contain the right populations. The target population is provided separately in the `target` argument.
+#' @param weights Set this to `FALSE` to return only information on the ranks, not the weights, of each qpadm model. The ranks should depend only on the graph topology, while the weights and weight-validity (all weights for left populations between 0 and 1) can depend on the branch lengths of the graph. By default f4-statistics are based on equal branch lengths and admixture weights of 0.5. This can be overridden by providing `f4dat`.
+#' @param f4dat A data frame of f4-statistics which can be provided to override the default branch lengths.
 #' @param allpops Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}
 #' @param return_f4 Include f4 statistic matrices in the results (default `FALSE`)
 #' @param eps Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.
@@ -4191,7 +4193,7 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' graph_to_qpadm(graph2, 'Mbuti.DG') %>% filter(valid_rank, valid_weights)
 #' }
 graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NULL,
-                          weights = TRUE, allpops = TRUE, more_right = TRUE, return_f4 = FALSE, eps = 1e-10) {
+                          weights = TRUE, f4dat = NULL, allpops = TRUE, more_right = TRUE, return_f4 = FALSE, eps = 1e-10) {
 
   if(is.null(models)) {
     if(!is.null(left) && !is.null(right)) {
@@ -4201,7 +4203,7 @@ graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NUL
         qpadm_models(allpops = allpops, more_right = more_right)
     }
   }
-  f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
+  if(!is.null(f4dat)) f4dat = graph_f2_function(graph, random_defaults=FALSE)() %>% f2dat_f4dat()
   out = models %>% rowwise %>%
     mutate(target,
            m1 = list(f4dat_f4mat(f4dat, l, r, eps = eps)),
@@ -4210,11 +4212,12 @@ graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NUL
            rank2 = qr(m2)$rank,
            fullrank = length(l)-1 == rank1,
            stablerank = rank1 == rank2)
+  if(weights) {
     out %<>%
       mutate(w = list(cpp_qpadm_weights(m2, diag(prod(dim(m2))), rnk = min(dim(m2)), qpsolve=qpsolve)$weights),
              wmin = min(w), wmax = max(w), targetadmixed = isTRUE(wmin > 0+eps & wmax < 1-eps),
              valid = fullrank & stablerank & targetadmixed) #%>% select(-w)
-
+  }
   if(!return_f4) out %<>% select(-m1, -m2)
   out %>% ungroup
 }
@@ -4247,15 +4250,32 @@ consistent_with_qpwave = function(graph, left, right) {
 
 }
 
-
+#' Simulate allele frequncies under an admixture graph
+#'
+#' This function performs a very crude simulation of allele frequencies
+#' under an admixture graph model
+#' @export
+#' @param graph An admixture graph as igraph object, or as edge list data frame
+#' with a column `weight`, as returned by `qpgraph()$edges`
+#' @param nsnps Number of SNPs to simulate
+#' @param drift_default Default branch lengths. Ignored if `graph` is a data frame with weights
+#' @param admix_default Default admixture weights. Ignored if `graph` is a data frame with weights
+#' @param leaves_only Return allele frequencies for leaf nodes only
+#' @return A data frame with allele frequencies
+#' @seealso \code{\link{graph_to_pcs}}
+#' @examples
+#' \dontrun{
+#' afs = graph_to_afs(example_igraph)
+#' }
 graph_to_afs = function(graph, nsnps = 1e4, drift_default=0.02, admix_default=0.5, leaves_only = FALSE) {
-  # graph can be igraph or fit$edges data frame
 
   if(is.data.frame(graph)) {
     weights = graph
     graph = graph %>% select(from, to) %>% edges_to_igraph
   } else {
-    weights = graph %>% igraph::as_edgelist() %>% as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>% mutate(weight = ifelse(n > 1, admix_default, drift_default)) %>% select(-n)
+    weights = graph %>% igraph::as_edgelist() %>%
+      as_tibble(.name_repair = ~c('from', 'to')) %>% add_count(to) %>%
+      mutate(weight = ifelse(n > 1, admix_default, drift_default)) %>% select(-n)
   }
 
   rootaf = runif(nsnps)
@@ -4292,9 +4312,27 @@ graph_to_afs = function(graph, nsnps = 1e4, drift_default=0.02, admix_default=0.
   out
 }
 
-graph_to_pcs = function(graph) {
+#' Simulate PCs under an admixture graph
+#'
+#' This function simulates PCA of allele frequencies under an admixture graph model
+#' @export
+#' @param graph An admixture graph as igraph object, or as edge list data frame
+#' with a column `weight`, as returned by `qpgraph()$edges`
+#' @param nsnps Number of SNPs to simulate
+#' @param drift_default Default branch lengths. Ignored if `graph` is a data frame with weights
+#' @param admix_default Default admixture weights. Ignored if `graph` is a data frame with weights
+#' @param leaves_only Return PCs for leaf nodes only
+#' @return A data frame with PCs for each population
+#' @seealso \code{\link{graph_to_afs}}
+#' @examples
+#' \dontrun{
+#' pcs = graph_to_pcs(example_igraph)
+#' pcs %>% ggplot(aes(PC1, PC2, label = pop)) + geom_text() + geom_point()
+#' }
+graph_to_pcs = function(graph, nsnps = 1e4, drift_default=0.02, admix_default=0.5, leaves_only = TRUE) {
 
-  afs = graph_to_afs(graph, leaves_only = TRUE)
+  afs = graph_to_afs(graph, nsnps = nsnps, drift_default = drift_default,
+                     admix_default = admix_default, leaves_only = leaves_only)
   prcomp(t(as.matrix(afs)))$x %>% as_tibble(rownames = 'pop')
 }
 

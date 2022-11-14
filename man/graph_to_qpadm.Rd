@@ -11,9 +11,11 @@ graph_to_qpadm(
   right = NULL,
   models = NULL,
   weights = TRUE,
+  f4dat = NULL,
   allpops = TRUE,
   more_right = TRUE,
-  return_f4 = FALSE
+  return_f4 = FALSE,
+  eps = 1e-10
 )
 }
 \arguments{
@@ -27,11 +29,15 @@ graph_to_qpadm(
 
 \item{models}{A two column nested data frame with models to be evaluated, one model per row. The first column, \code{l}, should contain the left populations, the second column, \code{r}, should contain the right populations. The target population is provided separately in the \code{target} argument.}
 
-\item{weights}{Set this to \code{FALSE} to speed things up, if you care only about rank validity, not weight validity.}
+\item{weights}{Set this to \code{FALSE} to return only information on the ranks, not the weights, of each qpadm model. The ranks should depend only on the graph topology, while the weights and weight-validity (all weights for left populations between 0 and 1) can depend on the branch lengths of the graph. By default f4-statistics are based on equal branch lengths and admixture weights of 0.5. This can be overridden by providing \code{f4dat}.}
+
+\item{f4dat}{A data frame of f4-statistics which can be provided to override the default branch lengths.}
 
 \item{allpops}{Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}}
 
 \item{return_f4}{Include f4 statistic matrices in the results (default \code{FALSE})}
+
+\item{eps}{Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.}
 }
 \value{
 A data frame with one qpadm model per row and columns \code{valid_rank} and \code{valid_weights} indicating whether a model should be valid under the graph.
