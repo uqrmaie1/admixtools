@@ -76,13 +76,13 @@ and afs_to_f2_blocks." />
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -135,6 +135,9 @@ and afs_to_f2_blocks." />
     </li>
     <li>
       <a href="../articles/io.html">Data formats</a>
+    </li>
+    <li>
+      <a href="../articles/paper.html">Paper notes</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -260,7 +263,7 @@ and <code><a href='afs_to_f2_blocks.html'>afs_to_f2_blocks</a></code>.</p>
     </tr>
     <tr>
       <th>maxmem</th>
-      <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.</p></td>
+      <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair. This doesn't put a precise cap on the amount of memory used (it used to at some point). Set this parameter to lower values if you run out of memory while running this function. Set it to higher values if this function is too slow and you have lots of memory.</p></td>
     </tr>
     <tr>
       <th>overwrite</th>

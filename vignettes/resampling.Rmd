@@ -12,7 +12,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-**Under construction**
 
 
 ## Quantifying uncertainty

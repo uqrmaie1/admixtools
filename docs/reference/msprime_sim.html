@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Simulate an admixture graph in msprime — msprime_sim • admixtools</title>
+<title>Simulate an admixture graph in msprime v1.x — msprime_sim • admixtools</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -54,8 +54,8 @@
   
   <script src="../extra.js"></script>
 
-<meta property="og:title" content="Simulate an admixture graph in msprime — msprime_sim" />
-<meta property="og:description" content="This function generates an msprime simulation script, and optionally executes it in python" />
+<meta property="og:title" content="Simulate an admixture graph in msprime v1.x — msprime_sim" />
+<meta property="og:description" content="This function generates an msprime simulation script, and optionally executes it in python. Unlike the msprime_genome function, this function simulates independent SNP sites." />
 
 
 
@@ -71,13 +71,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -132,6 +132,9 @@
       <a href="../articles/io.html">Data formats</a>
     </li>
     <li>
+      <a href="../articles/paper.html">Paper notes</a>
+    </li>
+    <li>
       <a href="../articles/parallel.html">Parallelization</a>
     </li>
     <li>
@@ -172,13 +175,13 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Simulate an admixture graph in msprime</h1>
+    <h1>Simulate an admixture graph in msprime v1.x</h1>
     <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/wrappers.R'><code>R/wrappers.R</code></a></small>
     <div class="hidden name"><code>msprime_sim.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>This function generates an msprime simulation script, and optionally executes it in python</p>
+    <p>This function generates an msprime simulation script, and optionally executes it in python. Unlike the <code><a href='msprime_genome.html'>msprime_genome</a></code> function, this function simulates independent SNP sites.</p>
     </div>
 
     <pre class="usage"><span class='fu'>msprime_sim</span><span class='op'>(</span>
@@ -189,9 +192,11 @@
   ind_per_pop <span class='op'>=</span> <span class='fl'>1</span>,
   mutation_rate <span class='op'>=</span> <span class='fl'>0.001</span>,
   time <span class='op'>=</span> <span class='fl'>1000</span>,
+  fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span>,
   admix_default <span class='op'>=</span> <span class='fl'>0.5</span>,
   run <span class='op'>=</span> <span class='cn'>FALSE</span>,
   numcores <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ghost_lineages <span class='op'>=</span> <span class='cn'>FALSE</span>,
   shorten_admixed_leaves <span class='op'>=</span> <span class='cn'>FALSE</span>
 <span class='op'>)</span></pre>
 
@@ -200,11 +205,11 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>Graph as <code>igraph</code> object or edge list with columns 'from' and 'to'. If it's an edge list with column 'weight' (possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have weight 0.5.</p></td>
+      <td><p>A graph as an <code>igraph</code> object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.</p></td>
     </tr>
     <tr>
       <th>outpref</th>
-      <td><p>Prefix of output files</p></td>
+      <td><p>A prefix of output files.</p></td>
     </tr>
     <tr>
       <th>nsnps</th>
@@ -212,31 +217,47 @@
     </tr>
     <tr>
       <th>neff</th>
-      <td><p>Effective population size. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.</p></td>
+      <td><p>Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=100, 'A'=50, 'B'=50)</a></code>).</p></td>
     </tr>
     <tr>
       <th>ind_per_pop</th>
-      <td><p>The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.</p></td>
+      <td><p>The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations.
+Alternatively, it can be a named vector with a different value for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('A'=10, 'B'=20)</a></code> to sample 10 and 20 diploid individuals from populations A and B, respectively).</p></td>
     </tr>
     <tr>
       <th>mutation_rate</th>
-      <td><p>Mutation rate per site per generation. The default is set to a high value (0.001) to obtain more polymorphic SNPs in order to speed up the simulation.</p></td>
+      <td><p>Mutation rate per site per generation. The default is set to a high value (0.001 per site per generation) to obtain more polymorphic SNPs in order to speed up the simulation.</p></td>
     </tr>
     <tr>
       <th>time</th>
-      <td><p>Either a scalar value (1000 by default) which the dates generated by <code><a href='pseudo_dates.html'>pseudo_dates</a></code>, or a named vector with dates for each graph node.</p></td>
+      <td><p>Either a scalar value (1000 generations by default) with the dates generated by <code><a href='pseudo_dates.html'>pseudo_dates</a></code> function, or a named vector with dates for each graph nodes (in generations).</p></td>
+    </tr>
+    <tr>
+      <th>fix_leaf</th>
+      <td><p>A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If <code>TRUE</code>, all samples will be drawn at the end of the simulation (i.e., from “today”).</p></td>
     </tr>
     <tr>
       <th>admix_default</th>
-      <td><p>The default admixture proportions for all admixture nodes</p></td>
+      <td><p>A float value specifying default admixture proportion for all admixture nodes. The default is <code>0.5</code>.
+If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).</p></td>
     </tr>
     <tr>
       <th>run</th>
-      <td><p>If <code>FALSE</code>, the function will terminate after writing the msprime script. If <code>TRUE</code>, it will try and execute the function with the default python installation. If you want to use some other python installation, you can set <code>run = /my/python</code>.</p></td>
+      <td><p>If <code>FALSE</code>, the function will terminate after writing the msprime script. If <code>TRUE</code>, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set <code>run = /my/python</code>.</p></td>
     </tr>
     <tr>
       <th>numcores</th>
       <td><p>The number of cores to use when simulating data.</p></td>
+    </tr>
+    <tr>
+      <th>ghost_lineages</th>
+      <td><p>A boolean value specifying whether ghost lineages will be allowed.
+If <code>TRUE</code>, admixture happens at the time points defined by the y-axis generated while plotting the graph by <code><a href='plot_graph.html'>plot_graph</a></code>.
+If <code>FALSE</code> (default), admixture occurs at the time of the previous split event.</p></td>
+    </tr>
+    <tr>
+      <th>shorten_admixed_leaves</th>
+      <td><p>If <code>TRUE</code> simulate the behavior of treemix where drift after admixture is not allowed</p></td>
     </tr>
     </table>
 
@@ -247,7 +268,7 @@
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
 <span class='va'>results</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>example_graph</span><span class='op'>)</span>
-<span class='fu'>msprime_sim</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span><span class='op'>)</span>
+<span class='fu'>msprime_sim</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span>, nsnps<span class='op'>=</span><span class='fl'>100</span><span class='op'>)</span>
 <span class='op'>}</span>
 </div></pre>
   </div>

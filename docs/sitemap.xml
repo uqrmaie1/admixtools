@@ -34,6 +34,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/count_snps.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/count_zero_edges.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/decomposed_tree_neighbors.html</loc>
   </url>
   <url>
@@ -256,6 +259,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/move_admixedge_once.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/msprime_genome.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/msprime_sim.html</loc>
   </url>
   <url>
@@ -340,6 +346,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_models.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_models_old.html</loc>
   </url>
   <url>
@@ -397,7 +406,13 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_admixturegraph.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_dates.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_newick.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_sim.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_eigenstrat.html</loc>
@@ -524,6 +539,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/io.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/paper.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/parallel.html</loc>

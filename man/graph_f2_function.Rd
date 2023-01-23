@@ -4,7 +4,12 @@
 \alias{graph_f2_function}
 \title{Make a function representing a graph}
 \usage{
-graph_f2_function(graph, admix_default = 0.5, drift_default = 0.01)
+graph_f2_function(
+  graph,
+  admix_default = 0.5,
+  drift_default = 0.01,
+  random_defaults = FALSE
+)
 }
 \arguments{
 \item{graph}{An admixture graph}
@@ -12,6 +17,8 @@ graph_f2_function(graph, admix_default = 0.5, drift_default = 0.01)
 \item{admix_default}{The default weights for admixture edges}
 
 \item{drift_default}{The default weights for drift edges}
+
+\item{random_defaults}{Set default weights randomly for each edge between 0 and 1}
 }
 \value{
 A function mapping edge weights to f2-statistics

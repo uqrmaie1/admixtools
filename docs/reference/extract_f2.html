@@ -72,13 +72,13 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -131,6 +131,9 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     </li>
     <li>
       <a href="../articles/io.html">Data formats</a>
+    </li>
+    <li>
+      <a href="../articles/paper.html">Paper notes</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -241,7 +244,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     </tr>
     <tr>
       <th>maxmem</th>
-      <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.</p></td>
+      <td><p>Maximum amount of memory to be used. If the required amount of memory exceeds <code>maxmem</code>, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair. This doesn't put a precise cap on the amount of memory used (it used to at some point). Set this parameter to lower values if you run out of memory while running this function. Set it to higher values if this function is too slow and you have lots of memory.</p></td>
     </tr>
     <tr>
       <th>maxmiss</th>
@@ -257,7 +260,7 @@ computes allele frequencies and blocked f2-statistics for selected populations, 
     </tr>
     <tr>
       <th>minac2</th>
-      <td><p>Discard SNPs with allele count lower than 2 in any population (default <code>FALSE</code>). This option should be set to <code>TRUE</code> when computing f3-statistics where the first population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. The <code>minac2</code> option not necessary when the f3-estimates are used for qpgraph. While the <code>minac2</code> option discards SNPs with allele count lower than 2 in any population, the <code><a href='qp3pop.html'>qp3pop</a></code> function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).</p></td>
+      <td><p>Discard SNPs with allele count lower than 2 in any population (default <code>FALSE</code>). This option should be set to <code>TRUE</code> when computing f3-statistics where one population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. <code>minac2 == 2</code> will discard SNPs with allele count lower than 2 in any non-singleton population (this option is experimental and is based on the hypothesis that using SNPs with allele count lower than 2 only leads to biases in non-singleton populations). While the <code>minac2</code> option discards SNPs with allele count lower than 2 in any population, the <code><a href='qp3pop.html'>qp3pop</a></code> function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).</p></td>
     </tr>
     <tr>
       <th>pops2</th>
@@ -298,7 +301,7 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option. Setting <code>adjust_pseudohaploid</code> to an integer <code>n</code> will check the first <code>n</code> SNPs instead of the first 1000 SNPs.</p></td>
     </tr>
     <tr>
       <th>cols_per_chunk</th>

@@ -1,8 +1,5 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file --->
-<!-- badges: start 
-  [![Travis build status](https://travis-ci.com/uqrmaie1/admixtools.svg?branch=master)](https://travis-ci.com/uqrmaie1/admixtools)
-  badges: end -->
 
 # ADMIXTOOLS 2
 
@@ -60,13 +57,6 @@ fit of a new *qpGraph* model:
 
 ## Installation
 
-*ADMIXTOOLS 2* is currently still under active development. Most of it
-has already been tested extensively, but functionality is still added
-and may change here and there. *ADMIXTOOLS 2* is not yet on the CRAN
-servers (so you can’t install it with `install.packages()`), but you can
-install it from github with the following commands (provided you have R
-version 3.5 or higher):
-
 ``` r
 install.packages("devtools") # if "devtools" is not installed already
 devtools::install_github("uqrmaie1/admixtools")
@@ -115,7 +105,7 @@ install `gfortan` with `sudo zypper in gfortran` or
 `sudo apt-get install gfortran`, depending on the Linux distribution.
 
 If you get any other errors during installation, please [contact
-me](mailto:rmaier@broadinstitute.org).
+me](mailto:robertmaier@gmx.net).
 
 ## Usage
 
@@ -239,7 +229,7 @@ versions instead of the C++ versions by calling `qpadm(cpp = FALSE)`.
 ## Contact
 
 For questions, feature requests, and bug reports, please contact Robert
-Maier under <rmaier@broadinstitute.org>.
+Maier under <robertmaier@gmx.net>.
 
 ## Acknowledgments
 

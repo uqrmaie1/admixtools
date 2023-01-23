@@ -71,13 +71,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -130,6 +130,9 @@
     </li>
     <li>
       <a href="../articles/io.html">Data formats</a>
+    </li>
+    <li>
+      <a href="../articles/paper.html">Paper notes</a>
     </li>
     <li>
       <a href="../articles/parallel.html">Parallelization</a>
@@ -191,6 +194,7 @@
   maxmiss <span class='op'>=</span> <span class='fl'>0</span>,
   minmaf <span class='op'>=</span> <span class='fl'>0</span>,
   maxmaf <span class='op'>=</span> <span class='fl'>0.5</span>,
+  minac2 <span class='op'>=</span> <span class='cn'>FALSE</span>,
   outpop <span class='op'>=</span> <span class='cn'>NULL</span>,
   outpop_scale <span class='op'>=</span> <span class='cn'>TRUE</span>,
   transitions <span class='op'>=</span> <span class='cn'>TRUE</span>,
@@ -248,6 +252,10 @@
       <td><p>Discard SNPs with minor allele frequency greater than than <code>maxmaf</code></p></td>
     </tr>
     <tr>
+      <th>minac2</th>
+      <td><p>Discard SNPs with allele count lower than 2 in any population (default <code>FALSE</code>). This option should be set to <code>TRUE</code> when computing f3-statistics where one population consists mostly of pseudohaploid samples. Otherwise heterozygosity estimates and thus f3-estimates can be biased. <code>minac2 == 2</code> will discard SNPs with allele count lower than 2 in any non-singleton population (this option is experimental and is based on the hypothesis that using SNPs with allele count lower than 2 only leads to biases in non-singleton populations). While the <code>minac2</code> option discards SNPs with allele count lower than 2 in any population, the <code><a href='qp3pop.html'>qp3pop</a></code> function will only discard SNPs with allele count lower than 2 in the first (target) population (when the first argument is the prefix of a genotype file).</p></td>
+    </tr>
+    <tr>
       <th>outpop</th>
       <td><p>Keep only SNPs which are heterozygous in this population</p></td>
     </tr>
@@ -278,7 +286,7 @@ and you want to choose which one to read. Should be <code>plink</code> to read <
     </tr>
     <tr>
       <th>adjust_pseudohaploid</th>
-      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option.</p></td>
+      <td><p>Genotypes of pseudohaploid samples are usually coded as <code>0</code> or <code>2</code>, even though only one allele is observed. <code>adjust_pseudohaploid</code> ensures that the observed allele count increases only by <code>1</code> for each pseudohaploid sample. If <code>TRUE</code> (default), samples that don't have any genotypes coded as <code>1</code> among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to <code>FALSE</code> treats all samples as diploid and is equivalent to the <em>ADMIXTOOLS</em> <code>inbreed: NO</code> option. Setting <code>adjust_pseudohaploid</code> to an integer <code>n</code> will check the first <code>n</code> SNPs instead of the first 1000 SNPs.</p></td>
     </tr>
     <tr>
       <th>afprod</th>

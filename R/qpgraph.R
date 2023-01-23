@@ -660,15 +660,23 @@ compare_fits2 = function(fits1, fits2, boot = FALSE) {
 
 #' Compare the fit of two qpgraph models
 #'
-#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly better than the scores of the other.
+#' Takes the bootstrap score distribution of two fits on the same populations and tests whether the scores of one graph are significantly higher or lower than the scores of the other graph.
 #' @export
-#' @param scores1 Scores for the first graph
-#' @param scores2 Scores for the second graph
+#' @param scores1 Scores for the first graph. Each score should be for same model evaluated on different bootstrap samples of the SNP blocks. See \code{\link{qpgraph_resample_multi}}
+#' @param scores2 Scores for the second graph, evaluated on the same bootstrap samples as the first graph
+#' @return A list with statistics comparing the two models
+#' \itemize{
+#' \item `p_emp`: The two-sided bootstrap p-value testing whether the scores of one model are higher or lower than the scores of the other model. It is two times the fraction of bootstrap replicates in which model 1 has a lower score than model 2 (or vice-vera, whichever is lower). This is simply a bootstrap test for testing whether some quantity (the the score difference of two models in this case) is significantly different from zero.
+#' \item `p_emp_nocorr`: `p_emp` is truncated to be no less than the reciprocal of the number of bootstrap iterations (the length of the score vectors). `p_emp_nocorr` is not truncated and can be equal to 0.
+#' \item `ci_low`: The 2.5% quantile of distribution of score differences
+#' \item `ci_high`: The 97.5% quantile of distribution of score differences
+#' \item The other items in this list are less important and can be ignored. In particular, `p` is not as reliable as `p_emp` because it assumes that the score differences follow a normal distribution.
+#' }
 #' @seealso \code{\link{qpgraph_resample_multi}}
 #' @examples
 #' \dontrun{
 #' fits = qpgraph_resample_multi(f2_blocks, list(graph1, graph2), nboot = 100)
-#' compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
+#' compare_fits(fits[[1]]$score, fits[[2]]$score)
 #' }
 compare_fits = function(scores1, scores2) {
 

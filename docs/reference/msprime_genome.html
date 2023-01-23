@@ -8,6 +8,13 @@
 
 <title>Simulate an admixture graph in msprime v1.x. — msprime_genome • admixtools</title>
 
+<!-- favicons -->
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="../apple-touch-icon.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="../apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="../apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="../apple-touch-icon-60x60.png" />
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
@@ -44,6 +51,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
+  
+  <script src="../extra.js"></script>
 
 <meta property="og:title" content="Simulate an admixture graph in msprime v1.x. — msprime_genome" />
 <meta property="og:description" content="This function generates an msprime simulation script, and optionally executes it in python.
@@ -63,13 +72,13 @@ Unlike msprime_sim, this function can simulate continuous sequence (not independ
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'UA-155330476-1');
+  gtag('config', 'G-9DRRL9PZD0');
 </script>
 
 
@@ -108,7 +117,7 @@ Unlike msprime_sim, this function can simulate continuous sequence (not independ
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -177,22 +186,22 @@ Unlike msprime_sim, this function can simulate continuous sequence (not independ
 Unlike <code><a href='msprime_sim.html'>msprime_sim</a></code>, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes.</p>
     </div>
 
-    <pre class="usage"><span><span class='fu'>msprime_genome</span><span class='op'>(</span></span>
-<span>  <span class='va'>graph</span>,</span>
-<span>  outpref <span class='op'>=</span> <span class='st'>"msprime_sim"</span>,</span>
-<span>  neff <span class='op'>=</span> <span class='fl'>1000</span>,</span>
-<span>  ind_per_pop <span class='op'>=</span> <span class='fl'>1</span>,</span>
-<span>  mutation_rate <span class='op'>=</span> <span class='fl'>1.25e-08</span>,</span>
-<span>  time <span class='op'>=</span> <span class='fl'>1000</span>,</span>
-<span>  fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  nchr <span class='op'>=</span> <span class='fl'>1</span>,</span>
-<span>  recomb_rate_chr <span class='op'>=</span> <span class='fl'>2e-08</span>,</span>
-<span>  seq_length <span class='op'>=</span> <span class='fl'>1000</span>,</span>
-<span>  admix_default <span class='op'>=</span> <span class='fl'>0.5</span>,</span>
-<span>  run <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  ghost_lineages <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
-<span>  shorten_admixed_leaves <span class='op'>=</span> <span class='cn'>FALSE</span></span>
-<span><span class='op'>)</span></span></pre>
+    <pre class="usage"><span class='fu'>msprime_genome</span><span class='op'>(</span>
+  <span class='va'>graph</span>,
+  outpref <span class='op'>=</span> <span class='st'>"msprime_sim"</span>,
+  neff <span class='op'>=</span> <span class='fl'>1000</span>,
+  ind_per_pop <span class='op'>=</span> <span class='fl'>1</span>,
+  mutation_rate <span class='op'>=</span> <span class='fl'>1.25e-08</span>,
+  time <span class='op'>=</span> <span class='fl'>1000</span>,
+  fix_leaf <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  nchr <span class='op'>=</span> <span class='fl'>1</span>,
+  recomb_rate_chr <span class='op'>=</span> <span class='fl'>2e-08</span>,
+  seq_length <span class='op'>=</span> <span class='fl'>1000</span>,
+  admix_default <span class='op'>=</span> <span class='fl'>0.5</span>,
+  run <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  ghost_lineages <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  shorten_admixed_leaves <span class='op'>=</span> <span class='cn'>FALSE</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -207,12 +216,12 @@ Unlike <code><a href='msprime_sim.html'>msprime_sim</a></code>, this function ca
     </tr>
     <tr>
       <th>neff</th>
-      <td><p>Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., <code>c('R'=100, 'A'=50, 'B'=50)</code>).</p></td>
+      <td><p>Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=100, 'A'=50, 'B'=50)</a></code>).</p></td>
     </tr>
     <tr>
       <th>ind_per_pop</th>
       <td><p>The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations.
-Alternatively, it can be a named vector with a different value for each population (e.g., <code>c('A'=10, 'B'=20)</code> to sample 10 and 20 diploid individuals from populations A and B, respectively).</p></td>
+Alternatively, it can be a named vector with a different value for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('A'=10, 'B'=20)</a></code> to sample 10 and 20 diploid individuals from populations A and B, respectively).</p></td>
     </tr>
     <tr>
       <th>mutation_rate</th>
@@ -237,7 +246,7 @@ Alternatively, it can be a named vector with a different value for each populati
     <tr>
       <th>seq_length</th>
       <td><p>The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
-Alternatively, it can be a vector with a length equal to the number of chromosomes (i.e., <code>c(100,50)</code> to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).</p></td>
+Alternatively, it can be a vector with a length equal to the number of chromosomes (i.e., <code><a href='https://rdrr.io/r/base/c.html'>c(100,50)</a></code> to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).</p></td>
     </tr>
     <tr>
       <th>admix_default</th>
@@ -265,12 +274,10 @@ If <code>FALSE</code> (default), admixture occurs at the time of the previous sp
     <p>The file name and path of the simulation script</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='r-in'><span><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span></span>
-<span class='r-in'><span><span class='va'>results</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>example_graph</span><span class='op'>)</span></span></span>
-<span class='r-in'><span><span class='co'># Simulate 3 chromosomes whose lengths are 50, 100 and 100</span></span></span>
-<span class='r-in'><span><span class='fu'>msprime_genome</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span>, nchr<span class='op'>=</span><span class='fl'>3</span>, seq_length<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>50</span>, <span class='fl'>100</span>, <span class='fl'>100</span><span class='op'>)</span><span class='op'>)</span></span></span>
-<span class='r-in'><span><span class='op'>}</span></span></span>
-</pre>
+    <pre class="examples"><div class='input'><span class='va'>results</span> <span class='op'>=</span> <span class='fu'><a href='qpgraph.html'>qpgraph</a></span><span class='op'>(</span><span class='va'>example_f2_blocks</span>, <span class='va'>example_graph</span><span class='op'>)</span>
+<span class='co'># Simulate 3 chromosomes whose lengths are 50, 100 and 100</span>
+<span class='fu'>msprime_genome</span><span class='op'>(</span><span class='va'>results</span><span class='op'>$</span><span class='va'>edges</span>, nchr<span class='op'>=</span><span class='fl'>3</span>, seq_length<span class='op'>=</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>50</span>, <span class='fl'>100</span>, <span class='fl'>100</span><span class='op'>)</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; [1] "/Users/robert/Dropbox/postdoc2/projects/admixprograms/r/admixtools/docs/reference/msprime_sim.py"</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

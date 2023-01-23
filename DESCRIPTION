@@ -3,7 +3,7 @@ Type: Package
 Title: Inferring demographic history from genetic data
 Version: 2.0.0
 Authors@R: as.person(c(
-    "Robert Maier <rmaier@broadinstitute.org> [aut, cre]", 
+    "Robert Maier <robertmaier@gmx.net> [aut, cre]", 
     "Nick Patterson <nickp@broadinstitute.org> [aut]"
   ))
 Description: admixtools is a set of methods used to infer demographic history from genetic data using f-statistics.

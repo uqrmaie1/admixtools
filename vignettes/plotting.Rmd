@@ -17,7 +17,6 @@ vignette: >
   }
 </style>
   
-**Under construction**
 
 ```{r, include=FALSE}
 library(admixtools)

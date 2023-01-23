@@ -214,7 +214,7 @@ discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, mi
                            minmaf = minmaf, maxmaf = maxmaf, minac2 = minac2,
                            transitions = transitions, transversions = transversions, keepsnps = keepsnps)
   #keeprows = match(remaining, snpdat[['SNP']])
-  if(length(remaining) == 0) stop("No SNPs remain! Select fewer populations (particularly with low coverage), or use the option 'allsnps'!")
+  if(length(remaining) == 0) stop("No SNPs remain! Select fewer populations, in particular fewer populations with low coverage!")
   map(afdat, ~.[remaining,,drop = FALSE])
 }
 
@@ -1016,7 +1016,7 @@ afs_to_counts = function(genodir, outdir, chunk1, chunk2, overwrite = FALSE, ver
 #' @param inds Individuals for which data should be extracted
 #' @param pops Populations for which data should be extracted. If both `pops` and `inds` are provided, they should have the same length and will be matched by position. If only `pops` is provided, all individuals from the `.ind` or `.fam` file in those populations will be extracted. If only `inds` is provided, each indivdual will be assigned to its own population of the same name. If neither `pops` nor `inds` is provided, all individuals and populations in the `.ind` or `.fam` file will be extracted.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
-#' @param maxmem Maximum amount of memory to be used. If the required amount of memory exceeds `maxmem`, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair.
+#' @param maxmem Maximum amount of memory to be used. If the required amount of memory exceeds `maxmem`, allele frequency data will be split into blocks, and the computation will be performed separately on each block pair. This doesn't put a precise cap on the amount of memory used (it used to at some point). Set this parameter to lower values if you run out of memory while running this function. Set it to higher values if this function is too slow and you have lots of memory.
 #' @param maxmiss Discard SNPs which are missing in a fraction of populations higher than `maxmiss`
 #' @param minmaf Discard SNPs with minor allele frequency less than `minmaf`
 #' @param maxmaf Discard SNPs with minor allele frequency greater than than `maxmaf`
@@ -2544,7 +2544,8 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
   x = construct_fstat_matrix(popcomb)
   ymat = f4blockdat %>%
     select(pop1:pop4, block, est) %>%
-    pivot_wider(c(1:4), block, values_from = est) %>% select(-1:-4) %>% as.matrix
+    pivot_wider(1:4, names_from = block, values_from = est) %>%
+    select(-1:-4) %>% as.matrix
   y = f4pass1$est
   #ymat = ymat/f4pass1$se
   #x = x/f4pass1$se

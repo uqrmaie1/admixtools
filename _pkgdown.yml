@@ -5,7 +5,8 @@ template:
     docsearch:
       index_name: admixtools
       api_key: c30b6be96312414d83a0ba52b94b558b
-    ganalytics: UA-155330476-1
+    #ganalytics: UA-155330476-1
+    ganalytics: G-9DRRL9PZD0
 
 url: https://uqrmaie1.github.io/admixtools/index.html
 
