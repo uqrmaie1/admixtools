@@ -16,6 +16,7 @@ write_dot(
   highlight_unidentifiable = FALSE,
   nodesep = 0.25,
   ranksep = 0.5,
+  fix_names = FALSE,
   dot2pdf = FALSE
 )
 }
@@ -35,6 +36,8 @@ write_dot(
 \item{nodesep}{The minimum space between two adjacent nodes in the same rank, in inches. The default is \code{0.25}.}
 
 \item{ranksep}{Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is \code{0.5}.}
+
+\item{fix_names}{If \code{TRUE}, replaces the dots (.) and dashes (-) in population names with underscores. The default is \code{FALSE}.}
 
 \item{dot2pdf}{If \code{FALSE}, the function will terminate after writing the dot file. If \code{TRUE}, it will try to execute the \code{dot -Tpdf} comment to create pdf file.}
 }
