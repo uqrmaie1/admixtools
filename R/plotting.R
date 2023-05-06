@@ -112,11 +112,13 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
 #' @return A ggplot object
 #' @examples
+#' \dontrun{
 #' plot_graph(example_graph)
 #' 
 #' # Plot a random simulation output. Show dates and population sizes on the plot
 #' out = random_sim(nleaf=5, nadmix=1)
 #' plot_graph(out$edges, dates=out$dates, neff=out$neff)
+#' }
 plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE,
                       pos = NULL, dates = NULL, neff = NULL, scale_y = FALSE, hide_weights = FALSE) {
   

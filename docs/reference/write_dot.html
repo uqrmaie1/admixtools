@@ -51,7 +51,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
 
 
-  
+
   <script src="../extra.js"></script>
 
 <meta property="og:title" content="Convert graph to dot format — write_dot" />
@@ -184,14 +184,21 @@
     <p>Convert graph to dot format</p>
     </div>
 
-    <pre class="usage"><span class='fu'>write_dot</span><span class='op'>(</span>
-  <span class='va'>graph</span>,
-  outfile <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/showConnections.html'>stdout</a></span><span class='op'>(</span><span class='op'>)</span>,
-  size1 <span class='op'>=</span> <span class='fl'>7.5</span>,
-  size2 <span class='op'>=</span> <span class='fl'>10</span>,
-  title <span class='op'>=</span> <span class='st'>""</span>,
-  dot2pdf <span class='op'>=</span> <span class='cn'>FALSE</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span><span class='fu'>write_dot</span><span class='op'>(</span></span>
+<span>  <span class='va'>graph</span>,</span>
+<span>  outfile <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/showConnections.html'>stdout</a></span><span class='op'>(</span><span class='op'>)</span>,</span>
+<span>  fontsize <span class='op'>=</span> <span class='fl'>14</span>,</span>
+<span>  color <span class='op'>=</span> <span class='cn'>TRUE</span>,</span>
+<span>  hide_weights <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  size1 <span class='op'>=</span> <span class='fl'>7.5</span>,</span>
+<span>  size2 <span class='op'>=</span> <span class='fl'>10</span>,</span>
+<span>  title <span class='op'>=</span> <span class='st'>""</span>,</span>
+<span>  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  nodesep <span class='op'>=</span> <span class='fl'>0.25</span>,</span>
+<span>  ranksep <span class='op'>=</span> <span class='fl'>0.5</span>,</span>
+<span>  fix_names <span class='op'>=</span> <span class='cn'>FALSE</span>,</span>
+<span>  dot2pdf <span class='op'>=</span> <span class='cn'>FALSE</span></span>
+<span><span class='op'>)</span></span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -203,6 +210,38 @@
     <tr>
       <th>outfile</th>
       <td><p>Output file name</p></td>
+    </tr>
+    <tr>
+      <th>fontsize</th>
+      <td><p>Font size of edge and node labels</p></td>
+    </tr>
+    <tr>
+      <th>color</th>
+      <td><p>A boolean specifying if the plot will be in color or grey scale.</p></td>
+    </tr>
+    <tr>
+      <th>hide_weights</th>
+      <td><p>A boolean value specifying if the drift values on the edges will be hidden. The default is <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>highlight_unidentifiable</th>
+      <td><p>Highlight unidentifiable edges in red. Can be slow for large graphs.</p></td>
+    </tr>
+    <tr>
+      <th>nodesep</th>
+      <td><p>The minimum space between two adjacent nodes in the same rank, in inches. The default is <code>0.25</code>.</p></td>
+    </tr>
+    <tr>
+      <th>ranksep</th>
+      <td><p>Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is <code>0.5</code>.</p></td>
+    </tr>
+    <tr>
+      <th>fix_names</th>
+      <td><p>If <code>TRUE</code>, replaces the dots (.) and dashes (-) in population names with underscores. The default is <code>FALSE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>dot2pdf</th>
+      <td><p>If <code>FALSE</code>, the function will terminate after writing the dot file. If <code>TRUE</code>, it will try to execute the <code>dot -Tpdf</code> comment to create pdf file.</p></td>
     </tr>
     </table>
 

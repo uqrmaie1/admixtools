@@ -2573,42 +2573,123 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 }
 
 
-
 #' Convert graph to dot format
 #' @export
 #' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')
 #' @param outfile Output file name
+#' @param fontsize Font size of edge and node labels
+#' @param color A boolean specifying if the plot will be in color or grey scale.
+#' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs.
+#' @param nodesep The minimum space between two adjacent nodes in the same rank, in inches. The default is `0.25`. 
+#' @param ranksep Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is `0.5`.
+#' @param fix_names If `TRUE`, replaces the dots (.) and dashes (-) in population names with underscores. The default is `FALSE`.
+#' @param dot2pdf If `FALSE`, the function will terminate after writing the dot file. If `TRUE`, it will try to execute the `dot -Tpdf` comment to create pdf file. 
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
-write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
-                     title = '', dot2pdf = FALSE) {
-  # writes qpgraph output to a dot format file
-
+write_dot = function(graph, outfile = stdout(), fontsize = 14, color = TRUE, hide_weights = FALSE, size1 = 7.5, size2 = 10, 
+                     title = '', highlight_unidentifiable = FALSE, nodesep = 0.25, ranksep = 0.5, fix_names = FALSE, dot2pdf = FALSE) {
+  if (isTRUE(fix_names)){
+    if('igraph' %in% class(graph)) {
+      graph %<>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
+        mutate_all(list(function(x) gsub("\\.", "_", x))) %>%
+        mutate_all(list(function(y) gsub("-", "_", y))) %>%
+        edges_to_igraph()
+    }
+    else{
+      graph %<>% 
+        mutate_at(c("from", "to"), function(x) gsub("\\.", "_", x)) %>%
+        mutate_at(c("from", "to"), function(x) gsub("-", "_", x))
+    }
+  }
   if('igraph' %in% class(graph)) {
     edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
-  } else edges = graph
+    ig = graph
+  } else{
+    edges = graph
+    ig = edges_to_igraph(graph)
+  } 
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
-
+  if (isTRUE(hide_weights)){
+    edges %<>% mutate(weight = ifelse(type != "admix", " ", round(weight * 100)))
+  } else {
+    edges %<>% mutate(weight = ifelse(type != "admix", round(weight * 1000), round(weight * 100)))
+  }
+  
   leaves = setdiff(edges$to, edges$from)
   root = setdiff(edges$from, edges$to)
   internal = setdiff(c(edges$from, edges$to), c(leaves))
-  edges = mutate(edges, lab = ifelse(type == 'edge',
-                                     paste0(' [ label = "', round(weight * 1000), '" ];'),
-                                     paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''),
-                 to = str_replace_all(to, '[\\.-]', ''))
-  nodes = paste0(internal, ' [shape = point];', collapse = '\n')
-
+  
+  p = plot_graph(graph, fix=F)
+  pp = ggplot_build(p)
+  
+  pdat = graph_to_plotdat(graph)
+  
+  cols = pp$data[[1]] %>%
+    arrange(desc(y)) %>%
+    select(y, colour) %>%
+    distinct() %>%
+    right_join(pdat$eg, by = "y") %>%
+    transmute(from=name, to, colour)
+  
+  leaf_cols = pp$data[[2]] %>%
+    select(label, colour)
+  
+  if (isFALSE(color)){
+    cols = mutate(cols, colour = "Black")
+    leaf_cols$colour = "Black"
+  }
+  
+  if (isTRUE(highlight_unidentifiable)){
+    cols = unidentifiable_edges(ig) %>%
+      transmute(from, to, lab="uniden") %>%
+      right_join(cols, by=c("from", "to")) %>% 
+      replace_na(list(lab = "iden")) %>%
+      mutate(colour2 = colour) %>%
+      mutate(colour = ifelse(lab == "uniden", "Red", colour)) %>% 
+      select(-lab)
+  }
+  
+  edges = edges %>%
+    left_join(cols, by=c("from", "to")) %>%
+    mutate(lab = ifelse(type != 'admix',
+                        paste0(' [ label = "', weight, '", color = "', colour, '", fontsize = "', fontsize, '" ];'),
+                        paste0(' [ style=dotted, label = "', weight, '%", color = "', colour, '", fontsize = "', fontsize, '" ];')),
+           from = str_replace_all(from, '[\\.-]', ''),
+           to = str_replace_all(to, '[\\.-]', ''))
+  
+  if (isTRUE(highlight_unidentifiable)){
+    ints = cols %>%
+      transmute(from, colour = colour2)
+  } else{
+    ints = cols %>%
+      select(from, colour)
+  } 
+  
+  int_nodes = ints %>%
+    distinct() %>%
+    transmute(lab = paste0(from, ' [shape = point, color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+  
+  term_nodes = leaf_cols %>%
+    transmute(lab = paste0(label, ' [color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+  
   out = paste0('digraph G {\nlabel = "',title,'";\nlabelloc=t;\nlabeljust=l;\n')
   out = paste0(out, 'size = "',size1,',',size2,'";\n')
-  out = paste0(out, nodes, '\n')
+  out = paste0(out, 'nodesep = "', nodesep, '";\n')
+  out = paste0(out, 'ranksep = "', ranksep, '";\n')
+  out = paste0(out, int_nodes, '\n')
+  out = paste0(out, term_nodes, '\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
-
+  
   writeLines(out, outfile)
   if(dot2pdf) {
     outpdf = str_replace(outfile, '\\..*$', '.pdf')
@@ -2763,4 +2844,246 @@ parse_dot = function(dotfile) {
 }
 
 
-
+#' Convert a graph to .lgo file to be used in Legofit software
+#'
+#' @export
+#' @param graph Edgelist representation (i.e., a dataframe) of an admixture graph. It must contain the following columns: `from`, `to`, `type` and `weight`.
+#' @param outpref A prefix of output file
+#' @param neff Effective population size in diploid individuals (1000 by default). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
+#' @param samples The number of samples to be drawn for each population (1 by default). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
+#' @param dates_internal Either a scalar value (1000 generations by default) with the dates generated by \code{\link{pseudo_dates}} function, or a named vector with dates for each internal graph nodes (in generations).
+#' @param dates_terminal Either a scalar value that will be constant across all terminal nodes, or a named vector with dates for each terminal graph nodes (in generations). The default is 0, meaning that all the samples will be drawn at the end of the simulation (i.e., from today).
+#' @param outpop Name of the outgroup population to be removed, together with the root. 
+#' @return The file name and path of the lgo file
+#' @examples
+#' \dontrun{
+#' out = random_sim(4, 1)
+#' graph_to_lgo(out$edges, neff = out$neff, samples = 10)
+#' }
+graph_to_lgo = function(graph, outpref='out', neff = 1000, samples = 1, dates_internal = 1000, dates_terminal = 0, outpop = NULL){
+  
+  if (!is.data.frame(graph) || !all(c("from", "to", "type", "weight") %in% colnames(graph))){
+    stop("graph must be a dataframe with columns from, to, type, and weight")
+  }
+  
+  # Remove outgroup and outgroup split
+  if (!is_null(outpop)){
+    if (!outpop  %in% graph$to) stop(paste0("Couldn't find outpop ", outpop, ". The outgroup must be the name of outgroup population."))
+    root_pop = graph  %>%
+      filter(to == outpop) %>%
+      pull(from)
+    
+    graph %<>%
+      filter(to != outpop,
+             from != root_pop)
+  }
+  
+  # Add population split event for each admixture edge
+  ng1 = graph %>%
+    filter(type == "admix") %>%
+    group_by(from) %>%
+    mutate(counter = row_number(from)) %>%
+    transmute(from,
+              to = paste(from, counter, sep='_'),
+              type = "normal",
+              weight=1) %>%
+    ungroup
+  
+  ng2 = graph %>%
+    filter(type == "admix") %>%
+    group_by(from) %>%
+    mutate(counter = row_number(from)) %>%
+    transmute(from = paste(from, counter, sep='_'),
+              to,
+              type,
+              weight)
+  
+  graph %<>%
+    filter(type != 'admix') %>%
+    bind_rows(ng1, ng2)
+  
+  ig = graph %>%
+    edges_to_igraph()
+  nodes = names(V(ig))
+  leaves = get_leafnames(ig)
+  leaves = intersect(nodes, leaves)
+  
+  ## PARAMS
+  # Times (T)
+  #terminal
+  if(length(dates_terminal) == 1){
+    tims_t = setNames(rep(dates_terminal, length(leaves)), leaves)
+  } else {
+    if (!all(leaves %in% names(dates_terminal))) stop("'dates_terminal' has to be a single number or a named vector with a number for each node!")
+    tims_t = dates_terminal[leaves]
+  }
+  
+  #internal
+  if(length(dates_internal) == 1){
+    tims_i = pseudo_dates(ig, dates_internal, fix=F)[setdiff(nodes, leaves)]
+  } else {
+    dates_all = c(dates_internal, setNames(dates_internal[ng1$from], ng1$to))
+    if (!all(setdiff(nodes, leaves) %in% names(dates_all))) stop("'dates' has to be a single number or a named vector with a number for each node!")
+    tims_i = dates_all[setdiff(nodes, leaves)]
+  }
+  
+  tims = c(tims_i, tims_t)
+  
+  admixs = graph %>%
+    filter(type == "admix") %>% 
+    left_join(data.frame(from=names(tims), date=unname(tims)), by = "from") %>%
+    select(from, to, date)
+  
+  min_unmatched_adx = admixs %>%
+    group_by(to) %>%
+    mutate(n = length(unique(date))) %>%
+    filter(n > 1) %>%
+    ungroup() %>%
+    select(to, date)  %>%
+    group_by(to) %>%
+    slice_min(date) %>%
+    distinct() %>% deframe()
+  
+  # To match times of admixed populations
+  if (length(min_unmatched_adx) > 0){
+    warning(paste0("Admixture times of '", paste(names(min_unmatched_adx), collapse="', '"), "' populations are not matched. Recalculating..."))
+    new_dates = admixs %>%
+      filter(to %in% names(min_unmatched_adx)) %>%
+      mutate(date = min_unmatched_adx[to]) %>%
+      select(from, date) %>%
+      distinct() %>%
+      deframe
+    tims[names(new_dates)] = new_dates
+  }
+  
+  times =
+    data.frame(nms = names(tims),
+               size = unname(tims)) %>%
+    filter(size != 0) %>%
+    transmute(v1 = 'time',
+              v2 = "free",
+              v3 = paste0('T_', nms, '=', size))
+  times = bind_rows(c(v1='time', v2='fixed', v3='zero=0'), times)
+  
+  # Effective population sizes (twoN)
+  if(length(neff) == 1){
+    popsize = setNames(rep(neff, length(nodes)), nodes)
+  } else{
+    neff = c(neff, setNames(neff[ng1$from], ng1$to))
+    if (!all(nodes %in% names(neff))) stop("'neff' has to be a single number or a named vector with a number for each node!")
+    popsize = neff[nodes]
+  }
+  
+  twons =
+    data.frame(nms = names(popsize),
+               size = unname(popsize)) %>%
+    transmute(v1 = "twoN",
+              v2 = "free",
+              v3 = paste0('twoN_', nms, '=', size))
+  
+  
+  # Admixture fractions
+  mixfracs =
+    graph %>%
+    filter(type == "admix") %>%
+    group_by(to) %>%
+    slice_min(weight, with_ties = FALSE) %>%
+    ungroup() %>%
+    transmute(v1 = "mixFrac",
+              v2 = "free",
+              v3 = paste0('m_', to, '=', weight))
+  
+  # Samples
+  if(length(samples) > 1) {
+    if(!isTRUE(all.equal(sort(names(samples)), sort(leaves)))) stop("'samples' has to be a single number or a named vector with a number for each leaf node!")
+  } else if (length(samples) == 1) {
+    samples = setNames(rep(samples, length(leaves)), leaves)
+  } else stop("'samples' has to be a single number or a named vector with a number for each leaf node!")
+  
+  ## POPULATION SEGMENTS
+  # Terminal nodes
+  tsegs =
+    tibble(
+      v1 = "segment",
+      v2 = leaves,
+      v3 = paste0('t=T_', v2),
+      v4 = paste0('twoN=twoN_', v2),
+      v5 = paste0('samples=', samples[v2])) %>%
+    mutate(v3 = ifelse(v2 %in% names(which(tims == 0)), 't=zero', v3)) %>%
+    arrange(v2)
+  
+  # Internal nodes
+  # ensure that the times of two admixed populations will match
+  ng_remap = ng2 %>%
+    select(from, to) %>%
+    group_by(to) %>%
+    nest(data=from) %>%
+    deframe
+  ng_remap2 = lapply(ng_remap, function(x) setNames(paste0('t=T_', x$from[1]), x$from[2])) %>% unname %>% unlist 
+  
+  isegs = tibble(
+    v1 = "segment",
+    v2 = setdiff(nodes, leaves),
+    v3 = paste0('t=T_', v2),
+    v4 = paste0('twoN=twoN_', v2)
+  ) %>%
+    mutate(v3 = ifelse(v2 %in% names(ng_remap2), ng_remap2[v2], v3))
+  
+  ## RELATIONSHIP BETWEEN SEGMENTS
+  norm_desc = graph %>%
+    filter(type != 'admix') %>%
+    transmute(v1 = 'derive',
+              v2 = to,
+              v3 = 'from',
+              v4 = from)
+  
+  agmin = graph %>%
+    filter(type == 'admix') %>%
+    select(-type) %>%
+    group_by(to) %>%
+    slice_min(weight, with_ties = F)
+  
+  agmax = graph %>%
+    filter(type == 'admix') %>%
+    select(-type) %>%
+    group_by(to) %>%
+    slice_max(weight, with_ties = F)
+  
+  adm_desc = inner_join(
+    rename(agmin, min_from=from),
+    rename(agmax, max_from=from),
+    by = 'to') %>%
+    ungroup %>%
+    transmute(v1 = 'mix',
+              v2 = to,
+              v3 = 'from',
+              v4 = paste0(max_from, ' + m_', to, ' * ', min_from))
+  
+  out =
+    paste0(
+      "## This lgo file describes population history to be used as input to Legofit software\n",
+      "## This file was automatically generated by admixtools::graph_to_lgo() function.\n\n",
+      "### VARIABLES\n",
+      "## Dates\n",
+      paste(apply(times, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n## Effective Population Sizes\n",
+      paste(apply(twons, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n## Admixture fractions\n",
+      paste(apply(mixfracs, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n\n### POPULATION SEGMENTS",
+      "\n## Terminal nodes\n",
+      paste(apply(tsegs, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n## Internal nodes\n",
+      paste(apply(isegs, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n\n### RELATIONSHIPS BETWEEN SEGMENTS",
+      "\n## Population splits\n",
+      paste(apply(norm_desc, 1, function(x) paste(x, collapse="\t")), collapse="\n"),
+      "\n## Admixture events\n",
+      paste(apply(adm_desc, 1, function(x) paste(x, collapse="\t")), collapse="\n")
+    )
+  
+  outfilename = paste0(outpref, '.lgo')
+  writeLines(out, outfilename)
+  
+  tools::file_path_as_absolute(outfilename)
+}
