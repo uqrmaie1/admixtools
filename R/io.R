@@ -3029,6 +3029,12 @@ graph_to_lgo = function(graph, outpref='out', neff = 1000, samples = 1, dates_in
   ) %>%
     mutate(v3 = ifelse(v2 %in% names(ng_remap2), ng_remap2[v2], v3))
   
+  ## Remove unused time parameters
+  unused = names(ng_remap2) %>% paste0("T_", .)
+  times %<>% mutate(v4 = gsub("=[0-9]+", "", v3)) %>% 
+    filter(!(v4 %in% unused)) %>% 
+    select(v1, v2, v3)
+  
   ## RELATIONSHIP BETWEEN SEGMENTS
   norm_desc = graph %>%
     filter(type != 'admix') %>%
