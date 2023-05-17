@@ -53,9 +53,11 @@ A ggplot object
 Plot an admixture graph
 }
 \examples{
+\dontrun{
 plot_graph(example_graph)
 
 # Plot a random simulation output. Show dates and population sizes on the plot
 out = random_sim(nleaf=5, nadmix=1)
 plot_graph(out$edges, dates=out$dates, neff=out$neff)
+}
 }

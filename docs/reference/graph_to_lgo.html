@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot an admixture graph — plot_graph • admixtools</title>
+<title>Convert a graph to .lgo file to be used in Legofit software — graph_to_lgo • admixtools</title>
 
 
 <!-- jquery -->
@@ -45,8 +45,8 @@
 
 
 
-<meta property="og:title" content="Plot an admixture graph — plot_graph" />
-<meta property="og:description" content="Plot an admixture graph" />
+<meta property="og:title" content="Convert a graph to .lgo file to be used in Legofit software — graph_to_lgo" />
+<meta property="og:description" content="Convert a graph to .lgo file to be used in Legofit software" />
 
 
 
@@ -62,13 +62,13 @@
 
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-9DRRL9PZD0"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-155330476-1"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-9DRRL9PZD0');
+  gtag('config', 'UA-155330476-1');
 </script>
 
 
@@ -166,94 +166,68 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot an admixture graph</h1>
-    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/plotting.R'><code>R/plotting.R</code></a></small>
-    <div class="hidden name"><code>plot_graph.Rd</code></div>
+    <h1>Convert a graph to .lgo file to be used in Legofit software</h1>
+    <small class="dont-index">Source: <a href='https://github.com/uqrmaie1/admixtools/blob/master/R/io.R'><code>R/io.R</code></a></small>
+    <div class="hidden name"><code>graph_to_lgo.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Plot an admixture graph</p>
+    <p>Convert a graph to .lgo file to be used in Legofit software</p>
     </div>
 
-    <pre class="usage"><span class='fu'>plot_graph</span><span class='op'>(</span>
-  <span class='va'>graph</span>,
-  fix <span class='op'>=</span> <span class='cn'>NULL</span>,
-  title <span class='op'>=</span> <span class='st'>""</span>,
-  color <span class='op'>=</span> <span class='cn'>TRUE</span>,
-  textsize <span class='op'>=</span> <span class='fl'>2.5</span>,
-  highlight_unidentifiable <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  pos <span class='op'>=</span> <span class='cn'>NULL</span>,
-  dates <span class='op'>=</span> <span class='cn'>NULL</span>,
-  neff <span class='op'>=</span> <span class='cn'>NULL</span>,
-  scale_y <span class='op'>=</span> <span class='cn'>FALSE</span>,
-  hide_weights <span class='op'>=</span> <span class='cn'>FALSE</span>
-<span class='op'>)</span></pre>
+    <pre class="usage"><span><span class='fu'>graph_to_lgo</span><span class='op'>(</span></span>
+<span>  <span class='va'>graph</span>,</span>
+<span>  outpref <span class='op'>=</span> <span class='st'>"out"</span>,</span>
+<span>  neff <span class='op'>=</span> <span class='fl'>1000</span>,</span>
+<span>  samples <span class='op'>=</span> <span class='fl'>1</span>,</span>
+<span>  dates_internal <span class='op'>=</span> <span class='fl'>1000</span>,</span>
+<span>  dates_terminal <span class='op'>=</span> <span class='fl'>0</span>,</span>
+<span>  outpop <span class='op'>=</span> <span class='cn'>NULL</span></span>
+<span><span class='op'>)</span></span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>graph</th>
-      <td><p>An admixture graph. If it's an edge list with a <code>label</code> column,
-those values will be displayed on the edges</p></td>
+      <td><p>Edgelist representation (i.e., a dataframe) of an admixture graph. It must contain the following columns: <code>from</code>, <code>to</code>, <code>type</code> and <code>weight</code>.</p></td>
     </tr>
     <tr>
-      <th>fix</th>
-      <td><p>If <code>TRUE</code>, there will be an attempt to rearrange the nodes to minimize
-the number of intersecting edges. This can take very long for large graphs.
-By default this is only done for graphs with fewer than 10 leaves.</p></td>
-    </tr>
-    <tr>
-      <th>title</th>
-      <td><p>A plot title</p></td>
-    </tr>
-    <tr>
-      <th>color</th>
-      <td><p>Plot it in color or greyscale</p></td>
-    </tr>
-    <tr>
-      <th>textsize</th>
-      <td><p>Size of edge and node labels</p></td>
-    </tr>
-    <tr>
-      <th>highlight_unidentifiable</th>
-      <td><p>Highlight unidentifiable edges in red. Can be slow for large graphs. See <code><a href='unidentifiable_edges.html'>unidentifiable_edges</a></code>.</p></td>
-    </tr>
-    <tr>
-      <th>pos</th>
-      <td><p>An optional data frame with node coordinates (columns <code>node</code>, <code>x</code>, <code>y</code>)</p></td>
-    </tr>
-    <tr>
-      <th>dates</th>
-      <td><p>An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=1000, 'A'=0, 'B'=0)</a></code>).
-If this option is supplied, the y-axis will display dates in generations.</p></td>
+      <th>outpref</th>
+      <td><p>A prefix of output file</p></td>
     </tr>
     <tr>
       <th>neff</th>
-      <td><p>An optional named vector with effective population sizes for each population (e.g., <code><a href='https://rdrr.io/r/base/c.html'>c('R'=100, 'A'=100, 'B'=100)</a></code>).
-If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.</p></td>
+      <td><p>Effective population size in diploid individuals (1000 by default). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., <code>c('R'=100, 'A'=50, 'B'=50)</code>).</p></td>
     </tr>
     <tr>
-      <th>scale_y</th>
-      <td><p>If <code>TRUE</code>, scale the y-axis according to <code>dates</code> vector. The default is <code>FALSE</code>.</p></td>
+      <th>samples</th>
+      <td><p>The number of samples to be drawn for each population (1 by default). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.</p></td>
     </tr>
     <tr>
-      <th>hide_weights</th>
-      <td><p>A boolean value specifying if the drift values on the edges will be hidden. The default is <code>FALSE</code>.</p></td>
+      <th>dates_internal</th>
+      <td><p>Either a scalar value (1000 generations by default) with the dates generated by <code><a href='pseudo_dates.html'>pseudo_dates</a></code> function, or a named vector with dates for each internal graph nodes (in generations).</p></td>
+    </tr>
+    <tr>
+      <th>dates_terminal</th>
+      <td><p>Either a scalar value that will be constant across all terminal nodes, or a named vector with dates for each terminal graph nodes (in generations). The default is 0, meaning that all the samples will be drawn at the end of the simulation (i.e., from today).</p></td>
+    </tr>
+    <tr>
+      <th>outpop</th>
+      <td><p>Name of the outgroup population to be removed, together with the root.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>A ggplot object</p>
+    <p>The file name and path of the lgo file</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>example_graph</span><span class='op'>)</span>
-</div><div class='img'><img src='plot_graph-1.png' alt='' width='700' height='433' /></div><div class='input'>
-<span class='co'># Plot a random simulation output. Show dates and population sizes on the plot</span>
-<span class='va'>out</span> <span class='op'>=</span> <span class='fu'><a href='random_sim.html'>random_sim</a></span><span class='op'>(</span>nleaf<span class='op'>=</span><span class='fl'>5</span>, nadmix<span class='op'>=</span><span class='fl'>1</span><span class='op'>)</span>
-<span class='fu'>plot_graph</span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, dates<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>dates</span>, neff<span class='op'>=</span><span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span><span class='op'>)</span>
-</div><div class='img'><img src='plot_graph-2.png' alt='' width='700' height='433' /></div></pre>
+    <pre class="examples"><span class='r-in'><span><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span></span></span>
+<span class='r-in'><span><span class='va'>out</span> <span class='op'>=</span> <span class='fu'><a href='random_sim.html'>random_sim</a></span><span class='op'>(</span><span class='fl'>4</span>, <span class='fl'>1</span><span class='op'>)</span></span></span>
+<span class='r-in'><span><span class='fu'>graph_to_lgo</span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, neff <span class='op'>=</span> <span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span>, samples <span class='op'>=</span> <span class='fl'>10</span><span class='op'>)</span></span></span>
+<span class='r-in'><span><span class='op'>}</span></span></span>
+</pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

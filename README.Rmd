@@ -19,7 +19,9 @@ knitr::opts_chunk$set(
 
 A new, lightning fast implementation of [*ADMIXTOOLS*](https://github.com/DReichLab/AdmixTools).
 
-The corresponding manuscript is finally online [here](https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1)! My personal summary and a few more thoughts can be found [here](https://uqrmaie1.github.io/admixtools/articles/paper.html).
+The corresponding manuscript is finally online [here](https://elifesciences.org/articles/85492)! My personal summary and a few more thoughts can be found [here](https://uqrmaie1.github.io/admixtools/articles/paper.html).
+
+__Contacts:__ For questions, please contact either [Pavel Flegontov](mailto:pavel_flegontov@hms.harvard.edu), [Robert Maier](mailto:robertmaier@gmx.net) or [Ulas Isildak](mailto:isildak.ulas@gmail.com).
 
 ## Overview
 
@@ -190,7 +192,12 @@ If you expected to see your name here but I failed to include it, please let me 
 
 ## Cite *ADMIXTOOLS 2*
 
-If you want to cite *ADMIXTOOLS 2*, you can link to this website and mention that a manuscript describing *ADMIXTOOLS 2* is currently under preparation.
+The *ADMIXTOOLS 2* manuscript is published and can be found [here](https://elifesciences.org/articles/85492). You should cite it as:
+
+
+Robert Maier, Pavel Flegontov, Olga Flegontova, Ulas Isildak, Piya Changmai, David Reich (2023) __On the limits of fitting complex models of population history to f-statistics__ _eLife_ 12:e85492
+
+https://doi.org/10.7554/eLife.85492
 
 ## See also
 
