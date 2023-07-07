@@ -1,7 +1,7 @@
 ---
 title: "qpWave and qpAdm"
 author: "Robert Maier"
-date: "`r Sys.Date()`"
+date: "2022-11-12"
 output:
   rmarkdown::html_vignette:
     toc: true

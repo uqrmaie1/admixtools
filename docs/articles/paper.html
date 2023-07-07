@@ -64,7 +64,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -120,7 +120,7 @@
 
       
 
-      </header><script src="paper_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
+      </header><script src="paper_files/header-attrs-2.23/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Paper notes</h1>
@@ -138,77 +138,336 @@
 <div id="thoughts-on-maier-flegontov-et-al-" class="section level2">
 <h2 class="hasAnchor">
 <a href="#thoughts-on-maier-flegontov-et-al-" class="anchor"></a>Thoughts on Maier, Flegontov et al.</h2>
-<p>Our ADMIXTOOLS 2 manuscript is finally online! The first draft was just a description of algorithmic improvements to the ADMIXTOOLS software, but over time it turned into a paper on the robustness of fitting admixture graphs, and into a detailed re-examination of a number of case studies. I don’t expect that most users of ADMIXTOOLS 2 will read the whole paper in detail, so I want to reflect here on some points of the paper that are worth considering when using ADMIXTOOLS 2, and in particular when modeling admixture graphs.</p>
-<p>When I entered the ancient DNA world in 2019, I was a complete newcomer to the field. Despite the many connections to other sub-fields of human genetics, it felt separated from the field of medical genetics, and closer to the world of archaeology. I noticed that the methods that comprise the ADMIXTOOLS software package (most of which are based on f-statistics) are central to many of the main results in the field, and so I wanted to get a good understanding of them. It still strikes me as odd that these highly influential and elegant methods are much less known outside of the ancient DNA field than methods like PCA and ADMIXTURE.</p>
-<p>When I studied these methods I found a couple of ways in which the computations could be sped up by a lot and I was excited about the opportunities that this would offer. Most importantly, it opened the door for inferring admixture graph models automatically, rather than building and evaluating single models manually. The idea is to take genetic data from a handful of samples from different populations and let an algorithm find the best-fitting demographic history of those samples. This would make admixture graph fitting more objective, more transparent, and non-computational scientists would be able to use it to analyze their data. I was vaguely aware that TreeMix is doing something like this, but the majority of published admixture graph models are based on the qpGraph program in ADMIXTOOLS, which made me conclude that the existing automated approaches just aren’t very good. Eventually, I came to realize that automated approaches often don’t work as well as expected because genetic data alone is not sufficient to distinguish between huge numbers of possible models. So in practice, analysts with a lot of domain knowledge integrate genetic data with other sources of evidence to find plausible models in a much more constrained search space. The disadvantage of this approach is that it is more labor intensive and more subjective than a fully automated search in an unconstrained model space.</p>
+<p>Our ADMIXTOOLS 2 manuscript is finally online! The first draft was
+just a description of algorithmic improvements to the ADMIXTOOLS
+software, but over time it turned into a paper on the robustness of
+fitting admixture graphs, and into a detailed re-examination of a number
+of case studies. I don’t expect that most users of ADMIXTOOLS 2 will
+read the whole paper in detail, so I want to reflect here on some points
+of the paper that are worth considering when using ADMIXTOOLS 2, and in
+particular when modeling admixture graphs.</p>
+<p>When I entered the ancient DNA world in 2019, I was a complete
+newcomer to the field. Despite the many connections to other sub-fields
+of human genetics, it felt separated from the field of medical genetics,
+and closer to the world of archaeology. I noticed that the methods that
+comprise the ADMIXTOOLS software package (most of which are based on
+f-statistics) are central to many of the main results in the field, and
+so I wanted to get a good understanding of them. It still strikes me as
+odd that these highly influential and elegant methods are much less
+known outside of the ancient DNA field than methods like PCA and
+ADMIXTURE.</p>
+<p>When I studied these methods I found a couple of ways in which the
+computations could be sped up by a lot and I was excited about the
+opportunities that this would offer. Most importantly, it opened the
+door for inferring admixture graph models automatically, rather than
+building and evaluating single models manually. The idea is to take
+genetic data from a handful of samples from different populations and
+let an algorithm find the best-fitting demographic history of those
+samples. This would make admixture graph fitting more objective, more
+transparent, and non-computational scientists would be able to use it to
+analyze their data. I was vaguely aware that TreeMix is doing something
+like this, but the majority of published admixture graph models are
+based on the qpGraph program in ADMIXTOOLS, which made me conclude that
+the existing automated approaches just aren’t very good. Eventually, I
+came to realize that automated approaches often don’t work as well as
+expected because genetic data alone is not sufficient to distinguish
+between huge numbers of possible models. So in practice, analysts with a
+lot of domain knowledge integrate genetic data with other sources of
+evidence to find plausible models in a much more constrained search
+space. The disadvantage of this approach is that it is more labor
+intensive and more subjective than a fully automated search in an
+unconstrained model space.</p>
 </div>
 <div id="how-to-prevent-overfitting" class="section level2">
 <h2 class="hasAnchor">
 <a href="#how-to-prevent-overfitting" class="anchor"></a>How to prevent overfitting</h2>
-<p>Manual model fitting also makes it easy to overfit models to the data, and our re-analysis of several published admixture graphs suggests that this is not uncommon. How do we know that some of these models were overfitted? One of the great things about genetic data is that most variation is selectively neutral or close to it, and that variants far apart from each other drift more or less independently up and down in frequency. Because of that, they are like independent replicates of the same experiment. A simple, but inefficient way to take advantage of this would be to conduct an analysis and develop a model only on the even chromosomes. At the very end, repeat the exact same analysis on the odd chromosomes and check how similar the result is. If it is very different, it suggests that the results don’t generalize, they were overfitted to the even chromosomes. Or equivalently, that there isn’t enough data to distinguish between models as complex as the ones that were fitted. This approach with even and odd chromosomes is inefficient because it only uses half of the SNPs each time. It is more efficient to use almost all SNPs, leaving out only a few at a time. This is what block-jackknife and block-bootstrap do, and these methods are widely used in ADMIXTOOLS, ADMIXTOOLS 2, and in many other programs. But there are differences in how exactly these methods are used. In ADMIXTOOLS, block-jackknife is used to calculate standard errors for f-statistics. Since f-statistics are the basis for most other ADMIXTOOLS programs such as qpGraph, and f-statistic standard errors end up influencing quantities such as qpGraph log-likelihood values, one might think that comparing log-likelihoods of different models is a good indicator of whether one model provides a significantly better fit than another model (after accounting for the variability across SNPs). However, it turns out that this is generally not the case. A safer way to test whether models are being overfitted is to repeat the whole analysis, beginning to end, on different subsets of the data, and compare the results. In ADMIXTOOLS 2, single models can be evaluated on many different SNP subsets. The variability in goodness-of-fit metrics across these different fits is usually considerable, which means that there is not enough data that would allow us to favor some of these models over others. When we look at the log-likelihood difference or worst-residual difference of two models evaluated on a fixed set of SNPs (for example all SNPs) it often suggests that one model should be clearly better than the other model. But the goal is not to learn something about any particular fixed set of SNPs; the goal is to gain insights about population history, and so the set of SNPs should not be treated as a fixed quantity. A model may look like it’s a great fit on one particular set of SNPs, but it could look like a terrible fit on a slightly different set of SNPs. When the same two models are compared using a slightly different set of SNPs, the difference in log-likelihood or worst-residual often changes by a lot. This greatly diminishes our ability to meaningfully distinguish between competing models.</p>
-<p>Even better than to evaluate single models on different SNP subsets is to repeat the whole model search space exploration on different SNP subsets. TreeMix has a bootstrap option that makes this relatively easy. The fact that I didn’t know about this until most work on ADMIXTOOLS 2 was finished is mostly my fault. But I suspect that some people used the bootstrap option in TreeMix, noticed that they get very different graphs each time, and concluded that it’s a bad idea to use this option, and because of that, it didn’t gain as much traction as it should have. A better takeaway from noticing that the best fitting model is very different for different random subsets of the data would be to conclude that there isn’t enough data to fit a robust model. The idea of testing model robustness though resampling data is very powerful but it requires a lot of data. I assume that it is therefore not very widespread in archaeology or in other fields of science where data is sparse and where many samples are unique. When hypotheses are formed based on different lines of evidence, on one hand it might not seem like a good idea to require genetic evidence to be robust to resampling the data, when other lines of evidence are not held to the same high standard. On the other hand, I do think that preventing overfitting is worth the effort and the computational cost.</p>
+<p>Manual model fitting also makes it easy to overfit models to the
+data, and our re-analysis of several published admixture graphs suggests
+that this is not uncommon. How do we know that some of these models were
+overfitted? One of the great things about genetic data is that most
+variation is selectively neutral or close to it, and that variants far
+apart from each other drift more or less independently up and down in
+frequency. Because of that, they are like independent replicates of the
+same experiment. A simple, but inefficient way to take advantage of this
+would be to conduct an analysis and develop a model only on the even
+chromosomes. At the very end, repeat the exact same analysis on the odd
+chromosomes and check how similar the result is. If it is very
+different, it suggests that the results don’t generalize, they were
+overfitted to the even chromosomes. Or equivalently, that there isn’t
+enough data to distinguish between models as complex as the ones that
+were fitted. This approach with even and odd chromosomes is inefficient
+because it only uses half of the SNPs each time. It is more efficient to
+use almost all SNPs, leaving out only a few at a time. This is what
+block-jackknife and block-bootstrap do, and these methods are widely
+used in ADMIXTOOLS, ADMIXTOOLS 2, and in many other programs. But there
+are differences in how exactly these methods are used. In ADMIXTOOLS,
+block-jackknife is used to calculate standard errors for f-statistics.
+Since f-statistics are the basis for most other ADMIXTOOLS programs such
+as qpGraph, and f-statistic standard errors end up influencing
+quantities such as qpGraph log-likelihood values, one might think that
+comparing log-likelihoods of different models is a good indicator of
+whether one model provides a significantly better fit than another model
+(after accounting for the variability across SNPs). However, it turns
+out that this is generally not the case. A safer way to test whether
+models are being overfitted is to repeat the whole analysis, beginning
+to end, on different subsets of the data, and compare the results. In
+ADMIXTOOLS 2, single models can be evaluated on many different SNP
+subsets. The variability in goodness-of-fit metrics across these
+different fits is usually considerable, which means that there is not
+enough data that would allow us to favor some of these models over
+others. When we look at the log-likelihood difference or worst-residual
+difference of two models evaluated on a fixed set of SNPs (for example
+all SNPs) it often suggests that one model should be clearly better than
+the other model. But the goal is not to learn something about any
+particular fixed set of SNPs; the goal is to gain insights about
+population history, and so the set of SNPs should not be treated as a
+fixed quantity. A model may look like it’s a great fit on one particular
+set of SNPs, but it could look like a terrible fit on a slightly
+different set of SNPs. When the same two models are compared using a
+slightly different set of SNPs, the difference in log-likelihood or
+worst-residual often changes by a lot. This greatly diminishes our
+ability to meaningfully distinguish between competing models.</p>
+<p>Even better than to evaluate single models on different SNP subsets
+is to repeat the whole model search space exploration on different SNP
+subsets. TreeMix has a bootstrap option that makes this relatively easy.
+The fact that I didn’t know about this until most work on ADMIXTOOLS 2
+was finished is mostly my fault. But I suspect that some people used the
+bootstrap option in TreeMix, noticed that they get very different graphs
+each time, and concluded that it’s a bad idea to use this option, and
+because of that, it didn’t gain as much traction as it should have. A
+better takeaway from noticing that the best fitting model is very
+different for different random subsets of the data would be to conclude
+that there isn’t enough data to fit a robust model. The idea of testing
+model robustness though resampling data is very powerful but it requires
+a lot of data. I assume that it is therefore not very widespread in
+archaeology or in other fields of science where data is sparse and where
+many samples are unique. When hypotheses are formed based on different
+lines of evidence, on one hand it might not seem like a good idea to
+require genetic evidence to be robust to resampling the data, when other
+lines of evidence are not held to the same high standard. On the other
+hand, I do think that preventing overfitting is worth the effort and the
+computational cost.</p>
 </div>
 <div id="more-thoughts-on-admixture-graphs" class="section level2">
 <h2 class="hasAnchor">
 <a href="#more-thoughts-on-admixture-graphs" class="anchor"></a>More thoughts on admixture graphs</h2>
-<p>When we noticed that many published admixture graph models aren’t robust to resampling the data (we could find many different models which fit about equally well, as determined by block-bootstrapping), I thought a lot about the following questions:</p>
+<p>When we noticed that many published admixture graph models aren’t
+robust to resampling the data (we could find many different models which
+fit about equally well, as determined by block-bootstrapping), I thought
+a lot about the following questions:</p>
 <!-- 1. What can be concluded if multiple different admixture graph models fit around equally well? -->
 <!-- 2. If we don't have enough data to fit complex models, can we just fit simpler models? -->
 <!-- 3. When are admixture graph models adequate? -->
 <!-- 4. What other options are there? -->
 <div id="what-can-be-concluded-if-multiple-different-admixture-graph-models-fit-around-equally-well" class="section level3">
 <h3 class="hasAnchor">
-<a href="#what-can-be-concluded-if-multiple-different-admixture-graph-models-fit-around-equally-well" class="anchor"></a>What can be concluded if multiple different admixture graph models fit around equally well?</h3>
-<p>And ideal outcome from running a program like TreeMix or the <code><a href="../reference/find_graphs.html">find_graphs()</a></code> function in ADMIXTOOLS 2 is to get a single model which fits the data very well. We also want to have some assurance that other models don’t fit nearly as well as the best fitting one. In practice, we often get many different models which fit about equally well. This doesn’t mean that we can’t conclude anything. It’s possible that all well-fitting models only differ in some features, while other features are conserved across all fitting models. For example, it’s possible that in all fitting graphs, population C is admixed with sources related to populations A and B. There are many features that can potentially extracted even from relatively simple graphs, and I was hopeful that finding such shared features will lead to useful insights. But in the example we studies the search for shared features was not met with a lot of success.</p>
+<a href="#what-can-be-concluded-if-multiple-different-admixture-graph-models-fit-around-equally-well" class="anchor"></a>What can be concluded if multiple different admixture graph models
+fit around equally well?</h3>
+<p>And ideal outcome from running a program like TreeMix or the
+<code><a href="../reference/find_graphs.html">find_graphs()</a></code> function in ADMIXTOOLS 2 is to get a single
+model which fits the data very well. We also want to have some assurance
+that other models don’t fit nearly as well as the best fitting one. In
+practice, we often get many different models which fit about equally
+well. This doesn’t mean that we can’t conclude anything. It’s possible
+that all well-fitting models only differ in some features, while other
+features are conserved across all fitting models. For example, it’s
+possible that in all fitting graphs, population C is admixed with
+sources related to populations A and B. There are many features that can
+potentially extracted even from relatively simple graphs, and I was
+hopeful that finding such shared features will lead to useful insights.
+But in the example we studies the search for shared features was not met
+with a lot of success.</p>
 </div>
 <div id="if-we-dont-have-enough-data-to-fit-complex-models-can-we-just-fit-simpler-models" class="section level3">
 <h3 class="hasAnchor">
-<a href="#if-we-dont-have-enough-data-to-fit-complex-models-can-we-just-fit-simpler-models" class="anchor"></a>If we don’t have enough data to fit complex models, can we just fit simpler models?</h3>
-<p>The simplest admixture graph model is a simple f4-statistic cladality test. It gives a straigt-forward answer to the question of whether two populations appear to form a clade (in an unrooted tree) relative to two other populations. This can rule out some simple admixture graphs without admixture nodes (population trees). One way to generalize the f4-statistic cladality test is to test for cladality among two groups of populations, which is part of what qpWave does. qpWave results can be used to rule out certain population trees for 5 or more populations. But it is much easier to reject certain models, than to accumulate strong evidence in favor of a particular model, especially the if the reality is likely a lot more complex than any of the fitted models.</p>
+<a href="#if-we-dont-have-enough-data-to-fit-complex-models-can-we-just-fit-simpler-models" class="anchor"></a>If we don’t have enough data to fit complex models, can we just fit
+simpler models?</h3>
+<p>The simplest admixture graph model is a simple f4-statistic cladality
+test. It gives a straigt-forward answer to the question of whether two
+populations appear to form a clade (in an unrooted tree) relative to two
+other populations. This can rule out some simple admixture graphs
+without admixture nodes (population trees). One way to generalize the
+f4-statistic cladality test is to test for cladality among two groups of
+populations, which is part of what qpWave does. qpWave results can be
+used to rule out certain population trees for 5 or more populations. But
+it is much easier to reject certain models, than to accumulate strong
+evidence in favor of a particular model, especially the if the reality
+is likely a lot more complex than any of the fitted models.</p>
 </div>
 <div id="when-are-admixture-graph-models-adequate" class="section level3">
 <h3 class="hasAnchor">
 <a href="#when-are-admixture-graph-models-adequate" class="anchor"></a>When are admixture graph models adequate?</h3>
-<p>I find it helpful to imagine what the potentially very complex reality might look like that we try to model with relatively simple admixture graphs. The reality is that there is a very large and complex pedigree connecting all humans, past and present. Some parts of this pedigree were relatively isolated for many generations from other parts, and we can group these isolated parts together and model them as distinct populations. We know from simulations that if the true pedigree connecting all humans does in fact have a structure like that, ADMIXTOOLS, or more generally methods for automatically identifying admixture graphs, will return models that are close to the simulated model, given enough data. But what if this assumption is false? What if the populations that we want to model are not well separated from each other, or if they are connected through a large number of different events? In that case we might hope that any simple admixture graph model which does a very poor job of reflecting a very complex reality will result in a bad fit. But we can’t count on this! A relatively simple model can provide a good fit even if it is a very poor reflection of reality. <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> So the problem is that we have methods that can give us good models for the history for a group of populations, if it can in fact be meaningfully summarized by a simple model. But if it can’t be meaningfully summarized by any simple model, we will still get some well-fitting model: If the current population structure is the result of a larger number of important events than we can realistically hope to identify, then these methods will still identify some simple models that fit the data. These simple fitting models could be useful if they were a good reflection of a more complex reality. But the fact that the simple models are often so different from each other suggests that this is not always the case.</p>
-<p>Admixture graphs are usually plotted in a way that makes them look like a sequence of discrete events, with only pulse admixture rather than continuous admixture over time. This is just done for the sake of visualization, and every admixture graph (at least when fitted using f-statistics) does in fact represent a much larger group of models which include continuous admixture: Each population split or admixture event could be spread out across a large time range without affecting the expected f-statistics. Still, all admixture graph models that can realistically be fitted, do assume that a relatively modest number of historical events can explain much of the observed population structure. Often it won’t be the case that simple models are adequate. Finding multiple different models with similar fits could be one indication that no simple model provides an adequate fit.</p>
+<p>I find it helpful to imagine what the potentially very complex
+reality might look like that we try to model with relatively simple
+admixture graphs. The reality is that there is a very large and complex
+pedigree connecting all humans, past and present. Some parts of this
+pedigree were relatively isolated for many generations from other parts,
+and we can group these isolated parts together and model them as
+distinct populations. We know from simulations that if the true pedigree
+connecting all humans does in fact have a structure like that,
+ADMIXTOOLS, or more generally methods for automatically identifying
+admixture graphs, will return models that are close to the simulated
+model, given enough data. But what if this assumption is false? What if
+the populations that we want to model are not well separated from each
+other, or if they are connected through a large number of different
+events? In that case we might hope that any simple admixture graph model
+which does a very poor job of reflecting a very complex reality will
+result in a bad fit. But we can’t count on this! A relatively simple
+model can provide a good fit even if it is a very poor reflection of
+reality. <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> So the problem is that we have methods that
+can give us good models for the history for a group of populations, if
+it can in fact be meaningfully summarized by a simple model. But if it
+can’t be meaningfully summarized by any simple model, we will still get
+some well-fitting model: If the current population structure is the
+result of a larger number of important events than we can realistically
+hope to identify, then these methods will still identify some simple
+models that fit the data. These simple fitting models could be useful if
+they were a good reflection of a more complex reality. But the fact that
+the simple models are often so different from each other suggests that
+this is not always the case.</p>
+<p>Admixture graphs are usually plotted in a way that makes them look
+like a sequence of discrete events, with only pulse admixture rather
+than continuous admixture over time. This is just done for the sake of
+visualization, and every admixture graph (at least when fitted using
+f-statistics) does in fact represent a much larger group of models which
+include continuous admixture: Each population split or admixture event
+could be spread out across a large time range without affecting the
+expected f-statistics. Still, all admixture graph models that can
+realistically be fitted, do assume that a relatively modest number of
+historical events can explain much of the observed population structure.
+Often it won’t be the case that simple models are adequate. Finding
+multiple different models with similar fits could be one indication that
+no simple model provides an adequate fit.</p>
 </div>
 <div id="what-other-options-are-there" class="section level3">
 <h3 class="hasAnchor">
 <a href="#what-other-options-are-there" class="anchor"></a>What other options are there?</h3>
-<p>ADMIXTOOLS (and ADMIXTOOLS 2) contains methods that model population history without attempting to identify any particular admixture graph, namely qpWave and qpAdm. They can’t be used to identify models that are as concrete as admixture graph models, but in the light of everything discussed so far, I see this as their main strength. However, interpreting qpAdm models correctly can be tricky. What can be directly concluded from a fitting or non-fitting qpAdm model is quite limited, and interpretations that involve “source populations” and “target populations” rely on strong assumptions about cladality that can’t be verified in the same model.</p>
-<p>I was initially surprised to see how difficult it is to infer robust models from f-statistics, which by themselves are often very robust (they have small confidence intervals). It’s less surprising when thinking of admixtools models as a form of causal inference.</p>
+<p>ADMIXTOOLS (and ADMIXTOOLS 2) contains methods that model population
+history without attempting to identify any particular admixture graph,
+namely qpWave and qpAdm. They can’t be used to identify models that are
+as concrete as admixture graph models, but in the light of everything
+discussed so far, I see this as their main strength. However,
+interpreting qpAdm models correctly can be tricky. What can be directly
+concluded from a fitting or non-fitting qpAdm model is quite limited,
+and interpretations that involve “source populations” and “target
+populations” rely on strong assumptions about cladality that can’t be
+verified in the same model.</p>
+<p>I was initially surprised to see how difficult it is to infer robust
+models from f-statistics, which by themselves are often very robust
+(they have small confidence intervals). It’s less surprising when
+thinking of admixtools models as a form of causal inference.</p>
 </div>
 <div id="correlation-causality-and-admixture-graphs" class="section level3">
 <h3 class="hasAnchor">
 <a href="#correlation-causality-and-admixture-graphs" class="anchor"></a>Correlation, causality, and admixture graphs</h3>
-<p>Admixture graphs share many similarities with causal models: Both can be represented as directed acyclic graphs. In the case of admixture graphs, the leaf nodes are samples or populations for which we have genetic data, and we want to infer their ancestral relationship. In causal models the leaf nodes are variables whose relationship we want to infer based on data collected on those variables. In both cases, we could also model the observed populations or variables as internal nodes, but that would be less general than assuming that all internal nodes are unobserved. If we have a handful of variables for which we want to identify how they are causally connected, and we have a large number of observations on these variables, we can look at their correlations, and this will give us some hints about their causal relationship. Correlation doesn’t imply causation, but it is often highly suggestive. Similarly, if we have a handful of samples with genetic data, we can look at descriptive f-statistics, which can be highly suggestive of certain ancestral relationships. However, things get complicated quickly if we increase the number of variables or populations in the model. There are methods that attempt to infer causal relationships based on observational data, but they aren’t robust enough to be used without a lot of supervision, and I assume their performance deteriorates quickly as the number of variables increases. The same is true for admixture graph modeling. This is why it shouldn’t be that surprising that modeling the ancestral relationships among a set of populations is a lot harder than characterizing their relationship through descriptive methods such as PCA and simple f-statistics.</p>
-<p>Admixture graph modeling has one advantage over most other forms of causal modeling: There is no need to perform randomized controlled experiments, since randomization is built into genetic data (assuming that most sites are neutral and drift randomly). Still, admixture graph models, and many other demographic models based on genetic data, are a form of causal modeling. Even in data rich fields, robust causal models are difficult to infer from observational data. They are often based on unverifiable assumptions, and can be sensitive to modeling decisions. Regardless of whether the process is automated, it shouldn’t be expected that robust models are easy to come by with any tool.</p>
+<p>Admixture graphs share many similarities with causal models: Both can
+be represented as directed acyclic graphs. In the case of admixture
+graphs, the leaf nodes are samples or populations for which we have
+genetic data, and we want to infer their ancestral relationship. In
+causal models the leaf nodes are variables whose relationship we want to
+infer based on data collected on those variables. In both cases, we
+could also model the observed populations or variables as internal
+nodes, but that would be less general than assuming that all internal
+nodes are unobserved. If we have a handful of variables for which we
+want to identify how they are causally connected, and we have a large
+number of observations on these variables, we can look at their
+correlations, and this will give us some hints about their causal
+relationship. Correlation doesn’t imply causation, but it is often
+highly suggestive. Similarly, if we have a handful of samples with
+genetic data, we can look at descriptive f-statistics, which can be
+highly suggestive of certain ancestral relationships. However, things
+get complicated quickly if we increase the number of variables or
+populations in the model. There are methods that attempt to infer causal
+relationships based on observational data, but they aren’t robust enough
+to be used without a lot of supervision, and I assume their performance
+deteriorates quickly as the number of variables increases. The same is
+true for admixture graph modeling. This is why it shouldn’t be that
+surprising that modeling the ancestral relationships among a set of
+populations is a lot harder than characterizing their relationship
+through descriptive methods such as PCA and simple f-statistics.</p>
+<p>Admixture graph modeling has one advantage over most other forms of
+causal modeling: There is no need to perform randomized controlled
+experiments, since randomization is built into genetic data (assuming
+that most sites are neutral and drift randomly). Still, admixture graph
+models, and many other demographic models based on genetic data, are a
+form of causal modeling. Even in data rich fields, robust causal models
+are difficult to infer from observational data. They are often based on
+unverifiable assumptions, and can be sensitive to modeling decisions.
+Regardless of whether the process is automated, it shouldn’t be expected
+that robust models are easy to come by with any tool.</p>
 </div>
 </div>
 <div id="more-reasons-tread-carefully" class="section level2">
 <h2 class="hasAnchor">
 <a href="#more-reasons-tread-carefully" class="anchor"></a>More reasons tread carefully</h2>
-<p>A huge amount of insight is contained in ancient DNA data, but most of it can’t be extracted in a simple, straight-forward way, and there are many traps that need to be avoided along the way. There are two more issues that I haven’t touch on so far that can potentially lead one to be overconfident in the results of an ADMIXTOOLS analysis. Both issues can be addressed through SNP resampling.</p>
+<p>A huge amount of insight is contained in ancient DNA data, but most
+of it can’t be extracted in a simple, straight-forward way, and there
+are many traps that need to be avoided along the way. There are two more
+issues that I haven’t touch on so far that can potentially lead one to
+be overconfident in the results of an ADMIXTOOLS analysis. Both issues
+can be addressed through SNP resampling.</p>
 <div id="researcher-degrees-of-freedom" class="section level3">
 <h3 class="hasAnchor">
 <a href="#researcher-degrees-of-freedom" class="anchor"></a>Researcher degrees of freedom</h3>
-<p>Typical ADMIXTOOLS analyses often involve a chain of different methods applied to the same data, or a chain of several fitted models with different populations and of different complexity. Each step along the way involves a certain amount of uncertainty and subjective judgments. One motivation of automated model inference was to take some of that subjectivity out of the equation. Still, it can be difficult to judge in the end to what extent the results are driven by the data as opposed to prior expectations and by modeling decisions. Repeating analyses on randomly resampled SNPs can provide an answer to that question.</p>
+<p>Typical ADMIXTOOLS analyses often involve a chain of different
+methods applied to the same data, or a chain of several fitted models
+with different populations and of different complexity. Each step along
+the way involves a certain amount of uncertainty and subjective
+judgments. One motivation of automated model inference was to take some
+of that subjectivity out of the equation. Still, it can be difficult to
+judge in the end to what extent the results are driven by the data as
+opposed to prior expectations and by modeling decisions. Repeating
+analyses on randomly resampled SNPs can provide an answer to that
+question.</p>
 </div>
 <div id="snp-ascertainment" class="section level3">
 <h3 class="hasAnchor">
 <a href="#snp-ascertainment" class="anchor"></a>SNP ascertainment</h3>
-<p>The selection of SNPs that end up in any given analysis can influence the results. The theory behind f-statistics only holds under a very particular kind of SNP ascertainment. No panel of common SNPs strictly adheres to these constraints. Usually this doesn’t matter much, but there can be exceptions (depending on the type of ascertainment and the populations analyzed). In much of what I discussed above, overfitting can be prevented by random resampling of SNPs. If SNP ascertainment is a potential issue, the solution would be to check how robust results are under different ascertainment schemes. I haven’t studied this enough to give much more concrete advice here, but I think that subtle effects of SNP ascertainment are another reason why the real confidence intervals should be expected to be larger than any reported confidence intervals, when interpreting f-statistics and results from other ADMIXTOOLS analyses.</p>
+<p>The selection of SNPs that end up in any given analysis can influence
+the results. The theory behind f-statistics only holds under a very
+particular kind of SNP ascertainment. No panel of common SNPs strictly
+adheres to these constraints. Usually this doesn’t matter much, but
+there can be exceptions (depending on the type of ascertainment and the
+populations analyzed). In much of what I discussed above, overfitting
+can be prevented by random resampling of SNPs. If SNP ascertainment is a
+potential issue, the solution would be to check how robust results are
+under different ascertainment schemes. I haven’t studied this enough to
+give much more concrete advice here, but I think that subtle effects of
+SNP ascertainment are another reason why the real confidence intervals
+should be expected to be larger than any reported confidence intervals,
+when interpreting f-statistics and results from other ADMIXTOOLS
+analyses.</p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2 class="hasAnchor">
 <a href="#conclusion" class="anchor"></a>Conclusion</h2>
-<p>ADMIXTOOLS 2 provides a method for automatically inferring demographic history from genetic data. My hope was that this would make the process more objective, transparent, and accessible. But I came to realize that genetic data alone is usually not enough for deriving robust models. This makes it difficult to fully automate model inference. It still takes human experts to carefully weigh and integrate different lines of evidence. The experts require domain expertise, a genuine curiosity about the truth but also a good understanding of the complexities and limitations of the methods. Even with all of that, it can be difficult to get robust results as indicated by the many fitting alternative graphs highlighted in our paper. In my opinion, the best option for getting robust results is to re-run analyses from beginning to end on bootstrap-resampled SNP sets. It’s an effort, but it will prevent overfitting. I didn’t go as far in implementing this in ADMIXTOOLS 2 as I had originally planned, but I hope what’s there is still useful.</p>
+<p>ADMIXTOOLS 2 provides a method for automatically inferring
+demographic history from genetic data. My hope was that this would make
+the process more objective, transparent, and accessible. But I came to
+realize that genetic data alone is usually not enough for deriving
+robust models. This makes it difficult to fully automate model
+inference. It still takes human experts to carefully weigh and integrate
+different lines of evidence. The experts require domain expertise, a
+genuine curiosity about the truth but also a good understanding of the
+complexities and limitations of the methods. Even with all of that, it
+can be difficult to get robust results as indicated by the many fitting
+alternative graphs highlighted in our paper. In my opinion, the best
+option for getting robust results is to re-run analyses from beginning
+to end on bootstrap-resampled SNP sets. It’s an effort, but it will
+prevent overfitting. I didn’t go as far in implementing this in
+ADMIXTOOLS 2 as I had originally planned, but I hope what’s there is
+still useful.</p>
 </div>
-<div class="footnotes">
+<div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p>I don’t have a precise definition of what I mean by “poor reflection of reality”, but loosely I think of an admixture graph model as being a good fit to the real pedigree connecting all individuals in that model, if one could condense the real (unobserved) pedigree into the structure given by the admixture graph without losing too much information.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>I don’t have a precise definition of what I mean by
+“poor reflection of reality”, but loosely I think of an admixture graph
+model as being a good fit to the real pedigree connecting all
+individuals in that model, if one could condense the real (unobserved)
+pedigree into the structure given by the admixture graph without losing
+too much information.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>

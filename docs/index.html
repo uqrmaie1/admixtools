@@ -67,7 +67,7 @@
   <a href="reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -129,12 +129,23 @@
 <div class="page-header"><h1 class="hasAnchor">
 <a href="#admixtools-2" class="anchor"></a>ADMIXTOOLS 2</h1></div>
 <p>A new, lightning fast implementation of <a href="https://github.com/DReichLab/AdmixTools"><em>ADMIXTOOLS</em></a>.</p>
-<p>The corresponding manuscript is finally online <a href="https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1">here</a>! My personal summary and a few more thoughts can be found <a href="https://uqrmaie1.github.io/admixtools/articles/paper.html">here</a>.</p>
+<p>The corresponding manuscript is finally online <a href="https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1">here</a>!
+My personal summary and a few more thoughts can be found <a href="https://uqrmaie1.github.io/admixtools/articles/paper.html">here</a>.</p>
 <div id="overview" class="section level2">
 <h2 class="hasAnchor">
 <a href="#overview" class="anchor"></a>Overview</h2>
-<p><em>ADMIXTOOLS</em> is a collection of programs which use genetic data to infer how populations are related to one another. It has been used in countless publications to test whether populations form clades (<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions (<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
-<p><em>ADMIXTOOLS 2</em> provides the same functionality as <em>ADMIXTOOLS</em> in a new look, and it’s orders of magnitude faster. This is achieved through separating the computation of <em>f</em><sub>2</sub>-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new <em>qpGraph</em> model:</p>
+<p><em>ADMIXTOOLS</em> is a collection of programs which use genetic
+data to infer how populations are related to one another. It has been
+used in countless publications to test whether populations form clades
+(<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions
+(<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
+<p><em>ADMIXTOOLS 2</em> provides the same functionality as
+<em>ADMIXTOOLS</em> in a new look, and it’s orders of magnitude faster.
+This is achieved through separating the computation of
+<em>f</em><sub>2</sub>-statistics from all other computations, and
+through a number of other optimizations. In the example below, rendering
+the plot takes much longer than computing the fit of a new
+<em>qpGraph</em> model:</p>
 <p><img src="reference/figures/shinyapp1.gif" alt="app demo"></p>
 </div>
 <div id="features" class="section level2">
@@ -144,20 +155,32 @@
 <li>Much faster than the original <em>ADMIXTOOLS</em> software</li>
 <li>Simple R command line interface</li>
 <li>Even simpler point-and-click interface</li>
-<li>Several new features and methodological innovations that make it easier to find robust models:
+<li>Several new features and methodological innovations that make it
+easier to find robust models:
 <ul>
-<li><a href="html#exploring-different-graphs-1">Automated and semi-automated admixture graph inference</a></li>
+<li><a href="html#exploring-different-graphs-1">Automated and
+semi-automated admixture graph inference</a></li>
 <li>Simultaneous exploration of many <em>qpAdm</em> models</li>
-<li>Unbiased comparison of any two <em>qpGraph</em> models using out-of-sample scores</li>
-<li>Jackknife and bootstrap standard errors and confidence intervals for any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em> parameters</li>
-<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1">simulate</a> genetic data under an admixture graph</li>
+<li>Unbiased comparison of any two <em>qpGraph</em> models using
+out-of-sample scores</li>
+<li>Jackknife and bootstrap standard errors and confidence intervals for
+any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em>
+parameters</li>
+<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1">simulate</a>
+genetic data under an admixture graph</li>
 </ul>
 </li>
-<li>Full support for genotype data in <em>PACKEDANCESTRYMAP/EIGENSTRAT</em> format and <em>PLINK</em> format</li>
-<li>Wrapper functions around the original <em>ADMIXTOOLS</em> software (see also <a href="https://bodkan.net/admixr/index.html">admixr</a>) <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
+<li>Full support for genotype data in
+<em>PACKEDANCESTRYMAP/EIGENSTRAT</em> format and <em>PLINK</em>
+format</li>
+<li>Wrapper functions around the original <em>ADMIXTOOLS</em> software
+(see also <a href="https://bodkan.net/admixr/index.html">admixr</a>)
+<!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
 </li>
-<li><a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html">Extensive documentation</a></li>
-<li>New features available <a href="mailto:rmaier@broadinstitute.org">on request</a>!</li>
+<li><a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html">Extensive
+documentation</a></li>
+<li>New features available <a href="mailto:rmaier@broadinstitute.org">on
+request</a>!</li>
 </ul>
 </div>
 <div id="installation" class="section level2">
@@ -167,20 +190,36 @@
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span> <span class="co"># if "devtools" is not installed already</span>
 <span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/uqrmaie1/admixtools">"admixtools"</a></span><span class="op">)</span></code></pre></div>
-<p>The above commands will install all R package dependencies which are required to run <em>ADMIXTOOLS 2</em> on the command line. For the interactive app, additional packages are required, which can be installed like this:</p>
+<p>The above commands will install all R package dependencies which are
+required to run <em>ADMIXTOOLS 2</em> on the command line. For the
+interactive app, additional packages are required, which can be
+installed like this:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p>If you encounter any problems during the installation, this is most likely because some of the required R packages cannot be installed. If that happens, try manually re-installing some of the larger packages, and pay attention to any error message:</p>
+<p>If you encounter any problems during the installation, this is most
+likely because some of the required R packages cannot be installed. If
+that happens, try manually re-installing some of the larger packages,
+and pay attention to any error message:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"Rcpp"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"tidyverse"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"igraph"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"plotly"</span><span class="op">)</span></code></pre></div>
-<p>Running <code><a href="https://devtools.r-lib.org/reference/remote-reexports.html">devtools::install_github("uqrmaie1/admixtools")</a></code> will compile C++ from source code (this isn’t necessary when installing packages from CRAN with <code><a href="https://rdrr.io/r/utils/install.packages.html">install.packages()</a></code>).</p>
+<p>Running <code><a href="https://devtools.r-lib.org/reference/remote-reexports.html">devtools::install_github("uqrmaie1/admixtools")</a></code>
+will compile C++ from source code (this isn’t necessary when installing
+packages from CRAN with <code><a href="https://rdrr.io/r/utils/install.packages.html">install.packages()</a></code>).</p>
 <p>If you get the following error:</p>
 <p><code>Error: Failed to install 'admixtools' from GitHub:  Could not find tools necessary to compile a package.</code></p>
-<p>you might be able to solve the problem by installing <a href="https://cran.r-project.org/bin/windows/Rtools/">Rtools</a> for your version of R if you use Windows, or <a href="https://developer.apple.com/download/more/">Xcode command line tools</a> if you use macOS. This is also described <a href="https://r-pkgs.org/setup.html#setup-tools">here</a>.</p>
-<p>On some Linux distributions, it may be necessary to manually install additional libraries or programs. For example, if you see the error <code>gfortran: command not found</code> during installation, you would have to install <code>gfortan</code> with <code>sudo zypper in gfortran</code> or <code>sudo apt-get install gfortran</code>, depending on the Linux distribution.</p>
+<p>you might be able to solve the problem by installing <a href="https://cran.r-project.org/bin/windows/Rtools/">Rtools</a> for
+your version of R if you use Windows, or <a href="https://developer.apple.com/download/more/">Xcode command line
+tools</a> if you use macOS. This is also described <a href="https://r-pkgs.org/setup.html#setup-tools">here</a>.</p>
+<p>On some Linux distributions, it may be necessary to manually install
+additional libraries or programs. For example, if you see the error
+<code>gfortran: command not found</code> during installation, you would
+have to install <code>gfortan</code> with
+<code>sudo zypper in gfortran</code> or
+<code>sudo apt-get install gfortran</code>, depending on the Linux
+distribution.</p>
 <p>If you get any other errors during installation, please <a href="mailto:robertmaier@gmx.net">contact me</a>.</p>
 </div>
 <div id="usage" class="section level2">
@@ -194,9 +233,11 @@
 <div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="reference/plot_graph.html">plot_graph</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">edges</span><span class="op">)</span></code></pre></div>
-<p><img src="reference/figures/graph1.png" alt="example graph"> Clearly not a historically accurate model, but it gets the idea across.</p>
+<p><img src="reference/figures/graph1.png" alt="example graph"> Clearly not
+a historically accurate model, but it gets the idea across.</p>
 <p><br></p>
-<p>When testing more than one model, it makes sense to extract and re-use f2-statistics:</p>
+<p>When testing more than one model, it makes sense to extract and
+re-use f2-statistics:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">f2_blocks</span> <span class="op">=</span> <span class="fu"><a href="reference/f2_from_geno.html">f2_from_geno</a></span><span class="op">(</span><span class="va">genotype_data</span><span class="op">)</span>
 <span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">example_graph</span><span class="op">)</span></code></pre></div>
@@ -204,7 +245,8 @@
 <code class="sourceCode R"><span class="va">fit</span><span class="op">$</span><span class="va">score</span>
 <span class="co">#&gt; [1] 19219.98</span></code></pre></div>
 <p><br></p>
-<p><em>f</em><sub>2</sub>-statistics can also be used to estimate admixture weights:</p>
+<p><em>f</em><sub>2</sub>-statistics can also be used to estimate
+admixture weights:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">left</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Altai_Neanderthal.DG"</span>, <span class="st">"Vindija.DG"</span><span class="op">)</span>
 <span class="va">right</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Chimp.REF"</span>, <span class="st">"Mbuti.DG"</span>, <span class="st">"Russia_Ust_Ishim.DG"</span>, <span class="st">"Switzerland_Bichon.SG"</span><span class="op">)</span>
@@ -238,7 +280,11 @@
 <div id="interactive-browser-app" class="section level2">
 <h2 class="hasAnchor">
 <a href="#interactive-browser-app" class="anchor"></a>Interactive browser app</h2>
-<p><em>ADMIXTOOLS 2</em> also has a simple point-and-click interface. This makes it easy to explore many <em>qpAdm</em> or <em>qpGraph</em> models at the same time, for example by allowing you to build and change admixture graphs interactively. Typing the following command in the R console launches the app:</p>
+<p><em>ADMIXTOOLS 2</em> also has a simple point-and-click interface.
+This makes it easy to explore many <em>qpAdm</em> or <em>qpGraph</em>
+models at the same time, for example by allowing you to build and change
+admixture graphs interactively. Typing the following command in the R
+console launches the app:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="reference/run_shiny_admixtools.html">run_shiny_admixtools</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p><img src="reference/figures/shinyapp2.gif" alt="app demo"></p>
@@ -246,49 +292,98 @@
 <div id="documentation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#documentation" class="anchor"></a>Documentation</h2>
-<p>One of the design goals behind <em>ADMIXTOOLS 2</em> is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.</p>
-<p>To this end, all <em>ADMIXTOOLS 2</em> functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html">documented</a>. You can also take a look at the <a href="articles/admixtools.html">tutorial</a>, read more about how <em>ADMIXTOOLS 2</em> computes <a href="https://uqrmaie1.github.io/admixtools/articles/fstats.html">f-statistics</a> and <a href="https://uqrmaie1.github.io/admixtools/articles/resampling.html">standard errors</a>, and what you can do with <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html">admixture graphs</a>.</p>
-<p>For even greater transparency, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step. For example, if you want to know how weights are computed in <code><a href="reference/qpadm.html">qpadm()</a></code>, you can type <code>qpadm</code> in R to get the function code and you will see another function which is called <code>qpadm_weights()</code>. By default, this function will be replaced by its faster C++ version <code>cpp_qpadm_weights()</code>. But you can still see what it’s doing without reading the C++ code by typing <code>admixtools:::qpadm_weights</code>. And you can tell <code><a href="reference/qpadm.html">qpadm()</a></code> to use the R versions instead of the C++ versions by calling <code><a href="reference/qpadm.html">qpadm(cpp = FALSE)</a></code>.</p>
+<p>One of the design goals behind <em>ADMIXTOOLS 2</em> is to make the
+algorithms more transparent, so that the steps leading from from
+genotype data to conclusions about demographic history are easier to
+follow.</p>
+<p>To this end, all <em>ADMIXTOOLS 2</em> functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html">documented</a>.
+You can also take a look at the <a href="articles/admixtools.html">tutorial</a>, read more about how
+<em>ADMIXTOOLS 2</em> computes <a href="https://uqrmaie1.github.io/admixtools/articles/fstats.html">f-statistics</a>
+and <a href="https://uqrmaie1.github.io/admixtools/articles/resampling.html">standard
+errors</a>, and what you can do with <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html">admixture
+graphs</a>.</p>
+<p>For even greater transparency, many of the core functions are
+implemented twice: In C++ for performance (used by default), and in R,
+which makes it easier to trace the computations step by step. For
+example, if you want to know how weights are computed in
+<code><a href="reference/qpadm.html">qpadm()</a></code>, you can type <code>qpadm</code> in R to get the
+function code and you will see another function which is called
+<code>qpadm_weights()</code>. By default, this function will be replaced
+by its faster C++ version <code>cpp_qpadm_weights()</code>. But you can
+still see what it’s doing without reading the C++ code by typing
+<code>admixtools:::qpadm_weights</code>. And you can tell
+<code><a href="reference/qpadm.html">qpadm()</a></code> to use the R versions instead of the C++ versions
+by calling <code><a href="reference/qpadm.html">qpadm(cpp = FALSE)</a></code>.</p>
 </div>
 <div id="contact" class="section level2">
 <h2 class="hasAnchor">
 <a href="#contact" class="anchor"></a>Contact</h2>
-<p>For questions, feature requests, and bug reports, please contact Robert Maier under <a href="mailto:robertmaier@gmx.net" class="email">robertmaier@gmx.net</a>.</p>
+<p>For questions, feature requests, and bug reports, please contact
+Robert Maier under <a href="mailto:robertmaier@gmx.net" class="email">robertmaier@gmx.net</a>.</p>
 </div>
 <div id="acknowledgments" class="section level2">
 <h2 class="hasAnchor">
 <a href="#acknowledgments" class="anchor"></a>Acknowledgments</h2>
-<p>Nick Patterson has developed the original <em>ADMIXTOOLS</em> software. David Reich and Nick Patterson have not only conceived most of the ideas that have made <em>ADMIXTOOLS</em> so successful, they have also provided me (and continue to provide me) with critical ideas and feedback in the development of <em>ADMIXTOOLS 2</em>.</p>
-<p>I also want to thank all members of the Reich lab for many discussions which have helped me gain a better understanding of the underlying methods, and for crucial feedback about <em>ADMIXTOOLS 2</em>; in particular Pavel Flegontov, Iosif Lazaridis, Mark Lipson, Harald Ringbauer, Shop Mallick, and Tian Chen Zeng.</p>
-<p>Many useful features in <em>ADMIXTOOLS 2</em> were suggested by its users. If you are able to install and run <em>ADMIXTOOLS 2</em> without issues, it is only because others have cleared the path for you, by bringing problems to my attention. In no particular order, I want to thank Ornob Alam, Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias Göllner, Christian Huber, Kale, Ted Kandell, Fraser Combe, Matthew Williams, Lenny Dykstra, Kristján Moore, Dilawer Khan, Lareb Humayoun, Sánta Benedek, Steven Rosenberg, Daniel Tabin, Benjamin Peter, and Ahmad Bekhit.</p>
-<p>If you expected to see your name here but I failed to include it, please let me know about it!</p>
+<p>Nick Patterson has developed the original <em>ADMIXTOOLS</em>
+software. David Reich and Nick Patterson have not only conceived most of
+the ideas that have made <em>ADMIXTOOLS</em> so successful, they have
+also provided me (and continue to provide me) with critical ideas and
+feedback in the development of <em>ADMIXTOOLS 2</em>.</p>
+<p>I also want to thank all members of the Reich lab for many
+discussions which have helped me gain a better understanding of the
+underlying methods, and for crucial feedback about <em>ADMIXTOOLS
+2</em>; in particular Pavel Flegontov, Iosif Lazaridis, Mark Lipson,
+Harald Ringbauer, Shop Mallick, and Tian Chen Zeng.</p>
+<p>Many useful features in <em>ADMIXTOOLS 2</em> were suggested by its
+users. If you are able to install and run <em>ADMIXTOOLS 2</em> without
+issues, it is only because others have cleared the path for you, by
+bringing problems to my attention. In no particular order, I want to
+thank Ornob Alam, Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias
+Göllner, Christian Huber, Kale, Ted Kandell, Fraser Combe, Matthew
+Williams, Lenny Dykstra, Kristján Moore, Dilawer Khan, Lareb Humayoun,
+Sánta Benedek, Steven Rosenberg, Daniel Tabin, Benjamin Peter, and Ahmad
+Bekhit.</p>
+<p>If you expected to see your name here but I failed to include it,
+please let me know about it!</p>
 </div>
 <div id="cite-admixtools-2" class="section level2">
 <h2 class="hasAnchor">
 <a href="#cite-admixtools-2" class="anchor"></a>Cite <em>ADMIXTOOLS 2</em>
 </h2>
-<p>If you want to cite <em>ADMIXTOOLS 2</em>, you can link to this website and mention that a manuscript describing <em>ADMIXTOOLS 2</em> is currently under preparation.</p>
+<p>If you want to cite <em>ADMIXTOOLS 2</em>, you can link to this
+website and mention that a manuscript describing <em>ADMIXTOOLS 2</em>
+is currently under preparation.</p>
 </div>
 <div id="see-also" class="section level2">
 <h2 class="hasAnchor">
 <a href="#see-also" class="anchor"></a>See also</h2>
 <ul>
 <li>
-<a href="https://github.com/DReichLab/AdmixTools">ADMIXTOOLS</a> The original <em>ADMIXTOOLS</em> software</li>
+<a href="https://github.com/DReichLab/AdmixTools">ADMIXTOOLS</a> The
+original <em>ADMIXTOOLS</em> software</li>
 <li>
-<a href="https://bodkan.net/admixr/index.html">admixr</a> An R package with <em>ADMIXTOOLS</em> wrapper functions and many useful tutorials</li>
+<a href="https://bodkan.net/admixr/index.html">admixr</a> An R
+package with <em>ADMIXTOOLS</em> wrapper functions and many useful
+tutorials</li>
 <li>
-<a href="https://github.com/mailund/admixture_graph">admixturegraph</a> An R package for automatic graph inference</li>
+<a href="https://github.com/mailund/admixture_graph">admixturegraph</a> An
+R package for automatic graph inference</li>
 <li>
-<a href="https://github.com/juliayyan/PhylogeneticTrees.jl">miqoGraph</a> A Julia package for automatic graph inference</li>
+<a href="https://github.com/juliayyan/PhylogeneticTrees.jl">miqoGraph</a> A
+Julia package for automatic graph inference</li>
 <li>
-<a href="http://cb.csail.mit.edu/cb/mixmapper/">MixMapper</a> Another method to infer admixture graphs</li>
+<a href="http://cb.csail.mit.edu/cb/mixmapper/">MixMapper</a>
+Another method to infer admixture graphs</li>
 <li>
-<a href="https://bitbucket.org/nygcresearch/treemix/wiki/Home">TreeMix</a> Another method to infer admixture graphs</li>
+<a href="https://bitbucket.org/nygcresearch/treemix/wiki/Home">TreeMix</a>
+Another method to infer admixture graphs</li>
 <li>
-<a href="http://content.csbs.utah.edu/~rogers/src/legofit/index.html">Legofit</a> A program to estimate the history of population size, subdivision, and gene flow</li>
+<a href="http://content.csbs.utah.edu/~rogers/src/legofit/index.html">Legofit</a>
+A program to estimate the history of population size, subdivision, and
+gene flow</li>
 <li>
-<a href="https://github.com/ekirving/qpbrute">qpBrute</a> Automated graph fitting and Bayes factor calculations</li>
+<a href="https://github.com/ekirving/qpbrute">qpBrute</a> Automated
+graph fitting and Bayes factor calculations</li>
 </ul>
 </div>
 </div>

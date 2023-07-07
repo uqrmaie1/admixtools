@@ -192,7 +192,7 @@ random_admixturegraph = function(leaves, numadmix = 0, simple = TRUE, outpop = N
   # returns an 'igraph' graph object
   # 'leaves' can be a number of leaf nodes, or a character vector of leaf names
 
-  stopifnot(class(leaves)[1] %in% c('numeric', 'character'))
+  stopifnot(class(leaves)[1] %in% c('numeric', 'integer', 'character'))
   if(length(leaves) == 1) {
     if(leaves > length(LETTERS)) leaves = paste0('l', seq_len(leaves))
     else leaves = LETTERS[seq_len(leaves)]
@@ -728,7 +728,7 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
   leaves = sort(get_leafnames(graph))
   nodes = names(V(graph))
   if(is.null(source_to) || is.null(dest_to) || length(setdiff(c(source_to, dest_to), nodes)) > 0 && substitute) {
-    e = graph %>% find_newedges(fix_outgroup = fix_outgroup) %>% slice_sample
+    e = graph %>% find_newedges(fix_outgroup = fix_outgroup) %>% slice_sample(n=1)
     source_from = e$source_from
     dest_from = e$dest_from
     source_to = e$source_to
@@ -1855,7 +1855,7 @@ delete_admix = function(graph, from = NULL, to = NULL) {
     if(nrow(admix) == 0) {
       stop("No admix edges found!")
     } else {
-      admix %<>% slice_sample
+      admix %<>% slice_sample(n=1)
     }
     from = admix$from
     to = admix$to
@@ -2548,7 +2548,7 @@ rearrange_negadmix3 = function(graph, from, to) {
   if(length(parent_neg) != 1 || length(parent_pos) != 1) stop('aaa')
   newgraph2 = newgraph %>% add_edges(c(parent_neg, parent_pos)) %>% simplify_graph
   if(is_valid(newgraph2)) newgraph = newgraph2
-  else newgraph %<>% find_newedges %>% slice_sample %>%
+  else newgraph %<>% find_newedges %>% slice_sample(n=1) %>%
     mutate(g = list(insert_admix(newgraph, source_from, source_to, dest_from, dest_to))) %>%
     pull(g) %>% pluck(1) %>% simplify_graph
   leaves2 = sort(get_leafnames(newgraph))
@@ -2615,7 +2615,7 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' # Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
 #' pops = dimnames(example_f2_blocks)[[1]]
 #' initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
-#' res = find_graphs(example_f2_blocks, initgraph, stop_gen2 = 10, max_admix = 3)
+#' res = find_graphs(example_f2_blocks, initgraph = initgraph, stop_gen2 = 10, max_admix = 3)
 #' res %>% slice_min(score)
 #' }
 find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_gen2 = 15, stop_score = 0, stop_sec = NULL,
@@ -4220,6 +4220,14 @@ graph_to_qpadm = function(graph, target, left = NULL, right = NULL, models = NUL
   }
   if(!return_f4) out %<>% select(-m1, -m2)
   out %>% ungroup
+}
+
+qpadm_to_graphs = function(target, left, right, nadmix=0, ntry = 100) {
+
+  pops = c(target, left, right)
+  graphs = rerun(ntry, random_admixturegraph(as.numeric(length(pops)), nadmix))
+  map(graphs, ~graph_to_qpadm(.x, target, left, right)) %>%
+    bind_rows() %>% mutate(graph=graphs) %>% select(-c(l,r,target))
 }
 
 

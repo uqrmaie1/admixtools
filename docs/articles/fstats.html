@@ -64,7 +64,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -120,7 +120,7 @@
 
       
 
-      </header><script src="fstats_files/header-attrs-2.9/header-attrs.js"></script><script src="fstats_files/htmlwidgets-1.5.3/htmlwidgets.js"></script><script src="fstats_files/plotly-binding-4.9.4.1/plotly.js"></script><script src="fstats_files/typedarray-0.1/typedarray.min.js"></script><script src="fstats_files/jquery-3.5.1/jquery.min.js"></script><link href="fstats_files/crosstalk-1.1.1/css/crosstalk.css" rel="stylesheet">
+      </header><script src="fstats_files/header-attrs-2.23/header-attrs.js"></script><script src="fstats_files/htmlwidgets-1.5.3/htmlwidgets.js"></script><script src="fstats_files/plotly-binding-4.9.4.1/plotly.js"></script><script src="fstats_files/typedarray-0.1/typedarray.min.js"></script><script src="fstats_files/jquery-3.5.1/jquery.min.js"></script><link href="fstats_files/crosstalk-1.1.1/css/crosstalk.css" rel="stylesheet">
 <script src="fstats_files/crosstalk-1.1.1/js/crosstalk.min.js"></script><link href="fstats_files/plotly-htmlwidgets-css-1.57.1/plotly-htmlwidgets.css" rel="stylesheet">
 <script src="fstats_files/plotly-main-1.57.1/plotly-latest.min.js"></script><div class="row">
   <div class="col-md-9 contents">
@@ -137,116 +137,332 @@
 
     
     
-<p><em>f</em>-statistics are the foundation of <em>ADMIXTOOLS</em>. In <em>ADMIXTOOLS 2</em>, <span class="math inline">\(f_2\)</span>-statistics are of particular importance as <span class="math inline">\(f_3\)</span>- and <span class="math inline">\(f_4\)</span>-statistics can be computed from <span class="math inline">\(f_2\)</span>-statistics. They are conceptually very simple, but estimating them without bias can be complicated.</p>
-<p>Here, I give a summary of the basic theory behind <em>f</em>-statistics, and practical considerations for estimating them. <a href="https://www.genetics.org/content/192/3/1065">The paper which originally introduced <em>ADMIXTOOLS</em></a> explains the theory in more detail.</p>
+<p><em>f</em>-statistics are the foundation of <em>ADMIXTOOLS</em>. In
+<em>ADMIXTOOLS 2</em>, <span class="math inline">\(f_2\)</span>-statistics are of particular
+importance as <span class="math inline">\(f_3\)</span>- and <span class="math inline">\(f_4\)</span>-statistics can be computed from <span class="math inline">\(f_2\)</span>-statistics. They are conceptually
+very simple, but estimating them without bias can be complicated.</p>
+<p>Here, I give a summary of the basic theory behind
+<em>f</em>-statistics, and practical considerations for estimating them.
+<a href="https://www.genetics.org/content/192/3/1065">The paper which
+originally introduced <em>ADMIXTOOLS</em></a> explains the theory in
+more detail.</p>
 <div id="f2" class="section level2">
 <h2 class="hasAnchor">
 <a href="#f2" class="anchor"></a><em>f</em><sub>2</sub>
 </h2>
-<p><span class="math inline">\(f_2\)</span> is the expected squared difference of allele frequencies between two populations. Let’s assume we have <span class="math inline">\(M\)</span> SNPs with allele frequency <span class="math inline">\(a_j\)</span> in population <span class="math inline">\(A\)</span> and <span class="math inline">\(b_j\)</span> in population <span class="math inline">\(B\)</span>.</p>
-<p>We can then estimate <span class="math inline">\(f_2\)</span> like this:</p>
-<p><span class="math display">\[f_2(A,B) = \frac{1}{M} \sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j b_j + b^2_{j}\]</span> The actual estimator is a bit more complicated, because we need to account for the fact that allele frequencies are estimated imprecisely when using a small number of samples (see <a href="#biases">Biases</a>).</p>
-<p><span class="math inline">\(f_2\)</span> is closely related to the more widely used pairwise <span class="math inline">\(F_{ST}\)</span>. <span class="math inline">\(f_2\)</span> is the genetic variance between populations, and <span class="math inline">\(F_{ST}\)</span> is the ratio of between-population variance (<span class="math inline">\(f_2\)</span>) to total variance (which is itself the sum of between- and average within- population variance).</p>
-<p><span class="math display">\[F_{ST}(A, B) = \frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}} = \frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j (1-b_j)}\]</span></p>
-<p>One reason why <em>ADMIXTOOLS</em> uses <em>f</em>-statistics and not pairwise <span class="math inline">\(F_{ST}\)</span> is that <em>f</em>-statistics are additive: <span class="math inline">\(f_2(A, C) = f_2(A, B) + f_2(B, C)\)</span>. This holds under the assumptions that there is a large number of sites, genetic drift is neutral, and there are no backmutations or recurrent mutations.</p>
-<p>In contrast, pairwise <span class="math inline">\(F_{ST}\)</span> is not additive. <span class="math inline">\(F_{ST}(A, C)\)</span> can be equal to, greater, or smaller than <span class="math inline">\(F_{ST}(A, B) + F_{ST}(B, C)\)</span>.</p>
-<p>On the other hand, <span class="math inline">\(f_2\)</span> has the disadvantage that its expectation depends on the allele frequency spectrum. This can be a problem when combining <em>f</em>-statistics from different populations pairs using different SNPs.</p>
+<p><span class="math inline">\(f_2\)</span> is the expected squared
+difference of allele frequencies between two populations. Let’s assume
+we have <span class="math inline">\(M\)</span> SNPs with allele
+frequency <span class="math inline">\(a_j\)</span> in population <span class="math inline">\(A\)</span> and <span class="math inline">\(b_j\)</span> in population <span class="math inline">\(B\)</span>.</p>
+<p>We can then estimate <span class="math inline">\(f_2\)</span> like
+this:</p>
+<p><span class="math display">\[f_2(A,B) = \frac{1}{M}
+\sum_{j=1}^M(a_{j} - b_{j})^2 = \frac{1}{M} \sum_{j=1}^M a^2_{j} - 2 a_j
+b_j + b^2_{j}\]</span> The actual estimator is a bit more complicated,
+because we need to account for the fact that allele frequencies are
+estimated imprecisely when using a small number of samples (see <a href="#biases">Biases</a>).</p>
+<p><span class="math inline">\(f_2\)</span> is closely related to the
+more widely used pairwise <span class="math inline">\(F_{ST}\)</span>.
+<span class="math inline">\(f_2\)</span> is the genetic variance between
+populations, and <span class="math inline">\(F_{ST}\)</span> is the
+ratio of between-population variance (<span class="math inline">\(f_2\)</span>) to total variance (which is itself
+the sum of between- and average within- population variance).</p>
+<p><span class="math display">\[F_{ST}(A, B) =
+\frac{\sigma^2_{between}}{\sigma^2_{between}+\sigma^2_{within}} =
+\frac{f_2(A,B)}{f_2(A,B) + \frac{1}{M} \sum_{j=1}^M a_j(1-a_j) + b_j
+(1-b_j)}\]</span></p>
+<p>One reason why <em>ADMIXTOOLS</em> uses <em>f</em>-statistics and not
+pairwise <span class="math inline">\(F_{ST}\)</span> is that
+<em>f</em>-statistics are additive: <span class="math inline">\(f_2(A,
+C) = f_2(A, B) + f_2(B, C)\)</span>. This holds under the assumptions
+that there is a large number of sites, genetic drift is neutral, and
+there are no backmutations or recurrent mutations.</p>
+<p>In contrast, pairwise <span class="math inline">\(F_{ST}\)</span> is
+not additive. <span class="math inline">\(F_{ST}(A, C)\)</span> can be
+equal to, greater, or smaller than <span class="math inline">\(F_{ST}(A,
+B) + F_{ST}(B, C)\)</span>.</p>
+<p>On the other hand, <span class="math inline">\(f_2\)</span> has the
+disadvantage that its expectation depends on the allele frequency
+spectrum. This can be a problem when combining <em>f</em>-statistics
+from different populations pairs using different SNPs.</p>
 <p><br></p>
-<p>The estimator of <span class="math inline">\(f_2\)</span> shown above will only be unbiased only if we have very accurate estimates of allele frequencies. This is often not the case because allele frequencies are estimated using only few samples in some populations. For this reason, we don’t estimate <span class="math inline">\(f_2\)</span> with the simple estimator shown above, but with the following estimator which is robust to changes in sample size:</p>
-<p><span class="math display">\[f_2(A, B) = \frac{1}{M} \sum_{j=1}^M (a_j-b_j)^2 - \frac{a_j(1-a_j)}{n_{A,j}-1} - \frac{b_j(1-b_j)}{n_{B,j}-1}\]</span> <span class="math inline">\(n_{A,j}\)</span> and <span class="math inline">\(n_{B,j}\)</span> are the counts of independently sampled alleles in popoulations <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> at SNP <span class="math inline">\(j\)</span>. See <a href="#biases">Biases</a> for more information.</p>
+<p>The estimator of <span class="math inline">\(f_2\)</span> shown above
+will only be unbiased only if we have very accurate estimates of allele
+frequencies. This is often not the case because allele frequencies are
+estimated using only few samples in some populations. For this reason,
+we don’t estimate <span class="math inline">\(f_2\)</span> with the
+simple estimator shown above, but with the following estimator which is
+robust to changes in sample size:</p>
+<p><span class="math display">\[f_2(A, B) = \frac{1}{M} \sum_{j=1}^M
+(a_j-b_j)^2 - \frac{a_j(1-a_j)}{n_{A,j}-1} -
+\frac{b_j(1-b_j)}{n_{B,j}-1}\]</span> <span class="math inline">\(n_{A,j}\)</span> and <span class="math inline">\(n_{B,j}\)</span> are the counts of independently
+sampled alleles in popoulations <span class="math inline">\(A\)</span>
+and <span class="math inline">\(B\)</span> at SNP <span class="math inline">\(j\)</span>. See <a href="#biases">Biases</a> for
+more information.</p>
 </div>
 <div id="f4" class="section level2">
 <h2 class="hasAnchor">
 <a href="#f4" class="anchor"></a><em>f</em><sub>4</sub>
 </h2>
-<p><span class="math inline">\(f_4\)</span> is the covariance of allele frequency differences between two pairs of populations<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. It can also be expressed as a sum of <span class="math inline">\(f_2\)</span>-statistics:</p>
+<p><span class="math inline">\(f_4\)</span> is the covariance of allele
+frequency differences between two pairs of populations<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. It can also be
+expressed as a sum of <span class="math inline">\(f_2\)</span>-statistics:</p>
 <p><span class="math display">\[
 \begin{equation}
 \begin{aligned}
-f_4(A, B; C, D) &amp;= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} - d_{j}) \\ &amp;= \frac{1}{M} \sum_{j=1}^M(- a_j d_j - b_j c_j + a_j c_j + b_j d_j) \\ &amp;= \frac{1}{2M} (\sum_{j=1}^M(a_j - d_j)^2 + \sum_{j=1}^M(b_j - c_j)^2 - \sum_{j=1}^M(a_j - c_j)^2 - \sum_{j=1}^M(b_j - d_j)^2) \\ &amp;= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )
+f_4(A, B; C, D) &amp;= \frac{1}{M}\sum_{j=1}^M(a_{j} - b_{j})(c_{j} -
+d_{j}) \\ &amp;= \frac{1}{M} \sum_{j=1}^M(- a_j d_j - b_j c_j + a_j c_j
++ b_j d_j) \\ &amp;= \frac{1}{2M} (\sum_{j=1}^M(a_j - d_j)^2 +
+\sum_{j=1}^M(b_j - c_j)^2 - \sum_{j=1}^M(a_j - c_j)^2 - \sum_{j=1}^M(b_j
+- d_j)^2) \\ &amp;= \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) -
+f_2(B, D) )
 \label{eq:f42}
 \end{aligned}
 \end{equation}
 \]</span></p>
-<p>This shows that <span class="math inline">\(f_4\)</span> is at the same time</p>
+<p>This shows that <span class="math inline">\(f_4\)</span> is at the
+same time</p>
 <ul>
 <li>the covariance of allele frequency differences (line 1),</li>
 <li>a sum of allele frequency products (line 2), and</li>
-<li>a sum of <span class="math inline">\(f_2\)</span> statistics (line 4).</li>
+<li>a sum of <span class="math inline">\(f_2\)</span> statistics (line
+4).</li>
 </ul>
-<p>By comparing the definitions of <span class="math inline">\(f_4\)</span> and <span class="math inline">\(f_2\)</span>, we also see that <span class="math inline">\(f_4\)</span> is a generalization of <span class="math inline">\(f_2\)</span>: <span class="math inline">\(f_4(A, B; A, B) = f_2(A, B)\)</span></p>
+<p>By comparing the definitions of <span class="math inline">\(f_4\)</span> and <span class="math inline">\(f_2\)</span>, we also see that <span class="math inline">\(f_4\)</span> is a generalization of <span class="math inline">\(f_2\)</span>: <span class="math inline">\(f_4(A,
+B; A, B) = f_2(A, B)\)</span></p>
 <p><em>D</em>-statistics differ from <span class="math inline">\(f_4\)</span> only by a scaling factor: <span class="math display">\[
 \begin{equation}
 \begin{aligned}
-D(A, B; C, D) &amp;= \frac{P(ABBA) - P(BABA)}{P(ABBA) + P(BABA)} \\
-&amp;= \frac{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) - (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j) + (a_j(1-b_j)c_j(1-d_j) + (1-a_j)b_j(1-c_j)d_j)} \\
-&amp;= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2 c_j d_j)}
+D(A, B; C, D) &amp;= \frac{P(BABA) - P(ABBA)}{P(BABA) + P(ABBA)} \\
+&amp;= \frac{\frac{1}{M} \sum_{j=1}^M (a_j(1-b_j)c_j(1-d_j) +
+(1-a_j)b_j(1-c_j)d_j) - ((1-a_j)b_jc_j(1-d_j) +
+a_j(1-b_j)(1-c_j)d_j)}{\frac{1}{M} \sum_{j=1}^M  (a_j(1-b_j)c_j(1-d_j) +
+(1-a_j)b_j(1-c_j)d_j) + ((1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j)}
+\\
+&amp;= \frac{\frac{1}{M} \sum_{j=1}^M a_j c_j + b_j d_j - a_j d_j - b_j
+c_j}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j b_j)  (c_j + d_j - 2
+c_j d_j)} = \frac{\frac{1}{M} \sum_{j=1}^M
+(a_j-b_j)(c_j-d_j)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2 a_j
+b_j)  (c_j + d_j - 2 c_j d_j)} \\
+&amp;= \frac{f_4(A, B; C, D)}{\frac{1}{M} \sum_{j=1}^M (a_j + b_j - 2
+a_j b_j)  (c_j + d_j - 2 c_j d_j)}
 \end{aligned}
 \end{equation}
-\]</span> Here, <span class="math inline">\(P(ABBA)\)</span> is the probability of observing the same allele in populations <span class="math inline">\(A\)</span> and <span class="math inline">\(D\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(C\)</span>, and <span class="math inline">\(P(BABA)\)</span> is the probability of observing the same allele in populations <span class="math inline">\(A\)</span> and <span class="math inline">\(C\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(D\)</span>. Expressed in terms of allele frequencies, <span class="math inline">\(P(ABBA)_j = (1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j\)</span>, and similar for <span class="math inline">\(P(BABA)\)</span>.</p>
-<p>Naively one might think that estimating <span class="math inline">\(f_4\)</span> without bias is at least as difficult as estimating <span class="math inline">\(f_2\)</span> without bias, but that is not the case. Since each population is represented in <span class="math inline">\(f_4\)</span> through two <span class="math inline">\(f_2\)</span> terms of opposite sign, many biases that are specific to one population will cancel out. This also applies to the low allele count correction factor <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, which is not necessary when estimating <span class="math inline">\(f_4\)</span>.</p>
-<p>For a visual interpretation of this effect, consider the following phylogeny:</p>
+\]</span> Here, <span class="math inline">\(P(ABBA)\)</span> is the
+probability of observing the same allele in populations <span class="math inline">\(A\)</span> and <span class="math inline">\(D\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(C\)</span>, and <span class="math inline">\(P(BABA)\)</span> is the probability of observing
+the same allele in populations <span class="math inline">\(A\)</span>
+and <span class="math inline">\(C\)</span>, and a different one in <span class="math inline">\(B\)</span> and <span class="math inline">\(D\)</span>. Expressed in terms of allele
+frequencies, <span class="math inline">\(P(ABBA)_j =
+(1-a_j)b_jc_j(1-d_j) + a_j(1-b_j)(1-c_j)d_j\)</span>, and similar for
+<span class="math inline">\(P(BABA)\)</span>.</p>
+<p>Naively one might think that estimating <span class="math inline">\(f_4\)</span> without bias is at least as difficult
+as estimating <span class="math inline">\(f_2\)</span> without bias, but
+that is not the case. Since each population is represented in <span class="math inline">\(f_4\)</span> through two <span class="math inline">\(f_2\)</span> terms of opposite sign, many biases
+that are specific to one population will cancel out. This also applies
+to the low allele count correction factor <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, which is not
+necessary when estimating <span class="math inline">\(f_4\)</span>.</p>
+<p>For a visual interpretation of this effect, consider the following
+phylogeny:</p>
 <pre><code>A         B
  \_______/
  /       \
 C         D</code></pre>
-<p><span class="math inline">\(f_2\)</span> is the total branch length between any two populations, while <span class="math inline">\(f_4(A, B; C, D)\)</span> is the length of the horizontal line. Any increase or decrease in the length of one of the terminal branches - say for example the branch leading to <span class="math inline">\(D\)</span> - will equally affect <span class="math inline">\(f_2(A, D)\)</span>, <span class="math inline">\(f_2(B, D)\)</span>, and <span class="math inline">\(f_2(C, D)\)</span>. But it will not affect <span class="math inline">\(f_4(A, B; C, D)\)</span> - the horizontal line. This robustness is a major strength of methods based on <span class="math inline">\(f_4\)</span>-statistics (and to a large extent also of <span class="math inline">\(f_3\)</span>-based methods): Terminal branch lengths are affected by many factors such as divergence time, changes in population size, as well as by data quality, but in expectation, none of this affects <span class="math inline">\(f_4\)</span>, the covariance of allele freuquency differences.</p>
+<p><span class="math inline">\(f_2\)</span> is the total branch length
+between any two populations, while <span class="math inline">\(f_4(A, B;
+C, D)\)</span> is the length of the horizontal line. Any increase or
+decrease in the length of one of the terminal branches - say for example
+the branch leading to <span class="math inline">\(D\)</span> - will
+equally affect <span class="math inline">\(f_2(A, D)\)</span>, <span class="math inline">\(f_2(B, D)\)</span>, and <span class="math inline">\(f_2(C, D)\)</span>. But it will not affect <span class="math inline">\(f_4(A, B; C, D)\)</span> - the horizontal line.
+This robustness is a major strength of methods based on <span class="math inline">\(f_4\)</span>-statistics (and to a large extent
+also of <span class="math inline">\(f_3\)</span>-based methods):
+Terminal branch lengths are affected by many factors such as divergence
+time, changes in population size, as well as by data quality, but in
+expectation, none of this affects <span class="math inline">\(f_4\)</span>, the covariance of allele freuquency
+differences.</p>
 </div>
 <div id="biases" class="section level2">
 <h2 class="hasAnchor">
 <a href="#biases" class="anchor"></a>Biases</h2>
-<p>The default options in <em>ADMIXTOOLS 2</em> are chosen so that the chances of introducing bias are minimized. In many cases this means that only few SNPs will be used, and not all available information is utilized. If you think this is the case in your analyses, you can change the default settings. This section is intended to describe some of the trade-offs involved and to help you figure out how you can safely make most use of your data, while avoiding false positive results.</p>
-<p>There are at least three potential sources of bias in the estimation of <em>f</em>-statistics:</p>
-<p><a href="#bias-due-to-inaccurate-allele-frequency-estimates">1. Bias due to inaccurate allele frequency estimates</a></p>
-<p>This has a solution which works very well in most cases and therefore usually doesn’t require much consideration.</p>
-<p><a href="#bias-due-to-missing-data">2. Bias due to missing data</a></p>
-<p>This can be a problem when dealing with populations with lots of missing data, and involves a trade-off between the <a href="https://en.wikipedia.org/wiki/Type_I_and_type_II_errors">type I and type II error rate</a>: Using only SNPs which are present in all populations reduces the probability of bias, but also reduces power, while using SNPs which are missing in some or most populations has the opposite effect. Problems due to missing data only arise when SNPs in some populations are not missing at random, and the mechanisms by which biases can arise are the same as in Biases due to SNP ascertainment.</p>
-<p><a href="#bias-due-to-snp-ascertainment">3. Bias due to SNP ascertainment</a></p>
-<p>The theory behind <em>f</em>-statistics assumes that SNPs have either not been ascertained at all, or that they have been ascertained to be heterozygous in a population which is known to be an outgroup. By definition SNPs are polymorphisms that are common in some population. This already represents an ascertainment, so no ascertainment means using all sequenced sites. Many types of ascertainment, such as using certain panels of common SNPs, are robust to biases in most analyses, but there are exceptions to this rule. Below we illustrate how SNP ascertainment can bias results.</p>
+<p>The default options in <em>ADMIXTOOLS 2</em> are chosen so that the
+chances of introducing bias are minimized. In many cases this means that
+only few SNPs will be used, and not all available information is
+utilized. If you think this is the case in your analyses, you can change
+the default settings. This section is intended to describe some of the
+trade-offs involved and to help you figure out how you can safely make
+most use of your data, while avoiding false positive results.</p>
+<p>There are at least three potential sources of bias in the estimation
+of <em>f</em>-statistics:</p>
+<p><a href="#bias-due-to-inaccurate-allele-frequency-estimates">1. Bias
+due to inaccurate allele frequency estimates</a></p>
+<p>This has a solution which works very well in most cases and therefore
+usually doesn’t require much consideration.</p>
+<p><a href="#bias-due-to-missing-data">2. Bias due to missing
+data</a></p>
+<p>This can be a problem when dealing with populations with lots of
+missing data, and involves a trade-off between the <a href="https://en.wikipedia.org/wiki/Type_I_and_type_II_errors">type I
+and type II error rate</a>: Using only SNPs which are present in all
+populations reduces the probability of bias, but also reduces power,
+while using SNPs which are missing in some or most populations has the
+opposite effect. Problems due to missing data only arise when SNPs in
+some populations are not missing at random, and the mechanisms by which
+biases can arise are the same as in Biases due to SNP ascertainment.</p>
+<p><a href="#bias-due-to-snp-ascertainment">3. Bias due to SNP
+ascertainment</a></p>
+<p>The theory behind <em>f</em>-statistics assumes that SNPs have either
+not been ascertained at all, or that they have been ascertained to be
+heterozygous in a population which is known to be an outgroup. By
+definition SNPs are polymorphisms that are common in some population.
+This already represents an ascertainment, so no ascertainment means
+using all sequenced sites. Many types of ascertainment, such as using
+certain panels of common SNPs, are robust to biases in most analyses,
+but there are exceptions to this rule. Below we illustrate how SNP
+ascertainment can bias results.</p>
 <div id="bias-due-to-inaccurate-allele-frequency-estimates" class="section level3">
 <h3 class="hasAnchor">
 <a href="#bias-due-to-inaccurate-allele-frequency-estimates" class="anchor"></a>Bias due to inaccurate allele frequency estimates</h3>
-<p>If we estimate allele frequencies in two populations, and if there is random error, or noise, in the estimates of each population, this noise will lead to an over-estimation of <span class="math inline">\(f_2\)</span>, the genetic distance between the two populations.</p>
-<p>The most common reason for noisy allele frequency estimates are low sample counts (or a low number of independently sampled alleles). There is a good reason why low sample counts lead to an overestimation of the genetic distance between two populations: One way to immediately go from a single homogeneous population to two highly divergent populations is to take two different, small, random samples, creating two different population bottlenecks. This will tend to push alleles randomly to either end of the allele frequency spectrum. This effect is the same regardless of whether it is caused by actual population bottlenecks, or by the experimental random sampling of a few samples from a population. If it is caused by experimental random sampling, it is usually desirable to correct for the resulting upward bias in the estimated genetic distance. The upward bias due to a low sample count at a single SNP in one population is <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, where <span class="math inline">\(p\)</span> is the allele frequency and <span class="math inline">\(n\)</span> is the number of independently sampled alleles. Therefore, an unbiased estimate of <span class="math inline">\(f_2\)</span> at a single SNP is given by</p>
-<p><span class="math display">\[f_2(A, B) = (a-b)^2 - \frac{a(1-a)}{n_A-1} - \frac{b(1-b)}{n_B-1}\]</span> Population-wide estimates of <span class="math inline">\(f_2\)</span> are again averages over all SNPs. In most cases, <span class="math inline">\(n\)</span>, the number of independently sampled alleles, will be twice the number of samples, with two exceptions:</p>
+<p>If we estimate allele frequencies in two populations, and if there is
+random error, or noise, in the estimates of each population, this noise
+will lead to an over-estimation of <span class="math inline">\(f_2\)</span>, the genetic distance between the two
+populations.</p>
+<p>The most common reason for noisy allele frequency estimates are low
+sample counts (or a low number of independently sampled alleles). There
+is a good reason why low sample counts lead to an overestimation of the
+genetic distance between two populations: One way to immediately go from
+a single homogeneous population to two highly divergent populations is
+to take two different, small, random samples, creating two different
+population bottlenecks. This will tend to push alleles randomly to
+either end of the allele frequency spectrum. This effect is the same
+regardless of whether it is caused by actual population bottlenecks, or
+by the experimental random sampling of a few samples from a population.
+If it is caused by experimental random sampling, it is usually desirable
+to correct for the resulting upward bias in the estimated genetic
+distance. The upward bias due to a low sample count at a single SNP in
+one population is <span class="math inline">\(\frac{p(1-p)}{n-1}\)</span>, where <span class="math inline">\(p\)</span> is the allele frequency and <span class="math inline">\(n\)</span> is the number of independently sampled
+alleles. Therefore, an unbiased estimate of <span class="math inline">\(f_2\)</span> at a single SNP is given by</p>
+<p><span class="math display">\[f_2(A, B) = (a-b)^2 -
+\frac{a(1-a)}{n_A-1} - \frac{b(1-b)}{n_B-1}\]</span> Population-wide
+estimates of <span class="math inline">\(f_2\)</span> are again averages
+over all SNPs. In most cases, <span class="math inline">\(n\)</span>,
+the number of independently sampled alleles, will be twice the number of
+samples, with two exceptions:</p>
 <ol style="list-style-type: decimal">
 <li>
 <p>Pseudohaploid data</p>
-<p>Many ancient DNA data sets don’t call heterozygous genotypes in order to avoid a number of biases. If two different alleles are observed in one sample at a particular site, one of the two alleles is chosen at random and the genotype is declared homozygous for that allele. In pseudohaploid samples, the number of independently sampled alleles is therefore equal to the number of samples.</p>
+<p>Many ancient DNA data sets don’t call heterozygous genotypes in order
+to avoid a number of biases. If two different alleles are observed in
+one sample at a particular site, one of the two alleles is chosen at
+random and the genotype is declared homozygous for that allele. In
+pseudohaploid samples, the number of independently sampled alleles is
+therefore equal to the number of samples.</p>
 </li>
 <li>
 <p>Inbreeding</p>
-<p>If an individuals has closely related parents, his or her two parental chromosomes are more similar to each other than two chromosomes sampled at random from the population. In a population in which inbreeding is common, <span class="math inline">\(n\)</span> can therefore be less than two (because the two parental chromosome are not sampled independently from each other).</p>
+<p>If an individuals has closely related parents, his or her two
+parental chromosomes are more similar to each other than two chromosomes
+sampled at random from the population. In a population in which
+inbreeding is common, <span class="math inline">\(n\)</span> can
+therefore be less than two (because the two parental chromosome are not
+sampled independently from each other).</p>
 </li>
 </ol>
-<p>Some of the programs in the original <em>ADMIXTOOLS</em> have an <code>inbreed</code> option which uses an estimator of <span class="math inline">\(f_2\)</span> that is robust to inbreeding. This option is also recommended to use for pseudohaploid data. <em>ADMIXTOOLS 2</em> automatically detects pseudohaploid samples by checking if any heterozyous genotypes are observed among the first 1000 SNPs. If not, the sample is assumed to be pseudohaploid.</p>
+<p>Some of the programs in the original <em>ADMIXTOOLS</em> have an
+<code>inbreed</code> option which uses an estimator of <span class="math inline">\(f_2\)</span> that is robust to inbreeding. This
+option is also recommended to use for pseudohaploid data. <em>ADMIXTOOLS
+2</em> automatically detects pseudohaploid samples by checking if any
+heterozyous genotypes are observed among the first 1000 SNPs. If not,
+the sample is assumed to be pseudohaploid.</p>
 </div>
 <div id="bias-due-to-missing-data" class="section level3">
 <h3 class="hasAnchor">
 <a href="#bias-due-to-missing-data" class="anchor"></a>Bias due to missing data</h3>
-<p>If everything you have read about <em>f</em>-statistics thus far gave you the impression that the theory behind <em>f</em>-statistics has a certain elegance, it is probably because no one has mentioned missing data. In practice, not all SNPs are present in all samples, and this makes things much more complicated than they otherwise would be.</p>
+<p>If everything you have read about <em>f</em>-statistics thus far gave
+you the impression that the theory behind <em>f</em>-statistics has a
+certain elegance, it is probably because no one has mentioned missing
+data. In practice, not all SNPs are present in all samples, and this
+makes things much more complicated than they otherwise would be.</p>
 <p>Consider two simple examples:</p>
-<p>First, imagine there are four populations, <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, <span class="math inline">\(C\)</span>, and <span class="math inline">\(D\)</span>, and we are interested in <span class="math inline">\(f_4(A,B; C,D)\)</span>. Let’s say that all populations have very low coverage, and there are no SNPs for which we have allele frequency estimates for more than two of the four populations at the same time. Since <span class="math inline">\(f_4(A,B; C,D) = \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D) )\)</span>, it might still be possible to estimate <span class="math inline">\(f_4(A,B; C,D)\)</span>.</p>
-<p>The problem is that this equation is only correct if all <em>f</em>-statistics are estimated on the same SNPs. It is still correct in expectation if the missing SNPs are missing at random - if there is no relation between a SNP’s presence or absence in one population, and some other property, such as its allele frequency, in another population. Unfortunately, this is often not the case.</p>
-<p>Next, consider a model of five populations, <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, <span class="math inline">\(C\)</span>, <span class="math inline">\(D\)</span>, and <span class="math inline">\(E\)</span> in which we want to use two <span class="math inline">\(f_4\)</span>-statistics, <span class="math inline">\(f_4(A,B; C,D)\)</span> and <span class="math inline">\(f_4(A,B; C,E)\)</span>. Now imagine that <span class="math inline">\(D\)</span> and <span class="math inline">\(E\)</span> have very low coverage, so that no SNPs were genotyped both in <span class="math inline">\(D\)</span> and in <span class="math inline">\(E\)</span>. We would have no problem computing each <span class="math inline">\(f_4\)</span>-statistic individually: For each of the two we would select the SNPs that are present in all four populations. However, the two <span class="math inline">\(f_4\)</span>-statistics would be computed on completely different SNPs (only those present in <span class="math inline">\(D\)</span> vs only those present in <span class="math inline">\(E\)</span>), which raises the question whether it is OK to use both <span class="math inline">\(f_4\)</span>-statistics in the same model.</p>
-<p>The two scenarios are illustrated for SNPs with different missingness patterns in the tables below.</p>
+<p>First, imagine there are four populations, <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, <span class="math inline">\(C\)</span>, and <span class="math inline">\(D\)</span>, and we are interested in <span class="math inline">\(f_4(A,B; C,D)\)</span>. Let’s say that all
+populations have very low coverage, and there are no SNPs for which we
+have allele frequency estimates for more than two of the four
+populations at the same time. Since <span class="math inline">\(f_4(A,B;
+C,D) = \frac{1}{2}(f_2(A, D) + f_2(B, C) - f_2(A, C) - f_2(B, D)
+)\)</span>, it might still be possible to estimate <span class="math inline">\(f_4(A,B; C,D)\)</span>.</p>
+<p>The problem is that this equation is only correct if all
+<em>f</em>-statistics are estimated on the same SNPs. It is still
+correct in expectation if the missing SNPs are missing at random - if
+there is no relation between a SNP’s presence or absence in one
+population, and some other property, such as its allele frequency, in
+another population. Unfortunately, this is often not the case.</p>
+<p>Next, consider a model of five populations, <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, <span class="math inline">\(C\)</span>, <span class="math inline">\(D\)</span>, and <span class="math inline">\(E\)</span> in which we want to use two <span class="math inline">\(f_4\)</span>-statistics, <span class="math inline">\(f_4(A,B; C,D)\)</span> and <span class="math inline">\(f_4(A,B; C,E)\)</span>. Now imagine that <span class="math inline">\(D\)</span> and <span class="math inline">\(E\)</span> have very low coverage, so that no SNPs
+were genotyped both in <span class="math inline">\(D\)</span> and in
+<span class="math inline">\(E\)</span>. We would have no problem
+computing each <span class="math inline">\(f_4\)</span>-statistic
+individually: For each of the two we would select the SNPs that are
+present in all four populations. However, the two <span class="math inline">\(f_4\)</span>-statistics would be computed on
+completely different SNPs (only those present in <span class="math inline">\(D\)</span> vs only those present in <span class="math inline">\(E\)</span>), which raises the question whether it
+is OK to use both <span class="math inline">\(f_4\)</span>-statistics in
+the same model.</p>
+<p>The two scenarios are illustrated for SNPs with different missingness
+patterns in the tables below.</p>
 <p><br></p>
-<p>This means that when working with samples or populations with significant amounts of missing data, it can matter which SNPs we decide to use. There is a trade-off between minimizing the chance of bias (using few SNPs) and maximizing power (using many SNPs). Here are the three basic options, ordered from most conservative / fewest SNPs (which is the default) to least conservative / most SNPs.</p>
+<p>This means that when working with samples or populations with
+significant amounts of missing data, it can matter which SNPs we decide
+to use. There is a trade-off between minimizing the chance of bias
+(using few SNPs) and maximizing power (using many SNPs). Here are the
+three basic options, ordered from most conservative / fewest SNPs (which
+is the default) to least conservative / most SNPs.</p>
 <ol style="list-style-type: decimal">
-<li>Use the same SNPs for every <span class="math inline">\(f_4\)</span>-statistic (<code>maxmiss = 0</code> / <code>allsnps: NO</code>)</li>
-<li>Use different SNPs for each <span class="math inline">\(f_4\)</span>-statistic (<code>allsnps: YES / allsnps = TRUE</code>)</li>
-<li>Use different SNPs for each <span class="math inline">\(f_2\)</span>-statistic (<code>maxmiss &gt; 0</code>)</li>
+<li>Use the same SNPs for every <span class="math inline">\(f_4\)</span>-statistic (<code>maxmiss = 0</code> /
+<code>allsnps: NO</code>)</li>
+<li>Use different SNPs for each <span class="math inline">\(f_4\)</span>-statistic
+(<code>allsnps: YES / allsnps = TRUE</code>)</li>
+<li>Use different SNPs for each <span class="math inline">\(f_2\)</span>-statistic
+(<code>maxmiss &gt; 0</code>)</li>
 </ol>
-<p>These options are discussed in more detail below. The second option makes it necessary to read data from genotype files directly. To choose between option 1 and option 3, adjust the <code>maxmiss</code> parameter in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> or <code><a href="../reference/f2_from_geno.html">f2_from_geno()</a></code>. Which of this solutions is most suitable in your case depends on a few different factors:</p>
+<p>These options are discussed in more detail below. The second option
+makes it necessary to read data from genotype files directly. To choose
+between option 1 and option 3, adjust the <code>maxmiss</code> parameter
+in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> or <code><a href="../reference/f2_from_geno.html">f2_from_geno()</a></code>. Which of
+this solutions is most suitable in your case depends on a few different
+factors:</p>
 <ul>
-<li>If most of your samples have few missing SNPs, you will not loose much power by using the first, most conservative option.</li>
-<li>If there is lots of missingness, but you have reason to believe that SNPs are missing more or less at random, it can be safe to use the less conservative options. This could be the case if, for example, all populations were genotyped using the same technology, and if there are no associations between missingness in one population, and allele frequency in another population.</li>
-<li>Some analyses are more sensitive to these kinds of biases than others. Generally speaking, hypothesis tests can be more sensitive than parameter estimates. For example, when choosing the least conservative option, it is possible that most <em>f</em>-statistics are estimated fairly accurately, and that they can be used without problems to estimate the fit of an admixture graph. However, a fairly accurate estimate of an <span class="math inline">\(f_4\)</span>-statistic which should be zero can deviate from zero by an amount which is both small, and highly significant. This means that more caution is necessary when using <code><a href="../reference/qpdstat.html">qpdstat()</a></code> or <code><a href="../reference/qpadm.html">qpadm()</a></code>, than when using <code><a href="../reference/qpgraph.html">qpgraph()</a></code>.</li>
-<li>If there is doubt about which of the options above is right in your case, try them all and check if the results differ. If yes, it could be that you don’t have enough non-missing data to get an unambiguous answer. If the results are mostly the same, you can be more confident that the choice of SNPs doesn’t matter much.</li>
+<li>If most of your samples have few missing SNPs, you will not loose
+much power by using the first, most conservative option.</li>
+<li>If there is lots of missingness, but you have reason to believe that
+SNPs are missing more or less at random, it can be safe to use the less
+conservative options. This could be the case if, for example, all
+populations were genotyped using the same technology, and if there are
+no associations between missingness in one population, and allele
+frequency in another population.</li>
+<li>Some analyses are more sensitive to these kinds of biases than
+others. Generally speaking, hypothesis tests can be more sensitive than
+parameter estimates. For example, when choosing the least conservative
+option, it is possible that most <em>f</em>-statistics are estimated
+fairly accurately, and that they can be used without problems to
+estimate the fit of an admixture graph. However, a fairly accurate
+estimate of an <span class="math inline">\(f_4\)</span>-statistic which
+should be zero can deviate from zero by an amount which is both small,
+and highly significant. This means that more caution is necessary when
+using <code><a href="../reference/qpdstat.html">qpdstat()</a></code> or <code><a href="../reference/qpadm.html">qpadm()</a></code>, than when using
+<code><a href="../reference/qpgraph.html">qpgraph()</a></code>.</li>
+<li>If there is doubt about which of the options above is right in your
+case, try them all and check if the results differ. If yes, it could be
+that you don’t have enough non-missing data to get an unambiguous
+answer. If the results are mostly the same, you can be more confident
+that the choice of SNPs doesn’t matter much.</li>
 </ul>
 <p><br></p>
 <center>
 <table class="table">
+<colgroup>
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="11%">
+<col width="26%">
+<col width="15%">
+</colgroup>
 <thead><tr class="header">
 <th></th>
 <th>A</th>
@@ -350,9 +566,25 @@ C         D</code></pre>
 </tbody>
 </table>
 </center>
-<p><strong>SNPs which contribute to an estimate of <span class="math inline">\(f_4(A,B; C,D)\)</span> under different settings. Missing SNPs are denoted by 0, non-missing SNPs by 1. <span class="math inline">\(f_4\)</span>-statistics are composed only of <span class="math inline">\(f_2\)</span>-statistics with one out the first two populations and one out of the second two populations, which is why <code>1010</code> works, but <code>1100</code> doesn’t.</strong></p>
+<p><strong>SNPs which contribute to an estimate of <span class="math inline">\(f_4(A,B; C,D)\)</span> under different settings.
+Missing SNPs are denoted by 0, non-missing SNPs by 1. <span class="math inline">\(f_4\)</span>-statistics are composed only of <span class="math inline">\(f_2\)</span>-statistics with one out the first two
+populations and one out of the second two populations, which is why
+<code>1010</code> works, but <code>1100</code> doesn’t.</strong></p>
 <p><br></p>
 <table class="table">
+<colgroup>
+<col width="4%">
+<col width="4%">
+<col width="4%">
+<col width="4%">
+<col width="4%">
+<col width="4%">
+<col width="14%">
+<col width="14%">
+<col width="14%">
+<col width="14%">
+<col width="14%">
+</colgroup>
 <thead><tr class="header">
 <th></th>
 <th>A</th>
@@ -360,8 +592,10 @@ C         D</code></pre>
 <th>C</th>
 <th>D</th>
 <th>E</th>
-<th align="center"><span class="math inline">\(f_4(A,B; C,D)\)</span></th>
-<th align="center"><span class="math inline">\(f_4(A,B; C,E)\)</span></th>
+<th align="center"><span class="math inline">\(f_4(A,B;
+C,D)\)</span></th>
+<th align="center"><span class="math inline">\(f_4(A,B;
+C,E)\)</span></th>
 <th align="center">1: maxmiss = 0</th>
 <th align="center">2: allsnps</th>
 <th align="center">3: maxmiss = 1</th>
@@ -447,44 +681,151 @@ C         D</code></pre>
 </tr>
 </tbody>
 </table>
-<p><strong>SNPs which contribute to a model which uses two <span class="math inline">\(f_4\)</span>-statistics, <span class="math inline">\(f_4(A,B; C,D)\)</span> and <span class="math inline">\(f_4(A,B; C,E)\)</span>. The numbers in the <span class="math inline">\(f_4\)</span> columns indicate under which of the three settings each SNP contributes to each <span class="math inline">\(f_4\)</span>-statistic.</strong></p>
+<p><strong>SNPs which contribute to a model which uses two <span class="math inline">\(f_4\)</span>-statistics, <span class="math inline">\(f_4(A,B; C,D)\)</span> and <span class="math inline">\(f_4(A,B; C,E)\)</span>. The numbers in the <span class="math inline">\(f_4\)</span> columns indicate under which of the
+three settings each SNP contributes to each <span class="math inline">\(f_4\)</span>-statistic.</strong></p>
 <p><br></p>
-<p>What follows are more detailed descriptions of the different strategies for dealing with missing data, and their implementations in <em>ADMIXTOOLS</em> and in <em>ADMIXTOOLS 2</em>.</p>
+<p>What follows are more detailed descriptions of the different
+strategies for dealing with missing data, and their implementations in
+<em>ADMIXTOOLS</em> and in <em>ADMIXTOOLS 2</em>.</p>
 <ol style="list-style-type: decimal">
 <li>
 <p>Use the same SNPs for every <span class="math inline">\(f_4\)</span>-statistic</p>
-<p>This is the most conservative option, and it is the default in both <em>ADMIXTOOLS</em> (where it corresponds to <code>allsnps: NO</code>) and <em>ADMIXTOOLS 2</em> (where it corresponds to <code>maxmiss = 0</code>). The downside of this option is that few SNPs may remain, especially in models with many populations (or when extracting <span class="math inline">\(f_2\)</span>-statistics for many populations).</p>
+<p>This is the most conservative option, and it is the default in both
+<em>ADMIXTOOLS</em> (where it corresponds to <code>allsnps: NO</code>)
+and <em>ADMIXTOOLS 2</em> (where it corresponds to
+<code>maxmiss = 0</code>). The downside of this option is that few SNPs
+may remain, especially in models with many populations (or when
+extracting <span class="math inline">\(f_2\)</span>-statistics for many
+populations).</p>
 </li>
 <li>
 <p>Use different SNPs for each <span class="math inline">\(f_4\)</span>-statistic</p>
-<p>This option uses different SNPs for different <em>f</em>-statistics and therefore often uses more SNPs in total than the first option. It requires for each <span class="math inline">\(f_3\)</span>-statistic and <span class="math inline">\(f_4\)</span>-statistic that the SNPs be present in all three or four populations, respectively. In <em>ADMIXTOOLS</em> this corresponds to <code>allsnps: YES</code>. As the set of SNPs used in this option can be different for every <em>f</em>-statistic, and pre-computed <span class="math inline">\(f_2\)</span>-statistics are calculated on a fixed set of SNPs for every population pair, pre-computed <span class="math inline">\(f_2\)</span>-statistics can’t be used for this option. Because of this, many <em>ADMIXTOOLS 2</em> functions can read data directly from genotype files and have an <code>allsnps</code> argument which can be <code>TRUE</code> or <code>FALSE</code>. Reading data directly from genotype files is slower, but makes it possible to choose this option for dealing with missing data.</p>
+<p>This option uses different SNPs for different <em>f</em>-statistics
+and therefore often uses more SNPs in total than the first option. It
+requires for each <span class="math inline">\(f_3\)</span>-statistic and
+<span class="math inline">\(f_4\)</span>-statistic that the SNPs be
+present in all three or four populations, respectively. In
+<em>ADMIXTOOLS</em> this corresponds to <code>allsnps: YES</code>. As
+the set of SNPs used in this option can be different for every
+<em>f</em>-statistic, and pre-computed <span class="math inline">\(f_2\)</span>-statistics are calculated on a fixed
+set of SNPs for every population pair, pre-computed <span class="math inline">\(f_2\)</span>-statistics can’t be used for this
+option. Because of this, many <em>ADMIXTOOLS 2</em> functions can read
+data directly from genotype files and have an <code>allsnps</code>
+argument which can be <code>TRUE</code> or <code>FALSE</code>. Reading
+data directly from genotype files is slower, but makes it possible to
+choose this option for dealing with missing data.</p>
 </li>
 <li>
 <p>Use different SNPs for each <span class="math inline">\(f_2\)</span>-statistic</p>
-<p>In <em>ADMIXTOOLS 2</em>, the default option of <code>maxmiss = 0</code> is conservative in that it excludes all SNPs which are missing in any population. At the opposite extreme, <code>maxmiss = 1</code> will not exclude any SNPs, and for each <span class="math inline">\(f_2\)</span>-statistic it will use all SNPs that are present in that pair. Generally speaking, values of <code>maxmiss</code> closer to 0 are more conservative and will leave you with fewer SNPs, while values closer to 1 make use of more SNPs, but are less conservative. It’s difficult to give a recommendation on what fraction of missingness is acceptable, because the risk of introducing bias doesn’t just depend on the <em>amount</em> of missingness, but also on the amount of <em>structure</em> in the missingess. When SNPs are missing more or less at random, it is much less of a problem than when it’s mostly common or mostly rare SNPs that are missing in some populations. This can occur, for example, when combining data which were genotyped using different technologies.</p>
+<p>In <em>ADMIXTOOLS 2</em>, the default option of
+<code>maxmiss = 0</code> is conservative in that it excludes all SNPs
+which are missing in any population. At the opposite extreme,
+<code>maxmiss = 1</code> will not exclude any SNPs, and for each <span class="math inline">\(f_2\)</span>-statistic it will use all SNPs that
+are present in that pair. Generally speaking, values of
+<code>maxmiss</code> closer to 0 are more conservative and will leave
+you with fewer SNPs, while values closer to 1 make use of more SNPs, but
+are less conservative. It’s difficult to give a recommendation on what
+fraction of missingness is acceptable, because the risk of introducing
+bias doesn’t just depend on the <em>amount</em> of missingness, but also
+on the amount of <em>structure</em> in the missingess. When SNPs are
+missing more or less at random, it is much less of a problem than when
+it’s mostly common or mostly rare SNPs that are missing in some
+populations. This can occur, for example, when combining data which were
+genotyped using different technologies.</p>
 <p><em>Using allele frequency products rather than <span class="math inline">\(f_2\)</span>-statistics to compute <span class="math inline">\(f_4\)</span>-statistics</em></p>
-<p>If you end up using <code>maxmiss &gt; 0</code>, there is another thing you can do to reduce the chance of bias. If you recall the equation above in which <span class="math inline">\(f_4\)</span> is expressed as a sum of four <span class="math inline">\(f_2\)</span>-statistics, you will see that it can be expressed equally as a sum of four allele frequency products (averaged across SNPs). When no SNPs are missing, there is no difference between <span class="math inline">\(f_4\)</span> as a sum of <span class="math inline">\(f_2\)</span> and <span class="math inline">\(f_4\)</span> as a sum of allele frequency products. However, when some SNPs are missing, it is often better to compute <span class="math inline">\(f_4\)</span> as a sum of allele frequency products. This is because the <span class="math inline">\(f_2\)</span> bias correction factor is more influenced by using different sets of SNPs than allele frequency products. In <em>ADMIXTOOLS 2</em>, allele frequency products are always extracted from genotype data in parallel with <span class="math inline">\(f_2\)</span>-statistics. Functions which directly or indirectly use <span class="math inline">\(f_4\)</span>-statistics will automatically use these allele frequency products when reading data from disk. When data from disk is read manually, for example using <code><a href="../reference/f2_from_precomp.html">f2_from_precomp()</a></code>, the option <code>afprod = TRUE</code> can be used to read allele frequency products instead of <span class="math inline">\(f_2\)</span>-statistics.</p>
+<p>If you end up using <code>maxmiss &gt; 0</code>, there is another
+thing you can do to reduce the chance of bias. If you recall the
+equation above in which <span class="math inline">\(f_4\)</span> is
+expressed as a sum of four <span class="math inline">\(f_2\)</span>-statistics, you will see that it can
+be expressed equally as a sum of four allele frequency products
+(averaged across SNPs). When no SNPs are missing, there is no difference
+between <span class="math inline">\(f_4\)</span> as a sum of <span class="math inline">\(f_2\)</span> and <span class="math inline">\(f_4\)</span> as a sum of allele frequency
+products. However, when some SNPs are missing, it is often better to
+compute <span class="math inline">\(f_4\)</span> as a sum of allele
+frequency products. This is because the <span class="math inline">\(f_2\)</span> bias correction factor is more
+influenced by using different sets of SNPs than allele frequency
+products. In <em>ADMIXTOOLS 2</em>, allele frequency products are always
+extracted from genotype data in parallel with <span class="math inline">\(f_2\)</span>-statistics. Functions which directly
+or indirectly use <span class="math inline">\(f_4\)</span>-statistics
+will automatically use these allele frequency products when reading data
+from disk. When data from disk is read manually, for example using
+<code><a href="../reference/f2_from_precomp.html">f2_from_precomp()</a></code>, the option <code>afprod = TRUE</code>
+can be used to read allele frequency products instead of <span class="math inline">\(f_2\)</span>-statistics.</p>
 </li>
 </ol>
 </div>
 <div id="bias-due-to-snp-ascertainment" class="section level3">
 <h3 class="hasAnchor">
 <a href="#bias-due-to-snp-ascertainment" class="anchor"></a>Bias due to SNP ascertainment</h3>
-<p>The selection of SNPs can introduce bias in a way very similar to missing SNPs. The theory behind <em>f</em>-statistics holds when SNPs are ascertained to be heterozygous in an outgroup, and when that is the only ascertainment criterion. This means that any further subsetting, for example to SNPs which are common across a range of populations, or the inclusion of SNPs which are heterozygous in one out of several groups, violates this ascertainment principle.</p>
-<p>To see that a very skewed SNP ascertainment has the potential to create arbitrary results, imagine that a particular <span class="math inline">\(f_4\)</span>-statistic for four populations is computed for every SNP in the genome. Let’s say the first two populations form a clade relative to the second two, and so the true value of that <span class="math inline">\(f_4\)</span>-statistic averaged across all SNPs is zero. However, only the average across SNPs is zero. That statistics for single SNPs will still fluctuate widely. If we selected only the SNPs with positive <span class="math inline">\(f_4\)</span>-statistics, or only the SNPs with negative <span class="math inline">\(f_4\)</span>-statistics, and average over this highly ascertained set of SNPs, we could get a highly significant overall <span class="math inline">\(f_4\)</span>-statistic.</p>
-<p>SNP ascertainment schemes that are not completely random can can at least potentially create some bias because the chosen SNPs’ average <span class="math inline">\(f_4\)</span>-statistics differ from the overall average.</p>
+<p>The selection of SNPs can introduce bias in a way very similar to
+missing SNPs. The theory behind <em>f</em>-statistics holds when SNPs
+are ascertained to be heterozygous in an outgroup, and when that is the
+only ascertainment criterion. This means that any further subsetting,
+for example to SNPs which are common across a range of populations, or
+the inclusion of SNPs which are heterozygous in one out of several
+groups, violates this ascertainment principle.</p>
+<p>To see that a very skewed SNP ascertainment has the potential to
+create arbitrary results, imagine that a particular <span class="math inline">\(f_4\)</span>-statistic for four populations is
+computed for every SNP in the genome. Let’s say the first two
+populations form a clade relative to the second two, and so the true
+value of that <span class="math inline">\(f_4\)</span>-statistic
+averaged across all SNPs is zero. However, only the average across SNPs
+is zero. That statistics for single SNPs will still fluctuate widely. If
+we selected only the SNPs with positive <span class="math inline">\(f_4\)</span>-statistics, or only the SNPs with
+negative <span class="math inline">\(f_4\)</span>-statistics, and
+average over this highly ascertained set of SNPs, we could get a highly
+significant overall <span class="math inline">\(f_4\)</span>-statistic.</p>
+<p>SNP ascertainment schemes that are not completely random can can at
+least potentially create some bias because the chosen SNPs’ average
+<span class="math inline">\(f_4\)</span>-statistics differ from the
+overall average.</p>
 <div id="common-vs-rare-snps" class="section level4">
 <h4 class="hasAnchor">
 <a href="#common-vs-rare-snps" class="anchor"></a>Common vs rare SNPs</h4>
-<p>One common ascertainment scheme is to pick SNPs that are found to be polymorphic in several different populations. This is similar to picking SNPs that are common across all populations. In most cases this doesn’t give results that are substantially different from working with an unascertained set of SNPs, but it’s worth considering when this might create problems.</p>
-<p>Common SNPs tend to be older than rare SNPs because it takes time for a new mutation to rise to a high frequency. <span class="math inline">\(f_4\)</span>-statistics computed on common SNPs are therefore more influenced by the distant past, whereas <span class="math inline">\(f_4\)</span>-statistics computed on rare SNPs tend to be more influenced by the recent past. In theory it’s possible that <span class="math inline">\(f_4\)</span>-statistics for four populations are completely dependent on whether the SNPs used are more informative of the recent past or the distant past.</p>
-<p>The example below demonstrates how an <span class="math inline">\(f_4\)</span>-statistic could flip sign depending on whether more common or more rare SNPs enter the analysis (as observed for example in <a href="https://science.sciencemag.org/content/367/6484/eaay5012">this paper</a>). Each of the four populations is a two-way admixture between two other populations, and the drift separating any two populations is either recent (green solid edges) or old (blue solid edges).</p>
-<div id="htmlwidget-532ce45ade4d2f2c9634" style="width:700px;height:432.632880098888px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="htmlwidget-532ce45ade4d2f2c9634">{"x":{"data":[{"x":[-2.75,-2.75,null,-2.75,-1.75,null,-1.75,-0.75,null,-1.75,0.25],"y":[2,1,null,2,1,null,2,1,null,2,1],"text":["AB -> A0","AB -> A0",null,"AB -> B0","AB -> B0",null,"CD -> C0","CD -> C0",null,"CD -> D0","CD -> D0"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(183,159,0,1)","dash":"dot"},"hoveron":"points","name":"(admix,2)","legendgroup":"(admix,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.75,-2.75,null,-0.75,0.25,null,0.25,-1.75,null,0.25,-0.75],"y":[4,1,null,4,1,null,4,1,null,4,1],"text":["AD -> A0","AD -> A0",null,"AD -> D0","AD -> D0",null,"BC -> B0","BC -> B0",null,"BC -> C0","BC -> C0"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,196,1)","dash":"dot"},"hoveron":"points","name":"(admix,4)","legendgroup":"(admix,4)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75,-2.75,null,-1.75,-1.75,null,-0.75,-0.75,null,0.25,0.25],"y":[1,0,null,1,0,null,1,0,null,1,0],"text":["A0 -> A","A0 -> A",null,"B0 -> B","B0 -> B",null,"C0 -> C","C0 -> C",null,"D0 -> D","D0 -> D"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(normal,1)","legendgroup":"(normal,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.25,-2.75,null,-2.25,-1.75],"y":[3,2,null,3,2],"text":["X -> AB","X -> AB",null,"X -> CD","X -> CD"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,186,56,1)","dash":"solid"},"hoveron":"points","name":"(normal,3)","legendgroup":"(normal,3)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.25,-0.75,null,-0.25,0.25],"y":[5,4,null,5,4],"text":["Y -> AD","Y -> AD",null,"Y -> BC","Y -> BC"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(97,156,255,1)","dash":"solid"},"hoveron":"points","name":"(normal,5)","legendgroup":"(normal,5)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.25,-2.25,null,-1.25,-0.25],"y":[6,3,null,6,5],"text":["R -> X","R -> X",null,"R -> Y","R -> Y"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(245,100,227,1)","dash":"solid"},"hoveron":"points","name":"(normal,6)","legendgroup":"(normal,6)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.25,-2.25,-0.25,-2.75,-1.75,-0.75,0.25,-2.75,-1.75,-0.75,0.25],"y":[6,3,5,2,2,4,4,1,1,1,1],"text":["R","X","Y","AB","CD","AD","BC","A0","B0","C0","D0"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","opacity":0,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.75,-0.75,-2.5,-2,-0.5,0,-2.75,-2.25,-1.25,-0.75,-1.75,-0.25,-0.75,-0.25,-2.75,-1.75,-0.75,0.25],"y":[4.5,5.5,2.5,2.5,4.5,4.5,1.5,1.5,1.5,1.5,2.5,2.5,2.5,2.5,0.5,0.5,0.5,0.5],"text":["","","","","","","","","","","","","","","","","",""],"hovertext":["R -> X","R -> Y","X -> AB","X -> CD","Y -> AD","Y -> BC","AB -> A0","AB -> B0","CD -> C0","CD -> D0","AD -> A0","AD -> D0","BC -> B0","BC -> C0","A0 -> A","B0 -> B","C0 -> C","D0 -> D"],"textfont":{"size":9.4488188976378,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75,-1.75,-0.75,0.25],"y":[-0.1,-0.1,-0.1,-0.1],"text":["A","B","C","D"],"hovertext":["","","",""],"textfont":{"size":9.4488188976378,"color":"rgba(248,118,109,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"1","legendgroup":"1","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"visible":false,"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75],"y":[6],"text":"","hovertext":"","textfont":{"size":14.6645669291339,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":27.8246364188244,"r":7.30593607305936,"b":15.4776044553541,"l":10.958904109589},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-3.15,0.65],"tickmode":"array","ticktext":["-3","-2","-1","0"],"tickvals":[-3,-2,-1,0],"categoryorder":"array","categoryarray":["-3","-2","-1","0"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-0.405,6.305],"tickmode":"array","ticktext":["0","2","4","6"],"tickvals":[0,2,4,6],"categoryorder":"array","categoryarray":["0","2","4","6"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"76a3574f5679":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"linetype":{},"colour":{},"text":{},"type":"scatter"},"76a319b64eb7":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"text":{}},"76a3fe9dd91":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"text":{}},"76a342d162c0":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"colour":{}},"76a340aa4d85":{"y":{}},"76a36cc777ed":{"x":{},"y":{}}},"cur_data":"76a3574f5679","visdat":{"76a3574f5679":["function (y) ","x"],"76a319b64eb7":["function (y) ","x"],"76a3fe9dd91":["function (y) ","x"],"76a342d162c0":["function (y) ","x"],"76a340aa4d85":["function (y) ","x"],"76a36cc777ed":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><p>Suppose we are interested in <span class="math inline">\(f_4(A,C;B,D)\)</span>. If we ignore the old (blue) part of the graph for now, we can trace the path from <span class="math inline">\(A\)</span> to <span class="math inline">\(C\)</span>, and we see that along the green (recent) edges it intersects with the path from <span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> and that both paths move in the same direction along the green edges (left to right). That suggests that <span class="math inline">\(f_4(A,C;B,D)\)</span> should be positive.</p>
-<p>Now let’s trace the path from <span class="math inline">\(A\)</span> to <span class="math inline">\(C\)</span> and the path from <span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> along the blue edges. <span class="math inline">\(A\)</span> to <span class="math inline">\(C\)</span> again goes from left to right, but <span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> now goes in the opposite direction (right to left). This means that along this part of the graph, <span class="math inline">\(f_4(A,C;B,D)\)</span> should be negative. The rare SNPs, which are more influenced by the more recent (left) part of the graph behave in a way that’s opposite from the common SNPs, which are more influenced by the older (right) part of the graph. On average, these two effects might cancel out and lead to <span class="math inline">\(f_4(A,C;B,D)\)</span> close to zero, but ascertaining more common or more rare SNPs could lead to either a negative or a positive estimate of <span class="math inline">\(f_4(A,C;B,D)\)</span>.</p>
-<p>Although this example is contrived, it shows how under some complex demographic histories, <span class="math inline">\(f\)</span>-statistics can depend on whether more common or more rare SNPs are used in the analysis.</p>
+<p>One common ascertainment scheme is to pick SNPs that are found to be
+polymorphic in several different populations. This is similar to picking
+SNPs that are common across all populations. In most cases this doesn’t
+give results that are substantially different from working with an
+unascertained set of SNPs, but it’s worth considering when this might
+create problems.</p>
+<p>Common SNPs tend to be older than rare SNPs because it takes time for
+a new mutation to rise to a high frequency. <span class="math inline">\(f_4\)</span>-statistics computed on common SNPs
+are therefore more influenced by the distant past, whereas <span class="math inline">\(f_4\)</span>-statistics computed on rare SNPs tend
+to be more influenced by the recent past. In theory it’s possible that
+<span class="math inline">\(f_4\)</span>-statistics for four populations
+are completely dependent on whether the SNPs used are more informative
+of the recent past or the distant past.</p>
+<p>The example below demonstrates how an <span class="math inline">\(f_4\)</span>-statistic could flip sign depending
+on whether more common or more rare SNPs enter the analysis (as observed
+for example in <a href="https://science.sciencemag.org/content/367/6484/eaay5012">this
+paper</a>). Each of the four populations is a two-way admixture between
+two other populations, and the drift separating any two populations is
+either recent (green solid edges) or old (blue solid edges).</p>
+<div id="htmlwidget-819638efacf978fab1fb" style="width:700px;height:432.632880098888px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-819638efacf978fab1fb">{"x":{"data":[{"x":[-2.75,-2.75,null,-2.75,-1.75,null,-1.75,-0.75,null,-1.75,0.25],"y":[2,1,null,2,1,null,2,1,null,2,1],"text":["AB -> A0","AB -> A0",null,"AB -> B0","AB -> B0",null,"CD -> C0","CD -> C0",null,"CD -> D0","CD -> D0"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(183,159,0,1)","dash":"dot"},"hoveron":"points","name":"(admix,2)","legendgroup":"(admix,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.75,-2.75,null,-0.75,0.25,null,0.25,-1.75,null,0.25,-0.75],"y":[4,1,null,4,1,null,4,1,null,4,1],"text":["AD -> A0","AD -> A0",null,"AD -> D0","AD -> D0",null,"BC -> B0","BC -> B0",null,"BC -> C0","BC -> C0"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,196,1)","dash":"dot"},"hoveron":"points","name":"(admix,4)","legendgroup":"(admix,4)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75,-2.75,null,-1.75,-1.75,null,-0.75,-0.75,null,0.25,0.25],"y":[1,0,null,1,0,null,1,0,null,1,0],"text":["A0 -> A","A0 -> A",null,"B0 -> B","B0 -> B",null,"C0 -> C","C0 -> C",null,"D0 -> D","D0 -> D"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(normal,1)","legendgroup":"(normal,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.25,-2.75,null,-2.25,-1.75],"y":[3,2,null,3,2],"text":["X -> AB","X -> AB",null,"X -> CD","X -> CD"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,186,56,1)","dash":"solid"},"hoveron":"points","name":"(normal,3)","legendgroup":"(normal,3)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.25,-0.75,null,-0.25,0.25],"y":[5,4,null,5,4],"text":["Y -> AD","Y -> AD",null,"Y -> BC","Y -> BC"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(97,156,255,1)","dash":"solid"},"hoveron":"points","name":"(normal,5)","legendgroup":"(normal,5)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.25,-2.25,null,-1.25,-0.25],"y":[6,3,null,6,5],"text":["R -> X","R -> X",null,"R -> Y","R -> Y"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(245,100,227,1)","dash":"solid"},"hoveron":"points","name":"(normal,6)","legendgroup":"(normal,6)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.25,-2.25,-0.25,-2.75,-1.75,-0.75,0.25,-2.75,-1.75,-0.75,0.25],"y":[6,3,5,2,2,4,4,1,1,1,1],"text":["R","X","Y","AB","CD","AD","BC","A0","B0","C0","D0"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","opacity":0,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1.75,-0.75,-2.5,-2,-0.5,0,-2.75,-2.25,-1.25,-0.75,-1.75,-0.25,-0.75,-0.25,-2.75,-1.75,-0.75,0.25],"y":[4.5,5.5,2.5,2.5,4.5,4.5,1.5,1.5,1.5,1.5,2.5,2.5,2.5,2.5,0.5,0.5,0.5,0.5],"text":["","","","","","","","","","","","","","","","","",""],"hovertext":["R -> X","R -> Y","X -> AB","X -> CD","Y -> AD","Y -> BC","AB -> A0","AB -> B0","CD -> C0","CD -> D0","AD -> A0","AD -> D0","BC -> B0","BC -> C0","A0 -> A","B0 -> B","C0 -> C","D0 -> D"],"textfont":{"size":9.4488188976378,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75,-1.75,-0.75,0.25],"y":[-0.1,-0.1,-0.1,-0.1],"text":["A","B","C","D"],"hovertext":["","","",""],"textfont":{"size":9.4488188976378,"color":"rgba(248,118,109,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"1","legendgroup":"1","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"visible":false,"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-2.75],"y":[6],"text":"","hovertext":"","textfont":{"size":14.6645669291339,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":27.8246364188244,"r":7.30593607305936,"b":15.4776044553541,"l":10.958904109589},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-3.15,0.65],"tickmode":"array","ticktext":["-3","-2","-1","0"],"tickvals":[-3,-2,-1,0],"categoryorder":"array","categoryarray":["-3","-2","-1","0"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-0.405,6.305],"tickmode":"array","ticktext":["0","2","4","6"],"tickvals":[0,2,4,6],"categoryorder":"array","categoryarray":["0","2","4","6"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"7a165e8dac48":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"linetype":{},"colour":{},"text":{},"type":"scatter"},"7a162729db77":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"text":{}},"7a162d0775b7":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"text":{}},"7a1644c15879":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"colour":{}},"7a1671979332":{"y":{}},"7a161640f1e1":{"x":{},"y":{}}},"cur_data":"7a165e8dac48","visdat":{"7a165e8dac48":["function (y) ","x"],"7a162729db77":["function (y) ","x"],"7a162d0775b7":["function (y) ","x"],"7a1644c15879":["function (y) ","x"],"7a1671979332":["function (y) ","x"],"7a161640f1e1":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><p>Suppose we are interested in <span class="math inline">\(f_4(A,C;B,D)\)</span>. If we ignore the old (blue)
+part of the graph for now, we can trace the path from <span class="math inline">\(A\)</span> to <span class="math inline">\(C\)</span>, and we see that along the green
+(recent) edges it intersects with the path from <span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> and that both paths move in the same
+direction along the green edges (left to right). That suggests that
+<span class="math inline">\(f_4(A,C;B,D)\)</span> should be
+positive.</p>
+<p>Now let’s trace the path from <span class="math inline">\(A\)</span>
+to <span class="math inline">\(C\)</span> and the path from <span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> along the blue edges. <span class="math inline">\(A\)</span> to <span class="math inline">\(C\)</span> again goes from left to right, but
+<span class="math inline">\(B\)</span> to <span class="math inline">\(D\)</span> now goes in the opposite direction
+(right to left). This means that along this part of the graph, <span class="math inline">\(f_4(A,C;B,D)\)</span> should be negative. The rare
+SNPs, which are more influenced by the more recent (left) part of the
+graph behave in a way that’s opposite from the common SNPs, which are
+more influenced by the older (right) part of the graph. On average,
+these two effects might cancel out and lead to <span class="math inline">\(f_4(A,C;B,D)\)</span> close to zero, but
+ascertaining more common or more rare SNPs could lead to either a
+negative or a positive estimate of <span class="math inline">\(f_4(A,C;B,D)\)</span>.</p>
+<p>Although this example is contrived, it shows how under some complex
+demographic histories, <span class="math inline">\(f\)</span>-statistics
+can depend on whether more common or more rare SNPs are used in the
+analysis.</p>
 <p><br></p>
-<p>Ultimately, the only way to makes sure that SNP ascertainment doesn’t substantially affect the results is to repeat analyses under different ascertainment schemes.</p>
+<p>Ultimately, the only way to makes sure that SNP ascertainment doesn’t
+substantially affect the results is to repeat analyses under different
+ascertainment schemes.</p>
 </div>
 </div>
 </div>
@@ -492,17 +833,27 @@ C         D</code></pre>
 <h2 class="hasAnchor">
 <a href="#f-statistics-in-admixtools-2" class="anchor"></a><em>f</em>-statistics in <em>ADMIXTOOLS 2</em>
 </h2>
-<p>In <em>ADMIXTOOLS 2</em>, the simplest way to compute <em>f</em>-statistics from genotype data is to use <code><a href="../reference/f2_from_geno.html">f2_from_geno()</a></code>.</p>
+<p>In <em>ADMIXTOOLS 2</em>, the simplest way to compute
+<em>f</em>-statistics from genotype data is to use
+<code><a href="../reference/f2_from_geno.html">f2_from_geno()</a></code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">genotype_data</span> <span class="op">=</span> <span class="st">"/my/geno/prefix"</span>
 <span class="va">f2_blocks</span> <span class="op">=</span> <span class="fu"><a href="../reference/f2_from_geno.html">f2_from_geno</a></span><span class="op">(</span><span class="va">genotype_data</span><span class="op">)</span></code></pre></div>
-<p>However, in most cases it will save you time to store <span class="math inline">\(f_2\)</span>-statistics on disk in a way that lets you access only some of the population pairs.</p>
+<p>However, in most cases it will save you time to store <span class="math inline">\(f_2\)</span>-statistics on disk in a way that lets
+you access only some of the population pairs.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">genotype_data</span> <span class="op">=</span> <span class="st">"/my/geno/prefix"</span>
 <span class="va">f2_dir</span> <span class="op">=</span> <span class="st">"/my/f2/directory/"</span>
 <span class="fu"><a href="../reference/extract_f2.html">extract_f2</a></span><span class="op">(</span><span class="va">genotype_data</span>, <span class="va">f2_dir</span><span class="op">)</span>
 <span class="va">f2_blocks</span> <span class="op">=</span> <span class="fu"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span><span class="op">(</span><span class="va">f2_dir</span>, pops <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"pop1"</span>, <span class="st">"pop2"</span>, <span class="st">"pop3"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p>In addition to that, there are several more functions which are useful to extract data in a way that doesn’t require you to commit to a fixed assignment of individuals to populations (<code><a href="../reference/extract_counts.html">extract_counts()</a></code>), and function which make the process more memory efficient and easier to parallelize in case you want to extract data for a large number of individuals or populations (<code><a href="../reference/extract_afs.html">extract_afs()</a></code>, <code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code>, <code><a href="../reference/afs_to_counts.html">afs_to_counts()</a></code>).</p>
+<p>In addition to that, there are several more functions which are
+useful to extract data in a way that doesn’t require you to commit to a
+fixed assignment of individuals to populations
+(<code><a href="../reference/extract_counts.html">extract_counts()</a></code>), and function which make the process
+more memory efficient and easier to parallelize in case you want to
+extract data for a large number of individuals or populations
+(<code><a href="../reference/extract_afs.html">extract_afs()</a></code>, <code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code>,
+<code><a href="../reference/afs_to_counts.html">afs_to_counts()</a></code>).</p>
 <p>The following schematic gives an overview of these functions:</p>
 <p><img src="images/extract_functions.png"></p>
 <p>Arguments to these functions can be used to decide</p>
@@ -510,7 +861,8 @@ C         D</code></pre>
 <li>For which samples or populations to compute <span class="math inline">\(f_2\)</span>-statistics</li>
 <li>Which SNPs to use
 <ul>
-<li>thresholds for missingness and allele frequency, transitions only, …</li>
+<li>thresholds for missingness and allele frequency, transitions only,
+…</li>
 </ul>
 </li>
 <li>How SNPs should be grouped into blocks
@@ -520,39 +872,79 @@ C         D</code></pre>
 </li>
 <li>Whether pseudohaploid samples should be detected automatically
 <ul>
-<li>recommended; can be set to <code>FALSE</code> to match the original <em>ADMIXTOOLS</em>
+<li>recommended; can be set to <code>FALSE</code> to match the original
+<em>ADMIXTOOLS</em>
 </li>
 </ul>
 </li>
 </ul>
-<p>For example, the folllowing command would extract data for the populations <code>mypops</code>, keeping only SNPs which are missing in no more than 10% of the populations, and grouping SNPs into blocks of 10 centimorgan.</p>
+<p>For example, the folllowing command would extract data for the
+populations <code>mypops</code>, keeping only SNPs which are missing in
+no more than 10% of the populations, and grouping SNPs into blocks of 10
+centimorgan.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="../reference/extract_f2.html">extract_f2</a></span><span class="op">(</span><span class="va">genotype_data</span>, <span class="va">f2_dir</span>, pops <span class="op">=</span> <span class="va">mypops</span>, maxmiss <span class="op">=</span> <span class="fl">0.1</span>, blgsize <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></code></pre></div>
 <div id="allele-frequency-products" class="section level3">
 <h3 class="hasAnchor">
 <a href="#allele-frequency-products" class="anchor"></a>Allele frequency products</h3>
-<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> computes and stores both regular <span class="math inline">\(f_2\)</span>-estimates, and allele frequency product estimates. In most cases, the allele frequency products will not be needed, but if there is a concern that missing data introduces bias, they can be used for computing f4-statistics and loaded like this:</p>
+<p><code><a href="../reference/extract_f2.html">extract_f2()</a></code> computes and stores both regular <span class="math inline">\(f_2\)</span>-estimates, and allele frequency
+product estimates. In most cases, the allele frequency products will not
+be needed, but if there is a concern that missing data introduces bias,
+they can be used for computing f4-statistics and loaded like this:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">my_f2_dir</span> <span class="op">=</span> <span class="st">'/store/f2data/here/'</span>
 <span class="va">afprod_blocks</span> <span class="op">=</span> <span class="fu"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span><span class="op">(</span><span class="va">my_f2_dir</span>, afprod <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p>This creates a 3d array just like <code>f2_blocks</code>, but it will contain allele frequency products rather than <span class="math inline">\(f_2\)</span>-statistics. For any <em>ADMIXTOOLS</em> application based on <span class="math inline">\(f_4\)</span>-statistics, this allele frequency product array can be used just like the regular <span class="math inline">\(f_2\)</span> array. It will give close to identical results, but without any bias introduced by poor <span class="math inline">\(f_2\)</span>-estimates.</p>
-<p>Computing allele frequency products is simpler than computing <span class="math inline">\(f_2\)</span> (allele frequency products are a part of <span class="math inline">\(f_2\)</span>), but two things need to be done differently to get unbiased estimates:</p>
+<p>This creates a 3d array just like <code>f2_blocks</code>, but it will
+contain allele frequency products rather than <span class="math inline">\(f_2\)</span>-statistics. For any
+<em>ADMIXTOOLS</em> application based on <span class="math inline">\(f_4\)</span>-statistics, this allele frequency
+product array can be used just like the regular <span class="math inline">\(f_2\)</span> array. It will give close to
+identical results, but without any bias introduced by poor <span class="math inline">\(f_2\)</span>-estimates.</p>
+<p>Computing allele frequency products is simpler than computing <span class="math inline">\(f_2\)</span> (allele frequency products are a part
+of <span class="math inline">\(f_2\)</span>), but two things need to be
+done differently to get unbiased estimates:</p>
 <ol style="list-style-type: decimal">
-<li><p>In contrast to <span class="math inline">\(f_2\)</span>, for allele frequency products the designation of reference and alternative alleles can make a difference. To get estimates which are independent of that, we average over both options for each SNP. (If the alelle frequencies at a SNP are <code>0.1</code> and <code>0.2</code> in two populations, we compute <code>((0.1 * 0.2) + (0.9 * 0.8))/2</code> instead of just <code>0.1 * 0.2</code>)</p></li>
-<li><p><em>ADMIXTOOLS</em> excludes any SNPs with identical allele frequencies in all populations. This makes very little differences when computing <span class="math inline">\(f_2\)</span>, but shouldn’t be done for allele frequency products. Because those SNPs are not excluded, the number of SNPs and the number of blocks can be larger for allele frequency products than for <span class="math inline">\(f_2\)</span>.</p></li>
+<li><p>In contrast to <span class="math inline">\(f_2\)</span>, for
+allele frequency products the designation of reference and alternative
+alleles can make a difference. To get estimates which are independent of
+that, we average over both options for each SNP. (If the alelle
+frequencies at a SNP are <code>0.1</code> and <code>0.2</code> in two
+populations, we compute <code>((0.1 * 0.2) + (0.9 * 0.8))/2</code>
+instead of just <code>0.1 * 0.2</code>)</p></li>
+<li><p><em>ADMIXTOOLS</em> excludes any SNPs with identical allele
+frequencies in all populations. This makes very little differences when
+computing <span class="math inline">\(f_2\)</span>, but shouldn’t be
+done for allele frequency products. Because those SNPs are not excluded,
+the number of SNPs and the number of blocks can be larger for allele
+frequency products than for <span class="math inline">\(f_2\)</span>.</p></li>
 </ol>
 </div>
 <div id="extracting-f2-for-a-large-number-of-populations" class="section level3">
 <h3 class="hasAnchor">
-<a href="#extracting-f2-for-a-large-number-of-populations" class="anchor"></a>Extracting <em>f</em><sub>2</sub> for a large number of populations</h3>
-<p>It can be very convenient to extract <span class="math inline">\(f_2\)</span>-statistics for all your data in the beginning, because once that is done, all other analyses in <em>ADMIXTOOLS 2</em> will be relatively fast.</p>
-<p>But before you decide to do that, make sure you have thought about whether missing data might be a problem. The default option of excluding all SNPs with missing data in any population might not leave you with enough SNPs. Increasing the <code>maxmiss</code> parameter in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> can help, but can potentially introduce bias in populations with lots of missing data.</p>
+<a href="#extracting-f2-for-a-large-number-of-populations" class="anchor"></a>Extracting <em>f</em><sub>2</sub> for a large number of
+populations</h3>
+<p>It can be very convenient to extract <span class="math inline">\(f_2\)</span>-statistics for all your data in the
+beginning, because once that is done, all other analyses in
+<em>ADMIXTOOLS 2</em> will be relatively fast.</p>
+<p>But before you decide to do that, make sure you have thought about
+whether missing data might be a problem. The default option of excluding
+all SNPs with missing data in any population might not leave you with
+enough SNPs. Increasing the <code>maxmiss</code> parameter in
+<code><a href="../reference/extract_f2.html">extract_f2()</a></code> can help, but can potentially introduce bias
+in populations with lots of missing data.</p>
 <p><br></p>
-<p>By default, <code><a href="../reference/extract_f2.html">extract_f2()</a></code> will keep the allele frequency matrix for all SNPs and populations in memory. If you run out of memory, you can either reduce the number of populations, or set the <code>cols_per_chunk</code> argument in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> to a positive integer, for example 10. This will split the allele frequency matrix into chunks and saves each chunk on disk. This is slower, but less memory intensive, and will perform two operations:</p>
+<p>By default, <code><a href="../reference/extract_f2.html">extract_f2()</a></code> will keep the allele frequency
+matrix for all SNPs and populations in memory. If you run out of memory,
+you can either reduce the number of populations, or set the
+<code>cols_per_chunk</code> argument in <code><a href="../reference/extract_f2.html">extract_f2()</a></code> to a
+positive integer, for example 10. This will split the allele frequency
+matrix into chunks and saves each chunk on disk. This is slower, but
+less memory intensive, and will perform two operations:</p>
 <ol style="list-style-type: decimal">
-<li>Saving the allele frequency chunks with <code><a href="../reference/extract_afs.html">extract_afs()</a></code>
+<li>Saving the allele frequency chunks with
+<code><a href="../reference/extract_afs.html">extract_afs()</a></code>
 </li>
-<li>Computing <span class="math inline">\(f_2\)</span> for each pair of chunks with <code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code>
+<li>Computing <span class="math inline">\(f_2\)</span> for each pair of
+chunks with <code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code>
 </li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -569,29 +961,71 @@ C         D</code></pre>
     <span class="fu"><a href="../reference/afs_to_f2.html">afs_to_f2</a></span><span class="op">(</span><span class="va">outdir</span>, <span class="va">outdir</span>, chunk1 <span class="op">=</span> <span class="va">i</span>, chunk2 <span class="op">=</span> <span class="va">j</span><span class="op">)</span>
   <span class="op">}</span>
 <span class="op">}</span></code></pre></div>
-<p>Increasing <code>cols_per_chunk</code> in the first step can speed things up, but will require more memory in the second step. Once <code><a href="../reference/extract_afs.html">extract_afs()</a></code> has finished, <span class="math inline">\(f_2\)</span>-statistics can be computed for each pair of chunks.</p>
-<p>The second step can take a long time when running one pair after another, so it can make sense to run the calls to <code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code> in parallel.</p>
+<p>Increasing <code>cols_per_chunk</code> in the first step can speed
+things up, but will require more memory in the second step. Once
+<code><a href="../reference/extract_afs.html">extract_afs()</a></code> has finished, <span class="math inline">\(f_2\)</span>-statistics can be computed for each
+pair of chunks.</p>
+<p>The second step can take a long time when running one pair after
+another, so it can make sense to run the calls to
+<code><a href="../reference/afs_to_f2.html">afs_to_f2()</a></code> in parallel.</p>
 </div>
 <div id="extracting-f2-for-arbitrary-populations" class="section level3">
 <h3 class="hasAnchor">
 <a href="#extracting-f2-for-arbitrary-populations" class="anchor"></a>Extracting <em>f</em><sub>2</sub> for arbitrary populations</h3>
-<p>What if you decide that a particular sample should be added or removed from a population? With the approach described so far, you would have to go back to the genotype data to get new estimates of <span class="math inline">\(f_2\)</span> for all pairs of the modified population and any other populations. Even if you had computed <span class="math inline">\(f_2\)</span> for all pairs of individuals (rather than for pairs of populations), it would not be possible to combine the <span class="math inline">\(f_2\)</span> statistics from individual pairs into <span class="math inline">\(f_2\)</span> statistics on population pairs formed from these individuals. It <em>is</em> possible, however, to store <em>other</em> statistics for all individuals and individual pairs, which can be combined into estimates of <span class="math inline">\(f_2\)</span> for any populations formed from these individuals. These statistics are the mean alternative allele counts (<code>a</code>) and total allele counts (<code>n</code>) for each individual and block, and the mean products of allele counts for all individual pairs (<code>aa</code> and <code>nn</code>).</p>
-<p>The upside of this approach is that it allows you to change population definitions however you like and still get very fast results without accessing the genotype data more than once. The downside is that it makes it necessary to store data for all individual pairs, rather than just all population pairs. Besides taking more disk space, this also makes it a bit slower to get <span class="math inline">\(f_2\)</span>-statistics into R. Another disadvantage is that it makes the missing data problem worse, because SNPs are more likely to be missing in single individuals than in populations comprised of multiple individuals.</p>
-<p>The following function extracts data for a set of individuals which can then be combined to get estimates of f2 for any populations:</p>
+<p>What if you decide that a particular sample should be added or
+removed from a population? With the approach described so far, you would
+have to go back to the genotype data to get new estimates of <span class="math inline">\(f_2\)</span> for all pairs of the modified
+population and any other populations. Even if you had computed <span class="math inline">\(f_2\)</span> for all pairs of individuals (rather
+than for pairs of populations), it would not be possible to combine the
+<span class="math inline">\(f_2\)</span> statistics from individual
+pairs into <span class="math inline">\(f_2\)</span> statistics on
+population pairs formed from these individuals. It <em>is</em> possible,
+however, to store <em>other</em> statistics for all individuals and
+individual pairs, which can be combined into estimates of <span class="math inline">\(f_2\)</span> for any populations formed from these
+individuals. These statistics are the mean alternative allele counts
+(<code>a</code>) and total allele counts (<code>n</code>) for each
+individual and block, and the mean products of allele counts for all
+individual pairs (<code>aa</code> and <code>nn</code>).</p>
+<p>The upside of this approach is that it allows you to change
+population definitions however you like and still get very fast results
+without accessing the genotype data more than once. The downside is that
+it makes it necessary to store data for all individual pairs, rather
+than just all population pairs. Besides taking more disk space, this
+also makes it a bit slower to get <span class="math inline">\(f_2\)</span>-statistics into R. Another
+disadvantage is that it makes the missing data problem worse, because
+SNPs are more likely to be missing in single individuals than in
+populations comprised of multiple individuals.</p>
+<p>The following function extracts data for a set of individuals which
+can then be combined to get estimates of f2 for any populations:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">inds</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,
          <span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,
          <span class="st">'Denisova_snpAD.DG'</span>, <span class="st">'UstIshim_snpAD.DG'</span>, <span class="st">'Bichon.SG'</span><span class="op">)</span>
 <span class="va">my_counts_dir</span> <span class="op">=</span> <span class="st">'my/counts/dir'</span>
 <span class="fu"><a href="../reference/extract_counts.html">extract_counts</a></span><span class="op">(</span><span class="va">prefix</span>, <span class="va">my_counts_dir</span>, <span class="va">inds</span><span class="op">)</span></code></pre></div>
-<p>You can again use <code><a href="../reference/f2_from_precomp.html">f2_from_precomp()</a></code> to load a subset of the extracted data into memory. If the directory you provide contains allele count data rather than <span class="math inline">\(f_2\)</span>-statistics, this function will not only read the data, but combine it into <span class="math inline">\(f_2\)</span>-statistics for populations that you define. The populations can be defined by providing a vector of individuals and another vector of equal length with population labels.</p>
-<p>For example, the following code should return <span class="math inline">\(f_2\)</span>-statistics very similar to the <span class="math inline">\(f_2\)</span>-statistics in the earlier examples. They will not be exactly identical, because the set of SNPs used and the SNP block boundaries usually differ a little bit when filtering SNPs based on sample and based on population missingness. In addition, some approximations are necessary when computing <span class="math inline">\(f_2\)</span>-statistics this way. However, if you fix the set of SNPs with the <code>keepsnps</code> argument, the difference should be very small.</p>
+<p>You can again use <code><a href="../reference/f2_from_precomp.html">f2_from_precomp()</a></code> to load a subset of
+the extracted data into memory. If the directory you provide contains
+allele count data rather than <span class="math inline">\(f_2\)</span>-statistics, this function will not
+only read the data, but combine it into <span class="math inline">\(f_2\)</span>-statistics for populations that you
+define. The populations can be defined by providing a vector of
+individuals and another vector of equal length with population
+labels.</p>
+<p>For example, the following code should return <span class="math inline">\(f_2\)</span>-statistics very similar to the <span class="math inline">\(f_2\)</span>-statistics in the earlier examples.
+They will not be exactly identical, because the set of SNPs used and the
+SNP block boundaries usually differ a little bit when filtering SNPs
+based on sample and based on population missingness. In addition, some
+approximations are necessary when computing <span class="math inline">\(f_2\)</span>-statistics this way. However, if you
+fix the set of SNPs with the <code>keepsnps</code> argument, the
+difference should be very small.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">pops</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'Chimp'</span>, <span class="st">'Altai'</span>, <span class="st">'Vindija'</span>,
          <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>, <span class="st">'Mbuti'</span>,
          <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span><span class="op">)</span>
 <span class="va">f2_blocks_v2</span> <span class="op">=</span> <span class="fu"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span><span class="op">(</span><span class="va">my_counts_dir</span>, inds <span class="op">=</span> <span class="va">inds</span>, pops <span class="op">=</span> <span class="va">pops</span><span class="op">)</span></code></pre></div>
-<p>It’s now easy to test how the inclusion or exclusion of specific samples affects the fit of a model. The following example uses only two Mbuti samples, and combines the two Neanderthal samples into one group.</p>
+<p>It’s now easy to test how the inclusion or exclusion of specific
+samples affects the fit of a model. The following example uses only two
+Mbuti samples, and combines the two Neanderthal samples into one
+group.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">inds_v3</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'Chimp.REF'</span>, <span class="st">'Altai_snpAD.DG'</span>, <span class="st">'Vindija_snpAD.DG'</span>,
             <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span>,
@@ -601,7 +1035,12 @@ C         D</code></pre>
             <span class="st">'Denisova'</span>, <span class="st">'Russia'</span>, <span class="st">'Switzerland'</span><span class="op">)</span>
 <span class="va">f2_blocks_v3</span> <span class="op">=</span> <span class="fu"><a href="../reference/f2_from_precomp.html">f2_from_precomp</a></span><span class="op">(</span><span class="va">my_counts_dir</span>, inds <span class="op">=</span> <span class="va">inds_v3</span>, pops <span class="op">=</span> <span class="va">pops_v3</span><span class="op">)</span></code></pre></div>
 <p><br></p>
-<p>This approach is very flexible, but it gets slow when some populations consist of large numbers of samples. If you find yourself in this situation, you can group individuals into populations and store the combined allele count data for those populations on disk. The following example stores a <code>Mbuti</code> group on disk, and then uses that group, rather than each sample in it, to compute <span class="math inline">\(f_2\)</span>-statistics.</p>
+<p>This approach is very flexible, but it gets slow when some
+populations consist of large numbers of samples. If you find yourself in
+this situation, you can group individuals into populations and store the
+combined allele count data for those populations on disk. The following
+example stores a <code>Mbuti</code> group on disk, and then uses that
+group, rather than each sample in it, to compute <span class="math inline">\(f_2\)</span>-statistics.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">mbuti</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'S_Mbuti-3.DG'</span>, <span class="st">'B_Mbuti-4.DG'</span>, <span class="st">'S_Mbuti-2.DG'</span>, <span class="st">'S_Mbuti-1.DG'</span><span class="op">)</span>
 <span class="fu"><a href="../reference/group_samples.html">group_samples</a></span><span class="op">(</span><span class="va">my_counts_dir</span>, <span class="va">mbuti</span>, <span class="st">'Mbuti'</span><span class="op">)</span>
@@ -615,10 +1054,16 @@ C         D</code></pre>
 <p><br></p>
 </div>
 </div>
-<div class="footnotes">
+<div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p>Strictly speaking, this is not always true. <span class="math inline">\(f_4\)</span> is the covariance of allele frequency differences, only if both allele frequency differences are zero in expectation. That’s the case if the designation of reference and alternative alleles is unrelated to the average allele frequency in each populations, but it’s not the case for example when derived / ancestral alleles are coded as 1 and 0, and when some populations have more derived or ancestral alleles than others.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>Strictly speaking, this is not always true. <span class="math inline">\(f_4\)</span> is the covariance of allele frequency
+differences, only if both allele frequency differences are zero in
+expectation. That’s the case if the designation of reference and
+alternative alleles is unrelated to the average allele frequency in each
+populations, but it’s not the case for example when derived / ancestral
+alleles are coded as 1 and 0, and when some populations have more
+derived or ancestral alleles than others.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>

@@ -1,7 +1,7 @@
 ---
 title: "Parallelization"
 author: "Robert Maier"
-date: "`r Sys.Date()`"
+date: "2022-11-12"
 output:
   rmarkdown::html_vignette:
   toc: false
@@ -12,8 +12,12 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+### Update 2023-07-07
 
-Some function in ADMIXTOOLS 2 can parallelize computations across multiple cores or compute nodes by making use of the packages [`future`](https://github.com/HenrikBengtsson/future) and [`furrr`](https://github.com/DavisVaughan/furrr).
+Some (mostly superseded) functions in ADMIXTOOLS 2 can parallelize computations across multiple cores or compute nodes by making use of the packages [`future`](https://github.com/HenrikBengtsson/future) and [`furrr`](https://github.com/DavisVaughan/furrr). In `find_graphs_old()`, this was used to rerun the topology optimization multiple times (possibly with different starting graphs). The more recent `find_graphs()` function doesn't support this, first because it's faster than `find_graphs_old()`, and second because packages like `furrr` and `foreach` make it easy to manually run `find_graphs()` multiple times in parallel.
+The examples below should therefore be considered outdated. The page is still up in case the instructions are useful in another context.
+
+### Parallelization across cores
 
 To parallelize computations across cores, run
 
@@ -26,8 +30,6 @@ To turn parallelization off, run
 ```{r, eval = FALSE}
 future::plan('sequential')
 ```
-
-The functions which support parallel computations include `find_graphs()` and `qpgraph_resample_*()`. If a function supports parallelization, it will be mentioned in the function documentation.
 
 
 ### Parallelization on a compute cluster
@@ -59,7 +61,7 @@ future::plan(tweak(batchtools_slurm, workers=50,
                                   walltime=10*60*60, partition='short')))
 
 pops = c('popA', 'popB', 'popC', 'popD')
-opt_results = find_graphs('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
+opt_results = find_graphs_old('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
                           numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
 
 saveRDS(opt_results, file='opt_results.rds')
