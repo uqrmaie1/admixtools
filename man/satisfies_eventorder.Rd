@@ -9,7 +9,7 @@ satisfies_eventorder(graph, eventorder, strict = TRUE)
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{eventorder}{A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}}
+\item{eventorder}{A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}, optionally \code{type}}
 
 \item{strict}{What to do in case some events are not determined by the graph.
 If \code{strict = TRUE} (the default), the function will only return \code{TRUE} if there are no ambiguous constraints.
@@ -21,6 +21,9 @@ Otherwise, \code{TRUE} will be returned as long as no constraint is directly con
 \description{
 This function returns \code{TRUE} if and only if the admixture graph is compatible with
 all event orders listed in eventorder
+}
+\details{
+Each row in \code{eventorder} represents a constraint that \code{earlier1} and \code{earlier2} split earlier than \code{later1} and \code{later2}. If \code{later2} is \code{NA}, \code{later2} will be set to the parent node of \code{later1}. By default (\code{type = 1}), a constraint will be satisfied as long as there is any lineage in which a split between \code{earlier1} and \code{earlier2} is ancestral to a split between \code{later1} and \code{later2}. \code{type = 2} is stricter and requires that the \code{earlier1}, \code{earlier2} split is ancestral to the \code{later1}, \code{later2} split in all lineages. In graphs with multiple admixture events there can be multiple splits between \code{earlier1}, \code{earlier2} and \code{later1}, \code{later2}, and many ways in which these splits can relate to each other. The current implementation only covers some of the many possible topological relationships.
 }
 \examples{
 \dontrun{

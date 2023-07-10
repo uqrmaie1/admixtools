@@ -979,14 +979,14 @@ parse_qpff3base_output = function(outfile, denom = 1000) {
 }
 
 #' Get pseudo dates for graph nodes
-#' 
-#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{msprime_sim}} and \code{\link{msprime_genome}}. 
-#' The date of the node will correspond to the y-coordinate of that node used for plotting in \code{\link{plotly_graph}}, 
+#'
+#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{msprime_sim}} and \code{\link{msprime_genome}}.
+#' The date of the node will correspond to the y-coordinate of that node used for plotting in \code{\link{plotly_graph}},
 #' unless the `fix_leaf` option is set to `TRUE`, in which case the dates of all leaf nodes returned by \code{\link{get_leafnames}} will be set to 0.
 #' @export
 #' @param graph An admixture graph
 #' @param time A scalar by which y-coordinate values will be multiplied to get dates
-#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time). 
+#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time).
 #' If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is `FALSE`
 #' @return A named vector with pseudo dates for each graph node
 pseudo_dates = function(graph, time = 1000, fix_leaf=FALSE) {
@@ -1000,14 +1000,14 @@ pseudo_dates = function(graph, time = 1000, fix_leaf=FALSE) {
 
 #' Get random dates for graph nodes
 #'
-#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{random_sim}}.  
-#' The dates are drawn from a uniform distribution with given lower and upper bounds, 
+#' This function assigns a date (in generations) to each node in an admixture graph and is used in \code{\link{random_sim}}.
+#' The dates are drawn from a uniform distribution with given lower and upper bounds,
 #' unless the `fix_leaf` option is set to `TRUE`, in which case the dates of all leaf nodes returned by \code{\link{get_leafnames}} will be set to 0.
 #' @export
 #' @param graph An admixture graph
 #' @param min A lower limit of uniform distribution
 #' @param max An upper limit of uniform distribution
-#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time). 
+#' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0 (i.e., at the most recent time).
 #' If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from "today"). The default is `FALSE`.
 #' @return A named vector with random dates for each graph node
 random_dates = function(graph, min=1000, max=1000, fix_leaf=FALSE){
@@ -1015,7 +1015,7 @@ random_dates = function(graph, min=1000, max=1000, fix_leaf=FALSE){
   pdat = graph_to_plotdat(edges)$eg
   y_dates = bind_rows(transmute(pdat, name, y), transmute(pdat, name = to, y = yend)) %>%
     mutate(y = y - min(y)) %>% distinct %>% deframe
-  
+
   dates = list()
   for (y in seq(min(y_dates), max(y_dates))){
     if (y == 0){
@@ -1026,25 +1026,25 @@ random_dates = function(graph, min=1000, max=1000, fix_leaf=FALSE){
   }
   out = unlist(dates)[as.character(y_dates)]
   names(out) = names(y_dates)
-  
+
   if (isTRUE(fix_leaf)) out[get_leafnames(graph)] = 0
   out
 }
 
 #' Simulate an admixture graph in msprime v1.x
-#' 
+#'
 #' This function generates an msprime simulation script, and optionally executes it in python. Unlike the \code{\link{msprime_genome}} function, this function simulates independent SNP sites.
 #' @export
 #' @param graph A graph as an `igraph` object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.
 #' @param outpref A prefix of output files.
 #' @param nsnps The number of SNPs to simulate. All SNPs will be simulated independently of each other.
 #' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
-#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
+#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations.
 #' Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('A'=10, 'B'=20)} to sample 10 and 20 diploid individuals from populations A and B, respectively).
 #' @param mutation_rate Mutation rate per site per generation. The default is set to a high value (0.001 per site per generation) to obtain more polymorphic SNPs in order to speed up the simulation.
 #' @param time Either a scalar value (1000 generations by default) with the dates generated by \code{\link{pseudo_dates}} function, or a named vector with dates for each graph nodes (in generations).
 #' @param fix_leaf A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
-#' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`. 
+#' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`.
 #' If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).
 #' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
 #' @param numcores The number of cores to use when simulating data.
@@ -1062,13 +1062,13 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
                        admix_default = 0.5, run = FALSE, numcores = NULL, ghost_lineages = FALSE, shorten_admixed_leaves = FALSE) {
 
   outpref %<>% normalizePath(mustWork = FALSE)
-  
+
   if ('igraph' %in% class(graph)){
     edges = igraph::as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
-  } else if (is.matrix(graph) && ncol(graph) == 2){ 
+  } else if (is.matrix(graph) && ncol(graph) == 2){
     edges = as_tibble(graph, .name_repair = ~c('from', 'to'))
   } else edges = graph
-  
+
   edges %<>% add_count(to) %>%
     mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   adm = edges %>% filter(type == 'admix') %>% pull(to)
@@ -1076,7 +1076,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   nodes = names(V(graph))
   leaves = get_leafnames(graph)
   leaves = intersect(nodes, leaves)
-  
+
   if(length(time) == 1) {
     dates = pseudo_dates(graph, time, fix=fix_leaf)
     #dates[leaves] = dates[leaves] * 0.5
@@ -1094,34 +1094,34 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   edges %<>% mutate(source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
     arrange(date)
   #dates[leaves[1]] = 0
-  
+
   edges %<>% group_by(to) %>%
     mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), admix_default, 1-admix_default), 1)) %>%
     ungroup
-  
+
   # continue here: popsize controls neff and adm weights?
   if(!'weight' %in% names(edges)) edges %<>% group_by(to) %>%
     mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), admix_default, 1-admix_default), 1)) %>% ungroup
   # popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
   # popsize[setdiff(edges$from, edges$to)] = 1
-  
+
   # edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup
   #date = tibble(to = nodes) %>% left_join(edges %>% select(to, date) %>% distinct, by = 'to') %>% deframe %>% replace_na(0)
   #date = date - time
-  
+
   # Effective population sizes
   if(length(neff) == 1){
     popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
     popsize[setdiff(edges$from, edges$to)] = 1
     initsize = round(neff*replace_na(popsize[nodes], neff*100), 2)
   } else if (all(nodes %in% names(neff))){
-    initsize = neff[nodes] 
+    initsize = neff[nodes]
   } else stop("'neff' has to be a single number or a named vector with a number for each node!")
-  
+
   # Samples
   if(length(ind_per_pop) > 1) {
     if(!isTRUE(all.equal(sort(names(ind_per_pop)), sort(leaves)))) stop("'ind_per_pop' has to be a single number or a named vector with a number for each leaf node!")
-    
+
   } else {
     ind_per_pop = setNames(rep(ind_per_pop, length(leaves)), leaves)
   }
@@ -1129,17 +1129,17 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   for (i in names(ind_per_pop)){
     indnam = c(indnam, paste(rep(i, each = ind_per_pop[i]), seq_len(ind_per_pop[i]), sep = '_'))
   }
-  
+
   out = "import numpy\nimport msprime\nimport multiprocess\n"
-  
+
   out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
   out = paste0(out, '\n\nsamples = [msprime.SampleSet(num_samples=i, population=j, time=k) for i, j, k in zip( (',paste0(ind_per_pop, collapse=", "),'), ("',paste0(names(ind_per_pop), collapse = '", "') ,'"), (', paste0(dates[names(ind_per_pop)], collapse=", "),') )]')
   out = paste0(out, '\nnhap = int(len(indnam) * 2)\n')
-  
+
   # Demography
   out = paste0(out, '\ndemo = msprime.Demography()\n')
   out = paste0(out, paste0('demo.add_population(initial_size = ', initsize, ', name = "', nodes, '")\n', collapse = ''))
-  
+
   # Population splits
   splits = edges %>%
     filter(type == "normal") %>%
@@ -1150,7 +1150,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
     mutate(x = paste0('demo.add_population_split(time=', date, ', ancestral="', from, '", derived=["', paste0(pull(data), collapse='","'), '"])\n')) %>%
     select(x) %>% deframe()
   out = paste0(out, paste0(splits, collapse=''))
-  
+
   # Admixture events
   admix_nodes = edges %>%
     filter(type == "admix") %>%
@@ -1159,12 +1159,12 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
     filter(from %in% admix_nodes) %>%
     select(from, date) %>%
     deframe
-  
+
   admixs = edges %>%
     filter(type == "admix") %>%
     select(from, to, date, weight)
   if (nrow(admixs) > 0){
-    adxs = admixs %>% 
+    adxs = admixs %>%
       group_by(to) %>%
       mutate(date = ifelse(isTRUE(ghost_lineages), admix_splits[to], min(date))) %>%
       ungroup() %>%
@@ -1175,22 +1175,22 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
     out = paste0(out, paste0(adxs, collapse=''))
   }
   out = paste0(out, "demo.sort_events()\n")
-  
+
   out = paste0(out, '\nnsnps = int(', nsnps, ')')
-  out = paste0(out, "\n\ndef f(i):", 
+  out = paste0(out, "\n\ndef f(i):",
                "\n  ts = msprime.sim_ancestry(samples=samples, demography=demo)",
                "\n  tree_sequence = msprime.sim_mutations(ts, rate=", mutation_rate,", model='binary')",
                "\n  if tree_sequence.genotype_matrix().shape[0] > 0:",
                '\n    return (tree_sequence.genotype_matrix()[0,range(0,nhap,2)] + tree_sequence.genotype_matrix()[0,range(1,nhap,2)])',
                "\n  else:",
                "\n    return numpy.zeros(nhap//2, 'int')\n")
-  
+
   if(is.null(numcores)) numcores = 100
   out = paste0(out, "\np = multiprocess.Pool(int(min(multiprocess.cpu_count(),", numcores,")))")
   out = paste0(out, "\ngt = numpy.array(p.map(f, range(nsnps)))")
-  
+
   out = paste0(out, "\n\nnumpy.savetxt('",outpref,".geno', gt, '%d', '')")
-  
+
   out = paste0(out, "\n\nwith open('",outpref,".snp', 'w') as f:")
   out = paste0(out, "\n  for i in range(nsnps):")
   out = paste0(out, "\n    bytes = f.write('rs'+str(i+1)+'\\t1\\t' + str(i*50/float(nsnps-1)) + '\\t' + str(i*100) + '\\tA\\tC\\n')")
@@ -1198,10 +1198,10 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
   out = paste0(out, "\n  for i in range(len(indnam)):")
   out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')\n")
-  
+
   outfilename = paste0(outpref, '.py')
   writeLines(out, outfilename)
-  
+
   if(run != FALSE) {
     if(isTRUE(run)) run = 'python'
     system(paste(run, outfilename))
@@ -1209,29 +1209,29 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   tools::file_path_as_absolute(outfilename)
 }
 
-#' Simulate an admixture graph in msprime v1.x. 
-#' 
-#' This function generates an msprime simulation script, and optionally executes it in python. 
+#' Simulate an admixture graph in msprime v1.x.
+#'
+#' This function generates an msprime simulation script, and optionally executes it in python.
 #' Unlike \code{\link{msprime_sim}}, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes.
-#' 
+#'
 #' @export
 #' @param graph A graph as an `igraph` object or edge list with columns ’from’ and ’to’. If it is an edge list with a column ’weight’ (derived possibly from a fitted graph), the admixture weights will be used. Otherwise, all admixture edges will have a weight of 0.5.
 #' @param outpref A prefix of output files.
 #' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('R'=100, 'A'=50, 'B'=50)}).
-#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations. 
+#' @param ind_per_pop The number of diploid individuals to simulate for each population. If a scalar value, it will be constant across all populations.
 #' Alternatively, it can be a named vector with a different value for each population (e.g., \code{c('A'=10, 'B'=20)} to sample 10 and 20 diploid individuals from populations A and B, respectively).
 #' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8` per base pair per generation.
 #' @param time Either a scalar value (1000 generations by default) with the dates generated by \code{\link{pseudo_dates}}, or a named vector with dates for each graph node (in generations).
 #' @param fix_leaf A boolean value specifying if the dates  of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
 #' @param nchr Number of chromosomes to simulate.
-#' @param recomb_rate_chr A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation. 
+#' @param recomb_rate_chr A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation.
 #' @param seq_length The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
 #' Alternatively, it can be a vector with a length equal to the number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).
 #' @param admix_default A float value specifying default admixture proportion for all admixture nodes. The default is `0.5`.
 #' If another value between 0 and 1 is specified, admixture weights for each admixture event will be (value, 1-value).
 #' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try to execute the msprime script with the default python installation. If you want to use some other python installation, you can set `run = /my/python`.
 #' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed.
-#' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}. 
+#' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}.
 #' If `FALSE` (default), admixture occurs at the time of the previous split event.
 #' @param shorten_admixed_leaves If `TRUE` simulate the behavior of treemix where drift after admixture is not allowed
 #' @return The file name and path of the simulation script
@@ -1242,14 +1242,14 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
 msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_pop = 1, mutation_rate = 1.25e-8, time = 1000, fix_leaf = FALSE, nchr=1,
                           recomb_rate_chr = 2e-8, seq_length = 1e3,  admix_default = 0.5, run = FALSE, ghost_lineages = FALSE, shorten_admixed_leaves = FALSE){
   outpref %<>% normalizePath(mustWork = FALSE)
-  
+
   if ('igraph' %in% class(graph)){
     edges = igraph::as_edgelist(graph) %>% as_tibble(.name_repair = ~c('from', 'to'))
-  } else if (is.matrix(graph) && ncol(graph) == 2){ 
+  } else if (is.matrix(graph) && ncol(graph) == 2){
     edges = as_tibble(graph, .name_repair = ~c('from', 'to'))
   } else edges = graph
-  
-  edges %<>% 
+
+  edges %<>%
     add_count(to) %>%
     mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% select(-n)
   adm = edges %>% filter(type == 'admix') %>% pull(to)
@@ -1257,7 +1257,7 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
   nodes = names(V(graph))
   leaves = get_leafnames(graph)
   leaves = intersect(nodes, leaves)
-  
+
   if(length(time) == 1) {
     dates = pseudo_dates(graph, time, fix=fix_leaf)
     #dates[leaves] = dates[leaves] * 0.5
@@ -1268,7 +1268,7 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
     }
     #edges %<>% mutate(date = dates[edges$to]*time)
     edges %<>% mutate(date = dates[from])
-    
+
   } else {
     edges %<>% left_join(enframe(time, 'from', 'date'), by = 'from')
     dates = time
@@ -1276,33 +1276,33 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
   edges %<>% mutate(source = match(to, nodes)-1, dest = match(from, nodes)-1) %>%
     arrange(date)
   #dates[leaves[1]] = 0
-  
+
   # continue here: popsize controls neff and adm weights?
   if(!'weight' %in% names(edges)){
     edges %<>% group_by(to) %>%
-      mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), admix_default, 1-admix_default), 1)) %>% 
+      mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), admix_default, 1-admix_default), 1)) %>%
       ungroup
-  } 
+  }
   popsize = edges %>% transmute(to, w = ifelse(type == 'admix', 1, 1/weight)) %>% distinct %>% deframe
   popsize[setdiff(edges$from, edges$to)] = 1
-  
+
   # edges %<>% group_by(to) %>% mutate(i = 1:n(), weight = ifelse(type == 'admix' & i == 1, weight, 1)) %>% ungroup
   #date = tibble(to = nodes) %>% left_join(edges %>% select(to, date) %>% distinct, by = 'to') %>% deframe %>% replace_na(0)
   #date = date - time
-  
+
   out = "import numpy\nimport math\nimport msprime\nimport multiprocess\n"
-  
+
   # Effective population sizes
   if(length(neff) == 1){
     initsize = round(neff*replace_na(popsize[nodes], neff*100), 2)
   } else if (all(nodes %in% names(neff))){
-    initsize = neff[nodes] 
+    initsize = neff[nodes]
   } else stop("'neff' has to be a single number or a named vector with a number for each node!")
-  
+
   # Samples
   if(length(ind_per_pop) > 1) {
     if(!isTRUE(all.equal(sort(names(ind_per_pop)), sort(leaves)))) stop("'ind_per_pop' has to be a single number or a named vector with a number for each leaf node!")
-    
+
   } else {
     ind_per_pop = setNames(rep(ind_per_pop, length(leaves)), leaves)
   }
@@ -1313,11 +1313,11 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
   out = paste0(out, '\nindnam = ["', paste0(indnam, collapse = '", "'), '"]')
   out = paste0(out, '\n\nsamples = [msprime.SampleSet(num_samples=i, population=j, time=k) for i, j, k in zip( (',paste0(ind_per_pop, collapse=", "),'), ("',paste0(names(ind_per_pop), collapse = '", "') ,'"), (', paste0(dates[names(ind_per_pop)], collapse=", "),') )]')
   out = paste0(out, '\nnhap = int(len(indnam) * 2)\n')
-  
+
   # Demography
   out = paste0(out, '\ndemo = msprime.Demography()\n')
   out = paste0(out, paste0('demo.add_population(initial_size = ', initsize, ', name = "', nodes, '")\n', collapse = ''))
-  
+
   # Population splits
   splits = edges %>%
     filter(type == "normal") %>%
@@ -1328,8 +1328,8 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
     mutate(x = paste0('demo.add_population_split(time=', date, ', ancestral="', from, '", derived=["', paste0(pull(data), collapse='","'), '"])\n')) %>%
     select(x) %>% deframe()
   out = paste0(out, paste0(splits, collapse=''))
-  
-  
+
+
   # Admixture events
   admix_nodes = edges %>%
     filter(type == "admix") %>%
@@ -1338,12 +1338,12 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
     filter(from %in% admix_nodes) %>%
     select(from, date) %>%
     deframe
-  
+
   admixs = edges %>%
     filter(type == "admix") %>%
     select(from, to, date, weight)
   if (nrow(admixs) > 0){
-    adxs = admixs %>% 
+    adxs = admixs %>%
       group_by(to) %>%
       mutate(date = ifelse(isTRUE(ghost_lineages), admix_splits[to], min(date))) %>%
       ungroup() %>%
@@ -1354,11 +1354,11 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
     out = paste0(out, paste0(adxs, collapse=''))
   }
   out = paste0(out, "demo.sort_events()\n")
-  
-  # Recombination map 
+
+  # Recombination map
   out = paste0(out, "\nr_chrom = ", recomb_rate_chr,"\n")
   out = paste0(out, "r_break = math.log(2)\n")
-  
+
   chr_pos = c()
   if (length(seq_length) == 1){
     for (i in seq(0, nchr)){
@@ -1374,35 +1374,35 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
     break
   }
   out = paste0(out, 'chrom_positions = [', paste0(chr_pos, collapse=", "), ']\n')
-  
+
   map_pos = c()
   for (i in chr_pos){
     map_pos = c(map_pos, i)
     if (i != min(chr_pos) && i != max(chr_pos)) map_pos = c(map_pos, i + 1)
   }
   out = paste0(out, 'map_positions = [', paste0(map_pos, collapse=", "), ']\n')
-  
+
   rate_map = c()
   for (i in seq(length(map_pos)-1)){
     if (i %% 2 == 0) rate_map = c(rate_map, 'r_break')
     else rate_map = c(rate_map, 'r_chrom')
   }
-  
+
   out = paste0(out, "rates = [", paste0(rate_map, collapse=", "), "]\n")
   out = paste0(out, 'rate_map = msprime.RateMap(position=map_positions, rate=rates)\n')
-  
+
   out = paste0(out, "\nts = msprime.sim_ancestry(samples=samples, model=[msprime.DiscreteTimeWrightFisher(duration=25), msprime.StandardCoalescent()], demography=demo, recombination_rate=rate_map)",
                "\ntree_sequence = msprime.sim_mutations(ts, rate=", mutation_rate,", model='binary')",
                "\nhap_gt = tree_sequence.genotype_matrix()",
                "\ngt = hap_gt[:, range(0,nhap,2)] + hap_gt[:, range(1,nhap,2)]",
                "\nnsnps = gt.shape[0]")
-  
+
   out = paste0(out, "\nts_chroms = numpy.searchsorted(numpy.array(chrom_positions[1:]), tree_sequence.tables.sites.position, side='right') + 1")
-  
+
   out = paste0(out, "\n\nnumpy.savetxt('",outpref,".geno', gt, '%d', '')")
-  
-  out = paste0(out, 
-               "\n\nwith open('",outpref,".snp', 'w') as f:", 
+
+  out = paste0(out,
+               "\n\nwith open('",outpref,".snp', 'w') as f:",
                "\n  for i, j in enumerate(tree_sequence.tables.sites.position):",
                "\n    chrm = int(ts_chroms[i])",
                "\n    if chrm == 1:",
@@ -1412,14 +1412,14 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
                "\n    nsnps_chr = numpy.sum(ts_chroms == chrm)",
                "\n    pos_chr = numpy.sum(ts_chroms[:i] == chrm)",
                "\n    bytes = f.write('rs'+str(i+1)+'\\t' + str(chrm) + '\\t' + str(pos_chr*50/float(nsnps_chr-1)) + '\\t' + str(pos) + '\\tA\\tC\\n')")
-  
+
   out = paste0(out, "\n\nwith open('",outpref,".ind', 'w') as f:")
   out = paste0(out, "\n  for i in range(len(indnam)):")
   out = paste0(out, "\n    bytes = f.write(indnam[i] + '\\tU\\t' + indnam[i].rstrip(\"1234567890\").rstrip(\"_\") + '\\n')\n")
-  
+
   outfilename = paste0(outpref, '.py')
   writeLines(out, outfilename)
-  
+
   if(run != FALSE) {
     if(isTRUE(run)) run = 'python'
     system(paste(run, outfilename))
@@ -1427,7 +1427,7 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
   tools::file_path_as_absolute(outfilename)
 }
 
-#' Generate a random graph and simulate it in msprime v1.x 
+#' Generate a random graph and simulate it in msprime v1.x
 #'
 #' This is basically a wrapper function around the \code{\link{msprime_genome}} that allows user to create a random graph and simulate it in msprime v1.x.
 #' @export
@@ -1437,20 +1437,20 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
 #' @param max_depth A constraint specifying the maximum time depth of the admixture graph (in generations)
 #' @param ind_per_pop The number of individuals to simulate for each population. If a scalar value, it will be constant across all populations. Alternatively, it can be a named vector with a different value for each population.
 #' @param mutation_rate Mutation rate per site per generation. The default is `1.25e-8` per base pair per generation.
-#' @param admix_weights Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value). 
+#' @param admix_weights Admixture weights. If a float value (0 < value < 1), admixture weights for each admixture event will be (value, 1-value).
 #' Alternatively, it can be a range, i.e., \code{c(0.1, 0.4)} specifying lower and upper limits of a uniform distribution from which the admixture weight value will be drawn. By default, all admixture edges have a weight of 0.5.
-#' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn 
+#' @param neff Effective population size (in diploid individuals). If a scalar value, it will be constant across all populations. Alternatively, it can be a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of an uniform distribution from which values will be drawn
 #' @param time Time between nodes. Either a scalar value (1000 by default) with the dates generated by \code{\link{pseudo_dates}}, or a range, i.e., \code{c(500, 1000)} specifying lower and upper limits of a uniform distribution from which values will be drawn (see \code{\link{random_dates}})
 #' @param fix_leaf A boolean specifying if the dates of the leaf nodes will be fixed at time 0. If `TRUE`, all samples will be drawn at the end of the simulation (i.e., from “today”).
-#' @param outpop A name of the (optional) outgroup population. 
+#' @param outpop A name of the (optional) outgroup population.
 #' @param nchr The number of chromosomes to simulate
-#' @param recomb_rate A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation. 
+#' @param recomb_rate A float value specifying recombination rate along the chromosomes. The default is `2e-8` per base pair per generation.
 #' @param seq_length The sequence length of the chromosomes. If it is a scalar value, the sequence length will be constant for all chromosomes.
 #' Alternatively, it can be a vector with a length equal to number of chromosomes (i.e., \code{c(100,50)} to simulate 2 chromosomes with the lengths of 100 and 50 base pairs).
-#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed. 
+#' @param ghost_lineages A boolean value specifying whether ghost lineages will be allowed.
 #' If `TRUE`, admixture happens at the time points defined by the y-axis generated while plotting the graph by \code{\link{plot_graph}}
 #' If `FALSE` (default), admixture occurs at the time of the previous split event
-#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation. 
+#' @param run If `FALSE`, the function will terminate after writing the msprime script. If `TRUE`, it will try and execute the function with the default python installation.
 #' If you want to use some other python installation, you can set `run = /my/python`.
 #' @return A list with the path of simulation script, a data frame of graph edges, dates and population sizes:
 #' \itemize{
@@ -1460,15 +1460,17 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
 #'   \item{neffs - }{A named vector with an effective population size for each node}
 #' }
 #' @examples
-#' # Create simulation script that simulates 2 chromosomes that are 50base long 
+#' # Create simulation script that simulates 2 chromosomes that are 50base long
 #' # where maximum depth of the tree is 5000 generations, and plot the output graph
+#' \dontrun{
 #' out = random_sim(nleaf=4, nadmix=0, max_depth=5000, nchr=2, seq_length=50)
-#' plot_graph(out$edges, dates = out$dates, neff = out$neff hide_weights = TRUE)
+#' plot_graph(out$edges, dates = out$dates, neff = out$neff, hide_weights = TRUE)
+#' }
 random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, ind_per_pop = 1, mutation_rate = 1.25e-8, admix_weights = 0.5, neff = 1000,
                       time = 1000, fix_leaf = FALSE, outpop = NULL, nchr = 1, recomb_rate = 2e-8, seq_length = 1000, ghost_lineages = TRUE, run = FALSE){
   if (!is.null(max_depth)){
     if (length(time) == 1){
-            
+
       g = random_admixturegraph(leaves = nleaf, numadmix = nadmix, outpop = outpop)
       dates = pseudo_dates(g, time, fix=fix_leaf)
     }
@@ -1476,7 +1478,7 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
       for (i in 1:100){
         g = random_admixturegraph(leaves = nleaf, numadmix = nadmix, outpop = outpop)
         dates = random_dates(g, min=time[1], max=time[2], fix=fix_leaf)
-        if (max(dates) <= max_depth) break 
+        if (max(dates) <= max_depth) break
       }
     }
     if (max(dates) > max_depth) warning('max_depth constraint not satisfied!')
@@ -1488,7 +1490,7 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
       dates = random_dates(g, min=time[1], max=time[2], fix=fix_leaf)
     }
   }
-  
+
   if (length(neff) == 1){
     edges = g %>% igraph::as_edgelist() %>% as.vector() %>% unique()
     pop_size = rep(neff, length(edges))
@@ -1498,34 +1500,34 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
     pop_size = as.integer(runif(length(edges), min=neff[1], max=neff[2]))
     names(pop_size) = edges
   }
-  
+
   if (length(admix_weights) == 1){
     if (! 0<admix_weights && admix_weights<1) stop("admix_weights should be either a float value between 0 and 1, or a length 2 vector speciyfing upper and lower bounds.")
-    edges = g %>% 
-      igraph::as_edgelist() %>% 
+    edges = g %>%
+      igraph::as_edgelist() %>%
       as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>%
-      mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% 
+      mutate(type = ifelse(n > 1, 'admix', 'normal')) %>%
       group_by(to) %>%
       mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), admix_weights, 1-admix_weights), 1)) %>%
       ungroup()
   } else if(length(admix_weights) == 2) {
-    edges = g %>% 
-      igraph::as_edgelist() %>% 
+    edges = g %>%
+      igraph::as_edgelist() %>%
       as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>%
-      mutate(type = ifelse(n > 1, 'admix', 'normal')) %>% 
+      mutate(type = ifelse(n > 1, 'admix', 'normal')) %>%
       group_by(to) %>%
       mutate(weight = ifelse(type == 'admix', ifelse(from == min(from), round(runif(1, min=admix_weights[1], max=admix_weights[2]),2), 0), 1)) %>%
       mutate(weight = ifelse(weight == 0, 1-max(weight), weight)) %>%
       ungroup()
-    
+
   } else stop("admix_weights should be either a float value between 0 and 1, or a length 2 vector speciyfing upper and lower bounds.")
-  
+
   graph_edges = edges %>%
     select(from, to, weight)
-  
-  sim_out = msprime_genome(graph = graph_edges, outpref = outpref, neff = pop_size, ind_per_pop = ind_per_pop, mutation_rate = mutation_rate, 
+
+  sim_out = msprime_genome(graph = graph_edges, outpref = outpref, neff = pop_size, ind_per_pop = ind_per_pop, mutation_rate = mutation_rate,
                            time = dates, nchr = nchr, recomb_rate_chr = recomb_rate, seq_length = seq_length, run=run, ghost_lineages = ghost_lineages)
   list(out=sim_out,
        edges=select(edges, -n),

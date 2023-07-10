@@ -197,7 +197,7 @@ all event orders listed in eventorder</p>
     </tr>
     <tr>
       <th>eventorder</th>
-      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code></p></td>
+      <td><p>A data frame with columns <code>earlier1</code>, <code>earlier2</code>, <code>later1</code>, <code>later2</code>, optionally <code>type</code></p></td>
     </tr>
     <tr>
       <th>strict</th>
@@ -210,6 +210,9 @@ Otherwise, <code>TRUE</code> will be returned as long as no constraint is direct
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p><code>TRUE</code> if all constraints are satisfied, else <code>FALSE</code></p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>Each row in <code>eventorder</code> represents a constraint that <code>earlier1</code> and <code>earlier2</code> split earlier than <code>later1</code> and <code>later2</code>. If <code>later2</code> is <code>NA</code>, <code>later2</code> will be set to the parent node of <code>later1</code>. By default (<code>type = 1</code>), a constraint will be satisfied as long as there is any lineage in which a split between <code>earlier1</code> and <code>earlier2</code> is ancestral to a split between <code>later1</code> and <code>later2</code>. <code>type = 2</code> is stricter and requires that the <code>earlier1</code>, <code>earlier2</code> split is ancestral to the <code>later1</code>, <code>later2</code> split in all lineages. In graphs with multiple admixture events there can be multiple splits between <code>earlier1</code>, <code>earlier2</code> and <code>later1</code>, <code>later2</code>, and many ways in which these splits can relate to each other. The current implementation only covers some of the many possible topological relationships.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>

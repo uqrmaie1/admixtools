@@ -102,7 +102,7 @@ res \%>\% slice_min(score)
 # Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
 pops = dimnames(example_f2_blocks)[[1]]
 initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
-res = find_graphs(example_f2_blocks, initgraph, stop_gen2 = 10, max_admix = 3)
+res = find_graphs(example_f2_blocks, initgraph = initgraph, stop_gen2 = 10, max_admix = 3)
 res \%>\% slice_min(score)
 }
 }

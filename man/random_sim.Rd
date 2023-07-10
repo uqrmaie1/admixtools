@@ -74,8 +74,10 @@ A list with the path of simulation script, a data frame of graph edges, dates an
 This is basically a wrapper function around the \code{\link{msprime_genome}} that allows user to create a random graph and simulate it in msprime v1.x.
 }
 \examples{
-# Create simulation script that simulates 2 chromosomes that are 50base long 
+# Create simulation script that simulates 2 chromosomes that are 50base long
 # where maximum depth of the tree is 5000 generations, and plot the output graph
+\dontrun{
 out = random_sim(nleaf=4, nadmix=0, max_depth=5000, nchr=2, seq_length=50)
-plot_graph(out$edges, dates = out$dates, neff = out$neff hide_weights = TRUE)
+plot_graph(out$edges, dates = out$dates, neff = out$neff, hide_weights = TRUE)
+}
 }

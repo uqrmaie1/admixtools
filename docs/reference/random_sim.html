@@ -288,7 +288,13 @@ If you want to use some other python installation, you can set <code>run = /my/p
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"></pre>
+    <pre class="examples"><div class='input'><span class='co'># Create simulation script that simulates 2 chromosomes that are 50base long</span>
+<span class='co'># where maximum depth of the tree is 5000 generations, and plot the output graph</span>
+<span class='kw'>if</span> <span class='op'>(</span><span class='cn'>FALSE</span><span class='op'>)</span> <span class='op'>{</span>
+<span class='va'>out</span> <span class='op'>=</span> <span class='fu'>random_sim</span><span class='op'>(</span>nleaf<span class='op'>=</span><span class='fl'>4</span>, nadmix<span class='op'>=</span><span class='fl'>0</span>, max_depth<span class='op'>=</span><span class='fl'>5000</span>, nchr<span class='op'>=</span><span class='fl'>2</span>, seq_length<span class='op'>=</span><span class='fl'>50</span><span class='op'>)</span>
+<span class='fu'><a href='plot_graph.html'>plot_graph</a></span><span class='op'>(</span><span class='va'>out</span><span class='op'>$</span><span class='va'>edges</span>, dates <span class='op'>=</span> <span class='va'>out</span><span class='op'>$</span><span class='va'>dates</span>, neff <span class='op'>=</span> <span class='va'>out</span><span class='op'>$</span><span class='va'>neff</span>, hide_weights <span class='op'>=</span> <span class='cn'>TRUE</span><span class='op'>)</span>
+<span class='op'>}</span>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

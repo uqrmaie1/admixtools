@@ -3723,7 +3723,8 @@ satisfies_zerof4 = function(graph, zero_f4) {
 }
 
 
-satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
+
+satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2, type = 1) {
 
   root = get_rootname(graph)
 
@@ -3739,14 +3740,19 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
                      expand_grid(pl1, pl2) %>% mutate(j = 1:n())) %>% rowwise %>%
     mutate(is1 = list(intersect(pe1, pe2)), is2 = list(intersect(pl1, pl2)),
            diff1 = list(setdiff(is1, is2)), diff2 = list(setdiff(is2, is1)),
-           d1len = length(diff1), d2len = length(diff2)) %>% ungroup %>%
+           d1len = length(diff1), d2len = length(diff2), cont1 = is1[1] %in% is2) %>% ungroup %>%
     group_by(j) %>% mutate(maxdiff1len = max(d1len)) %>%
     group_by(i) %>% mutate(maxdiff2len = max(d2len)) %>% ungroup
 
-  if(min(ppis$maxdiff1len) == 0 && min(ppis$maxdiff2len) == 0) res = NA
-  else if(min(ppis$maxdiff1len) == 0 && min(ppis$maxdiff2len) > 0) res = TRUE
-  else if(min(ppis$maxdiff2len) == 0) res = FALSE
-  else res = NA
+  if(type == 1) {
+    m10 = min(ppis$maxdiff1len) == 0
+    m20 = min(ppis$maxdiff2len) == 0
+    if(m10 && !m20) res = TRUE
+    else if(m20 && !m10) res = FALSE
+    else res = NA
+  } else {
+    res = all(ppis$cont1)
+  }
   res
 }
 
@@ -3756,11 +3762,12 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 #' all event orders listed in eventorder
 #' @export
 #' @param graph An admixture graph
-#' @param eventorder A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
+#' @param eventorder A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`, optionally `type`
 #' @param strict What to do in case some events are not determined by the graph.
 #' If `strict = TRUE` (the default), the function will only return `TRUE` if there are no ambiguous constraints.
 #' Otherwise, `TRUE` will be returned as long as no constraint is directly contradicted.
 #' @return `TRUE` if all constraints are satisfied, else `FALSE`
+#' @details Each row in `eventorder` represents a constraint that `earlier1` and `earlier2` split earlier than `later1` and `later2`. If `later2` is `NA`, `later2` will be set to the parent node of `later1`. By default (`type = 1`), a constraint will be satisfied as long as there is any lineage in which a split between `earlier1` and `earlier2` is ancestral to a split between `later1` and `later2`. `type = 2` is stricter and requires that the `earlier1`, `earlier2` split is ancestral to the `later1`, `later2` split in all lineages. In graphs with multiple admixture events there can be multiple splits between `earlier1`, `earlier2` and `later1`, `later2`, and many ways in which these splits can relate to each other. The current implementation only covers some of the many possible topological relationships.
 #' @examples
 #' \dontrun{
 #' # Test whether the split between A and B is earlier than the split between C and D,
@@ -3774,8 +3781,11 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2) {
 satisfies_eventorder = function(graph, eventorder, strict = TRUE) {
 
   if(is.null(eventorder)) return(TRUE)
+  if(!'type' %in% names(eventorder)) {
+    eventorder$type = 1
+  }
   status = eventorder %>% rowwise %>%
-    mutate(ok = satisfies_oneevent(graph, earlier1, earlier2, later1, later2)) %>%
+    mutate(ok = satisfies_oneevent(graph, earlier1, earlier2, later1, later2, type)) %>%
     ungroup %>% pull(ok)
   if(strict) return(isTRUE(all(status)))
   all(na.omit(status))

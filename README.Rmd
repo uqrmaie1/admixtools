@@ -19,15 +19,16 @@ knitr::opts_chunk$set(
 
 A new, lightning fast implementation of [*ADMIXTOOLS*](https://github.com/DReichLab/AdmixTools).
 
-The corresponding manuscript is finally online [here](https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1)! My personal summary and a few more thoughts can be found [here](https://uqrmaie1.github.io/admixtools/articles/paper.html).
 
 ## Overview
 
 *ADMIXTOOLS* is a collection of programs which use genetic data to infer how populations are related to one another. It has been used in countless publications to test whether populations form clades (*qpDstat*, *qpWave*), to estimate ancestry proportions (*qpAdm*), and to fit admixture graphs (*qpGraph*).
 
-*ADMIXTOOLS 2* provides the same functionality as *ADMIXTOOLS* in a new look, and it's orders of magnitude faster. This is achieved through separating the computation of *f*~2~-statistics from all other computations, and through a number of other optimizations. In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model:
+*ADMIXTOOLS 2* provides the same functionality as *ADMIXTOOLS* in a new look, and it's orders of magnitude faster. This is achieved through separating the computation of *f*~2~-statistics from all other computations, and through a number of other optimizations. 
 
-![app demo](man/figures/shinyapp1.gif)
+<!-- In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model: -->
+
+<!-- ![app demo](man/figures/shinyapp1.gif) -->
 
 ## Features
 
@@ -175,7 +176,7 @@ For even greater transparency, many of the core functions are implemented twice:
 
 ## Contact
 
-For questions, feature requests, and bug reports, please contact Robert Maier under <robertmaier@gmx.net>.
+For questions, feature requests, and bug reports, please submit an issue on GitHub, or contact [Robert Maier](mailto:robertmaier@gmx.net) or [Pavel Flegontov](mailto:pflegontov@gmail.com).
 
 ## Acknowledgments
 
@@ -190,7 +191,10 @@ If you expected to see your name here but I failed to include it, please let me 
 
 ## Cite *ADMIXTOOLS 2*
 
-If you want to cite *ADMIXTOOLS 2*, you can link to this website and mention that a manuscript describing *ADMIXTOOLS 2* is currently under preparation.
+For referencing *ADMIXTOOLS 2* in your work, please cite our [eLife paper](https://elifesciences.org/articles/85492).
+
+There is an earlier [preprint](https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1) of the manuscript, and some additional personal comments [here](https://uqrmaie1.github.io/admixtools/articles/paper.html).
+
 
 ## See also
 
