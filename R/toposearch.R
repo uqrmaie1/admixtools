@@ -3728,8 +3728,14 @@ satisfies_oneevent = function(graph, earlier1, earlier2, later1, later2, type = 
 
   root = get_rootname(graph)
 
-  if(is.na(earlier2)) earlier2 = names(neighbors(graph, earlier1, mode='in'))
-  if(is.na(later2)) later2 = names(neighbors(graph, later1, mode='in'))
+  if(is.na(earlier2)) {
+    earlier2 = names(neighbors(graph, earlier1, mode='in'))
+    if(earlier2 == root) return(TRUE)
+  }
+  if(is.na(later2)) {
+    later2 = names(neighbors(graph, later1, mode='in'))
+    if(later2 == root) return(FALSE)
+  }
   pe1 = all_simple_paths(graph, earlier1, root, mode = 'in')
   pe2 = all_simple_paths(graph, earlier2, root, mode = 'in')
   pl1 = all_simple_paths(graph, later1, root, mode = 'in')

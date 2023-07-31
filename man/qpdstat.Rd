@@ -59,7 +59,7 @@ from accidently computing all combinations if that number is large.}
 
 \item{comb}{Generate all combinations of \code{pop1}, \code{pop2}, \code{pop3}, \code{pop4}. If \code{FALSE}, \code{pop1}, \code{pop2}, \code{pop3}, \code{pop4} should all be vectors of the same length.}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). Only used when \code{data} is the prefix of genotype files}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (5 cM). Only used when \code{data} is the prefix of genotype files}
 
 \item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs. only used when \code{data} is the prefix of genotype files}

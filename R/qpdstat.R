@@ -190,7 +190,7 @@ f3 = qp3pop
 #' @param pop3 A vector of population labels
 #' @param pop4 A vector of population labels
 #' @param comb Generate all combinations of `pop1`, `pop2`, `pop3`, `pop4`. If `FALSE`, `pop1`, `pop2`, `pop3`, `pop4` should all be vectors of the same length.
-#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). Only used when `data` is the prefix of genotype files
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). Only used when `data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs. only used when `data` is the prefix of genotype files
 #' @param f4mode Set this to `FALSE` to compute D-statistics instead of f4. This only has an effect if the first argument is a genotype prefix. D-statistics are computed as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`

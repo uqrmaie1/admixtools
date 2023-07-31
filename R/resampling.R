@@ -232,7 +232,7 @@ cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 #' `dat` needs to be ordered first by 'CHR', then by 'POS' or 'cm'
 #' @export
 #' @param dat Data frame with columns 'CHR' and either 'POS' or 'cm'
-#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param cpp Should the faster C++ version be used?
 #' @param verbose Print progress updates
 #' @return A numeric vector where the ith element lists the number of SNPs in the ith block.

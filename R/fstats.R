@@ -13,7 +13,7 @@
 #' \item `snpdat` A data frame with SNP metadata
 #' }
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
-#' @param blgsize SNP block size in Morgan. Default is 0.05 (50 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
+#' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param poly_only Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of `c("f2", "ap", "fst")`
 #' @param pop1 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
 #' @param pop2 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.

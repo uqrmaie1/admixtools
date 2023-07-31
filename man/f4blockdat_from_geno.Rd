@@ -31,7 +31,7 @@ f4blockdat_from_geno(
 
 \item{auto_only}{Use only chromosomes 1 to 22.}
 
-\item{blgsize}{SNP block size in Morgan. Default is 0.05 (50 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
+\item{blgsize}{SNP block size in Morgan. Default is 0.05 (5 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
 \item{block_lengths}{An optional vector with block lengths. If \code{NULL}, block lengths will be computed.}
 
