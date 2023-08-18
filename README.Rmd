@@ -45,7 +45,7 @@ A new, lightning fast implementation of [*ADMIXTOOLS*](https://github.com/DReich
 * Wrapper functions around the original *ADMIXTOOLS* software (see also [admixr](https://bodkan.net/admixr/index.html))
 <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
 * [Extensive documentation](https://uqrmaie1.github.io/admixtools/articles/admixtools.html)
-* New features available [on request](mailto:rmaier@broadinstitute.org)!
+* New features available [on request](mailto:robertmaier@gmx.net)!
 
 
 ## Installation

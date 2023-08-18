@@ -63,6 +63,6 @@ Suggests:
     shinyWidgets,
     shinydashboard,
     tidyverse
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: knitr

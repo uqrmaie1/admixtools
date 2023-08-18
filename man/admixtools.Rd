@@ -19,7 +19,7 @@ Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
 \url{https://uqrmaie1.github.io/admixtools/index.html}
 }
 \author{
-Robert Maier \email{<rmaier@broadinstitute.org>}
+Robert Maier \email{<robertmaier@gmx.net>}
 
 Nick Patterson
 }

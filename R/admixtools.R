@@ -28,7 +28,7 @@ TRUE
 #' ADMIXTOOLS software, as well as functions to read genotype files and precompute the data necessary
 #' to quickly compute f statistics.
 #'
-#' @author Robert Maier \email{<rmaier@@broadinstitute.org>}
+#' @author Robert Maier \email{<robertmaier@@gmx.net>}
 #' @author Nick Patterson
 #'
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics

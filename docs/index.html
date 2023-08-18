@@ -36,6 +36,8 @@
 </script>
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -48,18 +50,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="articles/admixtools.html">Get started</a>
 </li>
@@ -102,7 +98,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/uqrmaie1/admixtools/">
+  <a href="https://github.com/uqrmaie1/admixtools/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -125,265 +121,173 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="admixtools-2" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#admixtools-2" class="anchor"></a>ADMIXTOOLS 2</h1></div>
-<p>A new, lightning fast implementation of <a href="https://github.com/DReichLab/AdmixTools"><em>ADMIXTOOLS</em></a>.</p>
-<div id="overview" class="section level2">
-<h2 class="hasAnchor">
-<a href="#overview" class="anchor"></a>Overview</h2>
-<p><em>ADMIXTOOLS</em> is a collection of programs which use genetic
-data to infer how populations are related to one another. It has been
-used in countless publications to test whether populations form clades
-(<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions
-(<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
-<p><em>ADMIXTOOLS 2</em> provides the same functionality as
-<em>ADMIXTOOLS</em> in a new look, and it’s orders of magnitude faster.
-This is achieved through separating the computation of
-<em>f</em><sub>2</sub>-statistics from all other computations, and
-through a number of other optimizations.</p>
+<div class="section level1">
+<div class="page-header"><h1 id="admixtools-2">ADMIXTOOLS 2<a class="anchor" aria-label="anchor" href="#admixtools-2"></a>
+</h1></div>
+<p>A new, lightning fast implementation of <a href="https://github.com/DReichLab/AdmixTools" class="external-link"><em>ADMIXTOOLS</em></a>.</p>
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
+<p><em>ADMIXTOOLS</em> is a collection of programs which use genetic data to infer how populations are related to one another. It has been used in countless publications to test whether populations form clades (<em>qpDstat</em>, <em>qpWave</em>), to estimate ancestry proportions (<em>qpAdm</em>), and to fit admixture graphs (<em>qpGraph</em>).</p>
+<p><em>ADMIXTOOLS 2</em> provides the same functionality as <em>ADMIXTOOLS</em> in a new look, and it’s orders of magnitude faster. This is achieved through separating the computation of <em>f</em><sub>2</sub>-statistics from all other computations, and through a number of other optimizations.</p>
 <!-- In the example below, rendering the plot takes much longer than computing the fit of a new *qpGraph* model: -->
 <!-- ![app demo](man/figures/shinyapp1.gif) -->
 </div>
-<div id="features" class="section level2">
-<h2 class="hasAnchor">
-<a href="#features" class="anchor"></a>Features</h2>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
+</h2>
 <ul>
 <li>Much faster than the original <em>ADMIXTOOLS</em> software</li>
 <li>Simple R command line interface</li>
 <li>Even simpler point-and-click interface</li>
-<li>Several new features and methodological innovations that make it
-easier to find robust models:
+<li>Several new features and methodological innovations that make it easier to find robust models:
 <ul>
-<li><a href="html#exploring-different-graphs-1">Automated and
-semi-automated admixture graph inference</a></li>
+<li><a href="html#exploring-different-graphs-1">Automated and semi-automated admixture graph inference</a></li>
 <li>Simultaneous exploration of many <em>qpAdm</em> models</li>
-<li>Unbiased comparison of any two <em>qpGraph</em> models using
-out-of-sample scores</li>
-<li>Jackknife and bootstrap standard errors and confidence intervals for
-any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em>
-parameters</li>
-<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1">simulate</a>
-genetic data under an admixture graph</li>
+<li>Unbiased comparison of any two <em>qpGraph</em> models using out-of-sample scores</li>
+<li>Jackknife and bootstrap standard errors and confidence intervals for any <em>qpAdm</em>, <em>qpWave</em>, and <em>qpGraph</em> parameters</li>
+<li>Interface with <em>msprime</em> makes it easy to <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html#simulating-under-an-admixture-graph-1" class="external-link">simulate</a> genetic data under an admixture graph</li>
 </ul>
 </li>
-<li>Full support for genotype data in
-<em>PACKEDANCESTRYMAP/EIGENSTRAT</em> format and <em>PLINK</em>
-format</li>
-<li>Wrapper functions around the original <em>ADMIXTOOLS</em> software
-(see also <a href="https://bodkan.net/admixr/index.html">admixr</a>)
-<!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
+<li>Full support for genotype data in <em>PACKEDANCESTRYMAP/EIGENSTRAT</em> format and <em>PLINK</em> format</li>
+<li>Wrapper functions around the original <em>ADMIXTOOLS</em> software (see also <a href="https://bodkan.net/admixr/index.html" class="external-link">admixr</a>) <!-- * Simple interface with [msprime](https://msprime.readthedocs.io/en/stable/index.html) for simulating under a given admixture graph -->
 </li>
-<li><a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html">Extensive
-documentation</a></li>
-<li>New features available <a href="mailto:rmaier@broadinstitute.org">on
-request</a>!</li>
+<li><a href="https://uqrmaie1.github.io/admixtools/articles/admixtools.html" class="external-link">Extensive documentation</a></li>
+<li>New features available <a href="mailto:robertmaier@gmx.net">on request</a>!</li>
 </ul>
 </div>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span> <span class="co"># if "devtools" is not installed already</span>
-<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span><span class="op">)</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/uqrmaie1/admixtools">"admixtools"</a></span><span class="op">)</span></code></pre></div>
-<p>The above commands will install all R package dependencies which are
-required to run <em>ADMIXTOOLS 2</em> on the command line. For the
-interactive app, additional packages are required, which can be
-installed like this:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span> <span class="co"># if "devtools" is not installed already</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/uqrmaie1/admixtools" class="external-link">"admixtools"</a></span><span class="op">)</span></span></code></pre></div>
+<p>The above commands will install all R package dependencies which are required to run <em>ADMIXTOOLS 2</em> on the command line. For the interactive app, additional packages are required, which can be installed like this:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<p>If you encounter any problems during the installation, this is most
-likely because some of the required R packages cannot be installed. If
-that happens, try manually re-installing some of the larger packages,
-and pay attention to any error message:</p>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"uqrmaie1/admixtools"</span>, dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>If you encounter any problems during the installation, this is most likely because some of the required R packages cannot be installed. If that happens, try manually re-installing some of the larger packages, and pay attention to any error message:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"Rcpp"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"tidyverse"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"igraph"</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span><span class="op">(</span><span class="st">"plotly"</span><span class="op">)</span></code></pre></div>
-<p>Running <code><a href="https://devtools.r-lib.org/reference/remote-reexports.html">devtools::install_github("uqrmaie1/admixtools")</a></code>
-will compile C++ from source code (this isn’t necessary when installing
-packages from CRAN with <code><a href="https://rdrr.io/r/utils/install.packages.html">install.packages()</a></code>).</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"Rcpp"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidyverse"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"igraph"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"plotly"</span><span class="op">)</span></span></code></pre></div>
+<p>Running <code>devtools::install_github("uqrmaie1/admixtools")</code> will compile C++ from source code (this isn’t necessary when installing packages from CRAN with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>).</p>
 <p>If you get the following error:</p>
 <p><code>Error: Failed to install 'admixtools' from GitHub:  Could not find tools necessary to compile a package.</code></p>
-<p>you might be able to solve the problem by installing <a href="https://cran.r-project.org/bin/windows/Rtools/">Rtools</a> for
-your version of R if you use Windows, or <a href="https://developer.apple.com/download/more/">Xcode command line
-tools</a> if you use macOS. This is also described <a href="https://r-pkgs.org/setup.html#setup-tools">here</a>.</p>
-<p>On some Linux distributions, it may be necessary to manually install
-additional libraries or programs. For example, if you see the error
-<code>gfortran: command not found</code> during installation, you would
-have to install <code>gfortan</code> with
-<code>sudo zypper in gfortran</code> or
-<code>sudo apt-get install gfortran</code>, depending on the Linux
-distribution.</p>
+<p>you might be able to solve the problem by installing <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link">Rtools</a> for your version of R if you use Windows, or <a href="https://developer.apple.com/download/more/" class="external-link">Xcode command line tools</a> if you use macOS. This is also described <a href="https://r-pkgs.org/setup.html#setup-tools" class="external-link">here</a>.</p>
+<p>On some Linux distributions, it may be necessary to manually install additional libraries or programs. For example, if you see the error <code>gfortran: command not found</code> during installation, you would have to install <code>gfortan</code> with <code>sudo zypper in gfortran</code> or <code>sudo apt-get install gfortran</code>, depending on the Linux distribution.</p>
 <p>If you get any other errors during installation, please <a href="mailto:robertmaier@gmx.net">contact me</a>.</p>
 </div>
-<div id="usage" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage" class="anchor"></a>Usage</h2>
+<div class="section level2">
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
+</h2>
 <p>Admixture graphs can be fitted like this:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">genotype_data</span> <span class="op">=</span> <span class="st">"/my/geno/prefix"</span>
-<span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">genotype_data</span>, <span class="va">example_graph</span><span class="op">)</span>
-<span class="va">fit</span><span class="op">$</span><span class="va">score</span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">genotype_data</span> <span class="op">=</span> <span class="st">"/my/geno/prefix"</span></span>
+<span><span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">genotype_data</span>, <span class="va">example_graph</span><span class="op">)</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">score</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="reference/plot_graph.html">plot_graph</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">edges</span><span class="op">)</span></code></pre></div>
-<p><img src="reference/figures/graph1.png" alt="example graph"> Clearly not
-a historically accurate model, but it gets the idea across.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/plot_graph.html">plot_graph</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">edges</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/graph1.png" alt="example graph"> Clearly not a historically accurate model, but it gets the idea across.</p>
 <p><br></p>
-<p>When testing more than one model, it makes sense to extract and
-re-use f2-statistics:</p>
+<p>When testing more than one model, it makes sense to extract and re-use f2-statistics:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">f2_blocks</span> <span class="op">=</span> <span class="fu"><a href="reference/f2_from_geno.html">f2_from_geno</a></span><span class="op">(</span><span class="va">genotype_data</span><span class="op">)</span>
-<span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">example_graph</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">f2_blocks</span> <span class="op">=</span> <span class="fu"><a href="reference/f2_from_geno.html">f2_from_geno</a></span><span class="op">(</span><span class="va">genotype_data</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">example_graph</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit</span><span class="op">$</span><span class="va">score</span>
-<span class="co">#&gt; [1] 19219.98</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">fit</span><span class="op">$</span><span class="va">score</span></span>
+<span><span class="co">#&gt; [1] 19219.98</span></span></code></pre></div>
 <p><br></p>
-<p><em>f</em><sub>2</sub>-statistics can also be used to estimate
-admixture weights:</p>
+<p><em>f</em><sub>2</sub>-statistics can also be used to estimate admixture weights:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">left</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Altai_Neanderthal.DG"</span>, <span class="st">"Vindija.DG"</span><span class="op">)</span>
-<span class="va">right</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Chimp.REF"</span>, <span class="st">"Mbuti.DG"</span>, <span class="st">"Russia_Ust_Ishim.DG"</span>, <span class="st">"Switzerland_Bichon.SG"</span><span class="op">)</span>
-<span class="va">target</span> <span class="op">=</span> <span class="st">"Denisova.DG"</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">left</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Altai_Neanderthal.DG"</span>, <span class="st">"Vindija.DG"</span><span class="op">)</span></span>
+<span><span class="va">right</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chimp.REF"</span>, <span class="st">"Mbuti.DG"</span>, <span class="st">"Russia_Ust_Ishim.DG"</span>, <span class="st">"Switzerland_Bichon.SG"</span><span class="op">)</span></span>
+<span><span class="va">target</span> <span class="op">=</span> <span class="st">"Denisova.DG"</span></span></code></pre></div>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="reference/qpadm.html">qpadm</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">left</span>, <span class="va">right</span>, <span class="va">target</span><span class="op">)</span><span class="op">$</span><span class="va">weights</span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 x 5</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   target      left                 weight    se     z</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/qpadm.html">qpadm</a></span><span class="op">(</span><span class="va">f2_blocks</span>, <span class="va">left</span>, <span class="va">right</span>, <span class="va">target</span><span class="op">)</span><span class="op">$</span><span class="va">weights</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 5</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt;   target      left                 weight    se     z</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt; 1 Denisova.DG Altai_Neanderthal.DG   49.6  23.3  2.13</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; 2 Denisova.DG Vindija.DG            -48.6  23.3 -2.08</span></span></code></pre></div>
 <p><br></p>
 <p>Or to get <em>f</em><sub>4</sub>-statistics:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="reference/qpdstat.html">f4</a></span><span class="op">(</span><span class="va">f2_blocks</span><span class="op">)</span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 105 x 8</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    pop1        pop2         pop3    pop4            est      se      z         p</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;   &lt;chr&gt;         &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  1 Altai_Nean… Chimp.REF    Deniso… Mbuti.DG     0.0196 6.07e-4   32.4 1.32e-229</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  2 Altai_Nean… Denisova.DG  Chimp.… Mbuti.DG    -0.0129 3.64e-4  -35.6 2.22e-277</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  3 Altai_Nean… Mbuti.DG     Chimp.… Denisova.DG -0.0326 5.22e-4  -62.5 0        </span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  4 Altai_Nean… Chimp.REF    Deniso… Russia_Ust…  0.0180 6.87e-4   26.3 6.43e-152</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  5 Altai_Nean… Denisova.DG  Chimp.… Russia_Ust… -0.0152 4.46e-4  -34.0 4.67e-254</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  6 Altai_Nean… Russia_Ust_… Chimp.… Denisova.DG -0.0332 5.55e-4  -60.0 0        </span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  7 Altai_Nean… Chimp.REF    Deniso… Switzerlan…  0.0181 6.63e-4   27.3 1.09e-164</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  8 Altai_Nean… Denisova.DG  Chimp.… Switzerlan… -0.0150 4.64e-4  -32.3 6.06e-229</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  9 Altai_Nean… Switzerland… Chimp.… Denisova.DG -0.0331 5.74e-4  -57.7 0        </span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10 Altai_Nean… Chimp.REF    Deniso… Vindija.DG  -0.0771 6.98e-4 -110.  0        </span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 95 more rows</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/qpdstat.html">f4</a></span><span class="op">(</span><span class="va">f2_blocks</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co">#&gt; # A tibble: 105 × 8</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co">#&gt;    pop1                 pop2        pop3  pop4      est      se      z         p</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;                &lt;chr&gt;       &lt;chr&gt; &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt;  1 Altai_Neanderthal.DG Chimp.REF   Deni… Mbut…  0.0196 6.07e-4   32.4 1.32e-229</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt;  2 Altai_Neanderthal.DG Denisova.DG Chim… Mbut… -0.0129 3.64e-4  -35.6 2.22e-277</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt;  3 Altai_Neanderthal.DG Mbuti.DG    Chim… Deni… -0.0326 5.22e-4  -62.5 0        </span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt;  4 Altai_Neanderthal.DG Chimp.REF   Deni… Russ…  0.0180 6.87e-4   26.3 6.43e-152</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;  5 Altai_Neanderthal.DG Denisova.DG Chim… Russ… -0.0152 4.46e-4  -34.0 4.67e-254</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt;  6 Altai_Neanderthal.DG Russia_Ust… Chim… Deni… -0.0332 5.55e-4  -60.0 0        </span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt;  7 Altai_Neanderthal.DG Chimp.REF   Deni… Swit…  0.0181 6.63e-4   27.3 1.09e-164</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt;  8 Altai_Neanderthal.DG Denisova.DG Chim… Swit… -0.0150 4.64e-4  -32.3 6.06e-229</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt;  9 Altai_Neanderthal.DG Switzerlan… Chim… Deni… -0.0331 5.74e-4  -57.7 0        </span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="co">#&gt; 10 Altai_Neanderthal.DG Chimp.REF   Deni… Vind… -0.0771 6.98e-4 -110.  0        </span></span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="co">#&gt; # ℹ 95 more rows</span></span></code></pre></div>
 </div>
-<div id="interactive-browser-app" class="section level2">
-<h2 class="hasAnchor">
-<a href="#interactive-browser-app" class="anchor"></a>Interactive browser app</h2>
-<p><em>ADMIXTOOLS 2</em> also has a simple point-and-click interface.
-This makes it easy to explore many <em>qpAdm</em> or <em>qpGraph</em>
-models at the same time, for example by allowing you to build and change
-admixture graphs interactively. Typing the following command in the R
-console launches the app:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="reference/run_shiny_admixtools.html">run_shiny_admixtools</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
-<p><img src="reference/figures/shinyapp2.gif" alt="app demo"></p>
-</div>
-<div id="documentation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#documentation" class="anchor"></a>Documentation</h2>
-<p>One of the design goals behind <em>ADMIXTOOLS 2</em> is to make the
-algorithms more transparent, so that the steps leading from from
-genotype data to conclusions about demographic history are easier to
-follow.</p>
-<p>To this end, all <em>ADMIXTOOLS 2</em> functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html">documented</a>.
-You can also take a look at the <a href="articles/admixtools.html">tutorial</a>, read more about how
-<em>ADMIXTOOLS 2</em> computes <a href="https://uqrmaie1.github.io/admixtools/articles/fstats.html">f-statistics</a>
-and <a href="https://uqrmaie1.github.io/admixtools/articles/resampling.html">standard
-errors</a>, and what you can do with <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html">admixture
-graphs</a>.</p>
-<p>For even greater transparency, many of the core functions are
-implemented twice: In C++ for performance (used by default), and in R,
-which makes it easier to trace the computations step by step. For
-example, if you want to know how weights are computed in
-<code><a href="reference/qpadm.html">qpadm()</a></code>, you can type <code>qpadm</code> in R to get the
-function code and you will see another function which is called
-<code>qpadm_weights()</code>. By default, this function will be replaced
-by its faster C++ version <code>cpp_qpadm_weights()</code>. But you can
-still see what it’s doing without reading the C++ code by typing
-<code>admixtools:::qpadm_weights</code>. And you can tell
-<code><a href="reference/qpadm.html">qpadm()</a></code> to use the R versions instead of the C++ versions
-by calling <code><a href="reference/qpadm.html">qpadm(cpp = FALSE)</a></code>.</p>
-</div>
-<div id="contact" class="section level2">
-<h2 class="hasAnchor">
-<a href="#contact" class="anchor"></a>Contact</h2>
-<p>For questions, feature requests, and bug reports, please submit an
-issue on GitHub, or contact <a href="mailto:robertmaier@gmx.net">Robert
-Maier</a> or <a href="mailto:pflegontov@gmail.com">Pavel
-Flegontov</a>.</p>
-</div>
-<div id="acknowledgments" class="section level2">
-<h2 class="hasAnchor">
-<a href="#acknowledgments" class="anchor"></a>Acknowledgments</h2>
-<p>Nick Patterson has developed the original <em>ADMIXTOOLS</em>
-software. David Reich and Nick Patterson have not only conceived most of
-the ideas that have made <em>ADMIXTOOLS</em> so successful, they have
-also provided me (and continue to provide me) with critical ideas and
-feedback in the development of <em>ADMIXTOOLS 2</em>.</p>
-<p>I also want to thank all members of the Reich lab for many
-discussions which have helped me gain a better understanding of the
-underlying methods, and for crucial feedback about <em>ADMIXTOOLS
-2</em>; in particular Pavel Flegontov, Iosif Lazaridis, Mark Lipson,
-Harald Ringbauer, Shop Mallick, and Tian Chen Zeng.</p>
-<p>Many useful features in <em>ADMIXTOOLS 2</em> were suggested by its
-users. If you are able to install and run <em>ADMIXTOOLS 2</em> without
-issues, it is only because others have cleared the path for you, by
-bringing problems to my attention. In no particular order, I want to
-thank Ornob Alam, Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias
-Göllner, Christian Huber, Kale, Ted Kandell, Fraser Combe, Matthew
-Williams, Lenny Dykstra, Kristján Moore, Dilawer Khan, Lareb Humayoun,
-Sánta Benedek, Steven Rosenberg, Daniel Tabin, Benjamin Peter, and Ahmad
-Bekhit.</p>
-<p>If you expected to see your name here but I failed to include it,
-please let me know about it!</p>
-</div>
-<div id="cite-admixtools-2" class="section level2">
-<h2 class="hasAnchor">
-<a href="#cite-admixtools-2" class="anchor"></a>Cite <em>ADMIXTOOLS 2</em>
+<div class="section level2">
+<h2 id="interactive-browser-app">Interactive browser app<a class="anchor" aria-label="anchor" href="#interactive-browser-app"></a>
 </h2>
-<p>For referencing <em>ADMIXTOOLS 2</em> in your work, please cite our
-<a href="https://elifesciences.org/articles/85492">eLife paper</a>.</p>
-<p>There is an earlier <a href="https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1">preprint</a>
-of the manuscript, and some additional personal comments <a href="https://uqrmaie1.github.io/admixtools/articles/paper.html">here</a>.</p>
+<p><em>ADMIXTOOLS 2</em> also has a simple point-and-click interface. This makes it easy to explore many <em>qpAdm</em> or <em>qpGraph</em> models at the same time, for example by allowing you to build and change admixture graphs interactively. Typing the following command in the R console launches the app:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/run_shiny_admixtools.html">run_shiny_admixtools</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<figure><img src="reference/figures/shinyapp2.gif" alt="app demo"><figcaption aria-hidden="true">
+app demo
+</figcaption></figure>
 </div>
-<div id="see-also" class="section level2">
-<h2 class="hasAnchor">
-<a href="#see-also" class="anchor"></a>See also</h2>
+<div class="section level2">
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+</h2>
+<p>One of the design goals behind <em>ADMIXTOOLS 2</em> is to make the algorithms more transparent, so that the steps leading from from genotype data to conclusions about demographic history are easier to follow.</p>
+<p>To this end, all <em>ADMIXTOOLS 2</em> functions are <a href="https://uqrmaie1.github.io/admixtools/reference/index.html" class="external-link">documented</a>. You can also take a look at the <a href="articles/admixtools.html">tutorial</a>, read more about how <em>ADMIXTOOLS 2</em> computes <a href="https://uqrmaie1.github.io/admixtools/articles/fstats.html" class="external-link">f-statistics</a> and <a href="https://uqrmaie1.github.io/admixtools/articles/resampling.html" class="external-link">standard errors</a>, and what you can do with <a href="https://uqrmaie1.github.io/admixtools/articles/graphs.html" class="external-link">admixture graphs</a>.</p>
+<p>For even greater transparency, many of the core functions are implemented twice: In C++ for performance (used by default), and in R, which makes it easier to trace the computations step by step. For example, if you want to know how weights are computed in <code><a href="reference/qpadm.html">qpadm()</a></code>, you can type <code>qpadm</code> in R to get the function code and you will see another function which is called <code>qpadm_weights()</code>. By default, this function will be replaced by its faster C++ version <code>cpp_qpadm_weights()</code>. But you can still see what it’s doing without reading the C++ code by typing <code>admixtools:::qpadm_weights</code>. And you can tell <code><a href="reference/qpadm.html">qpadm()</a></code> to use the R versions instead of the C++ versions by calling <code>qpadm(cpp = FALSE)</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="contact">Contact<a class="anchor" aria-label="anchor" href="#contact"></a>
+</h2>
+<p>For questions, feature requests, and bug reports, please submit an issue on GitHub, or contact <a href="mailto:robertmaier@gmx.net">Robert Maier</a> or <a href="mailto:pflegontov@gmail.com">Pavel Flegontov</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="acknowledgments">Acknowledgments<a class="anchor" aria-label="anchor" href="#acknowledgments"></a>
+</h2>
+<p>Nick Patterson has developed the original <em>ADMIXTOOLS</em> software. David Reich and Nick Patterson have not only conceived most of the ideas that have made <em>ADMIXTOOLS</em> so successful, they have also provided me (and continue to provide me) with critical ideas and feedback in the development of <em>ADMIXTOOLS 2</em>.</p>
+<p>I also want to thank all members of the Reich lab for many discussions which have helped me gain a better understanding of the underlying methods, and for crucial feedback about <em>ADMIXTOOLS 2</em>; in particular Pavel Flegontov, Iosif Lazaridis, Mark Lipson, Harald Ringbauer, Shop Mallick, and Tian Chen Zeng.</p>
+<p>Many useful features in <em>ADMIXTOOLS 2</em> were suggested by its users. If you are able to install and run <em>ADMIXTOOLS 2</em> without issues, it is only because others have cleared the path for you, by bringing problems to my attention. In no particular order, I want to thank Ornob Alam, Ming-Shan Wang, Angad Johar, Ezgi Altınışık, Tobias Göllner, Christian Huber, Kale, Ted Kandell, Fraser Combe, Matthew Williams, Lenny Dykstra, Kristján Moore, Dilawer Khan, Lareb Humayoun, Sánta Benedek, Steven Rosenberg, Daniel Tabin, Benjamin Peter, and Ahmad Bekhit.</p>
+<p>If you expected to see your name here but I failed to include it, please let me know about it!</p>
+</div>
+<div class="section level2">
+<h2 id="cite-admixtools-2">Cite <em>ADMIXTOOLS 2</em>
+<a class="anchor" aria-label="anchor" href="#cite-admixtools-2"></a>
+</h2>
+<p>For referencing <em>ADMIXTOOLS 2</em> in your work, please cite our <a href="https://elifesciences.org/articles/85492" class="external-link">eLife paper</a>.</p>
+<p>There is an earlier <a href="https://www.biorxiv.org/content/10.1101/2022.05.08.491072v1" class="external-link">preprint</a> of the manuscript, and some additional personal comments <a href="https://uqrmaie1.github.io/admixtools/articles/paper.html" class="external-link">here</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a>
+</h2>
 <ul>
 <li>
-<a href="https://github.com/DReichLab/AdmixTools">ADMIXTOOLS</a> The
-original <em>ADMIXTOOLS</em> software</li>
+<a href="https://github.com/DReichLab/AdmixTools" class="external-link">ADMIXTOOLS</a> The original <em>ADMIXTOOLS</em> software</li>
 <li>
-<a href="https://bodkan.net/admixr/index.html">admixr</a> An R
-package with <em>ADMIXTOOLS</em> wrapper functions and many useful
-tutorials</li>
+<a href="https://bodkan.net/admixr/index.html" class="external-link">admixr</a> An R package with <em>ADMIXTOOLS</em> wrapper functions and many useful tutorials</li>
 <li>
-<a href="https://github.com/mailund/admixture_graph">admixturegraph</a> An
-R package for automatic graph inference</li>
+<a href="https://github.com/mailund/admixture_graph" class="external-link">admixturegraph</a> An R package for automatic graph inference</li>
 <li>
-<a href="https://github.com/juliayyan/PhylogeneticTrees.jl">miqoGraph</a> A
-Julia package for automatic graph inference</li>
+<a href="https://github.com/juliayyan/PhylogeneticTrees.jl" class="external-link">miqoGraph</a> A Julia package for automatic graph inference</li>
 <li>
-<a href="http://cb.csail.mit.edu/cb/mixmapper/">MixMapper</a>
-Another method to infer admixture graphs</li>
+<a href="http://cb.csail.mit.edu/cb/mixmapper/" class="external-link">MixMapper</a> Another method to infer admixture graphs</li>
 <li>
-<a href="https://bitbucket.org/nygcresearch/treemix/wiki/Home">TreeMix</a>
-Another method to infer admixture graphs</li>
+<a href="https://bitbucket.org/nygcresearch/treemix/wiki/Home" class="external-link">TreeMix</a> Another method to infer admixture graphs</li>
 <li>
-<a href="http://content.csbs.utah.edu/~rogers/src/legofit/index.html">Legofit</a>
-A program to estimate the history of population size, subdivision, and
-gene flow</li>
+<a href="http://content.csbs.utah.edu/~rogers/src/legofit/index.html" class="external-link">Legofit</a> A program to estimate the history of population size, subdivision, and gene flow</li>
 <li>
-<a href="https://github.com/ekirving/qpbrute">qpBrute</a> Automated
-graph fitting and Bayes factor calculations</li>
+<a href="https://github.com/ekirving/qpbrute" class="external-link">qpBrute</a> Automated graph fitting and Bayes factor calculations</li>
 </ul>
 </div>
 </div>
@@ -391,38 +295,50 @@ graph fitting and Bayes factor calculations</li>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="links">
-<h2>Links</h2>
+<h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li>Browse source code at <br><a href="https://github.com/uqrmaie1/admixtools/">https://​github.com/​uqrmaie1/​admixtools/​</a>
-</li>
-<li>Report a bug at <br><a href="https://github.com/uqrmaie1/admixtools/issues">https://​github.com/​uqrmaie1/​admixtools/​issues</a>
-</li>
+<li><a href="https://github.com/uqrmaie1/admixtools/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/uqrmaie1/admixtools/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
+
 <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3">GPL-3</a></li>
+<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing admixtools</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Robert Maier <br><small class="roles"> Author, maintainer </small>  </li>
 <li>Nick Patterson <br><small class="roles"> Author </small>  </li>
 </ul>
 </div>
 
+
+
   </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Robert Maier, Nick Patterson.</p>
+  <p></p>
+<p>Developed by Robert Maier, Nick Patterson.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
