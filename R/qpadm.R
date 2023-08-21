@@ -938,7 +938,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 
   if(is_geno_prefix(data)) {
     popcombs = qpadmmodels_to_popcombs(models)
-    f4blockdat = data %>% f4blockdat_from_geno(popcombs, allsnps = allsnps, verbose = verbose)
+    f4blockdat = data %>% f4blockdat_from_geno(popcombs, allsnps = allsnps, verbose = verbose, ...)
     f4blocks = f4blockdat %>% split(.$model) %>% furrr::future_map(quietly(f4blockdat_to_f4blocks)) %>% map('result')
   } else {
     if(verbose && allsnps) alert_warning('allsnps = TRUE is not effective when using precomputed f2 statistics\n')
