@@ -1,5 +1,5 @@
-pandoc: 2.19.2
-pkgdown: 1.6.1
+pandoc: 3.1.1
+pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   admixtools: admixtools.html
@@ -11,7 +11,7 @@ articles:
   plotting: plotting.html
   qpadm: qpadm.html
   resampling: resampling.html
-last_built: 2023-07-31T22:16Z
+last_built: 2023-09-13T22:13Z
 urls:
   reference: https://uqrmaie1.github.io/admixtools/index.html/reference
   article: https://uqrmaie1.github.io/admixtools/index.html/articles

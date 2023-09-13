@@ -3,30 +3,30 @@ import math
 import msprime
 import multiprocess
 
-indnam = ["D_1", "C_1", "B_1", "E_1", "A_1"]
+indnam = ["A_1", "E_1", "C_1", "B_1", "D_1"]
 
-samples = [msprime.SampleSet(num_samples=i, population=j, time=k) for i, j, k in zip( (1, 1, 1, 1, 1), ("D", "C", "B", "E", "A"), (4000, 1000, 1000, 1000, 0) )]
+samples = [msprime.SampleSet(num_samples=i, population=j, time=k) for i, j, k in zip( (1, 1, 1, 1, 1), ("A", "E", "C", "B", "D"), (1000, 0, 0, 2000, 1000) )]
 nhap = int(len(indnam) * 2)
 
 demo = msprime.Demography()
 demo.add_population(initial_size = 1000, name = "R")
-demo.add_population(initial_size = 1000, name = "D")
 demo.add_population(initial_size = 1000, name = "Rr")
-demo.add_population(initial_size = 1000, name = "Rrl")
-demo.add_population(initial_size = 1000, name = "C")
 demo.add_population(initial_size = 1000, name = "Rrr")
-demo.add_population(initial_size = 1000, name = "B")
-demo.add_population(initial_size = 1000, name = "E")
-demo.add_population(initial_size = 1000, name = "Rl")
-demo.add_population(initial_size = 1000, name = "admix")
 demo.add_population(initial_size = 1000, name = "A")
-demo.add_population_split(time=1000, ancestral="admix", derived=["A"])
-demo.add_population_split(time=5000, ancestral="R", derived=["D","Rl"])
-demo.add_population_split(time=4000, ancestral="Rl", derived=["Rr"])
-demo.add_population_split(time=3000, ancestral="Rr", derived=["Rrl","Rrr"])
-demo.add_population_split(time=2000, ancestral="Rrl", derived=["C"])
-demo.add_population_split(time=2000, ancestral="Rrr", derived=["B","E"])
-demo.add_admixture(time=1000, derived="admix", ancestral=["Rrl","Rl"], proportions=[0.5,0.5])
+demo.add_population(initial_size = 1000, name = "Rrrr")
+demo.add_population(initial_size = 1000, name = "E")
+demo.add_population(initial_size = 1000, name = "C")
+demo.add_population(initial_size = 1000, name = "Rt")
+demo.add_population(initial_size = 1000, name = "B")
+demo.add_population(initial_size = 1000, name = "admix")
+demo.add_population(initial_size = 1000, name = "D")
+demo.add_population_split(time=4000, ancestral="R", derived=["Rr","Rt"])
+demo.add_population_split(time=3000, ancestral="Rr", derived=["Rrr"])
+demo.add_population_split(time=2000, ancestral="Rrr", derived=["A","Rrrr"])
+demo.add_population_split(time=1000, ancestral="Rrrr", derived=["E","C"])
+demo.add_population_split(time=3000, ancestral="Rt", derived=["B"])
+demo.add_population_split(time=2000, ancestral="admix", derived=["D"])
+demo.add_admixture(time=2000, derived="admix", ancestral=["Rr","Rt"], proportions=[0.5,0.5])
 demo.sort_events()
 
 r_chrom = 2e-08

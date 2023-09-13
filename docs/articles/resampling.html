@@ -33,6 +33,8 @@
 </script>
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -45,18 +47,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../articles/admixtools.html">Get started</a>
 </li>
@@ -99,7 +95,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/uqrmaie1/admixtools/">
+  <a href="https://github.com/uqrmaie1/admixtools/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -120,24 +116,25 @@
 
       
 
-      </header><script src="resampling_files/header-attrs-2.23/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Standard errors</h1>
-                        <h4 class="author">Robert Maier</h4>
+                        <h4 data-toc-skip class="author">Robert
+Maier</h4>
             
-            <h4 class="date">2022-11-12</h4>
+            <h4 data-toc-skip class="date">2022-11-12</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/resampling.Rmd"><code>vignettes/resampling.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/HEAD/vignettes/resampling.Rmd" class="external-link"><code>vignettes/resampling.Rmd</code></a></small>
       <div class="hidden name"><code>resampling.Rmd</code></div>
 
     </div>
 
     
     
-<div id="quantifying-uncertainty" class="section level2">
-<h2 class="hasAnchor">
-<a href="#quantifying-uncertainty" class="anchor"></a>Quantifying uncertainty</h2>
+<div class="section level2">
+<h2 id="quantifying-uncertainty">Quantifying uncertainty<a class="anchor" aria-label="anchor" href="#quantifying-uncertainty"></a>
+</h2>
 <p>The estimates produced by <em>ADMIXTOOLS 2</em> (and by any other
 software) have high, but still limited precision, and it’s important to
 know what those limits are. There are several reasons why there is
@@ -182,9 +179,9 @@ how much our results are influenced by that randomness.</p>
 robustness of a whole analysis, let’s look at how the concept is applied
 to derive standard errors and <em>p</em>-values for single <span class="math inline">\(f_4\)</span>-statistics.</p>
 </div>
-<div id="standard-errors-and-hypothesis-testing" class="section level2">
-<h2 class="hasAnchor">
-<a href="#standard-errors-and-hypothesis-testing" class="anchor"></a>Standard errors and hypothesis testing</h2>
+<div class="section level2">
+<h2 id="standard-errors-and-hypothesis-testing">Standard errors and hypothesis testing<a class="anchor" aria-label="anchor" href="#standard-errors-and-hypothesis-testing"></a>
+</h2>
 <p>Let’s say we want to know whether two population pairs – <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>
 and <span class="math inline">\(C\)</span>, <span class="math inline">\(D\)</span> form two clades with respect to each
 other. We can reject the null hypothesis that they do form a clade if
@@ -204,9 +201,9 @@ resampling: computing <span class="math inline">\(f_4(A, B; C,
 D)\)</span> many times on different subsets of SNPs to see how different
 those estimates are from each other.</p>
 </div>
-<div id="jackknife-and-bootstrap" class="section level2">
-<h2 class="hasAnchor">
-<a href="#jackknife-and-bootstrap" class="anchor"></a>Jackknife and bootstrap</h2>
+<div class="section level2">
+<h2 id="jackknife-and-bootstrap">Jackknife and bootstrap<a class="anchor" aria-label="anchor" href="#jackknife-and-bootstrap"></a>
+</h2>
 <p>The idea behind jackknife and bootstrap is that while it’s impossible
 to know with certainty how different a result would be if we had
 different data, we can make an educated guess by analyzing many
@@ -235,9 +232,9 @@ just the variance across <span class="math inline">\(\hat\theta_{-i}\)</span>:</
 \sum_{i=1}^n (\hat\theta - \hat\theta_{-i})^2\]</span></p>
 <p><br></p>
 </div>
-<div id="blockedd-jackknife-and-bootstrap" class="section level2">
-<h2 class="hasAnchor">
-<a href="#blockedd-jackknife-and-bootstrap" class="anchor"></a>Blockedd jackknife and bootstrap</h2>
+<div class="section level2">
+<h2 id="blockedd-jackknife-and-bootstrap">Blockedd jackknife and bootstrap<a class="anchor" aria-label="anchor" href="#blockedd-jackknife-and-bootstrap"></a>
+</h2>
 <p>We can’t actually use the approach described so far because SNPs do
 not drift independently of each other. While there are tens of millions
 of common SNPs in the human genome, the number of independent SNPs is
@@ -254,9 +251,9 @@ a bit because some blocks have more SNPs than others, and should be
 weighted appropriately.</p>
 <p>The exact equations used in <em>ADMIXTOOLS</em> and <em>ADMIXTOOLS
 2</em> for computing standard errors with the weighted block jackknife
-are given <a href="https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/wjack.pdf">here</a>.
+are given <a href="https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/wjack.pdf" class="external-link">here</a>.
 Lecture slides by Nick Patterson on the jackknife method are available
-<a href="https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/lecture2.pdf">here</a>.</p>
+<a href="https://reich.hms.harvard.edu/sites/reich.hms.harvard.edu/files/inline-files/lecture2.pdf" class="external-link">here</a>.</p>
 <p><br></p>
 <p>For statistics for which estimates from multiple SNPs are the means
 across estimates from single SNPs (such as <em>f</em>-statistics), the
@@ -279,9 +276,9 @@ computation:</p>
 (\frac{m_i}{n-m_i}) (\hat\theta - \hat\theta_{i})^2\]</span></p>
 <!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n \frac{1}{x_i - 1} (x_i \mu_{tot} - \mu_{jack} - s_i (x_i-1) )^2$$ -->
 <!-- where $\mu_{tot}$ is the mean calculated from all blocks, $\mu_{jack} = \frac{1}{n} \sum_i s_i$ (the jackknife mean), and $x_i = \frac{\sum{l_i}}{l_i}$ (the inverse of the relative block length). -->
-<div id="resampling-snps-need-to-update-this" class="section level3">
-<h3 class="hasAnchor">
-<a href="#resampling-snps-need-to-update-this" class="anchor"></a>Resampling SNPS – need to update this</h3>
+<div class="section level3">
+<h3 id="resampling-snps-need-to-update-this">Resampling SNPS – need to update this<a class="anchor" aria-label="anchor" href="#resampling-snps-need-to-update-this"></a>
+</h3>
 <p>The subsampling of SNPs in blocks (sepcifically block jackknife) is
 already used throughout all <em>ADMIXTOOLS</em> programs to compute
 standard erorrs. Here, the <code>resample_snps</code> functions
@@ -304,8 +301,8 @@ of <em>n times</em> the sampling variance.</p>
 <p>In following example, 1000 models with resampled SNP blocks are
 evaluated, and a histogram of the likelihood scores is plotted.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">snpres</span> <span class="op">=</span> <span class="fu"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, graph <span class="op">=</span> <span class="va">example_graph</span>, boot <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/graphics/hist.html">hist</a></span><span class="op">(</span><span class="va">snpres</span><span class="op">$</span><span class="va">score</span>, <span class="fl">100</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">snpres</span> <span class="op">=</span> <span class="fu"><a href="../reference/resample_snps.html">qpgraph_resample_snps</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, graph <span class="op">=</span> <span class="va">example_graph</span>, boot <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">snpres</span><span class="op">$</span><span class="va">score</span>, <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
 <!-- ### Resampling individuals -->
 <!-- We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals. -->
 <!-- ```{r, eval = FALSE} -->
@@ -330,11 +327,13 @@ evaluated, and a histogram of the likelihood scores is plotted.</p>
 
 
       <footer><div class="copyright">
-  <p>Developed by Robert Maier, Nick Patterson.</p>
+  <p></p>
+<p>Developed by Robert Maier, Nick Patterson.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

@@ -33,6 +33,8 @@
 </script>
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -45,18 +47,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../articles/admixtools.html">Get started</a>
 </li>
@@ -99,7 +95,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/uqrmaie1/admixtools/">
+  <a href="https://github.com/uqrmaie1/admixtools/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -120,42 +116,43 @@
 
       
 
-      </header><script src="io_files/header-attrs-2.23/header-attrs.js"></script><script src="io_files/htmlwidgets-1.5.3/htmlwidgets.js"></script><script src="io_files/plotly-binding-4.9.4.1/plotly.js"></script><script src="io_files/typedarray-0.1/typedarray.min.js"></script><script src="io_files/jquery-3.5.1/jquery.min.js"></script><link href="io_files/crosstalk-1.1.1/css/crosstalk.css" rel="stylesheet">
-<script src="io_files/crosstalk-1.1.1/js/crosstalk.min.js"></script><link href="io_files/plotly-htmlwidgets-css-1.57.1/plotly-htmlwidgets.css" rel="stylesheet">
-<script src="io_files/plotly-main-1.57.1/plotly-latest.min.js"></script><div class="row">
+      </header><script src="io_files/htmlwidgets-1.6.2/htmlwidgets.js"></script><script src="io_files/plotly-binding-4.10.2/plotly.js"></script><script src="io_files/typedarray-0.1/typedarray.min.js"></script><link href="io_files/crosstalk-1.2.0/css/crosstalk.min.css" rel="stylesheet">
+<script src="io_files/crosstalk-1.2.0/js/crosstalk.min.js"></script><link href="io_files/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet">
+<script src="io_files/plotly-main-2.11.1/plotly-latest.min.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Data formats</h1>
-                        <h4 class="author">Robert Maier</h4>
+                        <h4 data-toc-skip class="author">Robert
+Maier</h4>
             
-            <h4 class="date">2022-11-12</h4>
+            <h4 data-toc-skip class="date">2022-11-12</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/master/vignettes/io.Rmd"><code>vignettes/io.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/uqrmaie1/admixtools/blob/HEAD/vignettes/io.Rmd" class="external-link"><code>vignettes/io.Rmd</code></a></small>
       <div class="hidden name"><code>io.Rmd</code></div>
 
     </div>
 
     
     
-<div id="genotype-data-formats" class="section level2">
-<h2 class="hasAnchor">
-<a href="#genotype-data-formats" class="anchor"></a>Genotype data formats</h2>
+<div class="section level2">
+<h2 id="genotype-data-formats">Genotype data formats<a class="anchor" aria-label="anchor" href="#genotype-data-formats"></a>
+</h2>
 <p><em>ADMIXTOOLS 2</em> can read genotype data in three formats.</p>
 <ol style="list-style-type: decimal">
-<li>Binary <em>PLINK</em> format (PACKEDPED), described <a href="https://www.cog-genomics.org/plink2/input">here</a>
+<li>Binary <em>PLINK</em> format (PACKEDPED), described <a href="https://www.cog-genomics.org/plink2/input" class="external-link">here</a>
 </li>
 <li>Binary <em>PACKEDANCESTRYMAP</em> format</li>
 <li>Text based <em>EIGENSTRAT</em> format</li>
 </ol>
-<p><em>PACKEDANCESTRYMAP</em> and <em>EIGENSTRAT</em> are described <a href="https://reich.hms.harvard.edu/software/InputFileFormats">here</a></p>
+<p><em>PACKEDANCESTRYMAP</em> and <em>EIGENSTRAT</em> are described <a href="https://reich.hms.harvard.edu/software/InputFileFormats" class="external-link">here</a></p>
 <p>In all three formats a dataset consists of three files: one file for
 the genotype matrix, one file for the SNP metadata, and one file for the
 sample metadata.</p>
 <p>The following shows what a data set for three SNPs and five samples
 grouped into two populations (French.DG, Onge.DG) could look like:</p>
-<div id="plink" class="section level3">
-<h3 class="hasAnchor">
-<a href="#plink" class="anchor"></a>PLINK</h3>
+<div class="section level3">
+<h3 id="plink">PLINK<a class="anchor" aria-label="anchor" href="#plink"></a>
+</h3>
 <p>PLINK <code>.fam</code> files, have six columns, but only the first
 two (family/population ID and sample ID) are relevant in <em>ADMIXTOOLS
 2</em></p>
@@ -169,9 +166,9 @@ Onge.DG BR_Onge-1.DG    0   0   F   -9</code></pre>
 1   rs12124819  0.020242    776546  A   G
 1   rs28765502  0.022137    832918  T   C</code></pre>
 </div>
-<div id="eigenstratpackedancestrymap" class="section level3">
-<h3 class="hasAnchor">
-<a href="#eigenstratpackedancestrymap" class="anchor"></a>EIGENSTRAT/PACKEDANCESTRYMAP</h3>
+<div class="section level3">
+<h3 id="eigenstratpackedancestrymap">EIGENSTRAT/PACKEDANCESTRYMAP<a class="anchor" aria-label="anchor" href="#eigenstratpackedancestrymap"></a>
+</h3>
 <p><em>EIGENSTRAT</em> and <em>PACKEDANCESTRYMAP</em> use the same
 format for the metadata. The only difference is that the genotype data
 is stored in a text file in <em>EIGENSTRAT</em>, but in a binary file in
@@ -189,60 +186,59 @@ except that the first two columns are swapped:</p>
 rs12124819 1    0.020242    776546  A   G
 rs28765502 1    0.022137    832918  T   C</code></pre>
 <p><em>EIGENSTRAT</em> <code>.geno</code> files look like this:</p>
-<pre><code>29101
-10211
-22901</code></pre>
+<pre><code><span><span class="fl">29101</span></span>
+<span><span class="fl">10211</span></span>
+<span><span class="fl">22901</span></span></code></pre>
 <p>One SNP per row, one sample per column, and missing data is denoted
 by <code>9</code>.</p>
 </div>
 </div>
-<div id="reading-genotype-files" class="section level2">
-<h2 class="hasAnchor">
-<a href="#reading-genotype-files" class="anchor"></a>Reading genotype files</h2>
+<div class="section level2">
+<h2 id="reading-genotype-files">Reading genotype files<a class="anchor" aria-label="anchor" href="#reading-genotype-files"></a>
+</h2>
 <p>While there are other R packages for reading and writing binary
-<em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R">plink2R</a>, <a href="https://github.com/OchoaLab/genio">genio</a>), no such packages
+<em>PLINK</em> files (<a href="https://github.com/gabraham/plink2R" class="external-link">plink2R</a>, <a href="https://github.com/OchoaLab/genio" class="external-link">genio</a>), no such packages
 exist to date for <em>PACKEDANCESTRYMAP</em> format files, so some of
 the functions shown here may be useful outside of the
 <em>ADMIXTOOLS</em> framework.</p>
 <p>Note that the functions below impose the restriction than individual
 IDs may not be duplicated across populations or families.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_plink.html">read_plink</a></span><span class="op">(</span><span class="st">"plink/prefix"</span><span class="op">)</span>
-<span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_eigenstrat.html">read_eigenstrat</a></span><span class="op">(</span><span class="st">"eigenstrat/prefix"</span><span class="op">)</span>
-<span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span><span class="op">)</span>
-
-<span class="co"># read SNPs 1000 to 2000</span>
-<span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span>, first <span class="op">=</span> <span class="fl">1000</span>, last <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span>
-<span class="co"># read only ind1 and ind2</span>
-<span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span>, inds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">'ind1'</span>, <span class="st">'ind2'</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_plink.html">read_plink</a></span><span class="op">(</span><span class="st">"plink/prefix"</span><span class="op">)</span></span>
+<span><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_eigenstrat.html">read_eigenstrat</a></span><span class="op">(</span><span class="st">"eigenstrat/prefix"</span><span class="op">)</span></span>
+<span><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># read SNPs 1000 to 2000</span></span>
+<span><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span>, first <span class="op">=</span> <span class="fl">1000</span>, last <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
+<span><span class="co"># read only ind1 and ind2</span></span>
+<span><span class="va">geno</span> <span class="op">=</span> <span class="fu"><a href="../reference/read_packedancestrymap.html">read_packedancestrymap</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span>, inds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'ind1'</span>, <span class="st">'ind2'</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="extracting-populations" class="section level2">
-<h2 class="hasAnchor">
-<a href="#extracting-populations" class="anchor"></a>Extracting populations</h2>
+<div class="section level2">
+<h2 id="extracting-populations">Extracting populations<a class="anchor" aria-label="anchor" href="#extracting-populations"></a>
+</h2>
 <p>Populations can be extracted from <em>PLINK</em> files (and written
 to another set of <em>PLINK</em> files) like this:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/extract_samples.html">extract_samples</a></span><span class="op">(</span><span class="st">"input/prefix"</span>, <span class="st">"output/prefix"</span>, pops <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"pop1"</span>, <span class="st">"pop2"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/extract_samples.html">extract_samples</a></span><span class="op">(</span><span class="st">"input/prefix"</span>, <span class="st">"output/prefix"</span>, pops <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pop1"</span>, <span class="st">"pop2"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><code>extract_samples</code> can also be used to extract samples,
 similar to <code>plink --keep</code>.</p>
 </div>
-<div id="combining-data-sets" class="section level2">
-<h2 class="hasAnchor">
-<a href="#combining-data-sets" class="anchor"></a>Combining data sets</h2>
+<div class="section level2">
+<h2 id="combining-data-sets">Combining data sets<a class="anchor" aria-label="anchor" href="#combining-data-sets"></a>
+</h2>
 <p><em>ADMIXTOOLS 2</em> can’t merge data sets. Data in <em>PLINK</em>
 format can be merged using <code>plink --bmerge</code>.</p>
 </div>
-<div id="computing-allele-frequencies" class="section level2">
-<h2 class="hasAnchor">
-<a href="#computing-allele-frequencies" class="anchor"></a>Computing allele frequencies</h2>
+<div class="section level2">
+<h2 id="computing-allele-frequencies">Computing allele frequencies<a class="anchor" aria-label="anchor" href="#computing-allele-frequencies"></a>
+</h2>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/plink_to_afs.html">plink_to_afs</a></span><span class="op">(</span><span class="st">"plink/prefix"</span><span class="op">)</span>
-<span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/eigenstrat_to_afs.html">eigenstrat_to_afs</a></span><span class="op">(</span><span class="st">"eigenstrat/prefix"</span><span class="op">)</span>
-<span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/packedancestrymap_to_afs.html">packedancestrymap_to_afs</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/plink_to_afs.html">plink_to_afs</a></span><span class="op">(</span><span class="st">"plink/prefix"</span><span class="op">)</span></span>
+<span><span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/eigenstrat_to_afs.html">eigenstrat_to_afs</a></span><span class="op">(</span><span class="st">"eigenstrat/prefix"</span><span class="op">)</span></span>
+<span><span class="va">afs</span> <span class="op">=</span> <span class="fu"><a href="../reference/packedancestrymap_to_afs.html">packedancestrymap_to_afs</a></span><span class="op">(</span><span class="st">"packedancestrymap/prefix"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="converting-packedancestrymap-to-plink" class="section level2">
-<h2 class="hasAnchor">
-<a href="#converting-packedancestrymap-to-plink" class="anchor"></a>Converting <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em>
+<div class="section level2">
+<h2 id="converting-packedancestrymap-to-plink">Converting <em>PACKEDANCESTRYMAP</em> to <em>PLINK</em><a class="anchor" aria-label="anchor" href="#converting-packedancestrymap-to-plink"></a>
 </h2>
 <p>This function converts genotype files from <em>PACKEDANCESTRYMAP</em>
 or <em>EIGENSTRAT</em> to <em>PLINK</em> format. If <code>inds</code> or
@@ -252,12 +248,12 @@ extracted.</p>
 binary <em>PACKEDANCESTRYMAP</em> files, so the conversion only goes one
 way.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/packedancestrymap_to_plink.html">eigenstrat_to_plink</a></span><span class="op">(</span><span class="st">"eigenstrat_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span>
-<span class="fu"><a href="../reference/packedancestrymap_to_plink.html">packedancestrymap_to_plink</a></span><span class="op">(</span><span class="st">"packedancestrymap_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/packedancestrymap_to_plink.html">eigenstrat_to_plink</a></span><span class="op">(</span><span class="st">"eigenstrat_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/packedancestrymap_to_plink.html">packedancestrymap_to_plink</a></span><span class="op">(</span><span class="st">"packedancestrymap_input_prefix"</span>, <span class="st">"plink_output_prefix"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="admixture-graph-formats" class="section level2">
-<h2 class="hasAnchor">
-<a href="#admixture-graph-formats" class="anchor"></a>Admixture graph formats</h2>
+<div class="section level2">
+<h2 id="admixture-graph-formats">Admixture graph formats<a class="anchor" aria-label="anchor" href="#admixture-graph-formats"></a>
+</h2>
 <p>There are several ways in which admixture graphs can be represented.
 Some of them are useful because they can be stored as human readable
 text files, and others are useful because they make it easier for R to
@@ -267,9 +263,9 @@ importing, exporting and converting between formats.</p>
 edges. After fitting a graph, each edge has a weight associated with it,
 and maybe some other information. Here I mostly show examples of graphs
 that are not fitted yet.</p>
-<div id="edge-list-format" class="section level3">
-<h3 class="hasAnchor">
-<a href="#edge-list-format" class="anchor"></a>Edge list format</h3>
+<div class="section level3">
+<h3 id="edge-list-format">Edge list format<a class="anchor" aria-label="anchor" href="#edge-list-format"></a>
+</h3>
 <p>The simplest way to represent a graph in a text file is by writing
 each edge in the graph in a separate line:</p>
 <pre><code>R      O
@@ -286,49 +282,52 @@ admix  D</code></pre>
 <p>We can save this in a text file <code>graph.txt</code> and read it
 into R like this:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">graph_el</span> <span class="op">=</span> <span class="fu">read_table2</span><span class="op">(</span><span class="st">'~/Downloads/graph.tsv'</span>, col_names <span class="op">=</span> <span class="cn">F</span><span class="op">)</span>
-<span class="fu"><a href="../reference/plotly_graph.html">plotly_graph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></code></pre></div>
-<div id="htmlwidget-a138425b19917385adc3" style="width:700px;height:432.632880098888px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="htmlwidget-a138425b19917385adc3">{"x":{"data":[{"x":[2,0],"y":[1,0],"text":"n4 -> admix","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(163,165,0,1)","dash":"dot"},"hoveron":"points","name":"(admix,1)","legendgroup":"(admix,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,0],"y":[2,0],"text":"n2 -> admix","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,125,1)","dash":"dot"},"hoveron":"points","name":"(admix,2)","legendgroup":"(admix,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0],"y":[0,-1],"text":"admix -> D","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(normal,0)","legendgroup":"(normal,0)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2,2],"y":[1,0],"text":"n4 -> C","type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(163,165,0,1)","dash":"solid"},"hoveron":"points","name":"(normal,1)","legendgroup":"(normal,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,-1,null,1.5,1,null,1.5,2],"y":[2,1,null,2,1,null,2,1],"text":["n2 -> A","n2 -> A",null,"n3 -> B","n3 -> B",null,"n3 -> n4","n3 -> n4"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,191,125,1)","dash":"solid"},"hoveron":"points","name":"(normal,2)","legendgroup":"(normal,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0.5,-0.5,null,0.5,1.5],"y":[3,2,null,3,2],"text":["n1 -> n2","n1 -> n2",null,"n1 -> n3","n1 -> n3"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(0,176,246,1)","dash":"solid"},"hoveron":"points","name":"(normal,3)","legendgroup":"(normal,3)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,-0.5,null,0,0.5],"y":[4,3,null,4,3],"text":["R -> O","R -> O",null,"R -> n1","R -> n1"],"type":"scatter","mode":"lines","line":{"width":1.88976377952756,"color":"rgba(231,107,243,1)","dash":"solid"},"hoveron":"points","name":"(normal,4)","legendgroup":"(normal,4)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0.5,-0.5,1.5,2,0],"y":[4,3,2,2,1,0],"text":["R","n1","n2","n3","n4","admix"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","opacity":0,"size":5.66929133858268,"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.25,0.25,0,1,-0.75,-0.25,1.25,1.75,2,1,0],"y":[3.5,3.5,2.5,2.5,1.5,1,1.5,1.5,0.5,0.5,-0.5],"text":["","","","","","","","","","",""],"hovertext":["R -> O","R -> n1","n1 -> n2","n1 -> n3","n2 -> A","n2 -> admix","n3 -> B","n3 -> n4","n4 -> C","n4 -> admix","admix -> D"],"textfont":{"size":9.4488188976378,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0],"y":[-1.1],"text":"D","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(248,118,109,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(0,1)","legendgroup":"(0,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2],"y":[-0.1],"text":"C","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(163,165,0,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"1","legendgroup":"1","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1,1],"y":[0.9,0.9],"text":["A","B"],"hovertext":["",""],"textfont":{"size":9.4488188976378,"color":"rgba(0,191,125,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(2,1)","legendgroup":"(2,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[2.9],"text":"O","hovertext":"","textfont":{"size":9.4488188976378,"color":"rgba(231,107,243,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(4,1)","legendgroup":"(4,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"visible":false,"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[4],"text":"","hovertext":"","textfont":{"size":14.6645669291339,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":27.8246364188244,"r":7.30593607305936,"b":15.4776044553541,"l":10.958904109589},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.4,2.4],"tickmode":"array","ticktext":["-1","0","1","2"],"tickvals":[-1,0,1,2],"categoryorder":"array","categoryarray":["-1","0","1","2"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"y","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.355,4.255],"tickmode":"array","ticktext":["-1","0","1","2","3","4"],"tickvals":[-1,0,1,2,3,4],"categoryorder":"array","categoryarray":["-1","0","1","2","3","4"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176,"zeroline":false,"anchor":"x","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"130617bee3b30":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"linetype":{},"colour":{},"text":{},"type":"scatter"},"1306155700be0":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"text":{}},"130612f1bcaf2":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"text":{}},"1306149a8ee07":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"colour":{}},"1306171a33358":{"y":{}},"13061118010b1":{"x":{},"y":{}}},"cur_data":"130617bee3b30","visdat":{"130617bee3b30":["function (y) ","x"],"1306155700be0":["function (y) ","x"],"130612f1bcaf2":["function (y) ","x"],"1306149a8ee07":["function (y) ","x"],"1306171a33358":["function (y) ","x"],"13061118010b1":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><p><code><a href="../reference/qpgraph.html">qpgraph()</a></code> uses this format to represent fitted graphs.
+<code class="sourceCode R"><span><span class="va">graph_el</span> <span class="op">=</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_table2.html" class="external-link">read_table2</a></span><span class="op">(</span><span class="st">'~/Downloads/graph.tsv'</span>, col_names <span class="op">=</span> <span class="cn">F</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plotly_graph.html">plotly_graph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></span></code></pre></div>
+<div class="plotly html-widget html-fill-item-overflow-hidden html-fill-item" id="htmlwidget-08d06d34d69473f7eca3" style="width:700px;height:432.632880098888px;"></div>
+<script type="application/json" data-for="htmlwidget-08d06d34d69473f7eca3">{"x":{"data":[{"x":[2,0],"y":[1,0],"text":"n4 -> admix","type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(163,165,0,1)","dash":"dot"},"hoveron":"points","name":"(admix,1)","legendgroup":"(admix,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,0],"y":[2,0],"text":"n2 -> admix","type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(0,191,125,1)","dash":"dot"},"hoveron":"points","name":"(admix,2)","legendgroup":"(admix,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0],"y":[0,-1],"text":"admix -> D","type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(248,118,109,1)","dash":"solid"},"hoveron":"points","name":"(normal,0)","legendgroup":"(normal,0)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2,2],"y":[1,0],"text":"n4 -> C","type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(163,165,0,1)","dash":"solid"},"hoveron":"points","name":"(normal,1)","legendgroup":"(normal,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5,-1,null,1.5,1,null,1.5,2],"y":[2,1,null,2,1,null,2,1],"text":["n2 -> A","n2 -> A",null,"n3 -> B","n3 -> B",null,"n3 -> n4","n3 -> n4"],"type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(0,191,125,1)","dash":"solid"},"hoveron":"points","name":"(normal,2)","legendgroup":"(normal,2)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0.5,-0.5,null,0.5,1.5],"y":[3,2,null,3,2],"text":["n1 -> n2","n1 -> n2",null,"n1 -> n3","n1 -> n3"],"type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(0,176,246,1)","dash":"solid"},"hoveron":"points","name":"(normal,3)","legendgroup":"(normal,3)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,-0.5,null,0,0.5],"y":[4,3,null,4,3],"text":["R -> O","R -> O",null,"R -> n1","R -> n1"],"type":"scatter","mode":"lines","line":{"width":1.8897637795275593,"color":"rgba(231,107,243,1)","dash":"solid"},"hoveron":"points","name":"(normal,4)","legendgroup":"(normal,4)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0,0.5,-0.5,1.5,2,0],"y":[4,3,2,2,1,0],"text":["R","n1","n2","n3","n4","admix"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(0,0,0,1)","opacity":0,"size":5.6692913385826778,"symbol":"circle","line":{"width":1.8897637795275593,"color":"rgba(0,0,0,1)"}},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.25,0.25,0,1,-0.75,-0.25,1.25,1.75,2,1,0],"y":[3.5,3.5,2.5,2.5,1.5,1,1.5,1.5,0.5,0.5,-0.5],"text":["","","","","","","","","","",""],"hovertext":["R -> O","R -> n1","n1 -> n2","n1 -> n3","n2 -> A","n2 -> admix","n3 -> B","n3 -> n4","n4 -> C","n4 -> admix","admix -> D"],"textfont":{"size":9.4488188976377963,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[0],"y":[-1.1000000000000001],"text":"D","hovertext":"","textfont":{"size":9.4488188976377963,"color":"rgba(248,118,109,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(0,1)","legendgroup":"(0,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[2],"y":[-0.10000000000000001],"text":"C","hovertext":"","textfont":{"size":9.4488188976377963,"color":"rgba(163,165,0,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"1","legendgroup":"1","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-1,1],"y":[0.90000000000000002,0.90000000000000002],"text":["A","B"],"hovertext":["",""],"textfont":{"size":9.4488188976377963,"color":"rgba(0,191,125,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(2,1)","legendgroup":"(2,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[2.8999999999999999],"text":"O","hovertext":"","textfont":{"size":9.4488188976377963,"color":"rgba(231,107,243,1)"},"type":"scatter","mode":"text","hoveron":"points","name":"(4,1)","legendgroup":"(4,1)","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"visible":false,"showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[-0.5],"y":[4],"text":"","hovertext":"","textfont":{"size":14.66456692913386,"color":"rgba(0,0,0,1)"},"type":"scatter","mode":"text","hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":27.824636418824401,"r":7.3059360730593621,"b":15.477604455354083,"l":10.958904109589042},"paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.3999999999999999,2.3999999999999999],"tickmode":"array","ticktext":["-1","0","1","2"],"tickvals":[-1,0,1,2],"categoryorder":"array","categoryarray":["-1","0","1","2"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176002,"zeroline":false,"anchor":"y","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1.355,4.2549999999999999],"tickmode":"array","ticktext":["-1","0","1","2","3","4"],"tickvals":[-1,0,1,2,3.0000000000000004,4],"categoryorder":"array","categoryarray":["-1","0","1","2","3","4"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.6529680365296811,"tickwidth":0,"showticklabels":false,"tickfont":{"color":null,"family":null,"size":0},"tickangle":-0,"showline":false,"linecolor":null,"linewidth":0,"showgrid":true,"gridcolor":"rgba(255,255,255,1)","gridwidth":0.66417600664176002,"zeroline":false,"anchor":"x","title":{"text":"","font":{"color":"rgba(0,0,0,1)","family":"","size":14.611872146118724}},"hoverformat":".2f"},"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.8897637795275593,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.68949771689498}},"hovermode":"closest","barmode":"relative"},"config":{"doubleClick":"reset","modeBarButtonsToAdd":["hoverclosest","hovercompare"],"showSendToCloud":false},"source":"A","attrs":{"13bb86942891":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"linetype":{},"colour":{},"text":{},"type":"scatter"},"13bb868f34af6":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"text":{}},"13bb83cbe924e":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"text":{}},"13bb83775e0a":{"x":{},"y":{},"xend":{},"yend":{},"from":{},"to":{},"label":{},"colour":{}},"13bb811bee44d":{"y":{}},"13bb8b7e8455":{"x":{},"y":{}}},"cur_data":"13bb86942891","visdat":{"13bb86942891":["function (y) ","x"],"13bb868f34af6":["function (y) ","x"],"13bb83cbe924e":["function (y) ","x"],"13bb83775e0a":["function (y) ","x"],"13bb811bee44d":["function (y) ","x"],"13bb8b7e8455":["function (y) ","x"]},"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.20000000000000001,"selected":{"opacity":1},"debounce":0},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script><p><code><a href="../reference/qpgraph.html">qpgraph()</a></code> uses this format to represent fitted graphs.
 In addition to the first two columns (<code>from</code> and
 <code>to</code>), there will be additional columns to indicate the type
 of edge, its estimated weight, and possibly more information.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span> <span class="op">%&gt;%</span> <span class="va">head</span></code></pre></div>
-<pre><code>## # A tibble: 6 x 6
-##   from  to                   type   weight   low  high
-##   &lt;chr&gt; &lt;chr&gt;                &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-## 1 R     Chimp.REF            edge  0.0724     NA    NA
-## 2 R     N4N                  edge  0.0724     NA    NA
-## 3 N0N   Altai_Neanderthal.DG edge  0.00321    NA    NA
-## 4 N0N   N3N0                 edge  0.0111     NA    NA
-## 5 N1N   N0N                  edge  0.0841     NA    NA
-## 6 N1N   N3N1                 edge  0.0362     NA    NA</code></pre>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="va">head</span></span></code></pre></div>
+<pre><code><span><span class="co">## This graph was created by an old(er) igraph version.</span></span>
+<span><span class="co">##   Call upgrade_graph() on it to use with the current igraph version</span></span>
+<span><span class="co">##   For now we convert it on the fly...</span></span></code></pre>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 6 × 6</span></span></span>
+<span><span class="co">##   from  to                   type   weight   low  high</span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> R     Chimp.REF            edge  0.072<span style="text-decoration: underline;">4</span>     <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">2</span> R     N4N                  edge  0.072<span style="text-decoration: underline;">4</span>     <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">3</span> N0N   Altai_Neanderthal.DG edge  0.003<span style="text-decoration: underline;">21</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">4</span> N0N   N3N0                 edge  0.011<span style="text-decoration: underline;">1</span>     <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">5</span> N1N   N0N                  edge  0.084<span style="text-decoration: underline;">1</span>     <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">6</span> N1N   N3N1                 edge  0.036<span style="text-decoration: underline;">2</span>     <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span></code></pre>
 </div>
-<div id="igraph-format" class="section level3">
-<h3 class="hasAnchor">
-<a href="#igraph-format" class="anchor"></a>igraph format</h3>
+<div class="section level3">
+<h3 id="igraph-format">igraph format<a class="anchor" aria-label="anchor" href="#igraph-format"></a>
+</h3>
 <p>Many <em>ADMIXTOOLS 2</em> functions use the <code>igraph</code>
 package, which has its own graph format. The most important
 <em>ADMIXTOOLS 2</em> functions work with graphs in either the edge list
 or the <code>igraph</code> format, but some only work with graphs in the
 <code>igraph</code> format. It’s easy to convert between the two
 formats:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] "tbl_df"     "tbl"        "data.frame"</code></pre>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">graph</span> <span class="op">=</span> <span class="fu"><a href="../reference/edges_to_igraph.html">edges_to_igraph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] "igraph"</code></pre>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">graph_el2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html">as.data.frame</a></span><span class="op">(</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/as_edgelist.html">as_edgelist</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/class.html">class</a></span><span class="op">(</span><span class="va">graph_el2</span><span class="op">)</span></code></pre></div>
-<pre><code>## [1] "data.frame"</code></pre>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "tbl_df"     "tbl"        "data.frame"</span></span></code></pre>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">graph</span> <span class="op">=</span> <span class="fu"><a href="../reference/edges_to_igraph.html">edges_to_igraph</a></span><span class="op">(</span><span class="va">graph_el</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "igraph"</span></span></code></pre>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">graph_el2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/as_edgelist.html" class="external-link">as_edgelist</a></span><span class="op">(</span><span class="va">graph</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">graph_el2</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## [1] "data.frame"</span></span></code></pre>
 </div>
-<div id="original-admixtools-format" class="section level3">
-<h3 class="hasAnchor">
-<a href="#original-admixtools-format" class="anchor"></a>Original ADMIXTOOLS format</h3>
+<div class="section level3">
+<h3 id="original-admixtools-format">Original ADMIXTOOLS format<a class="anchor" aria-label="anchor" href="#original-admixtools-format"></a>
+</h3>
 <p>The text representation of the graph above in the original
 <em>ADMIXTOOLS</em> software would look like this:</p>
 <pre><code>vertex              R
@@ -359,17 +358,17 @@ edge                admix_D             admix               D
 admix               admix               n2                  n4</code></pre>
 <p>If this is stored in a file called <code>graph.txt</code>, it can be
 imported into R like this:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">graph_el</span> <span class="op">=</span> <span class="fu"><a href="../reference/parse_qpgraph_graphfile.html">parse_qpgraph_graphfile</a></span><span class="op">(</span><span class="st">'graph.txt'</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">graph_el</span> <span class="op">=</span> <span class="fu"><a href="../reference/parse_qpgraph_graphfile.html">parse_qpgraph_graphfile</a></span><span class="op">(</span><span class="st">'graph.txt'</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="dot-format" class="section level3">
-<h3 class="hasAnchor">
-<a href="#dot-format" class="anchor"></a>DOT format</h3>
+<div class="section level3">
+<h3 id="dot-format">DOT format<a class="anchor" aria-label="anchor" href="#dot-format"></a>
+</h3>
 <p>DOT format is often used for plotting admixture graphs. You can
 export a fitted admixture graph like this:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span>
-<span class="fu"><a href="../reference/write_dot.html">write_dot</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">'graph.dot'</span><span class="op">)</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">=</span> <span class="fu"><a href="../reference/qpgraph.html">qpgraph</a></span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">example_igraph</span><span class="op">)</span><span class="op">$</span><span class="va">edges</span></span>
+<span><span class="fu"><a href="../reference/write_dot.html">write_dot</a></span><span class="op">(</span><span class="va">fit</span>, <span class="st">'graph.dot'</span><span class="op">)</span></span></code></pre></div>
 <p><em>ADMIXTOOLS 2</em> currently doesn’t have a function for reading
 DOT files.</p>
 </div>
@@ -387,11 +386,13 @@ DOT files.</p>
 
 
       <footer><div class="copyright">
-  <p>Developed by Robert Maier, Nick Patterson.</p>
+  <p></p>
+<p>Developed by Robert Maier, Nick Patterson.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

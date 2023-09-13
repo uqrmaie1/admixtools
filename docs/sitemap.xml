@@ -1,6 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/404.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/admixtools.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/compare.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/fstats.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/graph_optim.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/graphs.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/io.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/missing.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/paper.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/parallel.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/plotting.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/qpadm.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/qpgraph.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/recipes.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/resampling.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/simulations.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/authors.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/index.html</loc>
   </url>
   <url>
@@ -19,6 +73,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/agraph_to_igraph.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/ancestrymap_to_aftable.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/boo_list.html</loc>
   </url>
   <url>
@@ -28,6 +85,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits2.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits3.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/compare_fits4.html</loc>
   </url>
   <url>
@@ -35,6 +95,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/count_zero_edges.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/decompose_graph.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/decomposed_tree_neighbors.html</loc>
@@ -85,13 +148,25 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/example_triples.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/example_winner.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/example_winners.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_afs.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_afs_old.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_afs_simple.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_counts.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_data.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_f2.html</loc>
@@ -101,6 +176,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_f2_subset.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_indpairs.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/extract_samples.html</loc>
@@ -118,16 +196,28 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_precomp.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2_from_simulation.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f2dat_f4dat.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f3.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f3blockdat_from_geno.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_afdat.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_f2.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4_from_f2_pops.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/f4blockdat_from_geno.html</loc>
@@ -142,6 +232,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_graphs.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_graphs2.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_graphs_old.html</loc>
   </url>
   <url>
@@ -149,6 +242,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/find_normedges.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/fit_graph.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/flipadmix_random.html</loc>
@@ -173,6 +269,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_outpop.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_root.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/get_rootname.html</loc>
@@ -226,13 +325,28 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/igraph_to_agraph.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/index.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_igraph.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_multi.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_n.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_admix_old.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_edge.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_edges.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/insert_leaf.html</loc>
@@ -262,6 +376,12 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/loo_to_est.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/make_resample_inds_fun.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/make_resample_snps_fun.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/move_admixedge_once.html</loc>
   </url>
   <url>
@@ -286,7 +406,16 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/numadmix.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/optimize_admixturegraph.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/optimize_admixturegraph_single.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/packedancestrymap_to_afs.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/packedancestrymap_to_aftable.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/packedancestrymap_to_plink.html</loc>
@@ -304,6 +433,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qpdstat_output.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qpdstat_parfile.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qpf4ratio_output.html</loc>
   </url>
   <url>
@@ -311,6 +443,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qpgraph_output.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/parse_qpgraph_parfile.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/permute_leaves.html</loc>
@@ -322,13 +457,28 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plink_to_afs.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plink_to_aftable.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_comparison.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_graph.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_graph2.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_graph_map.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_graph_map2.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_graph_old.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_ly.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/plot_map.html</loc>
@@ -364,6 +514,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_p.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_pairs.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpadm_rotate.html</loc>
   </url>
   <url>
@@ -397,7 +550,13 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpgraph_resample_snps2.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpgraph_slim.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpgraph_wrapper.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpgraph_wrapper2.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/qpwave.html</loc>
@@ -421,6 +580,12 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/random_sim.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_ancestrymap.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_bl.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_eigenstrat.html</loc>
   </url>
   <url>
@@ -428,6 +593,9 @@
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_packedancestrymap.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_packedancestrymap_old.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/read_plink.html</loc>
@@ -460,10 +628,16 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/satisfies_zerof4.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/set_blocks.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/shortest_unique_prefixes.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/simplify_graph.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/split_afmat.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/split_mat.html</loc>
@@ -508,6 +682,9 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_triples.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_triples_old.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/summarize_zerof4.html</loc>
   </url>
   <url>
@@ -520,6 +697,12 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/test_cladality.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/testfun.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/testfun22.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/tree_in_graph.html</loc>
   </url>
   <url>
@@ -529,36 +712,18 @@
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/unidentifiable_edges.html</loc>
   </url>
   <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_afs.html</loc>
+  </url>
+  <url>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_block_lengths.html</loc>
+  </url>
+  <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_dot.html</loc>
   </url>
   <url>
     <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_f2.html</loc>
   </url>
   <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/admixtools.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/fstats.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/graphs.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/io.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/paper.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/parallel.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/plotting.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/qpadm.html</loc>
-  </url>
-  <url>
-    <loc>https://uqrmaie1.github.io/admixtools/index.html/articles/resampling.html</loc>
+    <loc>https://uqrmaie1.github.io/admixtools/index.html/reference/write_split_f2_block.html</loc>
   </url>
 </urlset>

@@ -14,6 +14,7 @@ qpadm_p(
   constrained = FALSE,
   rnk = length(setdiff(left, target)) - 1,
   cpp = TRUE,
+  weights = FALSE,
   f4blocks = NULL
 )
 }
@@ -36,6 +37,8 @@ equal to the number of SNP blocks.}
 \item{rnk}{Rank of f4-matrix. Defaults to one less than full rank.}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
+
+\item{weights}{Return weights (default = \code{FALSE})}
 
 \item{f4blocks}{Instead of f2 blocks, f4 blocks can be supplied. This is used by \code{\link{qpadm_multi}}}
 }

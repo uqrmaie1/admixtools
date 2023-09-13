@@ -688,6 +688,7 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 #' @export
 #' @inheritParams qpadm
 #' @param rnk Rank of f4-matrix. Defaults to one less than full rank.
+#' @param weights Return weights (default = `FALSE`)
 #' @return Data frame with `f4rank`, `dof`, `chisq`, `p`, `feasible`
 #' @seealso \code{\link{qpadm}}
 #' @examples
@@ -697,9 +698,8 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
 #' qpadm_p(example_f2_blocks, left, right, target)
 qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = FALSE,
                    constrained = FALSE, rnk = length(setdiff(left, target)) - 1, cpp = TRUE,
-                   f4blocks = NULL) {
+                   weights = FALSE, f4blocks = NULL) {
 
-  #force(rnk)
   if(is.null(f4blocks)) {
     if(!is.null(target)) left = c(target, setdiff(left, target))
     f2_blocks = get_f2(f2_data, pops = left, pops2 = right, afprod = TRUE)
@@ -714,8 +714,10 @@ qpadm_p = function(f2_data, left, right, target = NULL, fudge = 0.0001, boot = F
   qinv = solve(f4_var)
   out = qpadm_fit(f4_est, qinv, rnk, fudge = fudge,
                   constrained = constrained, cpp = cpp, addweights = TRUE)
-  w = out %>% select(-1:-4) %>% as.matrix
-  out %>% select(1:4) %>% mutate(feasible = all(between(w, 0, 1)))
+  w = out %>% select(-1:-4) %>% as.matrix %>% c
+  if(!weights) out = out %>% select(1:4)
+  out %>%
+    mutate(feasible = all(between(w, 0, 1)))
 }
 
 
