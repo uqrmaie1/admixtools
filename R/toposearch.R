@@ -1656,9 +1656,10 @@ graph_minusone = function(graph, ntry = Inf) {
 #'   unnest_wider(res)
 #' }
 graph_minusplus = function(graph) {
-  graph %>% graph_minusone %>% mutate(graph2 = map(graph, graph_plusone)) %>%
-    rename(source_from = from, source_to = to) %>% select(-graph) %>% unnest(graph2) %>%
-    rename(dest_from = from, dest_to = to) %>% mutate(isoclass = isomorphism_classes2(graph)) %>%
+  graph %>% graph_minusone %>%
+    mutate(graph2 = map(graph, graph_plusone)) %>%
+    select(-graph) %>% unnest(graph2) %>%
+    mutate(isoclass = isomorphism_classes2(graph)) %>%
     filter(!duplicated(isoclass)) %>% select(-isoclass)
 }
 

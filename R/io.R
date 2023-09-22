@@ -2544,7 +2544,7 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
   x = construct_fstat_matrix(popcomb)
   ymat = f4blockdat %>%
     select(pop1:pop4, block, est) %>%
-    pivot_wider(1:4, names_from = block, values_from = est) %>%
+    pivot_wider(id_cols=1:4, names_from = block, values_from = est) %>%
     select(-1:-4) %>% as.matrix
   y = f4pass1$est
   #ymat = ymat/f4pass1$se

@@ -320,7 +320,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     else if(is_plink_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
     else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
     else pop1 = dimnames(f2_data)[[1]]
-  } else if(is.character(pop1) && file.exists(pop1)) {
+  } else if(is.character(pop1)[1] && file.exists(pop1)) {
     pop1 = read_table2(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
       pop1 = pop1[[1]]
