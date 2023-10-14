@@ -98,7 +98,7 @@ get_leaves2 = function(graph) {
 
 get_root = function(graph) {
   root = V(graph)[igraph::degree(graph, mode = 'in') == 0]
-  if(length(root) != 1) stop(paste0('Root problem ', paste0(names(root), collapse = ' ')))
+  #if(length(root) != 1) stop(paste0('Root problem ', paste0(names(root), collapse = ' ')))
   root
 }
 

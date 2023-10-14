@@ -109,6 +109,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' equal to the number of SNP blocks.
 #' @param getcov Compute weights covariance. Setting `getcov = FALSE` will speed up the computation.
 #' @param constrained Constrain admixture weights to be non-negative
+#' @param return_f4 Return f4-statistics
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
@@ -157,7 +158,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' }
 qpadm = function(data, left, right, target, f4blocks = NULL,
                  fudge = 0.0001, fudge_twice = FALSE, boot = FALSE, getcov = TRUE,
-                 constrained = FALSE, cpp = TRUE, verbose = TRUE, ...) {
+                 constrained = FALSE, return_f4 = FALSE, cpp = TRUE, verbose = TRUE, ...) {
 
   #----------------- prepare f4 stats -----------------
   f2_blocks = NULL
@@ -229,12 +230,10 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 
     wvec = out$weights %>% select(left, weight) %>% deframe
     if(!is.null(f2_blocks)) out$f4 = fitted_f4(f2_blocks, wvec, target, left[-1], right)
-    #else out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
-    else out$f4 = NULL
+    else if(return_f4) out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
   } else {
     if(!is.null(f2_blocks)) out$f4 = f4(f2_blocks, left[1], left[-1], right[1], right[-1], verbose = FALSE)
-    #else out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
-    else out$f4 = NULL
+    else if(return_f4) out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
   }
 
   #----------------- compute number of admixture waves -----------------

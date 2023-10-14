@@ -104,24 +104,24 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param textsize Size of edge and node labels
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @param pos An optional data frame with node coordinates (columns `node`, `x`, `y`)
-#' @param dates An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}). 
+#' @param dates An optional named vector with dates (in generations) for each node to plot dates on the y-axis (e.g., \code{c('R'=1000, 'A'=0, 'B'=0)}).
 #' If this option is supplied, the y-axis will display dates in generations.
-#' @param neff An optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}). 
-#' If this option is supplied, the effective population size of each population will be shown next to the corresponding edge. 
+#' @param neff An optional named vector with effective population sizes for each population (e.g., \code{c('R'=100, 'A'=100, 'B'=100)}).
+#' If this option is supplied, the effective population size of each population will be shown next to the corresponding edge.
 #' @param scale_y If `TRUE`, scale the y-axis according to \code{dates} vector. The default is `FALSE`.
 #' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
 #' @return A ggplot object
 #' @examples
 #' plot_graph(example_graph)
-#' 
+#'
 #' # Plot a random simulation output. Show dates and population sizes on the plot
 #' out = random_sim(nleaf=5, nadmix=1)
 #' plot_graph(out$edges, dates=out$dates, neff=out$neff)
 plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE,
                       pos = NULL, dates = NULL, neff = NULL, scale_y = FALSE, hide_weights = FALSE) {
-  
+
   pdat = graph_to_plotdat(graph, fix = fix, fix_down = TRUE, pos = pos)
-  
+
   # ## Correct y-axis values if leaf nodes are fixed to 0 (i.e., if fix_leaf=TRUE)
   # if (sum(dates[pdat$nodes$name]) == 0 && !is.null(dates)){
   #   if ("igraph" %in% class(graph)) g = graph
@@ -132,25 +132,25 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
   #            x = ifelse(xdirection=='pos', x+diff/2, x-diff/2),
   #            y = min(y)) %>%
   #     select(-diff, -xdirection)
-  #   
+  #
   #   nodes = rename(pdat$nodes, x=xend, y=yend, xend=x, yend=y, to=name)
-  #   
+  #
   #   for (i in nodes$to){
   #     pdat$eg[pdat$eg$to == i, c("x", "y", "xend", "yend", "to")] = nodes[nodes$to == i, c("x", "y", "xend", "yend", "to")]
   #   }
   # }
-  
-  pdat[['comb']] = bind_rows(select(pdat$nodes, name, x, y), 
+
+  pdat[['comb']] = bind_rows(select(pdat$nodes, name, x, y),
                              select(pdat$eg, name, x, y)) %>% distinct()
-  
+
   layers = vector('list')
   if (!is.null(dates)){
     if (!all(sort(unique(pdat$comb$name)) == sort(unique(names(dates))))) stop("dates must be a named vector with a number for each node!")
-    
-    date_df = pdat$comb %>% left_join(tibble(name=names(dates), date=dates), by="name") %>% 
+
+    date_df = pdat$comb %>% left_join(tibble(name=names(dates), date=dates), by="name") %>%
       group_by(y) %>% mutate(date = max(date)) %>%  # To fix the mismatch when fix_leaf=TRUE
       select(y, date) %>% distinct()
-    
+
     if (isTRUE(scale_y)){
       scaled_y = setNames(round(date_df$date/mean(date_df$date), 4), as.character(date_df$y))
       date_df %<>%
@@ -164,7 +164,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
       pdat$comb %<>%
         mutate(y = scaled_y[as.character(y)])
     }
-    
+
     layers$date = list(geom_hline(yintercept = date_df$y, linetype=3, alpha=0.6),
                        scale_y_continuous(breaks=date_df$y, labels=date_df$date),
                        ylab('Time (in generation ago)'),
@@ -173,7 +173,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
                              axis.text.x = element_blank(),
                              axis.ticks = element_blank(),
                              legend.position = 'none'))
-    
+
   } else{
     layers$date = list(ylab(''),
                        theme(panel.background = element_blank(),
@@ -191,7 +191,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
       rename(name = to) %>%
       left_join(tibble(name=names(neff), label=neff), by="name") %>%
       select(-c(name, xend, yend, type))
-    
+
     if ("R" %in% pdat$eg$name ){
       rootlab = pdat$eg %>%
         filter(name == "R") %>%
@@ -199,17 +199,17 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
         distinct() %>%
         mutate(label = neff['R']) %>%
         select(-name)
-      
+
       neff_df %<>% bind_rows(rootlab)
     }
     layers$neff = geom_text(data=neff_df, aes_string(x='x', y='y', label='label'), col='black', inherit.aes = FALSE, alpha=0.8, size = textsize - 0.5, nudge_x = .0, nudge_y = .15)
   }
-  
+
   if (isTRUE(hide_weights)){
     pdat$eg %<>%
       mutate(label = ifelse(type == 'normal', "", as.character(label)))
   }
-  
+
   if(color) {
     layers$gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
                              arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
@@ -222,13 +222,13 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
     layers$gl = geom_label(data=pdat$nodes, aes_string(label = 'name'), col = 'black', size = textsize)
   }
   layers$gl2 = if(is.null(pdat$internal)) NULL else geom_text(data=pdat$internal, aes_string(label = 'name'), size = textsize, nudge_x = -.1, nudge_y = .1)
-  
+
   layers$aes = list(geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize, nudge_y = -.15),
                     xlab(''),
                     scale_linetype_manual(values = c(admix=3, normal=1)),
                     ggtitle(title),
                     scale_x_continuous(expand = c(0.15, 0.15)))
-  
+
   if(highlight_unidentifiable) {
     if ("igraph" %in% class(graph)) g = graph
     else g = edges_to_igraph(graph)
@@ -237,9 +237,9 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
     layers$highlight = geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2,
                                     arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
   }
- 
-  ggplot(pdat$eg, aes(x=x, xend=xend, y=y, yend=yend)) + 
-    layers 
+
+  ggplot(pdat$eg, aes(x=x, xend=xend, y=y, yend=yend)) +
+    layers
 }
 
 
@@ -842,7 +842,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
   if(fix) {
     eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
-  if(TRUE) {
+  if(is.null(pos)) {
       eg = fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
 
