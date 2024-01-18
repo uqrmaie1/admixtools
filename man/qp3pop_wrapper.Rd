@@ -13,8 +13,7 @@ qp3pop_wrapper(
   outdir = ".",
   parfile = NULL,
   inbreed = "NO",
-  outgroupmode = "YES",
-  f4mode = "YES",
+  outgroupmode = "NO",
   printonly = FALSE,
   env = "",
   verbose = TRUE
@@ -48,8 +47,6 @@ population combinations to be tested. \code{source2} and \code{target} will be i
 \item{inbreed}{inbreed}
 
 \item{outgroupmode}{outgroupmode}
-
-\item{f4mode}{f4mode}
 
 \item{printonly}{Should the command be printed or executed?}
 

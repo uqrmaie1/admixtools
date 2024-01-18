@@ -92,9 +92,9 @@ $$\hat\sigma^2 = \frac{1}{g} \sum_{i=1}^g (\frac{m_i}{n-m_i}) (\hat\theta - \hat
 
 
 
-### Resampling SNPS -- need to update this
+### Resampling SNPs
 
-The subsampling of SNPs in blocks (sepcifically block jackknife) is already used throughout all *ADMIXTOOLS* programs to compute standard erorrs. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.
+The subsampling of SNPs in blocks (specifically block jackknife) is already used throughout all *ADMIXTOOLS* programs to compute standard errors. Here, the `resample_snps` functions generalize this approach in two ways. First, they evaluate and returns *all* model parameters for each set of resampled SNP blocks. Second, they provide the option to do bootstrap resampling (resampling blocks with replacement while keeping the total number of blocks fixed) rather than jackknife resampling (leaving one block out at a time). The advantage of bootstrap over jackknife resampling is that bootstrap resampling is less likely to underestimate the true variability in the presence of a few, large outliers. The disadvantage is that it is inherently stochastic and doesn't give the same results each time. Bootstrapping also makes it necessary to evaluate the whole model a large number of times, while jackknifing can be much faster, at least when computing only simple statistics.
 
 Note that the bootstrap and jackknife resampling distributions are on different scales: Bootstrap standard errors are the square root of the sampling variance, whereas jackknife standard errors are the square root of *n times* the sampling variance.
 

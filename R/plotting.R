@@ -842,7 +842,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
   if(fix) {
     eg = fix_layout(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
-  if(is.null(pos)) {
+  if(TRUE) {
       eg = fix_shiftdown(eg %>% rename(name = from), graph) %>% rename(from = name)
   }
 

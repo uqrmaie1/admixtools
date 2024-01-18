@@ -756,6 +756,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
     if(verbose) alert_info(paste0('Reading ', type,
                                   ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
     fl = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
+    if(!file.exists(fl)) fl = paste0(f2_dir, '/', popcomb$p2[i], '/', popcomb$p1[i], '_', type, '.rds')
     if(!file.exists(fl)) stop(paste0('File ', fl, ' not found! You may have to recompute the f-statistics!'))
     dat = readRDS(fl)[,col]
     f2_blocks[pop1, pop2, ] = dat
@@ -2321,6 +2322,8 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
+#' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With `apply_corr = 2`, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.
+#' @param outgroupmode Default `FALSE` if f3 computed directly from genotype data, and `TRUE` if f3 is computed from f2-statistics. With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. With `outgroupmode = TRUE`, this normalization is simply ommited.
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,

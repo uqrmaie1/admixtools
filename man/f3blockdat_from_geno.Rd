@@ -33,6 +33,10 @@ f3blockdat_from_geno(
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Setting \code{adjust_pseudohaploid} to an integer \code{n} will check the first \code{n} SNPs instead of the first 1000 SNPs.}
 
+\item{apply_corr}{With \code{apply_corr = FALSE}, no bias correction is performed. With \code{apply_corr = TRUE} (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With \code{apply_corr = 2}, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.}
+
+\item{outgroupmode}{Default \code{FALSE} if f3 computed directly from genotype data, and \code{TRUE} if f3 is computed from f2-statistics. With \code{outgroupmode = FALSE}, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. With \code{outgroupmode = TRUE}, this normalization is simply ommited.}
+
 \item{verbose}{Print progress updates}
 }
 \value{

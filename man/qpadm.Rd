@@ -15,6 +15,7 @@ qpadm(
   boot = FALSE,
   getcov = TRUE,
   constrained = FALSE,
+  return_f4 = FALSE,
   cpp = TRUE,
   verbose = TRUE,
   ...
@@ -48,6 +49,8 @@ equal to the number of SNP blocks.}
 \item{getcov}{Compute weights covariance. Setting \code{getcov = FALSE} will speed up the computation.}
 
 \item{constrained}{Constrain admixture weights to be non-negative}
+
+\item{return_f4}{Return f4-statistics}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
 

@@ -939,6 +939,16 @@ swap_leaves = function(graph, fix_outgroup = TRUE) {
   igraph::set_vertex_attr(graph, 'name', leaves, sample(nam))
 }
 
+
+swap_admix = function(graph) {
+
+  admixedges = graph %>% find_admixedges %>% sample_frac(1)
+  sw = admixedges %>% filter(!duplicated(to)) %>% slice(1:2) %>% mutate(e = paste(from, to, sep='|'))
+  graph %>%
+    igraph::delete_edges(sw$e) %>%
+    igraph::add_edges(c(sw$from[1], sw$to[2], sw$from[2], sw$to[1]))
+}
+
 #' Modify a graph flipping the direction of an admixture edge
 #'
 #' @export
@@ -2809,7 +2819,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
         filter(!is.null(og) && og == outpop) %>% ungroup
       }, error = function(e) browser())
       if(nrow(newmod) == 0) {
-        alert_danger('No new models!\n')
+        if(verbose) alert_danger('No new models!\n')
         next
       }
       newmod %<>%

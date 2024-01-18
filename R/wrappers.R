@@ -29,7 +29,6 @@ yesno = function(arg) {
 #' \code{target} will be ignored.
 #' @param inbreed inbreed
 #' @param outgroupmode outgroupmode
-#' @param f4mode f4mode
 #' @param printonly Should the command be printed or executed?
 #' @param env Export environmental variables. See examples.
 #' @param verbose Print progress updates
@@ -44,7 +43,7 @@ yesno = function(arg) {
 #' }
 qp3pop_wrapper = function(pref, source1, source2 = NULL, target = NULL, bin = '~np29/o2bin/qp3Pop',
                           outdir = '.', parfile = NULL,
-                          inbreed = 'NO', outgroupmode = 'YES', f4mode = 'YES',
+                          inbreed = 'NO', outgroupmode = 'NO',
                           printonly = FALSE, env = '', verbose = TRUE) {
 
   stopifnot(!is.null(parfile) | !is.null(pref) & !is.null(source1))
@@ -69,7 +68,6 @@ qp3pop_wrapper = function(pref, source1, source2 = NULL, target = NULL, bin = '~
                      'snpname: ', pref, '.snp\n',
                      'indivname: ', pref, '.ind\n',
                      'popfilename: ', popfilename, '\n',
-                     'f4mode: ', f4mode %>% yesno, '\n',
                      'inbreed: ', inbreed %>% yesno, '\n',
                      'outgroupmode: ', outgroupmode %>% yesno, '\n',
                      'details: YES\n')

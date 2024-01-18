@@ -128,6 +128,12 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' @inheritParams f2
 #' @param pop3 A vector of population labels
 #' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise
+#' @details
+#' There are several arguments that can be passed via ... which affect the estimated f3-statistics.
+#' The default options are the same as in the original qp3pop program,
+#' but some options are not effective when using precomputed f2-statistics. See `examples` for more information.
+#'
+#'
 #' @return `qp3pop` returns a data frame with f3 statistics
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
@@ -139,8 +145,36 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' qp3pop(example_f2_blocks, pop1, pop2, pop3)
+#'
+#' pops = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
+#' qp3pop(example_f2_blocks, pops)
+#' qp3pop(example_f2_blocks, pops, unique_only = FALSE)
 #' \dontrun{
 #' qp3pop(f2_dir, pop1, pop2, pop3)
+#'
+#' Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
+#' should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
+#' `qp3pop_wrapper()` expects the populations to be in the order `B`, `C`, `A`.
+#'
+#' prefix = '/path/to/geno/prefix'
+#' qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'
+#' pops = dimnames(example_f2_blocks)[[1]]
+
+# target diploid
+# outgroupmode NO (this is the default when passing a geno file prefix)
+#' qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = FALSE)
+#' qp3pop(prefix, pops[1], pops[2], pops[3])
+#' qp3pop(prefix, pops[1], pops[2], pops[3], poly_only = TRUE)
+
+# outgroupmode YES (this is the only option with precomputed f2-stats)
+#' qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = TRUE)
+#' qp3pop(prefix, pops[1], pops[2], pops[3], outgroupmode = TRUE)
+#' f2b = f2_from_geno(prefix, pops = pops[1:3], poly_only = FALSE)
+#' qp3pop(f2b, pops[1], pops[2], pops[3])
+
+# target pseudodiploid (no heterozygotes means heterozygosity rate correction is not possible)
+#' qp3pop_wrapper(prefix, pops[1], pops[3], pops[2], bin = qp3popbin, outgroupmode = TRUE)
+#' qp3pop(prefix, pops[2], pops[1], pops[3], outgroupmode = TRUE, apply_corr = FALSE)
 #' }
 qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
                   boot = FALSE, sure = FALSE, unique_only = TRUE,
@@ -320,7 +354,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     else if(is_plink_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
     else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
     else pop1 = dimnames(f2_data)[[1]]
-  } else if(is.character(pop1)[1] && file.exists(pop1)) {
+  } else if(is.character(pop1)[1] && file.exists(pop1[1])) {
     pop1 = read_table2(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
       pop1 = pop1[[1]]

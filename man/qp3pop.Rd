@@ -61,6 +61,11 @@ from accidently computing all combinations if that number is large.}
 Computes f3 statistics of the form \eqn{f3(A; B, C)}. When using the same SNPs for all populations, this is equivalent to
 \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
 }
+\details{
+There are several arguments that can be passed via ... which affect the estimated f3-statistics.
+The default options are the same as in the original qp3pop program,
+but some options are not effective when using precomputed f2-statistics. See \code{examples} for more information.
+}
 \section{Alias}{
 
 \code{f3}
@@ -71,8 +76,29 @@ pop1 = 'Denisova.DG'
 pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 qp3pop(example_f2_blocks, pop1, pop2, pop3)
+
+pops = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
+qp3pop(example_f2_blocks, pops)
+qp3pop(example_f2_blocks, pops, unique_only = FALSE)
 \dontrun{
 qp3pop(f2_dir, pop1, pop2, pop3)
+
+Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
+should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
+`qp3pop_wrapper()` expects the populations to be in the order `B`, `C`, `A`.
+
+prefix = '/path/to/geno/prefix'
+qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'
+pops = dimnames(example_f2_blocks)[[1]]
+qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = FALSE)
+qp3pop(prefix, pops[1], pops[2], pops[3])
+qp3pop(prefix, pops[1], pops[2], pops[3], poly_only = TRUE)
+qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = TRUE)
+qp3pop(prefix, pops[1], pops[2], pops[3], outgroupmode = TRUE)
+f2b = f2_from_geno(prefix, pops = pops[1:3], poly_only = FALSE)
+qp3pop(f2b, pops[1], pops[2], pops[3])
+qp3pop_wrapper(prefix, pops[1], pops[3], pops[2], bin = qp3popbin, outgroupmode = TRUE)
+qp3pop(prefix, pops[2], pops[1], pops[3], outgroupmode = TRUE, apply_corr = FALSE)
 }
 }
 \references{

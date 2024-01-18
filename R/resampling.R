@@ -225,7 +225,6 @@ boot_pairarr_stats = make_bootfun(jack_pairarr_stats)
 cpp_boot_vec_stats = make_bootfun(cpp_jack_vec_stats)
 
 
-
 #' Find LD-independent blocks
 #'
 #' A new block begins at the SNP after the first SNP which is not within `blgsize` of the start of the last block.
@@ -391,18 +390,19 @@ est_to_boo = function(arr, nboot = dim(arr)[3], block_lengths = NULL) {
   sel = sample(seq_len(numblocks), numblocks*nboot, replace = TRUE)
   lengths = block_lengths[sel]
   grp = rep(seq_len(nboot), each = numblocks)
+  totlen = c(tapply(lengths, grp, sum))
   arr %>%
     magrittr::multiply_by(rep(block_lengths, each = prod(dim(arr)[1:2]))) %>%
     matrix(numblocks, byrow=T) %>%
     `[`(sel,) %>%
     rowsum(grp, na.rm=T) %>%
-    #`/`(numblocks) %>%
-    magrittr::divide_by(c(tapply(lengths, grp, sum))) %>%
+    magrittr::divide_by(totlen) %>%
     t %>%
     array(c(dim(arr)[1:2], nboot),
           dimnames = list(dimnames(arr)[[1]], dimnames(arr)[[2]], rep('l1', nboot))) %>%
     `[`(,,)
 }
+
 
 #' Generate a list of leave-one-out arrays
 #'
