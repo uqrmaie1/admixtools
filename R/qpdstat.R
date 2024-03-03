@@ -514,6 +514,48 @@ qpf4ratio = function(data, pops, boot = FALSE, verbose = FALSE) {
     mutate(alpha = stats$est, se = sqrt(diag(stats$var)), z = alpha/se)
 }
 
+#' Estimate f4 differences
+#'
+#' @export
+#' @param data Input data in one of three forms:
+#' \enumerate{
+#' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}} (fastest option)
+#' \item A directory which contains pre-computed f2-statistics
+#' \item The prefix of genotype files (slowest option)
+#' }
+#' @param pops A vector of 5 populations or a five column population matrix.
+#' The following ratios will be computed: `f4(1, 2; 3, 4)/f4(1, 2; 5, 4)`
+#' @param boot If `FALSE` (the default), block-jackknife resampling will be used to compute standard errors.
+#' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
+#' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
+#' equal to the number of SNP blocks.
+#' @param verbose Print progress updates
+#' @return `qpf4diff` returns a data frame with f4 ratios
+qpf4diff = function(data, pops, boot = FALSE, verbose = FALSE) {
+
+  if(!is.matrix(pops)) pops %<>% t
+  if(ncol(pops) != 5) stop("'pops' should be a vector of length 5, or a matrix with 5 columns.")
+
+  f2_blocks = get_f2(data, pops, apply_corr = FALSE, poly_only=FALSE, verbose = verbose)
+
+  samplefun = ifelse(boot, function(x, ...) est_to_boo(x, boot, ...), est_to_loo)
+  statfun = ifelse(boot, boot_mat_stats, jack_mat_stats)
+
+  block_lengths = parse_number(dimnames(f2_blocks)[[3]])
+  f4_1 = f4_from_f2(f2_blocks, pops[,1], pops[,2], pops[,3], pops[,4])
+  f4_2 = f4_from_f2(f2_blocks, pops[,1], pops[,2], pops[,5], pops[,4])
+
+  # tot1 = weighted_row_means(f4_1, block_lengths, na.rm = TRUE)
+  # tot2 = weighted_row_means(f4_2, block_lengths, na.rm = TRUE)
+  # tot = tot1-tot2
+  f4diff_loo = (f4_1-f4_2) %>% samplefun(block_lengths)
+  if(boot) block_lengths = parse_number(dimnames(f4_1)[[2]])
+  stats = f4diff_loo %>% statfun(block_lengths)
+
+  pops %>%
+    as_tibble(.name_repair = ~paste0('pop', 1:5)) %>%
+    mutate(f4diff = stats$est, se = sqrt(diag(stats$var)), z = f4diff/se, n = count_snps(f2_blocks))
+}
 
 
 

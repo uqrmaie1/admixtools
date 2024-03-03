@@ -277,11 +277,11 @@ computation:</p>
 <!-- $$\sigma^2 = \frac{1}{n} \sum_{i=1}^n \frac{1}{x_i - 1} (x_i \mu_{tot} - \mu_{jack} - s_i (x_i-1) )^2$$ -->
 <!-- where $\mu_{tot}$ is the mean calculated from all blocks, $\mu_{jack} = \frac{1}{n} \sum_i s_i$ (the jackknife mean), and $x_i = \frac{\sum{l_i}}{l_i}$ (the inverse of the relative block length). -->
 <div class="section level3">
-<h3 id="resampling-snps-need-to-update-this">Resampling SNPS – need to update this<a class="anchor" aria-label="anchor" href="#resampling-snps-need-to-update-this"></a>
+<h3 id="resampling-snps">Resampling SNPs<a class="anchor" aria-label="anchor" href="#resampling-snps"></a>
 </h3>
-<p>The subsampling of SNPs in blocks (sepcifically block jackknife) is
+<p>The subsampling of SNPs in blocks (specifically block jackknife) is
 already used throughout all <em>ADMIXTOOLS</em> programs to compute
-standard erorrs. Here, the <code>resample_snps</code> functions
+standard errors. Here, the <code>resample_snps</code> functions
 generalize this approach in two ways. First, they evaluate and returns
 <em>all</em> model parameters for each set of resampled SNP blocks.
 Second, they provide the option to do bootstrap resampling (resampling

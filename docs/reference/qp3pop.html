@@ -169,6 +169,12 @@ from accidently computing all combinations if that number is large.</p></dd>
 
 <p><code>qp3pop</code> returns a data frame with f3 statistics</p>
     </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>There are several arguments that can be passed via ... which affect the estimated f3-statistics.
+The default options are the same as in the original qp3pop program,
+but some options are not effective when using precomputed f2-statistics. See <code>examples</code> for more information.</p>
+    </div>
     <div id="alias">
     <h2>Alias</h2>
     
@@ -183,23 +189,7 @@ from accidently computing all combinations if that number is large.</p></dd>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">pop1</span> <span class="op">=</span> <span class="st">'Denisova.DG'</span></span></span>
-<span class="r-in"><span><span class="va">pop2</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Altai_Neanderthal.DG'</span>, <span class="st">'Vindija.DG'</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">pop3</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'Chimp.REF'</span>, <span class="st">'Mbuti.DG'</span>, <span class="st">'Russia_Ust_Ishim.DG'</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">qp3pop</span><span class="op">(</span><span class="va">example_f2_blocks</span>, <span class="va">pop1</span>, <span class="va">pop2</span>, <span class="va">pop3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 6 × 7</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   pop1        pop2                 pop3                  est      se     z     p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>               <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Denisova.DG Altai_Neanderthal.DG Chimp.REF          0.059<span style="text-decoration: underline;">1</span> 5.98<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span>  98.7     0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">2</span> Denisova.DG Altai_Neanderthal.DG Mbuti.DG           0.072<span style="text-decoration: underline;">0</span> 6.47<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span> 111.      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">3</span> Denisova.DG Altai_Neanderthal.DG Russia_Ust_Ishim.… 0.074<span style="text-decoration: underline;">2</span> 7.02<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span> 106.      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">4</span> Denisova.DG Vindija.DG           Chimp.REF          0.059<span style="text-decoration: underline;">4</span> 5.92<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span> 100.      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">5</span> Denisova.DG Vindija.DG           Mbuti.DG           0.072<span style="text-decoration: underline;">4</span> 6.34<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span> 114.      0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">6</span> Denisova.DG Vindija.DG           Russia_Ust_Ishim.… 0.075<span style="text-decoration: underline;">0</span> 6.96<span style="color: #949494;">e</span><span style="color: #BB0000;">-4</span> 108.      0</span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span><span class="fu">qp3pop</span><span class="op">(</span><span class="va">f2_dir</span>, <span class="va">pop1</span>, <span class="va">pop2</span>, <span class="va">pop3</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-</code></pre></div>
+    
     </div>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

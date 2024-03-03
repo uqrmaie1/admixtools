@@ -1343,12 +1343,12 @@ summarize_triples = function(graphs) {
 #' @export
 #' @seealso \code{\link{isomorphism_classes2}}
 isomorphism_classes = function(igraphlist) {
-  # retuns integer vector with the same length as 'igraphlist', which assigns each graph to a class
+  # returns integer vector with the same length as 'igraphlist', which assigns each graph to a class
   # only considers topology
 
   numgraph = length(igraphlist)
   if(numgraph == 0) return(numeric())
-  if(numgraph == 0) return(1)
+  if(numgraph == 1) return(1)
 
   leaflist = map(igraphlist, ~names(get_leaves(.)))
 
@@ -1385,7 +1385,7 @@ isomorphism_classes2 = function(igraphlist) {
 
   numgraph = length(igraphlist)
   if(numgraph == 0) return(numeric())
-  if(numgraph == 0) return(1)
+  if(numgraph == 1) return(1)
 
   igraphlist %<>% map(unify_vertex_names) %>% map(as_edgelist) %>%
     map(~as_tibble(., .name_repair = ~c('V1', 'V2'))) %>% map(~arrange(., V1, V2))

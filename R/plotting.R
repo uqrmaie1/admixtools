@@ -473,7 +473,7 @@ collapse_edges = function(edges, below=0) {
   adjmat[rownames(adjmat) %in% excl, ] = 0
   adjmat[, colnames(adjmat) %in% excl] = 0
   diag(adjmat) = 1
-  comp = igraph::components(graph_from_adjacency_matrix(as.matrix(adjmat), weighted='x'))
+  comp = igraph::components(igraph::graph_from_adjacency_matrix(as.matrix(adjmat), weighted='x'))
   newnam = comp$membership %>% enframe %>% group_by(value) %>%
     mutate(name, groupname = paste(name, collapse='.')) %>% ungroup %>% select(-value) %>% deframe
   edges %>% mutate(from = newnam[from], to = newnam[to]) %>% filter(from != to)
