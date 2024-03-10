@@ -151,7 +151,7 @@ unify_vertex_names_rec = function(graph, node, vnamemap, sep1 = '.', sep2 = '_')
 
 
 unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_') {
-  # this is an aweful function I wrote when I was very tired which changes the vertex names of inner vertices,
+  # this function changes the vertex names of inner vertices,
   # so that all isomorphic graphs with the same leaf nodes have equally labelled inner nodes
   leaves = get_leaves(graph)
   root = get_root(graph)
@@ -160,17 +160,15 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
   ormap = names(V(g))
   names(ormap) = ormap
 
-
   nammap = unify_vertex_names_rec(g, root, ormap, sep1 = sep1, sep2 = sep2)
   nammap[lv] = names(leaves)
   names(nammap)[match(lv, names(nammap))] = names(leaves)
-  nammap[names(root)] = names(root)
+  nammap[names(root)] = 'R'
   if(!keep_unique) {
     changed = setdiff(names(nammap), c(names(root), names(leaves)))
     nammap[changed] = paste0('n', as.numeric(as.factor(nammap[changed])))
   }
   nammap %<>% map_chr(digest::digest) %>% paste0('x', .)
-  #set_vertex_attr(graph, 'name', names(nammap), nammap)
   set_vertex_attr(graph, 'name', V(graph), nammap)
 }
 
@@ -1377,32 +1375,14 @@ isomorphism_classes = function(igraphlist) {
 isomorphism_classes2 = function(igraphlist) {
 
   # considers topology and leaf labels
-  # in order to make sure a combination of leaves and topolgy is recognized as unique, this function uses
-  # 'unify_vertex_names'
-  # 'unify_vertex_names' often leads to stack overflow; fix this
-  # 'unify_vertex_names' should make consistent and unique node names for a given combination of topology and leaves,
-  # as long as no node has both more than one incoming edge and more than one outgoing edge
+  # runs `simplify_graph` on all graphs before comparing them
 
   numgraph = length(igraphlist)
   if(numgraph == 0) return(numeric())
   if(numgraph == 1) return(1)
 
-  igraphlist %<>% map(unify_vertex_names) %>% map(as_edgelist) %>%
-    map(~as_tibble(., .name_repair = ~c('V1', 'V2'))) %>% map(~arrange(., V1, V2))
-
-  cmb = combn(numgraph, 2)
-  iso = map2_lgl(cmb[1,], cmb[2,], ~identical(igraphlist[[.x]], igraphlist[[.y]]))
-
-  sets = rep(NA, numgraph)
-  sets[1] = 1
-  for(i in seq_len(length(iso))) {
-    if(iso[i]) {
-      sets[cmb[2, i]] = sets[cmb[1, i]]
-    } else if(is.na(sets[cmb[2, i]])) {
-      sets[cmb[2, i]] = max(sets, na.rm=T) + 1
-    }
-  }
-  sets
+  hashes = map_chr(igraphlist, graph_hash)
+  factor(hashes, levels = unique(hashes)) %>% as.numeric
 }
 
 #' Return all valid qpAdm models for an admixturegraph
@@ -2648,23 +2628,31 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     graph = initgraph
     numadmix = numadmix(graph)
   }
+  ell = list(...)
+  if('f3basepop' %in% names(ell)) {
+    f3basepop = ell$f3basepop
+  } else {
+    f3basepop = get_leafnames(graph)[1]
+  }
+  if('numstart' %in% names(ell)) {
+    numstart = ell$numstart
+  } else {
+    numstart = 1
+  }
   if(!isFALSE(opt_worst_residual)) {
     qpgfun = function(graph, ...) {
-      res = qpgraph(f2_blocks, graph, numstart = 1, return_fstats = opt_worst_residual, ...)
+      res = qpgraph(f2_blocks, graph, numstart = numstart, return_fstats = opt_worst_residual, f3basepop = f3basepop, ...)
       res$score = res$worst_residual
       res$worst_residual = res$f4 = NULL
       res
       }
   } else {
-    #qpgfun = function(graph, ...) qpgraph(f2_blocks, graph, numstart = 1, ...)
-    ell = list(...)
     if('f3precomp' %in% names(ell)) {
-      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = ell$f3precomp, ...)
+      f3precomp = ell$f3precomp
     } else {
-      f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph))
-      qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = 1, f3precomp = f3precomp, ...)
+      f3precomp = qpgraph_precompute_f3(f2_blocks, get_leafnames(graph), f3basepop = f3basepop)
     }
-
+    qpgfun = function(graph, ...) qpgraph(NULL, graph, numstart = numstart, f3precomp = f3precomp, ...)
   }
   stop_at = Sys.time() + stop_sec
   wfuns = namedList(rearrange_negadmix3, replace_admix_with_random)
