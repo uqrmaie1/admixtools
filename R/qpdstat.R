@@ -428,6 +428,10 @@ qpdstat_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
 qp3pop_geno = function(pref, popcombs, blgsize = 0.05, block_lengths = NULL,
                        boot = FALSE, allsnps = TRUE, poly_only = FALSE, verbose = TRUE, ...) {
 
+  if(!all(...names() %in% names(formals(f3blockdat_from_geno)))) {
+    notused = setdiff(...names(), names(formals(f3blockdat_from_geno)))
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   pref = normalizePath(pref, mustWork = FALSE)
   f3blockdat = f3blockdat_from_geno(pref, popcombs, blgsize = blgsize, block_lengths = block_lengths,
                                     allsnps = allsnps, poly_only = poly_only, verbose = verbose, ...)

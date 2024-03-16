@@ -37,7 +37,6 @@ This function runs multiple qpadm models, re-using f4-statistics where possible.
 }
 \examples{
 \dontrun{
-pops = paste0('pop', 1:10)
 # the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
 models = tibble(
            left = list(c('pop1', 'pop2'), c('pop3')),

@@ -1063,6 +1063,10 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                       adjust_pseudohaploid = TRUE, cols_per_chunk = NULL, fst = TRUE, afprod = TRUE,
                       poly_only = c('f2'), apply_corr = TRUE, qpfstats = FALSE, n_cores = 1, verbose = TRUE, ...) {
 
+  if(!all(...names() %in% names(formals(admixtools::qpfstats)))) {
+    notused = setdiff(...names(), names(formals(admixtools::qpfstats)))
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   if(!is.null(cols_per_chunk)) {
     stopifnot(is.null(pops2))
     snpfile = extract_f2_large(pref, outdir, inds = inds, pops = pops, blgsize = blgsize,
@@ -2182,12 +2186,15 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
 #' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
+#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1.
+#' @param snpwt A vector of SNP weights
+#' @param keepsnps A vector of SNP IDs to keep
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
                                 block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
-                                poly_only = FALSE, verbose = TRUE, snpwt = NULL, ...) {
+                                poly_only = FALSE, snpwt = NULL, keepsnps = NULL, verbose = TRUE) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -2233,7 +2240,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 
   snpfile$keep = TRUE
   if(auto_only) snpfile %<>% mutate(keep = as.numeric(gsub('[a-zA-Z]+', '', CHR)) <= 22)
-  if('keepsnps' %in% names(list(...))) snpfile %<>% mutate(keep = keep & SNP %in% list(...)$keepsnps)
+  if(!is.null(keepsnps)) snpfile %<>% mutate(keep = keep & SNP %in% keepsnps)
   nsnpaut = sum(snpfile$keep)
   pops = unique(c(popcombs$pop1, popcombs$pop2, popcombs$pop3, popcombs$pop4))
 

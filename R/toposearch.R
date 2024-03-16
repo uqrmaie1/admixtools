@@ -2629,6 +2629,10 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
     numadmix = numadmix(graph)
   }
   ell = list(...)
+  if(!all(names(ell) %in% names(formals(qpgraph)))) {
+    notused = setdiff(names(ell), names(formals(qpgraph)))
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   if('f3basepop' %in% names(ell)) {
     f3basepop = ell$f3basepop
   } else {

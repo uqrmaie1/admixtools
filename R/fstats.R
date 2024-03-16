@@ -446,6 +446,11 @@ fix_ploidy = function(xmat) {
 get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = TRUE, ...) {
 
   stopifnot(!is.character(f2_data) || dir.exists(f2_data) || is_geno_prefix(f2_data))
+  argnam = c(names(formals(f2_from_geno)), names(formals(f2_from_precomp)), names(formals(qpfstats)))
+  if(!all(...names() %in% argnam)) {
+    notused = setdiff(...names(), argnam)
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   if(!is.null(pops) && is.null(pops2)) pops2 = pops
   if(!is.character(f2_data)) {
     f2_blocks = f2_data

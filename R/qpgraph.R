@@ -765,6 +765,11 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
 #' @seealso \code{\link{compare_fits}}
 qpgraph_resample_multi = function(f2_blocks, graphlist, nboot, verbose = TRUE, ...) {
 
+  argnam = names(formals(qpgraph))
+  if(!all(...names() %in% argnam)) {
+    notused = setdiff(...names(), argnam)
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   boo = boo_list(f2_blocks, nboot = nboot)
   #f3pre = map(graphlist, ~qpgraph_precompute_f3(f2_blocks, get_leafnames(.))$ppinv)
   #map2(graphlist, f3pre, function(.x, .y, ...) qpgraph_resample_snps2(

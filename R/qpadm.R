@@ -163,6 +163,13 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   #----------------- prepare f4 stats -----------------
   f2_blocks = NULL
   args = list(...)
+  if(length(args) > 0 && (!is.null(f4blocks) || !is_geno_prefix(data))) {
+    stop(paste0("The following arguments are not used: '", paste0(names(args), collapse = "', '"), "'"))
+  }
+  if(!all(names(args) %in% names(formals(f4blockdat_from_geno)))) {
+    notused = setdiff(names(args), names(formals(f4blockdat_from_geno)))
+    stop(paste0("The following arguments are not recognized: '", paste0(notused, collapse = "', '"), "'"))
+  }
   if(is.null(f4blocks)) {
     if(all(file.exists(left, right))) {
       left %<>% readLines
@@ -919,7 +926,6 @@ qpadmmodels_to_popcombs = function(models) {
 #' @return A list where each element is the output of one qpadm model.
 #' @examples
 #' \dontrun{
-#' pops = paste0('pop', 1:10)
 #' # the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
 #' models = tibble(
 #'            left = list(c('pop1', 'pop2'), c('pop3')),
