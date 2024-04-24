@@ -35,7 +35,7 @@ f3blockdat_from_geno(
 
 \item{apply_corr}{With \code{apply_corr = FALSE}, no bias correction is performed. With \code{apply_corr = TRUE} (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With \code{apply_corr = 2}, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.}
 
-\item{outgroupmode}{Default \code{FALSE} if f3 computed directly from genotype data, and \code{TRUE} if f3 is computed from f2-statistics. With \code{outgroupmode = FALSE}, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. With \code{outgroupmode = TRUE}, this normalization is simply ommited.}
+\item{outgroupmode}{With \code{outgroupmode = FALSE}, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of precomputed f2-statistics, then no normalization can be performed, which corresponds to \code{outgroupmode = TRUE}.}
 
 \item{verbose}{Print progress updates}
 }

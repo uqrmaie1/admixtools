@@ -28,7 +28,7 @@ plink_to_afs(
 \item{numblocks}{Number of blocks in which to read genotype file. Setting this to a number
 greater than one is more memory efficient, but slower.}
 
-\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1.}
+\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1 (default \code{FALSE}).}
 
 \item{verbose}{Print progress updates}
 }

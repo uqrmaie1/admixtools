@@ -288,7 +288,11 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
       select(-a1, -a2, -aa1, -aa2, -a)
   }
   if(auto_only) {
-    snpdat %<>% mutate(CHR = as.numeric(gsub('[a-zA-Z]+', '', CHR)))
+    chrnum = as.numeric(gsub('[a-zA-Z]+', '', snpdat$CHR))
+    if(any(is.na(chrnum)) || max(chrnum) > 22) {
+      warning('Keeping only chromosomes 1 to 22! Set `auto_only = FALSE` to keep all chromosomes!')
+    }
+    snpdat %<>% mutate(CHR = chrnum)
     if(any(is.na(snpdat$CHR))) stop("Could not parse chromosome numbers! Set 'auto_only = FALSE' to ignore chromosome labels!")
   }
   snpdat %>%
@@ -482,7 +486,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' @param pref prefix of `PLINK` files (files have to end in `.bed`, `.bim`, `.fam`).
 #' @param numblocks Number of blocks in which to read genotype file. Setting this to a number
 #' greater than one is more memory efficient, but slower.
-#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1.
+#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1 (default `FALSE`).
 #' @inheritParams packedancestrymap_to_afs
 #' @return A list with three items: Allele frequency matrix, allele count matrix, and SNP meta data.
 #' @examples
@@ -2186,7 +2190,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
 #' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
-#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1.
+#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1 (default `FALSE`).
 #' @param snpwt A vector of SNP weights
 #' @param keepsnps A vector of SNP IDs to keep
 #' @param verbose Print progress updates
@@ -2330,7 +2334,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With `apply_corr = 2`, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.
-#' @param outgroupmode Default `FALSE` if f3 computed directly from genotype data, and `TRUE` if f3 is computed from f2-statistics. With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. With `outgroupmode = TRUE`, this normalization is simply ommited.
+#' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of precomputed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`.
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,

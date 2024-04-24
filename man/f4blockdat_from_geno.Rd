@@ -39,7 +39,7 @@ f4blockdat_from_geno(
 
 \item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. Setting \code{allsnps = TRUE} in the presence of large amounts of missing data might lead to false positive results.}
 
-\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1.}
+\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1 (default \code{FALSE}).}
 
 \item{snpwt}{A vector of SNP weights}
 

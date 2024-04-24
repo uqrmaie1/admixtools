@@ -23,7 +23,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.4</span>
       </span>
     </div>
 
@@ -145,7 +145,7 @@
 
 
 <dt>outgroupmode</dt>
-<dd><p>Default <code>FALSE</code> if f3 computed directly from genotype data, and <code>TRUE</code> if f3 is computed from f2-statistics. With <code>outgroupmode = FALSE</code>, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. With <code>outgroupmode = TRUE</code>, this normalization is simply ommited.</p></dd>
+<dd><p>With <code>outgroupmode = FALSE</code>, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of precomputed f2-statistics, then no normalization can be performed, which corresponds to <code>outgroupmode = TRUE</code>.</p></dd>
 
 
 <dt>verbose</dt>

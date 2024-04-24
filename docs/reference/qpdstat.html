@@ -23,7 +23,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.4</span>
       </span>
     </div>
 
@@ -199,7 +199,9 @@ match the number of SNPs. only used when <code>data</code> is the prefix of geno
     <h2>Value</h2>
     
 
-<p><code>qpdstat</code> returns a data frame with f4 statistics</p>
+<p><code>qpdstat</code> returns a data frame with f4 statistics, with columns for populations 1 to 4,
+f4-estimate (<code>est</code>), standard error of the estimate (<code>se</code>), z-score (<code>z</code>, <code>est</code>/<code>se</code>), p-value (<code>2*(1-pnorm(z))</code>),
+and the number of SNPs used (<code>n</code>; only if first argument is genotype prefix)</p>
     </div>
     <div id="details">
     <h2>Details</h2>

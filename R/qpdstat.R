@@ -122,25 +122,32 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 
 #' Estimate f3 statistics
 #'
-#' Computes f3 statistics of the form \eqn{f3(A; B, C)}. When using the same SNPs for all populations, this is equivalent to
-#' \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}
+#' Computes f3 statistics of the form \eqn{f3(A; B, C)}. This is generally equivalent to
+#' \eqn{(f2(A, B) + f2(A, C) - f2(B, C)) / 2} and to \eqn{f4(A, B; A, C)}.
+#' However, the exact estimates depend on the type of input data, selection of SNPs,
+#' and on the values of some of the arguments, which are described below.
 #' @export
 #' @inheritParams f2
 #' @param pop3 A vector of population labels
+#' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. The option is ineffective if the first argument is an array of pre-computed f2-statistics. In that case, the bias correction can be toggled by the `apply_corr` parameter in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}. The heterozygosity calculation used in `apply_corr = TRUE` requires at least two haploid samples or one diploid sample in the first population. Otherwise, `apply_corr = TRUE` will result in missing values.
+#' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`. As with `apply_corr = TRUE`, the heterozygosity calculation used in `outgroupmode = FALSE` requires at least two pseudodiploid samples or one diploid sample in the first population. Otherwise, `outgroupmode = FALSE` will result in missing values.
+#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1. Defaults to `FALSE`. Only effective if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, use the `poly_only` argument in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}
 #' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise
 #' @details
-#' There are several arguments that can be passed via ... which affect the estimated f3-statistics.
-#' The default options are the same as in the original qp3pop program,
-#' but some options are not effective when using precomputed f2-statistics. See `examples` for more information.
+#' The default values of the parameters `apply_corr`, `outgroupmode`, `poly_only` depend on the first argument (`data`), and they can affect the estimated f3-statistics. When the `data` is the prefix of genotype data, the default parameters are generally the same as in the original qp3pop program. When `data` is an array of pre-computed f2-statistics, the parameters may be set while computing f2-statistics. If the first population is a single pseudodiploid sample, it is not possible to get unbiased estimates of f3. To get biased estimates for a single pseudodiploid sample from genotype data, set `outgroupmode = TRUE` and `apply_corr = FALSE`. Under this combination of parameters, `f3(A; B, C)` should also be identical to `f4(A, B; A, C)`, since f4-statistics generally do not require any bias correction.
+#' See `examples` for more information.
 #'
 #'
-#' @return `qp3pop` returns a data frame with f3 statistics
+#' @return `qp3pop` returns a data frame with f3 statistics, with columns for populations 1 to 3,
+#' f3-estimate (`est`), standard error of the estimate (`se`), z-score (`z`, `est`/`se`), p-value (`2*(1-pnorm(z))`),
+#' and the number of SNPs used (`n`; only if first argument is genotype prefix)
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history} Genetics
 #' @references Peter, B. (2016) \emph{Admixture, Population Structure, and F-Statistics} Genetics
 #' @aliases f3
 #' @section Alias:
 #' `f3`
 #' @examples
+#' \dontrun{
 #' pop1 = 'Denisova.DG'
 #' pop2 = c('Altai_Neanderthal.DG', 'Vindija.DG')
 #' pop3 = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
@@ -149,32 +156,34 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' pops = c('Chimp.REF', 'Mbuti.DG', 'Russia_Ust_Ishim.DG')
 #' qp3pop(example_f2_blocks, pops)
 #' qp3pop(example_f2_blocks, pops, unique_only = FALSE)
-#' \dontrun{
 #' qp3pop(f2_dir, pop1, pop2, pop3)
 #'
-#' Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
-#' should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
-#' `qp3pop_wrapper()` expects the populations to be in the order `B`, `C`, `A`.
+#' # Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
+#' # should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
+#' # `qp3pop_wrapper()`, and the original qp3pop program, expect populations to be in the order `B`, `C`, `A`.
 #'
 #' prefix = '/path/to/geno/prefix'
 #' qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'
 #' pops = dimnames(example_f2_blocks)[[1]]
-
-# target diploid
-# outgroupmode NO (this is the default when passing a geno file prefix)
+#'
+#' # 1. target diploid, outgroupmode NO (this is the default when passing a geno file prefix)
 #' qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = FALSE)
 #' qp3pop(prefix, pops[1], pops[2], pops[3])
+#'   # est, se, z match well; n is higher
 #' qp3pop(prefix, pops[1], pops[2], pops[3], poly_only = TRUE)
-
-# outgroupmode YES (this is the only option with precomputed f2-stats)
+#'   # est, se, z match less well; n is identical
+#'
+#' # 2. target diploid, outgroupmode YES (this is the only option with precomputed f2-stats)
 #' qp3pop_wrapper(prefix, pops[2], pops[3], pops[1], bin = qp3popbin, outgroupmode = TRUE)
 #' qp3pop(prefix, pops[1], pops[2], pops[3], outgroupmode = TRUE)
+#'   # est, se, z match (except for factor 1000)
 #' f2b = f2_from_geno(prefix, pops = pops[1:3], poly_only = FALSE)
 #' qp3pop(f2b, pops[1], pops[2], pops[3])
-
-# target pseudodiploid (no heterozygotes means heterozygosity rate correction is not possible)
+#'
+#' # 3. target pseudodiploid (no heterozygotes means heterozygosity rate correction is not possible)
 #' qp3pop_wrapper(prefix, pops[1], pops[3], pops[2], bin = qp3popbin, outgroupmode = TRUE)
 #' qp3pop(prefix, pops[2], pops[1], pops[3], outgroupmode = TRUE, apply_corr = FALSE)
+#'   # est, se, z match (except for factor 1000)
 #' }
 qp3pop = function(data, pop1 = NULL, pop2 = NULL, pop3 = NULL,
                   boot = FALSE, sure = FALSE, unique_only = TRUE,
@@ -240,7 +249,9 @@ f3 = qp3pop
 #' This is the least conservative option, but also the option which uses most of the available information. It makes it possible to use pre-computed f2-statistics for a large number of populations without losing a large number of SNPs. To use this option, set the `maxmiss` parameter to a value greater than 0 (and not larger than 1) in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}. When using this option, be aware that bias is possible, in particular for f4-statistics where some populations have large amounts of missing data. To reduce the bias that can result from using this option, you may want to combine it with using the option `afprod = TRUE` in \code{\link{f2_from_precomp}}.
 #' In summary, whenever you work with populations with missing data, there is no guarantee that f4- or D-statistics involving these populations are not skewed in some way. If you choose to analyze these populations anyway, and you decide which SNPs to use, there is a trade-off between maximizing power and minimizing the risk of bias. One strategy might be to first use the least conservative option (setting `maxmiss = 1` in \code{\link{extract_f2}}) to get an overview, and then spot-check individual results using more conservative options.
 #'
-#' @return `qpdstat` returns a data frame with f4 statistics
+#' @return `qpdstat` returns a data frame with f4 statistics, with columns for populations 1 to 4,
+#' f4-estimate (`est`), standard error of the estimate (`se`), z-score (`z`, `est`/`se`), p-value (`2*(1-pnorm(z))`),
+#' and the number of SNPs used (`n`; only if first argument is genotype prefix)
 #' @aliases f4
 #' @section Alias:
 #' `f4`

@@ -23,7 +23,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">admixtools</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.0.4</span>
       </span>
     </div>
 
@@ -106,9 +106,9 @@
 <span>  f4mode <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  allsnps <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  poly_only <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  snpwt <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  keepsnps <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -148,6 +148,18 @@
 
 <dt>allsnps</dt>
 <dd><p>Use all SNPs with allele frequency estimates in every population of any given population quadruple. If <code>FALSE</code> (the default) only SNPs which are present in all populations in <code>popcombs</code> (or any given model in it) will be used. Setting <code>allsnps = TRUE</code> in the presence of large amounts of missing data might lead to false positive results.</p></dd>
+
+
+<dt>poly_only</dt>
+<dd><p>Only keep SNPs with mean allele frequency not equal to 0 or 1 (default <code>FALSE</code>).</p></dd>
+
+
+<dt>snpwt</dt>
+<dd><p>A vector of SNP weights</p></dd>
+
+
+<dt>keepsnps</dt>
+<dd><p>A vector of SNP IDs to keep</p></dd>
 
 
 <dt>verbose</dt>
