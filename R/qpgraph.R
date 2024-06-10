@@ -682,11 +682,14 @@ compare_fits = function(scores1, scores2) {
 
   if(length(scores1) != length(scores2)) stop('Length of scores1 and scores2 differ!')
   scorediff = scores1 - scores2
+  scorediff = na.omit(scores1 - scores2)
+  scorediff = scorediff[scorediff != 0]
+  nvalid = length(scorediff)
+
   ci_low = unname(quantile(scorediff, 0.025, na.rm = T))
   ci_high = unname(quantile(scorediff, 0.975, na.rm = T))
 
-  scorediff = na.omit(scores1 - scores2)
-  stats = boot_mat_stats(t(scorediff), rep(1, length(scorediff)))
+  stats = boot_mat_stats(t(scorediff), rep(1, nvalid))
 
   diff = stats$est
   se = sqrt(stats$var)
@@ -695,7 +698,10 @@ compare_fits = function(scores1, scores2) {
   frac1 = mean(scorediff < 0)
   frac2 = mean(scorediff > 0)
   p_emp_nocorr = min(frac1, frac2)*2
-  p_emp = max(p_emp_nocorr, 1/length(scorediff))
+  frac1corr = (sum(scorediff > 0) + 1)/(nvalid + 1)
+  frac2corr = (sum(scorediff < 0) + 1)/(nvalid + 1)
+  p_emp = min(frac1corr, frac2corr)*2
+  #p_emp = max(p_emp_nocorr, 1/nvalid)
   namedList(diff, se, z, p, p_emp, p_emp_nocorr, ci_low, ci_high)
 }
 
