@@ -887,7 +887,7 @@ qpadm_eval_rotate = function(f2_blocks, target, leftright_dat, rightfix, full_re
   else fun = qpadm_p
   leftright_dat %>%
     as_tibble %>%
-    rowwise %>% mutate(right = list(c(right, rightfix))) %>% ungroup %>%
+    rowwise %>% mutate(right = list(c(rightfix, right))) %>% ungroup %>%
     mutate(res = furrr::future_map2(left, right, ~fun(f2_blocks, .x, .y, target),
                                     .progress = verbose, .options = furrr::furrr_options(seed = TRUE))) %>%
     unnest_wider(res) #%>%
