@@ -94,7 +94,7 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
                              int first, int last, bool transpose = false, bool verbose = true) {
 
   int val;
-  long len, bytespersnp;
+  long long len, bytespersnp;
   int readsnps = last - first;
   int headersize = 3;
 
@@ -105,8 +105,8 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
-  len = (long)in.tellg();
-  bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  len = (long long)in.tellg();
+  bytespersnp = (long long)ceil((double)nind / PACK_DENSITY);
   if((len-headersize) != nsnp*bytespersnp) {
     stop("Unexpected bed file size!");
   }
@@ -127,12 +127,12 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
   std::fill(geno.begin(), geno.end(), NA_REAL);
 
   in.seekg(3+first*bytespersnp, std::ifstream::beg);
-  char* tmp = new char[bytespersnp + 1];
+  unsigned char* tmp = new unsigned char[bytespersnp + 1];
   tmp[bytespersnp] = '\0';
-  char tmpi;
+  unsigned char tmpi;
 
   // Allocate more than the sample size since data must take up whole bytes
-  char* tmp2 = new char[bytespersnp * PACK_DENSITY + 1];
+  unsigned char* tmp2 = new unsigned char[bytespersnp * PACK_DENSITY + 1];
   tmp2[bytespersnp * PACK_DENSITY] = '\0';
 
   int k, tmp3;
@@ -191,7 +191,7 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
 NumericVector cpp_plink_ploidy(String genofile, int nsnp, int nind, IntegerVector indvec, int ntest = 1000) {
 
   int val, k, tmp3;
-  long bytespersnp, len;
+  long long bytespersnp, len;
   int headersize = 3;
   ntest = std::min(ntest, nsnp);
   std::ifstream in(genofile.get_cstring(), std::ios::in | std::ios::binary);
@@ -199,8 +199,8 @@ NumericVector cpp_plink_ploidy(String genofile, int nsnp, int nind, IntegerVecto
     stop("Genotype file not found!");
   }
   in.seekg(0, std::ifstream::end);
-  len = (long)in.tellg();
-  bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  len = (long long)in.tellg();
+  bytespersnp = (long long)ceil((double)nind / PACK_DENSITY);
   if((len-headersize) != nsnp*bytespersnp) {
     stop("Unexpected bed file size!");
   }
@@ -255,7 +255,7 @@ List cpp_plink_to_afs(String genofile, int nsnp, int nind, IntegerVector indvec,
 
   int val, k, tmp3, pop;
 
-  long len, bytespersnp;
+  long long len, bytespersnp;
   int headersize = 3;
   int readsnps = std::min(nsnp, last?last:nsnp) - first;
 
@@ -267,8 +267,8 @@ List cpp_plink_to_afs(String genofile, int nsnp, int nind, IntegerVector indvec,
   }
   in.seekg(0, std::ifstream::end);
   // file size in bytes
-  len = (long)in.tellg();
-  bytespersnp = (long)ceil((double)nind / PACK_DENSITY);
+  len = (long long)in.tellg();
+  bytespersnp = (long long)ceil((double)nind / PACK_DENSITY);
   if((len-headersize) != nsnp*bytespersnp) {
     stop("Unexpected bed file size!");
   }
