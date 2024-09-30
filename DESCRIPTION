@@ -1,7 +1,7 @@
 Package: admixtools
 Type: Package
 Title: Inferring demographic history from genetic data
-Version: 2.0.6
+Version: 2.0.7
 Authors@R: as.person(c(
     "Robert Maier <robertmaier@gmx.net> [aut, cre]", 
     "Nick Patterson <nickp@broadinstitute.org> [aut]"

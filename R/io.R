@@ -346,7 +346,7 @@ read_packedancestrymap = function(pref, inds = NULL, pops = NULL, first = 1, las
   if(!is.null(inds)) {
     stopifnot(all(inds %in% indfile$X1))
     indfile$.keep[!indfile$.keep %in% inds] = NA
-    inds = intersect(inds, indfile$X1)
+    inds = intersect(indfile$X1, inds)
   } else {
     inds = indfile$X1
   }
@@ -421,6 +421,7 @@ read_eigenstrat = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf
   if(!is.null(inds)) {
     stopifnot(all(inds %in% indfile$X1))
     indfile$X3[!indfile$X1 %in% inds] = NA
+    inds = intersect(indfile$X1, inds)
   } else {
     inds = indfile$X1
   }
