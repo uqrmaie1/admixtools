@@ -64,7 +64,7 @@ from accidently computing all combinations if that number is large.}
 \item{block_lengths}{Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 match the number of SNPs. only used when \code{data} is the prefix of genotype files}
 
-\item{f4mode}{Set this to \code{FALSE} to compute D-statistics instead of f4. This only has an effect if the first argument is a genotype prefix. D-statistics are computed as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))}}
+\item{f4mode}{Set this to \code{FALSE} to compute D-statistics instead of f4. This only has an effect if the first argument is a genotype prefix. D-statistics are computed as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(BABA) - P(ABBA)) / (P(ABBA) + P(BABA))}}
 
 \item{afprod}{Compute f4 from allele frequency products instead of f2 (default \code{TRUE}). Only used if \code{data} is a directory with precomputed data. For populations with lots of missing data, this option reduces bias that can result from setting \code{maxmiss} to values greater than 0. In all other cases it should not make a difference.}
 

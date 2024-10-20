@@ -236,7 +236,7 @@ f3 = qp3pop
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). Only used when `data` is the prefix of genotype files
 #' @param block_lengths Vector with lengths of each jackknife block. \code{sum(block_lengths)} has to
 #' match the number of SNPs. only used when `data` is the prefix of genotype files
-#' @param f4mode Set this to `FALSE` to compute D-statistics instead of f4. This only has an effect if the first argument is a genotype prefix. D-statistics are computed as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`
+#' @param f4mode Set this to `FALSE` to compute D-statistics instead of f4. This only has an effect if the first argument is a genotype prefix. D-statistics are computed as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(BABA) - P(ABBA)) / (P(ABBA) + P(BABA))`
 #' @param afprod Compute f4 from allele frequency products instead of f2 (default `TRUE`). Only used if `data` is a directory with precomputed data. For populations with lots of missing data, this option reduces bias that can result from setting `maxmiss` to values greater than 0. In all other cases it should not make a difference.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param ... Additional arguments passed to \code{\link{f4blockdat_from_geno}} if `data` is a genotype file prefix or \code{\link{f2_from_precomp}} if `data` is a directory with f2-statistics

@@ -35,7 +35,7 @@ f4blockdat_from_geno(
 
 \item{block_lengths}{An optional vector with block lengths. If \code{NULL}, block lengths will be computed.}
 
-\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))}.}
+\item{f4mode}{If \code{TRUE}: f4 is computed from allele frequencies \code{a}, \code{b}, \code{c}, and \code{d} as \code{(a-b)*(c-d)}. if \code{FALSE}, D-statistics are computed instead, defined as \code{(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))}, which is the same as \code{(P(BABA) - P(ABBA)) / (P(ABBA) + P(BABA))}.}
 
 \item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. Setting \code{allsnps = TRUE} in the presence of large amounts of missing data might lead to false positive results.}
 

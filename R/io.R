@@ -2189,7 +2189,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param auto_only Use only chromosomes 1 to 22.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param block_lengths An optional vector with block lengths. If `NULL`, block lengths will be computed.
-#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(ABBA) - P(BABA)) / (P(ABBA) + P(BABA))`.
+#' @param f4mode If `TRUE`: f4 is computed from allele frequencies `a`, `b`, `c`, and `d` as `(a-b)*(c-d)`. if `FALSE`, D-statistics are computed instead, defined as `(a-b)*(c-d) / ((a + b - 2*a*b) * (c + d - 2*c*d))`, which is the same as `(P(BABA) - P(ABBA)) / (P(ABBA) + P(BABA))`.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. Setting `allsnps = TRUE` in the presence of large amounts of missing data might lead to false positive results.
 #' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1 (default `FALSE`).
 #' @param snpwt A vector of SNP weights

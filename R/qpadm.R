@@ -177,7 +177,13 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     }
     if(!is.null(target)) left = c(target, setdiff(left, target))
     if(is_geno_prefix(data)) {
-      f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
+      if(return_f4) {
+        popcombs = expand_grid(pop1 = target, pop2 = left[-1], pop3 = right, pop4 = right) %>% filter(pop3 != pop4)
+        f4blockdat_all = f4blockdat_from_geno(data, popcombs = popcombs, verbose = verbose, ...)
+        f4blockdat = f4blockdat_all %>% filter(pop3 == right[1], pop4 != right[1])
+      } else {
+        f4blockdat = f4blockdat_from_geno(data, left = left, right = right, verbose = verbose, ...)
+      }
       f4blocks = f4blockdat %>% f4blockdat_to_f4blocks()
       if(verbose) {
         snptab = f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>% summarize(n = sum(n))
@@ -237,7 +243,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 
     wvec = out$weights %>% select(left, weight) %>% deframe
     if(!is.null(f2_blocks)) out$f4 = fitted_f4(f2_blocks, wvec, target, left[-1], right)
-    else if(return_f4) out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
+    else if(return_f4) out$f4 = fitted_f4_from_f4blockdat(f4blockdat_all, wvec, target, left[-1], right)
   } else {
     if(!is.null(f2_blocks)) out$f4 = f4(f2_blocks, left[1], left[-1], right[1], right[-1], verbose = FALSE)
     else if(return_f4) out$f4 = f4blockdat %>% f4blockdat_to_f4out(boot = boot)
@@ -683,6 +689,17 @@ fitted_f4 = function(f2_blocks, weights, target, left, right) {
   f2_blocks_plus = add_weighted_f2(f2_blocks, weights)
   fitf4 = f4(f2_blocks_plus, target, c(left, 'fit'), right, right, verbose = FALSE) %>% filter(pop3 != pop4)
   fitf4 %>% left_join(enframe(weights, name = 'pop2', value = 'weight'), by = 'pop2') %>%
+    arrange(pop1, pop3, pop4, pop2)
+}
+
+fitted_f4_from_f4blockdat = function(f4blockdat, weights, target, left, right) {
+
+  weights = weights[sort(names(weights))]
+  weights = weights/sum(weights)
+  fitf4 = f4blockdat %>% arrange(block, pop3, pop4, pop2) %>%
+    summarize(est = sum(est*weights), pop1 = pop1[1], pop2 = 'fit', n = n[1], length = length[1], .by=c(pop3,pop4,block))
+  bind_rows(f4blockdat, fitf4) %>%
+    f4blockdat_to_f4out(boot = FALSE) %>%
     arrange(pop1, pop3, pop4, pop2)
 }
 
