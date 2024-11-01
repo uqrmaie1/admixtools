@@ -25,7 +25,7 @@ Imports:
     data.tree,
     digest,
     doParallel,
-    dplyr (>= 1.0.0),
+    dplyr (>= 1.1.0),
     foreach,
     furrr,
     future,

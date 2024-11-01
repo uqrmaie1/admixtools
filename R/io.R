@@ -407,30 +407,33 @@ read_eigenstrat = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf
   # inds: optional vector of individual IDs
   # returns list with geno (genotype matrix), snp (snp metadata), ind (sample metadata).
 
+  pref = pref %>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
-  if(!is.null(pops)) {
-    if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
-    inds = indfile %>% filter(X3 %in% pops) %>% pull(X1)
-  }
-
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
-  indfile$X3 = indfile$X1
-  if(!is.null(inds)) {
-    stopifnot(all(inds %in% indfile$X1))
-    indfile$X3[!indfile$X1 %in% inds] = NA
-    inds = intersect(indfile$X1, inds)
-  } else {
-    inds = indfile$X1
+
+  indvec = rep(1, nindall)
+  ind_names = indfile$X1
+  if(!is.null(pops)) {
+    if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
+    if(!isTRUE(all(pops %in% indfile$X3))) stop("Population IDs not found in .ind file!")
+    ind_names = indfile %>% filter(X3 %in% pops) %>% pull(X1)
+    indvec = (indfile$X3 %in% pops)+0
   }
-  indvec = (!is.na(indfile$X3))+0
-  indfile %<>% filter(!is.na(X3))
+
+  if(!is.null(inds)) {
+    if(!isTRUE(all(inds %in% indfile$X1))) stop("Sample IDs not found in .ind file!")
+    ind_names = indfile %>% filter(X1 %in% inds) %>% pull(X1)
+    indvec = (indfile$X1 %in% inds)+0
+  }
+
+  indfile = indfile %>% slice(which(indvec > 0))
   nind = nrow(indfile)
   if(!is.finite(last)) last = nsnpall
   nsnp = last - first + 1
-  snpfile %<>% slice(first:last)
+  snpfile = snpfile %>% slice(first:last)
 
   if(verbose) {
     alert_info(paste0('Reading data for ', nind, ' samples and ', nsnp, ' SNPs...\n'))
@@ -438,8 +441,8 @@ read_eigenstrat = function(pref, inds = NULL, pops = NULL, first = 1, last = Inf
   geno = cpp_read_eigenstrat(paste0(pref, '.geno'), nsnpall, nindall, indvec, first = first-1, last,
                              transpose = transpose, verbose = verbose)
 
-  colnames(geno) = if(transpose) snpfile$SNP else inds
-  rownames(geno) = if(transpose) inds else snpfile$SNP
+  colnames(geno) = if(transpose) snpfile$SNP else ind_names
+  rownames(geno) = if(transpose) ind_names else snpfile$SNP
 
   outlist = list(geno = geno, ind = indfile, snp = snpfile)
   outlist
