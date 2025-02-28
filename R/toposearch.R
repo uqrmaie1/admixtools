@@ -4254,7 +4254,7 @@ f4dat_f4mat = function(f4dat, left, right, eps = NA) {
 
   mat = f4dat %>%
     filter(pop1 == left[1], pop2 %in% left[-1], pop3 == right[1], pop4 %in% right[-1]) %>%
-    select(-pop1,-pop3) %>% pivot_wider(pop2, names_from='pop4', values_from='f4') %>%
+    select(-pop1,-pop3) %>% pivot_wider(id_cols=pop2, names_from='pop4', values_from='f4') %>%
     select(-pop2) %>% as.matrix
   mat[abs(mat) < eps] = 0
   mat

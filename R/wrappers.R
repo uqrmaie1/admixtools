@@ -900,10 +900,10 @@ parse_qp3pop_output = function(outfile) {
 parse_qpfstats_output = function(outfile) {
 
   dat = read_lines(outfile)
-  pops = dat %>% str_subset('^population: ') %>% str_squish %>% str_split(' ') %>% map(3) %>% unlist
+  pops = dat %>% str_subset('^pop: ') %>% str_squish %>% str_split(' ') %>% map(2) %>% unlist
 
   nam1 = c('p11', 'p12', 'p21', 'p22', 'f21', 'f22', 'se')
-  nam2 = c('p1', 'p2', 'p3', 'p4', 'f2', 'se', 'z')
+  nam2 = c('p1', 'p2', 'p3', 'p4', 'est', 'se', 'z')
   nam3 = c('p1', 'p2', 'f21', 'se1', 'f22', 'se2')
 
   djest = dat %>% str_subset('^jest')
@@ -1644,7 +1644,7 @@ f2dat_to_f2blocks = function(f2dat, fill_diag = TRUE) {
   if('length' %in% names(f2dat)) {
     bl = f2dat %>% filter(pop1 == f2dat$pop1[1], pop2 == f2dat$pop2[1]) %>% pull(length) %>% paste0('l', .)
   } else {
-    rep('l1', nblocks)
+    bl = rep('l1', nblocks)
   }
   out = f2dat %>% select(pop1, pop2, f2, block) %>% mutate(block = as.numeric(block)) %>%
     bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>% distinct
@@ -1660,11 +1660,16 @@ f2dat_to_f2blocks2 = function(f2dat, nblocks = 1000, cv = 0.1) {
 
   pops = sort(union(f2dat$pop1, f2dat$pop2))
   f2dat %>% select(pop1, pop2, f2) %>% filter(pop1 < pop2) %>% expand_grid(block = seq_len(nblocks)) %>%
-    rowwise %>% mutate(f2 = rnorm(1, f2, f2*cv)) %>% ungroup %>%
+    rowwise %>% mutate(f2 = max(0, rnorm(1, f2, f2*cv))) %>% ungroup %>%
     bind_rows(rename(., pop1 = pop2, pop2 = pop1)) %>%
     bind_rows(expand_grid(block = seq_len(nblocks), pop1 = pops, f2 = 0) %>% mutate(pop2 = pop1)) %>%
     arrange(block, pop1, pop2) %$%
     array(f2, c(length(pops), length(pops), nblocks), list(pops, pops, rep('l1', nblocks)))
+}
+
+graph_to_f2blocks = function(graph, nblocks = 1000, cv = 0.1) {
+
+  graph_f2_function(graph)() %>% f2dat_to_f2blocks2(nblocks=nblocks, cv=cv)
 }
 
 write_fastsimcoal_obs = function(afs, outfile = stdout()) {
