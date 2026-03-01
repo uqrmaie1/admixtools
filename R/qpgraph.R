@@ -18,7 +18,7 @@ graph_to_pwts = function(graph, leaves) {
     target = names(tail(allpaths[[i]],1))
     ln = length(allpaths[[i]])
     pth2 = allpaths[[i]][c(1, 1+rep(seq_len(ln-2), each=2), ln)]
-    rowind = as.vector(E(graph)[get.edge.ids(graph, as.numeric(pth2))])
+    rowind = as.vector(E(graph)[get.edge.ids(graph, as.vector(pth2))])
     pwts[rowind,target] = pwts[rowind,target] + 1/pathcounts[target]
   }
 
@@ -71,7 +71,7 @@ graph_to_weightind = function(graph) {
   normedges = setdiff(1:length(E(graph)), admixedges)
   paths = all_simple_paths(graph, root, leaves, mode='out')
   ends = sapply(paths, tail, 1)
-  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, as.numeric(.)))
+  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, as.vector(.)))
   weight_per_path = edge_per_path %>% map(~(which(admixedges %in% .)))
 
   path_edge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
@@ -122,8 +122,8 @@ optimweightsfun = function(weights, args) {
   constrained = args[[13]]
 
   pwts = fill_pwts(pwts, weights, path_edge_table, path_admixedge_table)
-  pwts = pwts[,-baseind] - pwts[,baseind]
-  ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
+  pwts = pwts[,-baseind,drop=FALSE] - pwts[,baseind,drop=FALSE]
+  ppwts_2d = t(pwts[,cmb[1,],drop=FALSE]*pwts[,cmb[2,],drop=FALSE])
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, lower, upper, fudge = fudge, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
   qpgraph_score(f3_fit, f3_est, ppinv)
@@ -357,8 +357,8 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     high[ta] = c(pmax(hilo[1,], hilo[2,]), pmax(1-hilo[1,], 1-hilo[2,]))
     pwts = fill_pwts(pwts, wts, weightind[[1]], weightind[[2]], weightind[[3]])
   }
-  pwts = pwts[,-baseind] - pwts[,baseind]
-  ppwts_2d = t(pwts[,cmb[1,]]*pwts[,cmb[2,]])
+  pwts = pwts[,-baseind,drop=FALSE] - pwts[,baseind,drop=FALSE]
+  ppwts_2d = t(pwts[,cmb[1,],drop=FALSE]*pwts[,cmb[2,],drop=FALSE])
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve, elower, eupper, fudge = diag, constrained = constrained)
   f3_fit = ppwts_2d %*% branch_lengths
   score = qpgraph_score(f3_fit, f3_est, ppinv)
@@ -573,7 +573,7 @@ qpgraph_anorexic = function(f3precomp, graph, diag = 1e-4,
   pwts = pwts[, match(f3pops[-1], setdiff(graphpops, f3pops[1]))]
 
   cmb = combn(0:(length(f3pops)-1), 2)+(1:0)
-  ppwts_2d = t(pwts[,cmb[1,]] * pwts[,cmb[2,]])
+  ppwts_2d = t(pwts[,cmb[1,],drop=FALSE] * pwts[,cmb[2,],drop=FALSE])
 
   branch_lengths = opt_edge_lengths(ppwts_2d, ppinv, f3_est, qpsolve,
                                     lower = rep(0, nrow(pwts)), upper = rep(.Machine$integer.max, nrow(pwts)),
