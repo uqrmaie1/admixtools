@@ -28,8 +28,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
   first = max(1, first)
@@ -76,8 +76,8 @@ eigenstrat_to_afs_old = function(pref, inds = NULL, pops = NULL, adjust_pseudoha
   if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -136,8 +136,8 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
   if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -334,8 +334,8 @@ read_packedancestrymap = function(pref, inds = NULL, pops = NULL, first = 1, las
 
   pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
   if(!is.null(pops)) {
     if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
@@ -510,8 +510,8 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = 'ccddcc')
-  fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
+  bim = read_table(bimfile, col_names = nam, progress = FALSE, col_types = 'ccddcc')
+  fam = read_table(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
   nsnpall = nrow(bim)
   nindall = nrow(fam)
   first = max(0, first)
@@ -646,8 +646,8 @@ read_plink = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
-  fam = read_table2(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  bim = read_table(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  fam = read_table(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
 
   if(!is.null(pops)) {
     if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
@@ -907,8 +907,8 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
 
   if(is.null(snpdat)) {
     fl = paste0(afdir, '/snpdat.tsv.gz')
-    nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
-    snpdat = read_table2(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
+    nc = ncol(read_table(fl, n_max = 0, col_types=cols()))
+    snpdat = read_table(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
   }
 
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
@@ -1097,7 +1097,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
     warning("Most `extract_f2` options will be ignored when using the `qpfstats` option!")
     if(is.null(pops)) {
       fi = format_info(pref)
-      pops = unique(read_table2(paste0(pref, fi$indend), col_names=F, col_types = fi$indtype)[[which(fi$indnam == 'pop')]])
+      pops = unique(read_table(paste0(pref, fi$indend), col_names=F, col_types = fi$indtype)[[which(fi$indnam == 'pop')]])
     }
     f2blocks = qpfstats(pref, pops, ...)
     if(is.null(outdir)) {
@@ -1380,7 +1380,7 @@ extract_counts_large = function(pref, outdir, inds = NULL, blgsize = 0.05, cols_
   # same as extract_counts, but split across chunks of individuals
   pref %<>% normalizePath(mustWork = FALSE)
   l = format_info(pref, format)
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
   if(!is.null(inds)) indfile %<>% filter(ind %in% inds)
 
   snpdat = extract_afs(pref, outdir, inds = indfile$ind, pops = indfile$ind, cols_per_chunk = cols_per_chunk, numparts = 100,
@@ -1516,8 +1516,8 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   l = format_info(pref, format)
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
@@ -2134,7 +2134,7 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
   if(system.file(package = 'genio') == '') stop('Please install the "genio" package!')
   inpref = normalizePath(inpref, mustWork = F)
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
+    inds = read_table(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
   }
 
@@ -2168,7 +2168,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
   if(inpref == outpref && !overwrite)
     stop("If you really want to overwrite the input files, set 'overwrite = TRUE'")
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.fam'), col_names = F, col_types = 'cccccc') %>%
+    inds = read_table(paste0(inpref, '.fam'), col_names = F, col_types = 'cccccc') %>%
       filter(X1 %in% pops) %$% X2
   }
   dat = read_plink(inpref, inds, verbose = verbose)
@@ -2238,8 +2238,8 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   pref = normalizePath(pref, mustWork = FALSE)
   l = format_info(pref)
 
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   cpp_read_geno = l$cpp_read_geno
   fl = paste0(pref, l$genoend)
 
@@ -2369,8 +2369,8 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   pref = normalizePath(pref, mustWork = FALSE)
   l = format_info(pref)
 
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   cpp_read_geno = l$cpp_read_geno
   fl = paste0(pref, l$genoend)
 

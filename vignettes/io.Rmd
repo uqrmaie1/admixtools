@@ -170,7 +170,7 @@ admix  D
 We can save this in a text file `graph.txt` and read it into R like this:
 
 ```{r, eval = FALSE}
-graph_el = read_table2('~/Downloads/graph.tsv', col_names = F)
+graph_el = read_table('~/Downloads/graph.tsv', col_names = F)
 plotly_graph(graph_el)
 ```
 ```{r, echo = FALSE}

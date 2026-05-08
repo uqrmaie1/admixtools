@@ -143,7 +143,7 @@ qpdstat_wrapper = function(pref, pop1, pop2 = NULL, pop3 = NULL, pop4 = NULL,
       pop1 %>% select(1:4) %>% write_tsv(popfilename, col_names = FALSE)
     } else if(length(pop1) == 1) {
       stopifnot(file.exists(pop1))
-      dat = read_table2(pop1, col_names = FALSE)
+      dat = read_table(pop1, col_names = FALSE)
       if(ncol(dat) < 4) popfiletype = 'poplistname'
       popfilename = pop1
     } else {
@@ -764,7 +764,7 @@ parse_qpgraph_parfile = function(parfile) {
   # returns named list of parameters
   # all genotype files have to have same prefix
 
-  dat = read_table2(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
+  dat = read_table(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
   dat %<>% mutate(par = str_replace_all(par, c(':$'='', 'genotypename'='pref')),
                   value = str_replace_all(value,
                                           c('\\.geno$'='',
@@ -791,7 +791,7 @@ parse_qpdstat_parfile = function(parfile) {
   # returns named list of parameters
   # all genotype files have to have same prefix
 
-  dat = read_table2(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
+  dat = read_table(parfile, comment = '#', col_names = c('par', 'value'), col_types = cols())
   dat %>% mutate(par = str_replace_all(par, c(':$'='', 'genotypename'='pref')),
                  value = str_replace_all(value,
                                          c('\\.geno$'='',
@@ -1558,7 +1558,7 @@ f2_from_msprime = function(..., blgsize = 0.05, cleanup = TRUE, verbose = TRUE) 
 
 plot_ellout = function(evecfile, ellfile) {
 
-  evec = read_table2(evecfile, col_names = FALSE, skip = 1) %>%
+  evec = read_table(evecfile, col_names = FALSE, skip = 1) %>%
     transmute(id = X1, pop = X4, x = X2, y = X3)
   dd = read_lines(ellfile)
   samples = dd %>% str_subset('^sample:') %>% str_squish %>% word(2)
@@ -1606,9 +1606,9 @@ parse_treemix_treeout = function(treeout) {
 
 parse_treemix = function(stem, split = FALSE) {
 
-  vert = read_table2(paste0(stem, '.vertices.gz'), col_names = FALSE, col_types = cols(.default = 'c')) %>%
+  vert = read_table(paste0(stem, '.vertices.gz'), col_names = FALSE, col_types = cols(.default = 'c')) %>%
     transmute(num = X1, nam = ifelse(is.na(X2), paste0('n',num), X2)) %>% deframe
-  edges = read_table2(paste0(stem, '.edges.gz'), col_names = FALSE, col_types = cols(.default = 'c')) %>%
+  edges = read_table(paste0(stem, '.edges.gz'), col_names = FALSE, col_types = cols(.default = 'c')) %>%
     transmute(from = vert[X1], to = vert[X2])
   if(split) edges %<>% as.matrix %>% split_multifurcations %>% select(1:2)
   edges %>% as.matrix %>% graph_from_edgelist()

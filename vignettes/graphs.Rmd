@@ -394,7 +394,7 @@ plotly_graph(newgraph)
 ```
 
 
-To load an existing graph, use `parse_qpgraph_graphfile()` if it's in the original *ADMIXTOOLS* format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`.
+To load an existing graph, use `parse_qpgraph_graphfile()` if it's in the original *ADMIXTOOLS* format, `read_table()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`.
 
 
 
