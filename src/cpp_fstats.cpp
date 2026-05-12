@@ -194,3 +194,47 @@ NumericVector row_prods(NumericMatrix x) {
   ff = prod(X, 1);
   return f;
 }
+
+
+// Mathematically equivalent to the R one-liner
+//   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+// but in one pass over gmat, one (npop x nsnp) allocation, no temporary
+// (!is.na + 0) intermediate. Called per-block from f4blockdat_from_geno
+// and qpdstat_geno; for a 60-pop / 1357-block / ~600-sample run this is
+// 1357 calls each accumulating ~960K cells. The original R version
+// allocates two (nind x nsnp) doubles per call (the !is.na cast and the
+// rowsum output of it); this version allocates zero block-scale
+// temporaries.
+//
+// popvec is the 1-based per-individual pop assignment vector that
+// match() against the file's pop list produces upstream (length nind,
+// values in 1..npop). NA / missing genotypes in gmat are skipped.
+// Returns an (npop x nsnp) matrix of reference-allele frequencies in
+// [0, 1], with NaN where a (pop, snp) cell had zero valid genotypes
+// (matches the original R version's 0/0 behavior).
+//
+// [[Rcpp::export]]
+arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec) {
+  int nind = gmat.n_rows;
+  int nsnp = gmat.n_cols;
+  int npop = 0;
+  for(int i = 0; i < nind; i++) if(popvec(i) > npop) npop = popvec(i);
+
+  mat sum_g = zeros<mat>(npop, nsnp);
+  mat cnt   = zeros<mat>(npop, nsnp);
+
+  for(int s = 0; s < nsnp; s++) {
+    for(int i = 0; i < nind; i++) {
+      double g = gmat(i, s);
+      if(std::isfinite(g)) {
+        int p = popvec(i) - 1;   // 1-based -> 0-based
+        sum_g(p, s) += g;
+        cnt(p, s)   += 1.0;
+      }
+    }
+  }
+
+  // Element-wise sum/cnt/2. 0/0 -> NaN, matching rowsum's behavior in R.
+  return sum_g / cnt / 2.0;
+}
+

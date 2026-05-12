@@ -33,6 +33,10 @@ row_prods <- function(x) {
     .Call('_admixtools_row_prods', PACKAGE = 'admixtools', x)
 }
 
+cpp_gmat_to_aftable <- function(gmat, popvec) {
+    .Call('_admixtools_cpp_gmat_to_aftable', PACKAGE = 'admixtools', gmat, popvec)
+}
+
 cpp_opt_A <- function(B, xvec, qinv, nr, fudge) {
     .Call('_admixtools_cpp_opt_A', PACKAGE = 'admixtools', B, xvec, qinv, nr, fudge)
 }
