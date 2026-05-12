@@ -1483,20 +1483,40 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
     filter(!duplicated(paste(p1, p2)))
 
   col = if(counts) 2 else 1
+
+  # Resolve all on-disk paths first (one filesystem stat per pair to pick
+  # between the p1/p2 and p2/p1 layouts). This is fast even sequentially
+  # and lets the actual readRDS calls run in parallel.
+  resolve_path = function(i) {
+    fl1 = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
+    if(file.exists(fl1)) return(fl1)
+    fl2 = paste0(f2_dir, '/', popcomb$p2[i], '/', popcomb$p1[i], '_', type, '.rds')
+    if(file.exists(fl2)) return(fl2)
+    stop(paste0('File ', fl1, ' not found! You may have to recompute the f-statistics!'))
+  }
+  paths = vapply(seq_len(nrow(popcomb)), resolve_path, character(1))
+
+  # Read all RDS files. Under the active future plan (default sequential)
+  # this is the same loop body as before; with plan(multisession) it
+  # parallelizes across workers. Each readRDS is independent and the
+  # outputs are small (one column of per-block doubles), so the overhead
+  # of socket serialization is well below the I/O latency savings on
+  # network or cold-cache filesystems.
+  if(verbose) alert_info(paste0('Reading ', type, ' data for ', nrow(popcomb), ' pairs...\r'))
+  dat_list = furrr::future_map(paths, function(fl) readRDS(fl)[, col])
+
+  # Assign back to the 3D array. This part is fast and serial — it's
+  # just R array indexing, no I/O.
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
-    if(verbose) alert_info(paste0('Reading ', type,
-                                  ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
-    fl = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
-    if(!file.exists(fl)) fl = paste0(f2_dir, '/', popcomb$p2[i], '/', popcomb$p1[i], '_', type, '.rds')
-    if(!file.exists(fl)) stop(paste0('File ', fl, ' not found! You may have to recompute the f-statistics!'))
-    dat = readRDS(fl)[,col]
+    dat  = dat_list[[i]]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
     if(type == 'fst' && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
+  rm(dat_list)
   if(verbose) alert_info(paste0('\n'))
   if(remove_na || verbose) {
     keep = apply(f2_blocks, 3, function(x) sum(!is.finite(x)) == 0)
