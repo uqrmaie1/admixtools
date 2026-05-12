@@ -182,11 +182,54 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
 
 
+#' Filter SNPs in an allele-frequency table
+#'
+#' Applies SNP-level filters to an allele-frequency object (the kind returned
+#' by [plink_to_afs()], [eigenstrat_to_afs()], [packedancestrymap_to_afs()],
+#' or [pfile_to_afs()]) and returns the same shape with the dropped SNPs
+#' removed. This is the filter that [extract_f2()] applies internally between
+#' reading allele frequencies from disk and computing per-pair f2 blocks; it
+#' is exported here so callers who assemble the AFS-direct pipeline manually
+#' can apply the same filter without reaching into the package via `:::`.
+#'
+#' @export
+#' @param afdat An allele-frequency table: a list with elements `afs`
+#'   (nsnp × npop matrix of reference-allele frequencies), `counts`
+#'   (nsnp × npop matrix of observed allele counts), and `snpfile`
+#'   (a tibble of SNP metadata with at least `SNP`, `CHR`, `A1`, `A2`).
+#' @param maxmiss Drop SNPs where the fraction of populations with zero
+#'   called alleles exceeds this value. Default `0`: drop any SNP missing
+#'   from at least one population. Set to `1` to disable.
+#' @param minmaf Minimum minor-allele frequency (computed as a
+#'   count-weighted row mean across populations). Default `0` (no filter).
+#' @param maxmaf Maximum minor-allele frequency. Default `0.5`.
+#' @param minac2 If `TRUE` (or `2`), drop SNPs whose minimum per-population
+#'   allele count is below 2. With `minac2 = 2`, only non-singleton
+#'   populations are considered when computing the minimum. Default `FALSE`.
+#' @param outpop Optional name of an outgroup population. When supplied,
+#'   adds an `outgroupaf` column to the SNP metadata for use by downstream
+#'   outgroup-based filters; otherwise this column is set to `0.5`.
+#' @param auto_only Drop SNPs on non-autosomal chromosomes (anything
+#'   outside `1:22`). Default `TRUE`.
+#' @param poly_only Drop SNPs that are monomorphic across the included
+#'   populations. Default `FALSE`.
+#' @param transitions Keep transition SNPs (A↔G, C↔T). Default `TRUE`.
+#'   Set to `FALSE` for ancient-DNA studies that want to exclude
+#'   transitions to avoid post-mortem C→T / G→A deamination artifacts.
+#' @param transversions Keep transversion SNPs. Default `TRUE`.
+#' @param keepsnps Optional character vector of SNP IDs to retain. When
+#'   supplied, overrides `maxmiss` and `auto_only` (only the supplied SNP
+#'   set is kept, ignoring those filters). Default `NULL`.
+#' @return A list with the same names as `afdat` (`afs`, `counts`, `snpfile`),
+#'   restricted to SNPs that pass all active filters. Errors if zero SNPs remain.
+#' @examples
+#' \dontrun{
+#' afdat = plink_to_afs(prefix, pops = pops)
+#' afdat_filtered = discard_from_aftable(afdat, maxmiss = 0, auto_only = TRUE)
+#' # afdat_filtered$afs has fewer rows than afdat$afs
+#' }
 discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
-  # afdat is list with 'snpfile', 'afs', 'counts'
-  # returns same list with SNPs removed
-  # keepsnps overrides maxmiss and auto_only
 
   snpdat = afdat$snpfile
   if(maxmiss < 1) snpdat$miss = rowMeans(afdat$counts == 0)
