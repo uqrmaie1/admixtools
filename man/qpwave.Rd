@@ -15,6 +15,7 @@ qpwave(
   boot = FALSE,
   constrained = FALSE,
   cpp = TRUE,
+  singular_threshold = NA_real_,
   verbose = TRUE
 )
 }

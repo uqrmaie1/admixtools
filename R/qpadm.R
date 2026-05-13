@@ -114,10 +114,22 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param return_f4 Return f4-statistics
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param singular_threshold If not `NA` (the default), error out when the
+#'   reciprocal condition number of the (fudged) f4 variance matrix is below
+#'   this threshold. A common choice is `1e-12` — below that the downstream
+#'   `solve()` and the C++ weight optimization fall back to a pseudo-inverse,
+#'   which makes the returned weight standard errors numerically tight in a
+#'   way that doesn't reflect actual sampling uncertainty. The default
+#'   (`NA`) preserves the historical behavior: silently fall through to the
+#'   pseudo-inverse fallback. In either mode, the reciprocal condition
+#'   number is reported as `f4_var_rcond` on the returned list so callers
+#'   can gate downstream interpretations programmatically.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
-#' @return `qpadm` returns a list with up to four data frames describing the model fit:
+#' @return `qpadm` returns a list with up to four data frames describing the model fit, plus a numeric `f4_var_rcond` diagnostic:
 #' \enumerate{
+#' \item `f4_var_rcond`: Reciprocal condition number of the (fudged) f4 variance matrix that was inverted to compute weights and standard errors. Values near machine epsilon (~`1e-15`) indicate that the right populations are linearly dependent (e.g., a right pop is a sister to one of the sources), and the returned weight SEs may be artificially tight as a result of the pseudo-inverse fallback. See `singular_threshold` for opt-in error gating.
+#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of `f4_var`. Right pops at the top of this list are the most likely offenders — typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. `NULL` otherwise.
 #' \item `weights`: A data frame with estimated admixture proportions where each row is a left population.
 #' \item `f4`: A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
@@ -162,7 +174,8 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 qpadm = function(data, left, right, target, f4blocks = NULL,
                  fudge = 0.0001, fudge_twice = FALSE, auto_only = TRUE, blgsize = 0.05,
                  poly_only = FALSE, boot = FALSE, getcov = TRUE,
-                 constrained = FALSE, return_f4 = FALSE, cpp = TRUE, verbose = TRUE, ...) {
+                 constrained = FALSE, return_f4 = FALSE, cpp = TRUE,
+                 singular_threshold = NA_real_, verbose = TRUE, ...) {
 
   #----------------- prepare f4 stats -----------------
   f2_blocks = NULL
@@ -236,8 +249,81 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   block_lengths = f4stats$block_lengths
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   if(fudge_twice) diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
+
+  # Reciprocal condition number of (fudged) f4 variance matrix. Used as a
+  # diagnostic for "are the right pops independent of the sources?".
+  # Very low rcond (~1e-15 / machine epsilon) typically means one or more
+  # right pops are sister to a source, which makes f4_var near-singular and
+  # the downstream pseudo-inverse fallback in cpp_qpadm_weights produce
+  # weight SEs that look tight but reflect numerical noise, not sampling
+  # uncertainty (issue #8).
+  f4_var_rcond = tryCatch(as.numeric(rcond(f4_var)), error = function(e) NA_real_)
+
+  # If rcond is concerningly low, compute the SVD-based attribution: the
+  # smallest right-singular vector tells us which (left, right) f4 directions
+  # are in the degenerate subspace. Reshape to a (R-1, L-1) matrix (f4_var's
+  # vec ordering puts right-pop fast, left-pop slow — see f4blocks_to_f4stats
+  # in this file and arr3d_to_mat in utility.R) and take row norms to get
+  # per-right-pop loadings on the degenerate direction. Two right pops with
+  # large opposing loadings = sister-like pair; one with a dominant loading
+  # alone = the lone offender.
+  rcond_concern = 1e-8     # below ~sqrt(machine eps), the fit is suspect
+  # Trigger SVD attribution whenever either condition holds:
+  #   (a) the auto-concern bar is hit (always-on diagnostic at very low rcond), or
+  #   (b) the caller asked for fail-loud gating and the threshold actually trips
+  #       (so the error message can include the attribution).
+  trigger_loadings = is.finite(f4_var_rcond) &&
+    (f4_var_rcond < rcond_concern ||
+     (!is.na(singular_threshold) && f4_var_rcond < singular_threshold))
+  f4_var_singular_loadings = NULL
+  if(trigger_loadings) {
+    f4_var_singular_loadings = tryCatch({
+      svd_res = svd(f4_var)
+      v_min = svd_res$v[, ncol(svd_res$v)]                # smallest-sigma right singular vector
+      v_mat = matrix(v_min, nrow = length(right) - 1)     # rows = right[-1], cols = left[-1]
+      right_norms = sqrt(rowSums(v_mat^2))
+      tibble::tibble(right = right[-1], loading = right_norms) %>%
+        dplyr::arrange(dplyr::desc(loading))
+    }, error = function(e) NULL)
+  }
+
+  if(!is.na(singular_threshold) && is.finite(f4_var_rcond) && f4_var_rcond < singular_threshold) {
+    diag_msg = ""
+    if(!is.null(f4_var_singular_loadings)) {
+      top = utils::head(f4_var_singular_loadings, 5)
+      diag_msg = paste0(
+        "\n  Right pops loading on the degenerate direction (top 5):\n",
+        paste0(sprintf("    %-40s loading %.3f", top$right, top$loading), collapse = "\n"),
+        "\n  Pops at the top of this list are the likely offenders — typically a\n",
+        "  sister-clade pair (two pops with similar high loadings) or a lone right\n",
+        "  pop too close to a source. Drop one and refit.")
+    }
+    stop(sprintf(
+      paste0("f4 variance matrix is near-singular (rcond = %.3g < threshold %.3g).\n",
+             "  This typically means right populations aren't independent of the\n",
+             "  sources (e.g. sister populations).%s\n",
+             "  (Pass `singular_threshold = NA` to allow the pseudo-inverse fallback\n",
+             "  anyway; weight SEs may be unreliable.)"),
+      f4_var_rcond, singular_threshold, diag_msg))
+  }
+  if(is.finite(f4_var_rcond) && f4_var_rcond < rcond_concern && is.na(singular_threshold) && verbose) {
+    # Concerning rcond, but no threshold gate set. Surface a warning so the
+    # user knows the result of the silent pseudo-inverse fallback might be
+    # numerically tight in a way that doesn't reflect sampling uncertainty.
+    top = if(!is.null(f4_var_singular_loadings)) utils::head(f4_var_singular_loadings, 3) else NULL
+    diag_msg = if(is.null(top)) "" else paste0(
+      " Right pops loading on the degenerate direction: ",
+      paste0(sprintf("%s (%.2f)", top$right, top$loading), collapse = ", "), ".")
+    warning(sprintf(
+      paste0("f4 variance matrix is near-singular (rcond = %.3g).%s ",
+             "Weight SEs may be unreliable; see `?qpadm` (`singular_threshold`) for ",
+             "opt-in fail-loud gating, and `out$f4_var_singular_loadings` for the full table."),
+      f4_var_rcond, diag_msg))
+  }
+
   qinv = solve(f4_var)
-  out = list()
+  out = list(f4_var_rcond = f4_var_rcond,
+             f4_var_singular_loadings = f4_var_singular_loadings)
 
   #----------------- compute admixture weights -----------------
   if(!is.null(target)) {
@@ -301,10 +387,11 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 #' qpwave(example_f2_blocks, left, right)
 qpwave = function(data, left, right,
                   fudge = 0.0001, auto_only = TRUE, blgsize = 0.05, poly_only = FALSE, boot = FALSE,
-                  constrained = FALSE, cpp = TRUE, verbose = TRUE)
+                  constrained = FALSE, cpp = TRUE, singular_threshold = NA_real_, verbose = TRUE)
   qpadm(data = data, left = left, right = right, target = NULL,
         fudge = fudge, auto_only = auto_only, blgsize = blgsize, poly_only = poly_only,  boot = boot,
-        constrained = constrained, cpp = cpp, verbose = verbose)
+        constrained = constrained, cpp = cpp,
+        singular_threshold = singular_threshold, verbose = verbose)
 
 
 
