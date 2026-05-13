@@ -33,6 +33,7 @@ Imports:
     ggplot2,
     grDevices,
     igraph,
+    jsonlite,
     lobstr,
     magrittr,
     pgenlibr,
