@@ -992,5 +992,123 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 }
 
 
+#' Sweep qpadm over a Cartesian product of targets, source-sets, and right-sets
+#'
+#' Patterson-style sweeps fit qpadm for every combination of
+#' (target, source-set, right-set). Each invocation through [qpadm()] would re-load
+#' the f2 cache from disk; `qpadm_sweep()` loads it once via [qpadm_multi()] and
+#' returns a flat tibble with one row per combination — suitable for
+#' filtering / ranking model fits across a sweep without unnesting nested lists.
+#'
+#' This is a convenience wrapper around [qpadm_multi()] that adds:
+#' * named source-sets and right-sets so each combination is labelled in the output
+#' * implicit Cartesian product over `(targets x source_sets x right_sets)`
+#' * a flat tibble result with top-level columns extracted from each model fit
+#'
+#' For per-model parallel evaluation, set `future::plan('multisession')` before calling.
+#'
+#' @export
+#' @inheritParams qpadm_multi
+#' @param targets Character vector of target populations.
+#' @param source_sets Named list of character vectors; each element is a candidate
+#'   set of source ("left") populations for one model. If unnamed, names default
+#'   to `S1`, `S2`, .... Empty names are an error.
+#' @param right_sets Named list of character vectors; each element is a candidate
+#'   set of "right" / outgroup populations. If unnamed, names default to
+#'   `R1`, `R2`, .... Empty names are an error.
+#' @param full_results If `TRUE` (the default), the returned tibble includes
+#'   list-columns `weights` and `rankdrop` with the full per-model output of
+#'   [qpadm()]. If `FALSE`, only the flat summary columns are returned.
+#' @return A tibble with one row per `(target, source_set, right_set)` combination
+#'   and columns:
+#'   \itemize{
+#'     \item `target`, `source_set`, `right_set`: identifiers for the combination
+#'     \item `left`, `right`: list-columns with the source / right pops for this model
+#'     \item `f4rank`: tested rank in the top row of [qpadm()]'s `rankdrop` (= `length(left) - 1`)
+#'     \item `p`, `chisq`, `dof`: top-row of `rankdrop` (the "auto" model fit)
+#'     \item `feasible`: `TRUE` if all weights are between 0 and 1
+#'     \item `weights`: list-column with the per-source `weight` / `se` / `z` tibble (`full_results = TRUE`)
+#'     \item `rankdrop`: list-column with the full rankdrop table (`full_results = TRUE`)
+#'   }
+#' @seealso [qpadm()], [qpadm_multi()]
+#' @examples
+#' \dontrun{
+#' # Run 3 targets * 2 source-sets * 2 right-sets = 12 qpadm models from one f2 dir.
+#' targets    = c("Patterson_England_IA", "Patterson_England_BA",
+#'                "Patterson_England_C_EBA")
+#' sources    = list(canonical_3way = c("WHGA", "Balkan_N", "OldSteppe"),
+#'                   with_ehg       = c("WHGA", "Balkan_N", "OldSteppe", "EHG_Karelia"))
+#' rights     = list(distal_4pop    = c("OldAfrica", "WHGB", "Turkey_N", "Russia_Afanasievo"),
+#'                   distal_refined = c("OldAfrica", "WHGB", "Turkey_N", "Russia_Afanasievo",
+#'                                      "Iran_GanjDareh_N"))
+#' res = qpadm_sweep("f2_dir/", targets, sources, rights)
+#' res %>% arrange(target, p)
+#' }
+qpadm_sweep = function(data, targets, source_sets, right_sets,
+                       allsnps = FALSE, full_results = TRUE, verbose = TRUE, ...) {
+
+  if(length(targets) < 1) stop("'targets' must be a non-empty character vector")
+  if(!is.list(source_sets) || length(source_sets) < 1)
+    stop("'source_sets' must be a non-empty list of character vectors")
+  if(!is.list(right_sets) || length(right_sets) < 1)
+    stop("'right_sets' must be a non-empty list of character vectors")
+  if(is.null(names(source_sets))) names(source_sets) = paste0("S", seq_along(source_sets))
+  if(is.null(names(right_sets)))  names(right_sets)  = paste0("R", seq_along(right_sets))
+  if(any(!nzchar(names(source_sets)))) stop("All 'source_sets' entries must be named")
+  if(any(!nzchar(names(right_sets))))  stop("All 'right_sets' entries must be named")
+  if(any(duplicated(names(source_sets)))) stop("'source_sets' names must be unique")
+  if(any(duplicated(names(right_sets))))  stop("'right_sets' names must be unique")
+
+  combos = expand.grid(target     = as.character(targets),
+                       source_set = names(source_sets),
+                       right_set  = names(right_sets),
+                       stringsAsFactors = FALSE,
+                       KEEP.OUT.ATTRS = FALSE)
+  combos$left  = unname(source_sets[combos$source_set])
+  combos$right = unname(right_sets[combos$right_set])
+
+  if(verbose) alert_info(paste0("Running ", nrow(combos),
+                                " qpadm models (", length(targets), " target * ",
+                                length(source_sets), " source-set * ",
+                                length(right_sets), " right-set)...\n"))
+
+  models = tibble::tibble(left   = combos$left,
+                          right  = combos$right,
+                          target = combos$target)
+  fits = qpadm_multi(data, models, allsnps = allsnps,
+                     full_results = TRUE, verbose = verbose, ...)
+
+  # Flatten each qpadm() result into the top row of its rankdrop + the weights tibble.
+  top_row = function(x) if(is.null(x) || nrow(x) == 0) NULL else x[1, ]
+  out = tibble::tibble(
+    target     = combos$target,
+    source_set = combos$source_set,
+    right_set  = combos$right_set,
+    left       = combos$left,
+    right      = combos$right,
+    f4rank     = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_integer_ else as.integer(r$f4rank) },
+                   integer(1)),
+    p          = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_real_ else as.numeric(r$p) },
+                   numeric(1)),
+    chisq      = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_real_ else as.numeric(r$chisq) },
+                   numeric(1)),
+    dof        = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_integer_ else as.integer(r$dof) },
+                   integer(1)),
+    feasible   = vapply(fits, function(f) {
+                   w = f$weights; if(is.null(w)) NA else all(dplyr::between(w$weight, 0, 1)) },
+                   logical(1)))
+
+  if(full_results) {
+    out$weights  = lapply(fits, `[[`, 'weights')
+    out$rankdrop = lapply(fits, `[[`, 'rankdrop')
+  }
+  out
+}
+
+
 
 
