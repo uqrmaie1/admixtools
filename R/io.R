@@ -1289,8 +1289,11 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
 
   # 1. Sample set: read indfile, apply the same matching extract_f2 used,
   #    keep IIDs whose indvec > 0, sort.
+  # Use readr::read_table directly: it exists on both readr 1.x and 2.x,
+  # so this function works regardless of whether the host package still
+  # uses the (removed-in-readr-2.x) read_table2 elsewhere.
   if(format == 'plink') {
-    fam = read_table2(paste0(pref, '.fam'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+    fam = readr::read_table(paste0(pref, '.fam'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
     haveinds = fam$X2; havepops = fam$X1
   } else if(format == 'pfile') {
     # .psam: header line starting with '#IID' or '#FID' followed by IID and PAT/MAT/SEX columns.
@@ -1305,7 +1308,7 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
     haveinds = psam[[iid_col]]
     havepops = if(is.na(pop_col)) haveinds else psam[[pop_col]]
   } else {
-    indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+    indfile = readr::read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
     haveinds = indfile$X1; havepops = indfile$X3
   }
   mp = match_samples(haveinds, havepops, inds, pops)
@@ -1828,7 +1831,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
       # deterministic from the same inputs the orchestrator can see.
       cache_id = tryCatch({
         fi = format_info(pref, format = format)
-        sf = read_table2(paste0(pref, fi$snpend), col_names = fi$snpnam,
+        sf = readr::read_table(paste0(pref, fi$snpend), col_names = fi$snpnam,
                          col_types = paste(rep('c', length(fi$snpnam)), collapse=''),
                          progress = FALSE)
         if(isTRUE(auto_only)) sf = sf[suppressWarnings(as.integer(sf$CHR)) %in% 1:22, , drop = FALSE]
