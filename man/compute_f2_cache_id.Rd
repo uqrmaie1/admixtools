@@ -9,26 +9,35 @@ compute_f2_cache_id(
   format = NULL,
   inds = NULL,
   pops = NULL,
-  snpfile_kept,
+  snpfile_kept = NULL,
   blgsize = 0.05,
   extra_args = list()
 )
 }
 \arguments{
-\item{pref}{Genotype prefix (same as passed to \code{\link[=extract_f2]{extract_f2()}}).}
+\item{pref}{Either a genotype prefix (same as passed to \code{\link[=extract_f2]{extract_f2()}},
+any format \code{\link[=extract_f2]{extract_f2()}} accepts) or an existing f2-output directory
+(the value passed to \code{\link[=extract_f2]{extract_f2()}} as \code{outdir}).}
 
-\item{format}{One of \code{'plink'}, \code{'packedancestrymap'}, \code{'eigenstrat'}, or
-\code{NULL} to detect from file existence at \code{pref}.}
+\item{format}{Genotype format hint when \code{pref} is a prefix. One of
+\code{'plink'}, \code{'packedancestrymap'}, \code{'eigenstrat'}, \code{'pfile'}, or \code{NULL}
+to detect from file existence at \code{pref}. Ignored when \code{pref} is a
+directory.}
 
-\item{inds, pops}{Individual / population filters (same as passed to \code{\link[=extract_f2]{extract_f2()}}).}
+\item{inds, pops}{Individual / population filters (same as passed to
+\code{\link[=extract_f2]{extract_f2()}}). Ignored when \code{pref} is a directory.}
 
 \item{snpfile_kept}{A data.frame with at least \code{CHR}, \code{POS}, \code{A1}, \code{A2}
-columns, representing the SNPs that survived filtering.}
+columns, representing the SNPs that survived filtering. Required when
+computing fresh from a genotype prefix; ignored when \code{pref} is a
+directory.}
 
-\item{blgsize}{Block size in Morgans (same as passed to \code{\link[=extract_f2]{extract_f2()}}).}
+\item{blgsize}{Block size in Morgans (same as passed to \code{\link[=extract_f2]{extract_f2()}}).
+Ignored when \code{pref} is a directory.}
 
 \item{extra_args}{Named list of additional \code{extract_f2} arguments whose
-values affect output. Captured verbatim.}
+values affect output. Captured verbatim. Ignored when \code{pref} is a
+directory.}
 }
 \value{
 A character scalar of the form \code{"sha256:<64 hex chars>"}.
@@ -47,7 +56,18 @@ to decide whether previously cached downstream artefacts (qpAdm / qpGraph
 results computed against these blocks) are still current, without having
 to hash hundreds of MB of \code{.rds} block files or rely on mtimes.
 
-The hash is computed from:
+Two input modes:
+\itemize{
+\item \strong{Genotype prefix} (typical: invoked internally by \code{\link[=extract_f2]{extract_f2()}}) —
+recomputes the hash from the on-disk inputs and filter args. Requires
+\code{snpfile_kept} (the post-filter SNP table) because variant filtering
+isn't reproducible from the prefix alone.
+\item \strong{f2 directory} (typical: orchestrator probe of an existing cache) —
+reads the \code{.f2_cache_id} sidecar previously written by \code{\link[=extract_f2]{extract_f2()}}.
+Cheap; no genotype-file access. Most callers want this mode.
+}
+
+The hash payload (when computing fresh) is:
 \itemize{
 \item \strong{Sample set} — sorted list of IIDs that contributed to the f2 blocks,
 resolved from the input \code{.fam} / \code{.ind} / \code{.psam} according to \code{inds} and
