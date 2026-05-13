@@ -4,7 +4,7 @@
 \alias{result_to_json}
 \title{Serialize an admixtools result to JSON}
 \usage{
-result_to_json(result, fn, args = list(), file = "", pretty = FALSE, digits = NA)
+result_to_json(result, fn = NULL, args = list(), file = "", pretty = FALSE, digits = NA)
 }
 \arguments{
 \item{result}{The result list (or single data frame, or array) returned by
@@ -12,7 +12,9 @@ an admixtools fitter.}
 
 \item{fn}{Character scalar naming the function that produced \code{result}
 (e.g. \code{"qpadm"}, \code{"qpgraph"}). Stamped into the JSON envelope so consumers
-can dispatch on the shape.}
+can dispatch on the shape. Defaults to \code{NULL}, which renders as
+"unknown" - useful for ad-hoc serialization where the caller doesn't
+want to plumb the producer name through.}
 
 \item{args}{Optional named list of the arguments used in the call. Echoed
 verbatim into the envelope's \code{args} field. Use \code{list()} (the default) to

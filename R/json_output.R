@@ -35,7 +35,9 @@
 #'   an admixtools fitter.
 #' @param fn Character scalar naming the function that produced `result`
 #'   (e.g. `"qpadm"`, `"qpgraph"`). Stamped into the JSON envelope so consumers
-#'   can dispatch on the shape.
+#'   can dispatch on the shape. Defaults to `NULL`, which renders as
+#'   `"unknown"` — useful for ad-hoc serialization where the caller doesn't
+#'   want to plumb the producer name through.
 #' @param args Optional named list of the arguments used in the call. Echoed
 #'   verbatim into the envelope's `args` field. Use `list()` (the default) to
 #'   skip.
@@ -62,10 +64,17 @@
 #'
 #' # Pretty-printed to stdout for inspection:
 #' cat(result_to_json(fit, fn = "qpadm", pretty = TRUE))
-result_to_json = function(result, fn, args = list(), file = "",
+result_to_json = function(result, fn = NULL, args = list(), file = "",
                           pretty = FALSE, digits = NA) {
+  if(is.null(fn) || identical(fn, NA)) {
+    # No producer name supplied. Stamp "unknown" so the JSON shape is still
+    # valid for naive callers (`result_to_json(res)` with no plumbing).
+    # Callers who want their consumers to dispatch on the function name
+    # should pass it explicitly.
+    fn = "unknown"
+  }
   if(!is.character(fn) || length(fn) != 1 || !nzchar(fn))
-    stop("'fn' must be a non-empty character scalar (e.g. 'qpadm')")
+    stop("'fn' must be a non-empty character scalar (e.g. 'qpadm') or NULL")
   if(!is.list(args)) stop("'args' must be a (possibly empty) list")
 
   payload = list(
