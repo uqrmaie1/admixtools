@@ -1201,6 +1201,90 @@ match_samples = function(haveinds, havepops, inds, pops) {
 }
 
 
+#' Compute a stable cache identifier for an `extract_f2` run
+#'
+#' Returns a string of the form `"sha256:<hex>"` that uniquely identifies the
+#' inputs that determined the f2 blocks produced by [extract_f2()]. Two runs
+#' over byte-equivalent inputs (same indfile, same variants, same arguments,
+#' same `admixtools` version) produce byte-equal hashes; any change to any
+#' contributing input changes the hash.
+#'
+#' When [extract_f2()] is given an `outdir`, the cache id is also written as
+#' a single line to `<outdir>/.f2_cache_id`. Orchestrators can read this file
+#' to decide whether previously cached downstream artefacts (qpAdm / qpGraph
+#' results computed against these blocks) are still current, without having
+#' to hash hundreds of MB of `.rds` block files or rely on mtimes.
+#'
+#' The hash is computed from:
+#' * **Sample set** — sorted list of IIDs that contributed to the f2 blocks,
+#'   resolved from the input `.fam` / `.ind` / `.psam` according to `inds` and
+#'   `pops`.
+#' * **Variant set** — sorted `(CHR, POS, A1, A2)` tuples of the SNPs that
+#'   survived all filtering (`auto_only`, `transitions`, `transversions`,
+#'   `keepsnps`, `maxmiss`, `minmaf`, `maxmaf`, `minac2`).
+#' * **Block boundaries** — per-block lengths produced by [get_block_lengths()]
+#'   with the supplied `blgsize`.
+#' * **Package version** — `utils::packageVersion('admixtools')`.
+#' * **Filter arguments** — the additional `extract_f2` arguments that affect
+#'   which SNPs are kept and how blocks are formed.
+#'
+#' @param pref Genotype prefix (same as passed to [extract_f2()]).
+#' @param format One of `'plink'`, `'packedancestrymap'`, `'eigenstrat'`, or
+#'   `NULL` to detect from file existence at `pref`.
+#' @param inds,pops Individual / population filters (same as passed to [extract_f2()]).
+#' @param snpfile_kept A data.frame with at least `CHR`, `POS`, `A1`, `A2`
+#'   columns, representing the SNPs that survived filtering.
+#' @param blgsize Block size in Morgans (same as passed to [extract_f2()]).
+#' @param extra_args Named list of additional `extract_f2` arguments whose
+#'   values affect output. Captured verbatim.
+#' @return A character scalar of the form `"sha256:<64 hex chars>"`.
+#' @seealso [extract_f2()]
+#' @export
+compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
+                               snpfile_kept, blgsize = 0.05, extra_args = list()) {
+
+  if(is.null(format)) {
+    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
+    else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
+      format = if(is_packed(paste0(pref, '.geno'))) 'packedancestrymap' else 'eigenstrat'
+    } else stop('Genotype files not found at prefix: ', pref)
+  }
+
+  # 1. Sample set: read indfile, apply the same matching extract_f2 used,
+  #    keep IIDs whose indvec > 0, sort.
+  if(format == 'plink') {
+    fam = read_table2(paste0(pref, '.fam'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+    haveinds = fam$X2; havepops = fam$X1
+  } else {
+    indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+    haveinds = indfile$X1; havepops = indfile$X3
+  }
+  mp = match_samples(haveinds, havepops, inds, pops)
+  iids = sort(unique(haveinds[mp$indvec > 0]))
+
+  # 2. Variant fingerprint: sorted (CHR,POS,A1,A2) tuples of kept SNPs.
+  var_keys = sort(paste(snpfile_kept$CHR, snpfile_kept$POS, snpfile_kept$A1, snpfile_kept$A2, sep = '\t'))
+
+  # 3. Block boundaries: per-block lengths under this blgsize.
+  block_lengths = tryCatch(get_block_lengths(snpfile_kept, blgsize = blgsize, verbose = FALSE),
+                           error = function(e) integer())
+
+  payload = list(
+    schema             = 'admixtools-f2-cache-id-v1',
+    admixtools_version = as.character(utils::packageVersion('admixtools')),
+    format             = format,
+    n_iids             = length(iids),
+    iids_hash          = digest::digest(iids, algo = 'sha256', serialize = TRUE),
+    n_variants         = length(var_keys),
+    variants_hash      = digest::digest(var_keys, algo = 'sha256', serialize = TRUE),
+    n_blocks           = length(block_lengths),
+    blocks_hash        = digest::digest(list(blgsize = blgsize, lengths = block_lengths),
+                                        algo = 'sha256', serialize = TRUE),
+    blgsize            = blgsize,
+    args               = extra_args)
+  paste0('sha256:', digest::digest(payload, algo = 'sha256', serialize = TRUE))
+}
+
 
 #' Read genotype data from `PLINK` files
 #'
@@ -1711,6 +1795,19 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                           n_cores = n_cores, verbose = verbose)
 
   if(is.null(outdir)) return(arrs)
+
+  # Stable cache identifier for orchestrators (see `?compute_f2_cache_id`).
+  cache_id = tryCatch(
+    compute_f2_cache_id(pref = pref, format = format, inds = inds, pops = pops,
+                        snpfile_kept = afdat$snpfile, blgsize = blgsize,
+                        extra_args = list(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+                                          minac2 = minac2, outpop = outpop, outpop_scale = outpop_scale,
+                                          transitions = transitions, transversions = transversions,
+                                          auto_only = auto_only, adjust_pseudohaploid = adjust_pseudohaploid,
+                                          afprod = afprod, fst = fst, poly_only = poly_only,
+                                          apply_corr = apply_corr, qpfstats = qpfstats)),
+    error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
+  if(!is.na(cache_id)) writeLines(cache_id, file.path(outdir, '.f2_cache_id'))
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
