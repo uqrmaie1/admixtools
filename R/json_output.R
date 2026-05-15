@@ -104,3 +104,42 @@ result_to_json = function(result, fn = NULL, args = list(), file = "",
   writeLines(as.character(json), con = file)
   invisible(file)
 }
+
+
+#' Read the cache metadata sidecar written by extract_f2()
+#'
+#' Reads the `cache_metadata.json` file written by [extract_f2()] into the
+#' f2 output directory and returns it as a named R list. This gives wrappers
+#' and orchestrators a stable API for post-build telemetry (`n_snps`,
+#' `n_blocks`, `pops`, ...) without reaching into the internal `*.rds` layout.
+#'
+#' The exact set of fields depends on which code path produced the cache:
+#'
+#' - **Regular path** (`qpfstats = FALSE`): `schema_version`,
+#'   `admixtools_version`, `built_at`, `pops`, `n_snps`, `n_blocks`,
+#'   `blgsize`, `maxmiss`, `minmaf`, `maxmaf`, `minac2`, `auto_only`,
+#'   `transitions`, `transversions`, `adjust_pseudohaploid`, `poly_only`,
+#'   `apply_corr`, `afprod`, `fst`, `qpfstats` (= `FALSE`), `cache_id`.
+#' - **qpfstats path** (`qpfstats = TRUE`): `schema_version`,
+#'   `admixtools_version`, `built_at`, `pops`, `n_snps`, `n_blocks`,
+#'   `blgsize`, `maxmiss`, `adjust_pseudohaploid`, `qpfstats` (= `TRUE`),
+#'   `cache_id`. Filter arguments that qpfstats handles internally
+#'   (`minmaf`, `maxmaf`, `auto_only`, `transitions`, etc.) are omitted
+#'   because they don't apply on this code path.
+#'
+#' `cache_id` is `NULL` (rendered as JSON `null`) if the cache-id
+#' computation failed at build time; `built_at` is ISO 8601 with
+#' millisecond precision in UTC. The `cache_id` value mirrors the
+#' `.f2_cache_id` sidecar contents.
+#'
+#' @export
+#' @param outdir Path to the f2 output directory passed to [extract_f2()].
+#' @return A named list with the fields described above.
+#' @seealso [extract_f2()], [compute_f2_cache_id()], [result_to_json()]
+read_f2_cache_metadata = function(outdir) {
+  path = file.path(outdir, 'cache_metadata.json')
+  if(!file.exists(path))
+    stop(paste0("cache_metadata.json not found in '", outdir,
+                "'. Run extract_f2() with an outdir to generate it."))
+  jsonlite::fromJSON(path, simplifyVector = TRUE)
+}
