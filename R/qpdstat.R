@@ -356,7 +356,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   #     indend = '.fam'
   #     popcol = 1
   #   }
-  #   pop1 = read_table2(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
+  #   pop1 = read_table(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
   # }
   if(!is.null(pop2)) {
     ncomb = length(pop1) * length(pop2) * max(1, length(pop3)) * max(1, length(pop4))
@@ -367,11 +367,11 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     out = expand_grid(pop1, pop2, pop3, pop4)
   } else if(is.null(pop1)) {
     if(is_precomp_dir(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
-    else if(is_plink_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
-    else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
+    else if(is_plink_prefix(f2_data)) pop1 = unique(read_table(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
+    else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
     else pop1 = dimnames(f2_data)[[1]]
   } else if(is.character(pop1)[1] && file.exists(pop1[1])) {
-    pop1 = read_table2(pop1, col_names = FALSE)
+    pop1 = read_table(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
       pop1 = pop1[[1]]
     } else {
