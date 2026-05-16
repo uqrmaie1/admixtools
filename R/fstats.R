@@ -455,7 +455,17 @@ get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = 
   if(!is.character(f2_data)) {
     f2_blocks = f2_data
   } else if(dir.exists(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose, ...)
+    # `get_f2`'s `argnam` validator unions formals across all three back-ends, so
+    # callers (e.g. qpadm) routinely pass args (auto_only, blgsize, poly_only,
+    # maxmiss, ...) that only `f2_from_geno` understands. Those args have no
+    # effect on a precomputed cache — block partitioning and SNP filtering
+    # already happened at `extract_f2`-time — so we drop them silently here.
+    # Without this, the qpadm-on-precomp path crashes with "unused arguments".
+    extra = list(...)
+    extra = extra[names(extra) %in% names(formals(f2_from_precomp))]
+    f2_blocks = do.call(f2_from_precomp,
+                        c(list(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose),
+                          extra))
   } else {
     f2_blocks = f2_from_geno(f2_data, pops = union(pops, pops2), afprod = afprod, verbose = verbose, ...)
   }
