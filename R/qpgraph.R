@@ -18,7 +18,7 @@ graph_to_pwts = function(graph, leaves) {
     target = names(tail(allpaths[[i]],1))
     ln = length(allpaths[[i]])
     pth2 = allpaths[[i]][c(1, 1+rep(seq_len(ln-2), each=2), ln)]
-    rowind = as.vector(E(graph)[get.edge.ids(graph, pth2)])
+    rowind = as.vector(E(graph)[get.edge.ids(graph, igraph::as_ids(pth2))])
     pwts[rowind,target] = pwts[rowind,target] + 1/pathcounts[target]
   }
 
@@ -71,7 +71,7 @@ graph_to_weightind = function(graph) {
   normedges = setdiff(1:length(E(graph)), admixedges)
   paths = all_simple_paths(graph, root, leaves, mode='out')
   ends = sapply(paths, tail, 1)
-  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, .))
+  edge_per_path = paths %>% map(expand_path) %>% map(~get.edge.ids(graph, igraph::as_ids(.)))
   weight_per_path = edge_per_path %>% map(~(which(admixedges %in% .)))
 
   path_edge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
