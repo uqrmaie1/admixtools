@@ -194,8 +194,8 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 #'
 #' @export
 #' @param afdat An allele-frequency table: a list with elements `afs`
-#'   (nsnp × npop matrix of reference-allele frequencies), `counts`
-#'   (nsnp × npop matrix of observed allele counts), and `snpfile`
+#'   (nsnp x npop matrix of reference-allele frequencies), `counts`
+#'   (nsnp x npop matrix of observed allele counts), and `snpfile`
 #'   (a tibble of SNP metadata with at least `SNP`, `CHR`, `A1`, `A2`).
 #' @param maxmiss Drop SNPs where the fraction of populations with zero
 #'   called alleles exceeds this value. Default `0`: drop any SNP missing
@@ -215,14 +215,14 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 #'   outside `1:22`). Default `TRUE`.
 #' @param poly_only Drop SNPs that are monomorphic across the included
 #'   populations. Default `FALSE`.
-#' @param transitions Keep transition SNPs (A↔G, C↔T). Default `TRUE`.
+#' @param transitions Keep transition SNPs (A/G and C/T). Default `TRUE`.
 #'   Set to `FALSE` for ancient-DNA studies that want to exclude
-#'   transitions to avoid post-mortem C→T / G→A deamination artifacts.
+#'   transitions to avoid post-mortem C->T / G->A deamination artifacts.
 #' @param transversions Keep transversion SNPs. Default `TRUE`.
 #' @param keepsnps Optional character vector of SNP IDs to retain. When
 #'   supplied, overrides **all other filters** (`maxmiss`, `auto_only`,
 #'   `poly_only`, `minmaf`, `maxmaf`, `minac2`, `transitions`,
-#'   `transversions`) — only the SNPs whose IDs appear in `keepsnps` are
+#'   `transversions`) -- only the SNPs whose IDs appear in `keepsnps` are
 #'   kept, regardless of any other filter setting. Default `NULL`.
 #' @return A list with the same names as `afdat` (`afs`, `counts`, `snpfile`),
 #'   restricted to SNPs that pass all active filters. Errors if zero SNPs remain.
