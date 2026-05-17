@@ -46,7 +46,8 @@ test_that("multiallelic = 'skip' drops only the multi-allelic site", {
   dir = withr::local_tempdir()
   fx = build_pfile_fixture(dir, with_multi = TRUE)
   with_multi = pfile_to_afs(fx$pfile_pref, multiallelic = "skip", verbose = FALSE)
-  no_multi = build_pfile_fixture(withr::local_tempdir(), with_multi = FALSE)
+  dir2 = withr::local_tempdir()
+  no_multi = build_pfile_fixture(dir2, with_multi = FALSE)
   base = pfile_to_afs(no_multi$pfile_pref, verbose = FALSE)
   # Skipped fixture should have one less SNP than the all-biallelic equivalent
   # (the tri-allelic row was the only difference). Identity of SNP ids should

@@ -513,6 +513,9 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
          "Sys.which('zstd') returned: '", zstd, "'.")
   }
   tmp = tempfile(fileext = ".pvar")
+  # system2(..., stdout = file) routes through a shell to redirect, so
+  # shQuote() on the input path is what protects against shell injection /
+  # whitespace splitting on user-controlled file names.
   rc = system2(zstd, args = c("-d", "-c", shQuote(pvar_path)), stdout = tmp)
   if(rc != 0 || !file.exists(tmp) || file.size(tmp) == 0) {
     stop("zstd decompression of ", pvar_path, " failed (exit code ", rc, ").")

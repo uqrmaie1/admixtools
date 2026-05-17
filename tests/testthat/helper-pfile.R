@@ -35,13 +35,14 @@ build_pfile_fixture = function(dir, with_multi = FALSE, with_fid = TRUE,
 
   # Construct the genotype matrix: rows = 20 SNPs, cols = 6 samples.
   # popA samples are columns 1..3, popB samples are columns 4..6.
-  # Encoding for the VCF: 0/0, 0/1, 1/1.
-  set.seed(20260517)
+  # Encoding for the VCF: 0/0, 0/1, 1/1. withr::with_seed scopes the RNG
+  # state to this block so tests elsewhere see an unperturbed global seed.
   nsnp = 20L
   nsam = 6L
-  geno = matrix(sample(0:2, nsnp * nsam, replace = TRUE,
-                       prob = c(0.5, 0.25, 0.25)),
-                nrow = nsnp, ncol = nsam)
+  geno = withr::with_seed(20260517,
+    matrix(sample(0:2, nsnp * nsam, replace = TRUE,
+                  prob = c(0.5, 0.25, 0.25)),
+           nrow = nsnp, ncol = nsam))
 
   # Force one across-population polymorphism with a row-mean of 0.5:
   #   popA homozygous REF, popB homozygous ALT. cpp_is_polymorphic must
@@ -95,7 +96,7 @@ build_pfile_fixture = function(dir, with_multi = FALSE, with_fid = TRUE,
 
   # Convert VCF -> PFILE
   args_pfile = c("--vcf", shQuote(vcf), "--make-pgen",
-                 if(!with_fid) "--double-id" else c("--double-id"),
+                 "--double-id",
                  "--out", shQuote(pfile_pref),
                  "--allow-extra-chr", "--silent")
   rc = system2(plink2, args_pfile, stdout = NULL, stderr = NULL)
