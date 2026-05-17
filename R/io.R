@@ -937,7 +937,7 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     e = block_breaks[i + 1] - 1
     if(s > e) next
     if(verbose && numblocks > 1)
-      alert_info(paste0('Reading block ', i, ' of ', numblocks, '...\r'))
+      message(sprintf('Reading block %d of %d...', i, numblocks))
 
     block_variant_idx = variant_subset[s:e]
     geno = .pfile_read_block(pgen, block_variant_idx, multi_idx, multiallelic,
