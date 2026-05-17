@@ -210,3 +210,52 @@ test_that(".read_pvar finds the header line within the 200-line scan window (iss
   res = pfile_to_afs(fx$pfile_pref, verbose = FALSE)
   expect_equal(nrow(res$afs), 20L)
 })
+
+test_that(".read_pvar falls back to a full read when the header is past line 200", {
+  # >200 metadata lines forces the full-file fallback path.
+  dir = withr::local_tempdir()
+  fx = build_pfile_fixture(dir, with_multi = FALSE)
+  pvar_path = paste0(fx$pfile_pref, ".pvar")
+  txt = readLines(pvar_path)
+  header_lineno = which(grepl("^#[^#]", txt))[1]
+  extra = paste0("##bogus", seq_len(400))
+  txt = c(txt[seq_len(header_lineno - 1L)],
+          extra,
+          txt[seq.int(header_lineno, length(txt))])
+  writeLines(txt, pvar_path)
+  res = pfile_to_afs(fx$pfile_pref, verbose = FALSE)
+  expect_equal(nrow(res$afs), 20L)
+})
+
+test_that("anygeno_to_aftable auto-dispatches PFILE when .pvar.zst is at the prefix", {
+  # Regression test for the dispatch fix: previously the PFILE branch in
+  # anygeno_to_aftable() required plaintext .pvar, so a prefix with .pvar.zst
+  # fell through to `stop('Genotype files not found!')`.
+  if(Sys.which("zstd") == "") skip("zstd CLI not on PATH")
+  dir = withr::local_tempdir()
+  fx = build_pfile_fixture(dir, with_multi = FALSE)
+  pvar_path = paste0(fx$pfile_pref, ".pvar")
+  rc = system2("zstd", args = c("-q", "--rm", "-f", pvar_path), stdout = NULL, stderr = NULL)
+  expect_equal(rc, 0L)
+  expect_true(file.exists(paste0(pvar_path, ".zst")))
+  expect_false(file.exists(pvar_path))
+  # anygeno_to_aftable is internal — call via admixtools:::.
+  res = admixtools:::anygeno_to_aftable(fx$pfile_pref, verbose = FALSE)
+  expect_equal(nrow(res$afs), 20L)
+})
+
+test_that("pfile_to_afs reads .pvar.zst end-to-end and matches the plaintext path", {
+  if(Sys.which("zstd") == "") skip("zstd CLI not on PATH")
+  dir_plain = withr::local_tempdir()
+  dir_zst   = withr::local_tempdir()
+  fx_plain = build_pfile_fixture(dir_plain, with_multi = FALSE)
+  fx_zst   = build_pfile_fixture(dir_zst,   with_multi = FALSE)
+  pvar_zst = paste0(fx_zst$pfile_pref, ".pvar")
+  rc = system2("zstd", args = c("-q", "--rm", "-f", pvar_zst), stdout = NULL, stderr = NULL)
+  expect_equal(rc, 0L)
+
+  res_plain = pfile_to_afs(fx_plain$pfile_pref, verbose = FALSE)
+  res_zst   = pfile_to_afs(fx_zst$pfile_pref,   verbose = FALSE)
+  expect_equal(res_plain$afs,    res_zst$afs)
+  expect_equal(res_plain$counts, res_zst$counts)
+})

@@ -535,18 +535,19 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
   read_path = .maybe_decompress_pvar(pvar_path)
   if(read_path != pvar_path) on.exit(unlink(read_path), add = TRUE)
 
-  # Read just enough lines to locate the column-header line. PLINK 2 always
-  # places header metadata before the data, and even VCF-style files keep it
-  # within a few dozen lines — 200 is a generous over-read that still bounds
-  # memory for a 1M-variant .pvar to 200 short strings rather than the whole
-  # file.
-  HEADER_SCAN_LIMIT = 200L
-  head_lines = readr::read_lines(read_path, n_max = HEADER_SCAN_LIMIT, progress = FALSE)
+  # Read just enough lines to locate the column-header line. PLINK 2 usually
+  # places <30 metadata lines before the #CHROM header, but a custom .pvar
+  # with hundreds of contigs can push it further out. Start with 200; if
+  # not found, fall back to a full read so unusual inputs still work.
+  head_lines = readr::read_lines(read_path, n_max = 200L, progress = FALSE)
   header_lineno = which(grepl("^#[^#]", head_lines))[1]
   if(is.na(header_lineno)) {
-    stop("Could not find #CHROM header line within the first ",
-         HEADER_SCAN_LIMIT, " lines of ", pvar_path,
-         ". If your .pvar has an unusually large metadata block, please file an issue.")
+    head_lines = readr::read_lines(read_path, progress = FALSE)
+    header_lineno = which(grepl("^#[^#]", head_lines))[1]
+    if(is.na(header_lineno)) {
+      stop("Could not find #CHROM header line in ", pvar_path,
+           ". Is this really a PLINK 2 .pvar file?")
+    }
   }
   header = sub("^#", "", head_lines[header_lineno])
   header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
@@ -1796,7 +1797,10 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
 anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(is.null(format)) {
-    if(all(file.exists(paste0(pref, c('.pgen', '.pvar', '.psam'))))) {
+    has_pvar = file.exists(paste0(pref, '.pvar')) ||
+               file.exists(paste0(pref, '.pvar.zst'))
+    if(has_pvar &&
+       all(file.exists(paste0(pref, c('.pgen', '.psam'))))) {
       format = 'pfile'
       geno_to_aftable = pfile_to_afs
     } else if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
