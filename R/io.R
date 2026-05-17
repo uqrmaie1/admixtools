@@ -909,7 +909,13 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     full_afs[,    present_pops] = af_block
 
     if(poly_only) {
-      mask = !rowMeans(full_afs, na.rm = TRUE) %in% c(0, 1)
+      # Match the AFS-level filter used in discard_from_aftable: keep
+      # variants that are polymorphic *across populations* (any pair of
+      # population AFs differ), not just those whose row-mean isn't 0/1.
+      # rowMeans-based filtering keeps a SNP fixed REF in pop1 + fixed
+      # ALT in pop2 (mean = 0.5) by accident but drops one fixed REF in
+      # pop1 + missing in pop2 (mean = 0).
+      mask = as.logical(cpp_is_polymorphic(full_afs))
       full_afs    = full_afs[mask, , drop = FALSE]
       full_counts = full_counts[mask, , drop = FALSE]
       snp_indices_kept = c(snp_indices_kept, (s:e)[mask])
