@@ -671,6 +671,10 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' @export
 #' @param pref Prefix of PFILE files (the triplet `<pref>.pgen`,
 #'   `<pref>.pvar`, `<pref>.psam`).
+#' @param adjust_pseudohaploid `TRUE` (default) probes the first 1000 variants
+#'   and infers per-sample ploidy from observed-genotype uniqueness. Pass an
+#'   integer to use that probe size instead. `FALSE` (or `0`) skips probing and
+#'   assumes diploid for every sample.
 #' @param multiallelic Multiallelic-site policy: one of `"error"` (default),
 #'   `"skip"`, or `"first_alt"`. See Details.
 #' @param cm_file Optional path to a TSV companion file carrying per-variant
@@ -722,6 +726,24 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   pvar = .read_pvar(paste0(pref, ".pvar"))
   psam = .read_psam(paste0(pref, ".psam"))
 
+  # PFILE permits duplicate variant IDs, but we use SNP id as the rowname
+  # of the AFS matrix downstream, so reject duplicates up front with a
+  # clear message rather than failing at the rownames<- step in the block
+  # loop.
+  dup_snps = pvar$SNP[duplicated(pvar$SNP)]
+  if(length(dup_snps)) {
+    examples = head(unique(dup_snps), 5)
+    stop(sprintf(paste0(
+      "pfile_to_afs: %d duplicate SNP id%s in .pvar (e.g. %s%s). ",
+      "Variant IDs must be unique for the AFS row index. ",
+      "De-duplicate with `plink2 --pfile %s --rm-dup force-first --make-pgen --out %s_dedup`, ",
+      "then call pfile_to_afs() on the de-duplicated prefix."),
+      length(dup_snps), if(length(dup_snps) == 1) "" else "s",
+      paste(examples, collapse = ", "),
+      if(length(unique(dup_snps)) > length(examples)) ", ..." else "",
+      basename(pref), basename(pref)))
+  }
+
   # cm grafting: .pvar may carry CM (rare; .read_pvar populates pvar$cm from
   # it when present). If cm_file is supplied, it overrides — useful when
   # the user has cm from a separate genetic-map source (e.g. pgen-samplebind's
@@ -753,6 +775,11 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   nindall = nrow(psam)
   first = max(1, first)
   last  = if(is.null(last)) nsnpall else min(last, nsnpall)
+  if(first > last) {
+    stop("pfile_to_afs: 'first' must be <= 'last' (got first=", first,
+         ", last=", last, "). Reversed ranges produce an empty (or descending) ",
+         "variant index that fails opaquely deeper in pgenlibr.")
+  }
 
   # ---- multiallelic policy ----
   multi_idx = which(pvar$is_multi)
@@ -825,7 +852,12 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   # Mirrors the family default: ntest=1000 unless caller passed an integer
   # adjust_pseudohaploid value. Probe = read first ntest variants in the
   # range, infer per-sample ploidy from the set of observed genotypes.
-  if(adjust_pseudohaploid) {
+  # adjust_pseudohaploid = 0 (or FALSE) skips the probe entirely — without
+  # this guard, ntest=0 reads an empty probe matrix and apply() then
+  # assigns ploidy = 1 (haploid) to every sample, silently breaking the
+  # AFS for diploid input.
+  if(isTRUE(adjust_pseudohaploid) ||
+     (is.numeric(adjust_pseudohaploid) && adjust_pseudohaploid > 0)) {
     ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
     probe_subset = head(variant_subset, min(ntest, length(variant_subset)))
     probe = pgenlibr::ReadIntList(pgen, probe_subset)   # nsamples_kept x ntest
