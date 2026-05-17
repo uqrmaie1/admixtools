@@ -686,7 +686,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' [plink_to_afs()] / [eigenstrat_to_afs()]: per-population allele frequencies
 #' and allele counts plus a SNP-metadata tibble. This unlocks the rest of the
 #' admixtools pipeline (`extract_f2`, `qpadm`, `qpgraph`, ...) on PFILE inputs
-#' without a PFILE → BED conversion step.
+#' without a PFILE -> BED conversion step.
 #'
 #' The function is API-compatible with [plink_to_afs()] and returns an
 #' identically-shaped result, so any downstream code that consumes a
@@ -712,13 +712,13 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' multiallelic sites (ALT field with multiple comma-separated alleles).
 #' The `multiallelic` argument controls how those are handled:
 #'
-#' * `"error"` (default) — Stop with an error listing a few example line
+#' * `"error"` (default): stop with an error listing a few example line
 #'   numbers and suggesting a pre-filter command. Safest. Matches the
 #'   assumption baked into the rest of admixtools.
-#' * `"skip"` — Drop multiallelic sites entirely from the output. Clean
+#' * `"skip"`: drop multiallelic sites entirely from the output. Clean
 #'   statistically: the dropped sites contribute nothing, the surviving
 #'   biallelic sites are correct.
-#' * `"first_alt"` — Use the first ALT allele at each multiallelic site,
+#' * `"first_alt"`: use the first ALT allele at each multiallelic site,
 #'   ignoring the rest. **Produces biased f-statistics** unless the first
 #'   ALT happens to be the major non-REF allele at every multiallelic
 #'   site. PFILE allele ordering is determined by the input pipeline
@@ -740,7 +740,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #'   centimorgan distances. PLINK 2 `.pvar` files do **not** carry genetic-map
 #'   `cm` data in the standard format (they are VCF-derived; cm is not part of
 #'   the VCF column spec). When `cm_file` is `NULL` and the `.pvar` has no
-#'   `CM` column, `cm` defaults to `0` for all SNPs and a warning is issued —
+#'   `CM` column, `cm` defaults to `0` for all SNPs and a warning is issued;
 #'   this matters because downstream `extract_f2(blgsize < 100)` uses `cm`
 #'   for jackknife block boundaries; with `cm = 0` everywhere, every SNP
 #'   collapses into a single block. The TSV must contain a SNP-id column
@@ -752,7 +752,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #'   matrix, and SNP-metadata tibble. Same shape as [plink_to_afs()].
 #' @examples
 #' \dontrun{
-#' # PFILE without cm data — fine for analyses that don't need block jackknife
+#' # PFILE without cm data: fine for analyses that don't need block jackknife
 #' afdat = pfile_to_afs(prefix, pops = pops)
 #'
 #' # PFILE with cm grafted from a separate genetic-map file

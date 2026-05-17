@@ -43,7 +43,7 @@ greater than one is more memory efficient, but slower.}
 centimorgan distances. PLINK 2 \code{.pvar} files do \strong{not} carry genetic-map
 \code{cm} data in the standard format (they are VCF-derived; cm is not part of
 the VCF column spec). When \code{cm_file} is \code{NULL} and the \code{.pvar} has no
-\code{CM} column, \code{cm} defaults to \code{0} for all SNPs and a warning is issued —
+\code{CM} column, \code{cm} defaults to \code{0} for all SNPs and a warning is issued;
 this matters because downstream \code{extract_f2(blgsize < 100)} uses \code{cm}
 for jackknife block boundaries; with \code{cm = 0} everywhere, every SNP
 collapses into a single block. The TSV must contain a SNP-id column
@@ -62,7 +62,7 @@ Reads a PLINK 2 PFILE genotype triplet and returns the same shape as
 \code{\link[=plink_to_afs]{plink_to_afs()}} / \code{\link[=eigenstrat_to_afs]{eigenstrat_to_afs()}}: per-population allele frequencies
 and allele counts plus a SNP-metadata tibble. This unlocks the rest of the
 admixtools pipeline (\code{extract_f2}, \code{qpadm}, \code{qpgraph}, ...) on PFILE inputs
-without a PFILE → BED conversion step.
+without a PFILE -> BED conversion step.
 }
 \details{
 The function is API-compatible with \code{\link[=plink_to_afs]{plink_to_afs()}} and returns an
@@ -89,13 +89,13 @@ admixtools' f-statistic model is biallelic. PFILE format supports
 multiallelic sites (ALT field with multiple comma-separated alleles).
 The \code{multiallelic} argument controls how those are handled:
 \itemize{
-\item \code{"error"} (default) — Stop with an error listing a few example line
+\item \code{"error"} (default): Stop with an error listing a few example line
 numbers and suggesting a pre-filter command. Safest. Matches the
 assumption baked into the rest of admixtools.
-\item \code{"skip"} — Drop multiallelic sites entirely from the output. Clean
+\item \code{"skip"}: drop multiallelic sites entirely from the output. Clean
 statistically: the dropped sites contribute nothing, the surviving
 biallelic sites are correct.
-\item \code{"first_alt"} — Use the first ALT allele at each multiallelic site,
+\item \code{"first_alt"}: use the first ALT allele at each multiallelic site,
 ignoring the rest. \strong{Produces biased f-statistics} unless the first
 ALT happens to be the major non-REF allele at every multiallelic
 site. PFILE allele ordering is determined by the input pipeline
@@ -108,7 +108,7 @@ accept the bias and document it. When in doubt prefer \code{"skip"}.
 }
 \examples{
 \dontrun{
-# PFILE without cm data — fine for analyses that don't need block jackknife
+# PFILE without cm data: fine for analyses that don't need block jackknife
 afdat = pfile_to_afs(prefix, pops = pops)
 
 # PFILE with cm grafted from a separate genetic-map file
