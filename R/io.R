@@ -896,6 +896,11 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     # variant columns. Gives (npops_present x nvar_block); transpose once
     # at the end to get (nvar_block x npops_present), then reorder/pad to
     # full upops width.
+    # ploidy divisor convention (matches eigenstrat_to_afs / cpp_plink_to_afs):
+    #   diploid (ploidy=2): genotype {0,1,2} ÷ (3-2)=1 → {0,1,2} ALT counts,
+    #     counts_block = 2 × n_diploid_samples, ratio is allele frequency.
+    #   haploid (ploidy=1): genotype {0,2}   ÷ (3-1)=2 → {0,1} ALT counts,
+    #     counts_block = 1 × n_haploid_samples, ratio is allele frequency.
     counts_block = t(rowsum(ploidy_kept * (!is.na(geno) + 0), indvec_kept))
     af_num       = t(rowsum(geno / (3 - ploidy_kept), indvec_kept, na.rm = TRUE))
     af_block     = af_num / counts_block
