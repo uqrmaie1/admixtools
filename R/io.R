@@ -185,9 +185,9 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 #' Filter SNPs in an allele-frequency table
 #'
 #' Applies SNP-level filters to an allele-frequency object (the kind returned
-#' by [plink_to_afs()], [eigenstrat_to_afs()], [packedancestrymap_to_afs()],
-#' or [pfile_to_afs()]) and returns the same shape with the dropped SNPs
-#' removed. This is the filter that [extract_f2()] applies internally between
+#' by [plink_to_afs()], [eigenstrat_to_afs()], or
+#' [packedancestrymap_to_afs()]) and returns the same shape with the dropped
+#' SNPs removed. This is the filter that [extract_f2()] applies internally between
 #' reading allele frequencies from disk and computing per-pair f2 blocks; it
 #' is exported here so callers who assemble the AFS-direct pipeline manually
 #' can apply the same filter without reaching into the package via `:::`.
@@ -209,8 +209,8 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 #' @param outpop Optional name of an outgroup population. When supplied,
 #'   adds an `outgroupaf` column to the SNP metadata equal to the allele
 #'   frequency of `outpop` at each SNP; otherwise the column is set to a
-#'   sentinel value of `0.5` (the midpoint of the [0, 1] range), which
-#'   makes any subsequent outgroup-based filter a no-op.
+#'   sentinel value of `0.5` (the midpoint between 0 and 1), which makes
+#'   any subsequent outgroup-based filter a no-op.
 #' @param auto_only Drop SNPs on non-autosomal chromosomes (anything
 #'   outside `1:22`). Default `TRUE`.
 #' @param poly_only Drop SNPs that are monomorphic across the included
