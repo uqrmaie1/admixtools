@@ -1201,12 +1201,20 @@ match_samples = function(haveinds, havepops, inds, pops) {
 }
 
 
+# Schema/behavior version baked into the cache id payload. Bump this constant
+# when extract_f2's hash-affecting logic changes (new filter arg, modified
+# block-boundary semantics, payload-shape edit) so existing caches invalidate.
+# Decoupled from `utils::packageVersion("admixtools")` so pure bug-fix patch
+# releases don't bust every cache in the wild.
+.f2_cache_id_schema = "admixtools-f2-cache-id-v1"
+
+
 #' Compute a stable cache identifier for an `extract_f2` run
 #'
 #' Returns a string of the form `"sha256:<hex>"` that uniquely identifies the
 #' inputs that determined the f2 blocks produced by [extract_f2()]. Two runs
 #' over byte-equivalent inputs (same indfile, same variants, same arguments,
-#' same `admixtools` version) produce byte-equal hashes; any change to any
+#' same schema version) produce byte-equal hashes; any change to any
 #' contributing input changes the hash.
 #'
 #' When [extract_f2()] is given an `outdir`, the cache id is also written as
@@ -1216,25 +1224,28 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' to hash hundreds of MB of `.rds` block files or rely on mtimes.
 #'
 #' Two input modes:
-#' * **Genotype prefix** (typical: invoked internally by [extract_f2()]) —
+#' * **Genotype prefix** (typical: invoked internally by [extract_f2()]):
 #'   recomputes the hash from the on-disk inputs and filter args. Requires
 #'   `snpfile_kept` (the post-filter SNP table) because variant filtering
 #'   isn't reproducible from the prefix alone.
-#' * **f2 directory** (typical: orchestrator probe of an existing cache) —
+#' * **f2 directory** (typical: orchestrator probe of an existing cache):
 #'   reads the `.f2_cache_id` sidecar previously written by [extract_f2()].
 #'   Cheap; no genotype-file access. Most callers want this mode.
 #'
 #' The hash payload (when computing fresh) is:
-#' * **Sample set** — sorted list of IIDs that contributed to the f2 blocks,
-#'   resolved from the input `.fam` / `.ind` / `.psam` according to `inds` and
-#'   `pops`.
-#' * **Variant set** — sorted `(CHR, POS, A1, A2)` tuples of the SNPs that
+#' * **Sample set**: sorted list of IIDs that contributed to the f2 blocks,
+#'   resolved from the input `.fam` / `.ind` / `.psam` according to `inds`
+#'   and `pops`.
+#' * **Variant set**: sorted `(CHR, POS, A1, A2)` tuples of the SNPs that
 #'   survived all filtering (`auto_only`, `transitions`, `transversions`,
 #'   `keepsnps`, `maxmiss`, `minmaf`, `maxmaf`, `minac2`).
-#' * **Block boundaries** — per-block lengths produced by [get_block_lengths()]
+#' * **Block boundaries**: per-block lengths produced by [get_block_lengths()]
 #'   with the supplied `blgsize`.
-#' * **Package version** — `utils::packageVersion('admixtools')`.
-#' * **Filter arguments** — the additional `extract_f2` arguments that affect
+#' * **Schema version**: a package-private constant
+#'   (`.f2_cache_id_schema`) that the maintainer bumps when extract_f2's
+#'   hash-affecting logic changes. Decoupled from `packageVersion()` so
+#'   pure bug-fix releases don't invalidate every cache on disk.
+#' * **Filter arguments**: the additional `extract_f2` arguments that affect
 #'   which SNPs are kept and how blocks are formed.
 #'
 #' @param pref Either a genotype prefix (same as passed to [extract_f2()],
@@ -1253,8 +1264,12 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #' @param blgsize Block size in Morgans (same as passed to [extract_f2()]).
 #'   Ignored when `pref` is a directory.
 #' @param extra_args Named list of additional `extract_f2` arguments whose
-#'   values affect output. Captured verbatim. Ignored when `pref` is a
-#'   directory.
+#'   values affect output. Captured verbatim into the hash payload. **Values
+#'   must be primitives** (scalars, atomic vectors, or nested lists thereof):
+#'   non-primitives like environments, closures, or external pointers are
+#'   serialized via R's session-internal `serialize()`, which produces
+#'   session-dependent bytes and breaks the determinism guarantee. Ignored
+#'   when `pref` is a directory.
 #' @return A character scalar of the form `"sha256:<64 hex chars>"`.
 #' @seealso [extract_f2()]
 #' @export
@@ -1289,24 +1304,18 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
 
   # 1. Sample set: read indfile, apply the same matching extract_f2 used,
   #    keep IIDs whose indvec > 0, sort.
-  # Use readr::read_table directly: it exists on both readr 1.x and 2.x,
-  # so this function works regardless of whether the host package still
-  # uses the (removed-in-readr-2.x) read_table2 elsewhere.
   if(format == 'plink') {
     fam = readr::read_table(paste0(pref, '.fam'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
     haveinds = fam$X2; havepops = fam$X1
   } else if(format == 'pfile') {
-    # .psam: header line starting with '#IID' or '#FID' followed by IID and PAT/MAT/SEX columns.
-    # Standard PFILE: IID column is the sample ID; the population label may live in #FID
-    # (if present) or in a 'pop' column. Match extract_f2's convention: prefer #FID column
-    # for population if present, else fall back to a 'pop' column.
-    psam = readr::read_tsv(paste0(pref, '.psam'), comment = '', col_types = readr::cols(.default = 'c'),
-                           progress = FALSE)
-    iid_col = grep('^#?IID$', names(psam), value = TRUE)[1]
-    pop_col = grep('^#?FID$|^pop$', names(psam), value = TRUE)[1]
-    if(is.na(iid_col)) stop('.psam has no IID column')
-    haveinds = psam[[iid_col]]
-    havepops = if(is.na(pop_col)) haveinds else psam[[pop_col]]
+    # Delegate to the same .read_psam helper that pfile_to_afs() uses, so the
+    # FID="0" sentinel for FID-less PSAMs (and any future PSAM-parsing tweaks)
+    # stay byte-identical with what extract_f2 actually consumed. Reading the
+    # .psam two different ways inside the same call shape would silently
+    # produce different cache ids for FID-less inputs.
+    psam = .read_psam(paste0(pref, '.psam'))
+    haveinds = psam$IID
+    havepops = psam$FID
   } else {
     indfile = readr::read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
     haveinds = indfile$X1; havepops = indfile$X3
@@ -1317,13 +1326,15 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
   # 2. Variant fingerprint: sorted (CHR,POS,A1,A2) tuples of kept SNPs.
   var_keys = sort(paste(snpfile_kept$CHR, snpfile_kept$POS, snpfile_kept$A1, snpfile_kept$A2, sep = '\t'))
 
-  # 3. Block boundaries: per-block lengths under this blgsize.
-  block_lengths = tryCatch(get_block_lengths(snpfile_kept, blgsize = blgsize, verbose = FALSE),
-                           error = function(e) integer())
+  # 3. Block boundaries: per-block lengths under this blgsize. Errors from
+  #    get_block_lengths (e.g. malformed snpfile_kept) propagate to the caller.
+  #    extract_f2's two call sites wrap this in tryCatch and emit a "could not
+  #    compute f2 cache id" warning instead; standalone callers see the real
+  #    error rather than a silently-bogus empty-blocks hash.
+  block_lengths = get_block_lengths(snpfile_kept, blgsize = blgsize, verbose = FALSE)
 
   payload = list(
-    schema             = 'admixtools-f2-cache-id-v1',
-    admixtools_version = as.character(utils::packageVersion('admixtools')),
+    schema             = .f2_cache_id_schema,
     format             = format,
     n_iids             = length(iids),
     iids_hash          = digest::digest(iids, algo = 'sha256', serialize = TRUE),
@@ -1828,12 +1839,22 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
       # Cache id for the qpfstats path. qpfstats handles SNP filtering / block
       # partitioning internally; we reconstruct an approximate `snpfile_kept`
       # from the prefix's snpfile and the `auto_only` arg so the cache id is
-      # deterministic from the same inputs the orchestrator can see.
+      # deterministic from the same inputs the orchestrator can see. PFILE's
+      # .pvar is VCF-derived (#CHROM header + ## metadata lines), so the
+      # whitespace-table reader used for .bim / .snp won't parse it; route
+      # through the same .read_pvar helper that pfile_to_afs uses.
       cache_id = tryCatch({
-        fi = format_info(pref, format = format)
-        sf = readr::read_table(paste0(pref, fi$snpend), col_names = fi$snpnam,
-                         col_types = paste(rep('c', length(fi$snpnam)), collapse=''),
-                         progress = FALSE)
+        sf = if(format == 'pfile') {
+          pvar_path = .resolve_pvar_path(pref)
+          if(is.na(pvar_path))
+            stop("PFILE .pvar (or .pvar.zst) not found at prefix: ", pref)
+          .read_pvar(pvar_path)
+        } else {
+          fi = format_info(pref, format = format)
+          readr::read_table(paste0(pref, fi$snpend), col_names = fi$snpnam,
+                            col_types = paste(rep('c', length(fi$snpnam)), collapse=''),
+                            progress = FALSE)
+        }
         if(isTRUE(auto_only)) sf = sf[suppressWarnings(as.integer(sf$CHR)) %in% 1:22, , drop = FALSE]
         compute_f2_cache_id(pref = pref, format = format, inds = inds, pops = pops,
                             snpfile_kept = sf, blgsize = blgsize,

@@ -36,8 +36,12 @@ directory.}
 Ignored when \code{pref} is a directory.}
 
 \item{extra_args}{Named list of additional \code{extract_f2} arguments whose
-values affect output. Captured verbatim. Ignored when \code{pref} is a
-directory.}
+values affect output. Captured verbatim into the hash payload. \strong{Values
+must be primitives} (scalars, atomic vectors, or nested lists thereof):
+non-primitives like environments, closures, or external pointers are
+serialized via R's session-internal \code{serialize()}, which produces
+session-dependent bytes and breaks the determinism guarantee. Ignored
+when \code{pref} is a directory.}
 }
 \value{
 A character scalar of the form \code{"sha256:<64 hex chars>"}.
@@ -46,7 +50,7 @@ A character scalar of the form \code{"sha256:<64 hex chars>"}.
 Returns a string of the form \code{"sha256:<hex>"} that uniquely identifies the
 inputs that determined the f2 blocks produced by \code{\link[=extract_f2]{extract_f2()}}. Two runs
 over byte-equivalent inputs (same indfile, same variants, same arguments,
-same \code{admixtools} version) produce byte-equal hashes; any change to any
+same schema version) produce byte-equal hashes; any change to any
 contributing input changes the hash.
 }
 \details{
@@ -58,27 +62,30 @@ to hash hundreds of MB of \code{.rds} block files or rely on mtimes.
 
 Two input modes:
 \itemize{
-\item \strong{Genotype prefix} (typical: invoked internally by \code{\link[=extract_f2]{extract_f2()}}) —
+\item \strong{Genotype prefix} (typical: invoked internally by \code{\link[=extract_f2]{extract_f2()}}):
 recomputes the hash from the on-disk inputs and filter args. Requires
 \code{snpfile_kept} (the post-filter SNP table) because variant filtering
 isn't reproducible from the prefix alone.
-\item \strong{f2 directory} (typical: orchestrator probe of an existing cache) —
+\item \strong{f2 directory} (typical: orchestrator probe of an existing cache):
 reads the \code{.f2_cache_id} sidecar previously written by \code{\link[=extract_f2]{extract_f2()}}.
 Cheap; no genotype-file access. Most callers want this mode.
 }
 
 The hash payload (when computing fresh) is:
 \itemize{
-\item \strong{Sample set} — sorted list of IIDs that contributed to the f2 blocks,
-resolved from the input \code{.fam} / \code{.ind} / \code{.psam} according to \code{inds} and
-\code{pops}.
-\item \strong{Variant set} — sorted \verb{(CHR, POS, A1, A2)} tuples of the SNPs that
+\item \strong{Sample set}: sorted list of IIDs that contributed to the f2 blocks,
+resolved from the input \code{.fam} / \code{.ind} / \code{.psam} according to \code{inds}
+and \code{pops}.
+\item \strong{Variant set}: sorted \verb{(CHR, POS, A1, A2)} tuples of the SNPs that
 survived all filtering (\code{auto_only}, \code{transitions}, \code{transversions},
 \code{keepsnps}, \code{maxmiss}, \code{minmaf}, \code{maxmaf}, \code{minac2}).
-\item \strong{Block boundaries} — per-block lengths produced by \code{\link[=get_block_lengths]{get_block_lengths()}}
+\item \strong{Block boundaries}: per-block lengths produced by \code{\link[=get_block_lengths]{get_block_lengths()}}
 with the supplied \code{blgsize}.
-\item \strong{Package version} — \code{utils::packageVersion('admixtools')}.
-\item \strong{Filter arguments} — the additional \code{extract_f2} arguments that affect
+\item \strong{Schema version}: a package-private constant
+(\code{.f2_cache_id_schema}) that the maintainer bumps when extract_f2's
+hash-affecting logic changes. Decoupled from \code{packageVersion()} so
+pure bug-fix releases don't invalidate every cache on disk.
+\item \strong{Filter arguments}: the additional \code{extract_f2} arguments that affect
 which SNPs are kept and how blocks are formed.
 }
 }
