@@ -484,6 +484,42 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 }
 
 
+# Resolve the user's PFILE prefix to the actual on-disk .pvar (or .pvar.zst)
+# path. Returns the path that exists; errors if neither does. PFILE callers
+# may write either form (plink2 picks zstd when given --pvar-cols or
+# explicitly asked), and we want both to work transparently.
+.resolve_pvar_path = function(pref) {
+  plain = paste0(pref, ".pvar")
+  zst   = paste0(pref, ".pvar.zst")
+  if(file.exists(plain)) plain
+  else if(file.exists(zst)) zst
+  else NA_character_
+}
+
+# If pvar_path ends in .zst, decompress via the zstd CLI to a tempfile and
+# return the temp path; otherwise return pvar_path unchanged. Caller is
+# responsible for cleaning up the tempfile (typically via on.exit).
+.maybe_decompress_pvar = function(pvar_path) {
+  if(!grepl("\\.zst$", pvar_path)) return(pvar_path)
+  zstd = Sys.which("zstd")
+  if(zstd == "") {
+    stop(".pvar.zst (Zstd-compressed) needs the `zstd` CLI on PATH to ",
+         "decompress for R-side parsing (pgenlibr handles .zst natively for ",
+         ".pgen access, but the metadata read goes through readr). ",
+         "Either:\n",
+         "  1. Install zstd (https://github.com/facebook/zstd) and re-run, or\n",
+         "  2. Decompress manually: `zstd -d ", pvar_path, "` and drop the .zst ",
+         "extension from the prefix.\n",
+         "Sys.which('zstd') returned: '", zstd, "'.")
+  }
+  tmp = tempfile(fileext = ".pvar")
+  rc = system2(zstd, args = c("-d", "-c", shQuote(pvar_path)), stdout = tmp)
+  if(rc != 0 || !file.exists(tmp) || file.size(tmp) == 0) {
+    stop("zstd decompression of ", pvar_path, " failed (exit code ", rc, ").")
+  }
+  tmp
+}
+
 # Read the .pvar (PLINK 2 variant info) file and return a tibble shaped like
 # the snpfile / bim used elsewhere in admixtools. Returns columns
 #   SNP, CHR, cm, POS, A1, A2, is_multi
@@ -493,28 +529,37 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 # dropped — but the flag lets callers refuse / skip / proceed-with-warning.
 .read_pvar = function(pvar_path) {
   # .pvar is VCF-shaped TSV. "##" lines are metadata; the column header line
-  # starts with "#CHROM". Compressed .pvar.zst is supported by pgenlibr's
-  # NewPvar but not directly by readr; we read the plaintext form here for
-  # the metadata tibble.
-  if(grepl("\\.zst$", pvar_path)) {
-    stop(".pvar.zst (Zstd-compressed) not yet supported by pfile_to_afs's R-side ",
-         "parser. Decompress with `zstd -d <pref>.pvar.zst`, or use the uncompressed ",
-         ".pvar file.")
+  # starts with "#CHROM". For .pvar.zst we shell out to `zstd -d` (handled
+  # transparently below); pgenlibr::NewPvar reads .zst natively for the
+  # pgen-access path that follows.
+  read_path = .maybe_decompress_pvar(pvar_path)
+  if(read_path != pvar_path) on.exit(unlink(read_path), add = TRUE)
+
+  # Read just enough lines to locate the column-header line. PLINK 2 always
+  # places header metadata before the data, and even VCF-style files keep it
+  # within a few dozen lines — 200 is a generous over-read that still bounds
+  # memory for a 1M-variant .pvar to 200 short strings rather than the whole
+  # file.
+  HEADER_SCAN_LIMIT = 200L
+  head_lines = readr::read_lines(read_path, n_max = HEADER_SCAN_LIMIT, progress = FALSE)
+  header_lineno = which(grepl("^#[^#]", head_lines))[1]
+  if(is.na(header_lineno)) {
+    stop("Could not find #CHROM header line within the first ",
+         HEADER_SCAN_LIMIT, " lines of ", pvar_path,
+         ". If your .pvar has an unusually large metadata block, please file an issue.")
   }
-  # Read all lines, find the column-header (first line starting with "#" but
-  # not "##"), build a column-typed read of the rest.
-  lines = readr::read_lines(pvar_path, progress = FALSE)
-  header_lineno = which(grepl("^#[^#]", lines))[1]
-  if(is.na(header_lineno)) stop("Could not find #CHROM header line in ", pvar_path)
-  header = sub("^#", "", lines[header_lineno])
+  header = sub("^#", "", head_lines[header_lineno])
   header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
   # Build the col_types spec — coerce known columns, default to character
   # for unknown ones. POS / CM are numeric; everything else stays character.
   col_types = paste0(ifelse(header_cols %in% c("POS", "CM"), "d", "c"), collapse = "")
-  pvar = readr::read_tsv(pvar_path,
+  # Skip past the header line directly via skip= rather than re-reading and
+  # filtering on `comment = "#"`. This avoids re-scanning the file for
+  # leading "##" lines a second time.
+  pvar = readr::read_tsv(read_path,
                          col_names = header_cols,
                          col_types = col_types,
-                         comment = "#",
+                         skip = header_lineno,
                          progress = FALSE)
   # Detect multiallelic: ALT field has commas
   alt = pvar$ALT
@@ -712,18 +757,22 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
 
   # Triplet existence check up front, so the user gets a clear error
   # before pgenlibr emits a generic "file not found" or before .read_pvar
-  # tries to parse half a corpus.
-  required = paste0(pref, c(".pgen", ".pvar", ".psam"))
-  miss = required[!file.exists(required)]
+  # tries to parse half a corpus. The .pvar may be either plaintext or
+  # Zstd-compressed (.pvar.zst); both are valid PFILE.
+  pvar_path = .resolve_pvar_path(pref)
+  required_other = paste0(pref, c(".pgen", ".psam"))
+  miss = required_other[!file.exists(required_other)]
+  if(is.na(pvar_path)) miss = c(miss, paste0(pref, ".pvar[.zst]"))
   if(length(miss)) {
     stop("pfile_to_afs: missing PFILE triplet members: ",
          paste(miss, collapse = ", "),
-         ". A PFILE input requires all of .pgen, .pvar, .psam alongside the prefix.")
+         ". A PFILE input requires .pgen, .pvar (or .pvar.zst), and .psam ",
+         "alongside the prefix.")
   }
 
   if(verbose) alert_info('Reading allele frequencies from PFILE files...\n')
 
-  pvar = .read_pvar(paste0(pref, ".pvar"))
+  pvar = .read_pvar(pvar_path)
   psam = .read_psam(paste0(pref, ".psam"))
 
   # PFILE permits duplicate variant IDs, but we use SNP id as the rowname
@@ -841,7 +890,9 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   # survive fork(). on.exit with after=FALSE prepends to the on-exit queue
   # so resources close in inner-to-outer order even if more on.exit clauses
   # get added in future revisions.
-  pvar_handle = pgenlibr::NewPvar(paste0(pref, ".pvar"))
+  # pgenlibr::NewPvar handles both .pvar and .pvar.zst natively, so pass the
+  # resolved path through unchanged regardless of compression.
+  pvar_handle = pgenlibr::NewPvar(pvar_path)
   on.exit(pgenlibr::ClosePvar(pvar_handle), add = TRUE, after = FALSE)
   pgen = pgenlibr::NewPgen(paste0(pref, ".pgen"),
                            pvar = pvar_handle,
