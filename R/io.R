@@ -534,6 +534,534 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 }
 
 
+# Resolve the user's PFILE prefix to the actual on-disk .pvar (or .pvar.zst)
+# path. Returns the path that exists; errors if neither does. PFILE callers
+# may write either form (plink2 picks zstd when given --pvar-cols or
+# explicitly asked), and we want both to work transparently.
+.resolve_pvar_path = function(pref) {
+  plain = paste0(pref, ".pvar")
+  zst   = paste0(pref, ".pvar.zst")
+  if(file.exists(plain)) plain
+  else if(file.exists(zst)) zst
+  else NA_character_
+}
+
+# If pvar_path ends in .zst, decompress via the zstd CLI to a tempfile and
+# return the temp path; otherwise return pvar_path unchanged. Caller is
+# responsible for cleaning up the tempfile (typically via on.exit).
+.maybe_decompress_pvar = function(pvar_path) {
+  if(!grepl("\\.zst$", pvar_path)) return(pvar_path)
+  zstd = Sys.which("zstd")
+  if(zstd == "") {
+    stop(".pvar.zst (Zstd-compressed) needs the `zstd` CLI on PATH to ",
+         "decompress for R-side parsing (pgenlibr handles .zst natively for ",
+         ".pgen access, but the metadata read goes through readr). ",
+         "Either:\n",
+         "  1. Install zstd (https://github.com/facebook/zstd) and re-run, or\n",
+         "  2. Decompress manually: `zstd -d ", pvar_path, "` and drop the .zst ",
+         "extension from the prefix.\n",
+         "Sys.which('zstd') returned: '", zstd, "'.")
+  }
+  tmp = tempfile(fileext = ".pvar")
+  # system2(..., stdout = file) routes through a shell to redirect, so
+  # shQuote() on the input path is what protects against shell injection /
+  # whitespace splitting on user-controlled file names.
+  rc = system2(zstd, args = c("-d", "-c", shQuote(pvar_path)), stdout = tmp)
+  if(rc != 0 || !file.exists(tmp) || file.size(tmp) == 0) {
+    stop("zstd decompression of ", pvar_path, " failed (exit code ", rc, ").")
+  }
+  tmp
+}
+
+# Read the .pvar (PLINK 2 variant info) file and return a tibble shaped like
+# the snpfile / bim used elsewhere in admixtools. Returns columns
+#   SNP, CHR, cm, POS, A1, A2, is_multi
+# A1 is REF, A2 is the first ALT (matching plink_to_afs's convention).
+# is_multi is TRUE iff the original ALT field had more than one allele
+# (comma-separated), in which case A2 holds the first ALT and the rest are
+# dropped — but the flag lets callers refuse / skip / proceed-with-warning.
+.read_pvar = function(pvar_path) {
+  # .pvar is VCF-shaped TSV. "##" lines are metadata; the column header line
+  # starts with "#CHROM". For .pvar.zst we shell out to `zstd -d` (handled
+  # transparently below); pgenlibr::NewPvar reads .zst natively for the
+  # pgen-access path that follows.
+  read_path = .maybe_decompress_pvar(pvar_path)
+  if(read_path != pvar_path) on.exit(unlink(read_path), add = TRUE)
+
+  # Read just enough lines to locate the column-header line. PLINK 2 usually
+  # places <30 metadata lines before the #CHROM header, but a custom .pvar
+  # with hundreds of contigs can push it further out. Start with 200; if
+  # not found, fall back to a full read so unusual inputs still work.
+  head_lines = readr::read_lines(read_path, n_max = 200L, progress = FALSE)
+  header_lineno = which(grepl("^#[^#]", head_lines))[1]
+  if(is.na(header_lineno)) {
+    head_lines = readr::read_lines(read_path, progress = FALSE)
+    header_lineno = which(grepl("^#[^#]", head_lines))[1]
+    if(is.na(header_lineno)) {
+      stop("Could not find #CHROM header line in ", pvar_path,
+           ". Is this really a PLINK 2 .pvar file?")
+    }
+  }
+  header = sub("^#", "", head_lines[header_lineno])
+  header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
+  # Build the col_types spec — coerce known columns, default to character
+  # for unknown ones. POS / CM are numeric; everything else stays character.
+  col_types = paste0(ifelse(header_cols %in% c("POS", "CM"), "d", "c"), collapse = "")
+  # Skip past the header line directly via skip= rather than re-reading and
+  # filtering on `comment = "#"`. This avoids re-scanning the file for
+  # leading "##" lines a second time.
+  pvar = readr::read_tsv(read_path,
+                         col_names = header_cols,
+                         col_types = col_types,
+                         skip = header_lineno,
+                         progress = FALSE)
+  # Detect multiallelic: ALT field has commas
+  alt = pvar$ALT
+  is_multi = grepl(",", alt, fixed = TRUE)
+  # Take first ALT only for downstream snpfile compatibility
+  first_alt = ifelse(is_multi, sub(",.*$", "", alt), alt)
+  out = tibble::tibble(
+    SNP = pvar$ID,
+    CHR = pvar$CHROM,
+    cm  = if("CM" %in% header_cols) pvar$CM else rep(0, nrow(pvar)),
+    POS = pvar$POS,
+    A1  = pvar$REF,    # REF allele — matches plink_to_afs's A1 == .bim col 5
+    A2  = first_alt,   # first ALT — matches plink_to_afs's A2 == .bim col 6
+    is_multi = is_multi
+  )
+  out
+}
+
+
+# Read the .psam (PLINK 2 sample info) file. Returns a tibble with FID and
+# IID columns matching what match_samples() expects (haveinds=IID, havepops=FID).
+.read_psam = function(psam_path) {
+  lines = readr::read_lines(psam_path, progress = FALSE)
+  header_lineno = which(grepl("^#[^#]", lines))[1]
+  if(is.na(header_lineno)) stop("Could not find header line in ", psam_path)
+  header = sub("^#", "", lines[header_lineno])
+  header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
+  psam = readr::read_tsv(psam_path,
+                         col_names = header_cols,
+                         col_types = paste0(rep("c", length(header_cols)), collapse = ""),
+                         comment = "#",
+                         progress = FALSE)
+  # plink2 .psam may have IID-only (no FID) or both FID+IID. When FID is
+  # absent, match plink2's convention for the equivalent .fam: assign FID
+  # = "0" to all samples (a sentinel "no family ID" rather than IID, which
+  # would otherwise split every sample into its own population by FID).
+  if(!"IID" %in% header_cols) {
+    stop(".psam header must contain an IID column; got: ",
+         paste(header_cols, collapse = ", "))
+  }
+  fid = if("FID" %in% header_cols) psam$FID else rep("0", nrow(psam))
+  tibble::tibble(FID = fid, IID = psam$IID)
+}
+
+
+# Read a centimorgan-per-SNP companion file. PLINK 2 .pvar does not carry
+# cm by default — it is a VCF-derived format with REF/ALT/POS but no
+# genetic-distance column. Pipelines that need cm (e.g. for downstream
+# block-jackknife in extract_f2 with blgsize < 100) typically graft it in
+# from a separate source (genetic map / linkage disequilibrium reference /
+# upstream tool's output).
+#
+# The expected file format is a TSV with at minimum a SNP-identifier
+# column and a cm column. The function auto-detects the SNP-id column
+# name from a short list of common conventions (variant_id, SNP, ID).
+# Lookup is by SNP id — the cm_file may contain additional rows; only
+# matching ones are used.
+#
+# Returns a numeric vector of length(snp_ids), with NA for any SNP id
+# not present in cm_file.
+.read_cm_file = function(cm_file, snp_ids) {
+  if (!file.exists(cm_file)) {
+    stop("cm_file not found: ", cm_file)
+  }
+  tab = readr::read_tsv(cm_file, col_types = readr::cols(), progress = FALSE)
+  id_col = intersect(c("variant_id", "SNP", "ID", "snp", "id"), colnames(tab))[1]
+  if (is.na(id_col)) {
+    stop("cm_file must have a SNP-identifier column named one of ",
+         "{variant_id, SNP, ID, snp, id}. Found columns: ",
+         paste(colnames(tab), collapse = ", "))
+  }
+  if (!"cm" %in% colnames(tab)) {
+    stop("cm_file must have a 'cm' column. Found columns: ",
+         paste(colnames(tab), collapse = ", "))
+  }
+  cm_lookup = setNames(as.numeric(tab$cm), as.character(tab[[id_col]]))
+  out = unname(cm_lookup[as.character(snp_ids)])
+  out
+}
+
+
+# Read a block of variants from pgen and return an (nsamples_kept x nvariants)
+# integer matrix in {0,1,2,NA}. Handles the multi-allelic policy when
+# multiallelic = "first_alt": biallelic variants are read via the fast
+# ReadIntList batch API, multiallelic variants are read one at a time via
+# Read() with allele_num=2L so the result is the first-ALT dosage rather
+# than the all-ALT collapse that ReadIntList would produce.
+.pfile_read_block = function(pgen, variant_idx, multi_idx, multiallelic, nsamples_kept) {
+  bi_idx_pos = which(!(variant_idx %in% multi_idx))
+  mu_idx_pos = which(  variant_idx %in% multi_idx )
+
+  if(length(mu_idx_pos) == 0 || multiallelic == "skip") {
+    # Pure biallelic path (skip already filtered upstream, so this is the
+    # only path under "skip"). Fast: one ReadIntList for the whole block.
+    return(pgenlibr::ReadIntList(pgen, variant_idx))
+  }
+
+  # multiallelic == "first_alt": split, read in two passes, merge
+  out = matrix(NA_integer_, nrow = nsamples_kept, ncol = length(variant_idx))
+  if(length(bi_idx_pos) > 0) {
+    out[, bi_idx_pos] = pgenlibr::ReadIntList(pgen, variant_idx[bi_idx_pos])
+  }
+  if(length(mu_idx_pos) > 0) {
+    # Per-variant Read with allele_num=2 (first ALT). Slower than ReadIntList
+    # but only triggered for sites that the user has explicitly opted into
+    # with multiallelic="first_alt" — so the cost is bounded by their input.
+    buf = pgenlibr::IntBuf(pgen)
+    for(k in mu_idx_pos) {
+      pgenlibr::ReadHardcalls(pgen, buf, variant_idx[k], allele_num = 2L)
+      out[, k] = buf
+    }
+  }
+  out
+}
+
+
+#' Read allele frequencies from `PFILE` files (`.pgen` / `.pvar` / `.psam`)
+#'
+#' Reads a PLINK 2 PFILE genotype triplet and returns the same shape as
+#' [plink_to_afs()] / [eigenstrat_to_afs()]: per-population allele frequencies
+#' and allele counts plus a SNP-metadata tibble. This unlocks the rest of the
+#' admixtools pipeline (`extract_f2`, `qpadm`, `qpgraph`, ...) on PFILE inputs
+#' without a PFILE -> BED conversion step.
+#'
+#' The function is API-compatible with [plink_to_afs()] and returns an
+#' identically-shaped result, so any downstream code that consumes a
+#' `plink_to_afs` output works unchanged.
+#'
+#' Reading the `.pgen` is delegated to the `pgenlibr` CRAN package (the
+#' canonical R binding to plink-ng's pgenlib, maintained by the plink2
+#' author). No external plink2 binary is needed; everything runs in-process.
+#'
+#' ## Format precedence in `anygeno_to_aftable()`
+#'
+#' When `anygeno_to_aftable()` auto-detects the format at a prefix and
+#' **both** PFILE (`.pgen` / `.pvar` / `.psam`) and BED (`.bed` / `.bim` /
+#' `.fam`) triplets exist, PFILE wins. PFILE is the newer of the two PLINK
+#' formats and the canonical interchange for plink2 pipelines, so a prefix
+#' that carries both is treated as PFILE-primary. To force BED dispatch in
+#' that situation, pass `format = "plink"` explicitly to
+#' `anygeno_to_aftable()` (or call `plink_to_afs()` directly).
+#'
+#' ## Multiallelic sites
+#'
+#' admixtools' f-statistic model is biallelic. PFILE format supports
+#' multiallelic sites (ALT field with multiple comma-separated alleles).
+#' The `multiallelic` argument controls how those are handled:
+#'
+#' * `"error"` (default): stop with an error listing a few example line
+#'   numbers and suggesting a pre-filter command. Safest. Matches the
+#'   assumption baked into the rest of admixtools.
+#' * `"skip"`: drop multiallelic sites entirely from the output. Clean
+#'   statistically: the dropped sites contribute nothing, the surviving
+#'   biallelic sites are correct.
+#' * `"first_alt"`: use the first ALT allele at each multiallelic site,
+#'   ignoring the rest. **Produces biased f-statistics** unless the first
+#'   ALT happens to be the major non-REF allele at every multiallelic
+#'   site. PFILE allele ordering is determined by the input pipeline
+#'   (e.g. `plink2 --make-pgen`'s alphabetical or first-encountered order)
+#'   and is **not** guaranteed to put the major allele first. Use only if
+#'   you have independently verified the ordering for your data, or
+#'   accept the bias and document it. When in doubt prefer `"skip"`.
+#'
+#' @export
+#' @param pref Prefix of PFILE files (the triplet `<pref>.pgen`,
+#'   `<pref>.pvar`, `<pref>.psam`).
+#' @param adjust_pseudohaploid `TRUE` (default) probes the first 1000 variants
+#'   and infers per-sample ploidy from observed-genotype uniqueness. Pass an
+#'   integer to use that probe size instead. `FALSE` (or `0`) skips probing and
+#'   assumes diploid for every sample.
+#' @param multiallelic Multiallelic-site policy: one of `"error"` (default),
+#'   `"skip"`, or `"first_alt"`. See Details.
+#' @param cm_file Optional path to a TSV companion file carrying per-variant
+#'   centimorgan distances. PLINK 2 `.pvar` files do **not** carry genetic-map
+#'   `cm` data in the standard format (they are VCF-derived; cm is not part of
+#'   the VCF column spec). When `cm_file` is `NULL` and the `.pvar` has no
+#'   `CM` column, `cm` defaults to `0` for all SNPs and a warning is issued;
+#'   this matters because downstream `extract_f2(blgsize < 100)` uses `cm`
+#'   for jackknife block boundaries; with `cm = 0` everywhere, every SNP
+#'   collapses into a single block. The TSV must contain a SNP-id column
+#'   named one of `{variant_id, SNP, ID, snp, id}` and a `cm` column.
+#'   Extra columns are ignored. The file may have more rows than this prefix
+#'   has SNPs; lookup is by SNP id and unmatched SNPs receive `NA`.
+#' @inheritParams plink_to_afs
+#' @return A list with three items: allele-frequency matrix, allele-count
+#'   matrix, and SNP-metadata tibble. Same shape as [plink_to_afs()].
+#' @examples
+#' \dontrun{
+#' # PFILE without cm data: fine for analyses that don't need block jackknife
+#' afdat = pfile_to_afs(prefix, pops = pops)
+#'
+#' # PFILE with cm grafted from a separate genetic-map file
+#' afdat = pfile_to_afs(prefix, pops = pops, cm_file = "panel_cm.tsv")
+#'
+#' # Pre-filter multiallelic sites if necessary:
+#' # system2("plink2", c("--pfile", prefix, "--max-alleles", "2",
+#' #                     "--make-pgen", "--out", paste0(prefix, "_bi")))
+#' }
+pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
+                        first = 1, last = NULL, numblocks = 1, poly_only = FALSE,
+                        multiallelic = c("error", "skip", "first_alt"),
+                        cm_file = NULL, verbose = TRUE) {
+
+  multiallelic = match.arg(multiallelic)
+
+  # Triplet existence check up front, so the user gets a clear error
+  # before pgenlibr emits a generic "file not found" or before .read_pvar
+  # tries to parse half a corpus. The .pvar may be either plaintext or
+  # Zstd-compressed (.pvar.zst); both are valid PFILE.
+  pvar_path = .resolve_pvar_path(pref)
+  required_other = paste0(pref, c(".pgen", ".psam"))
+  miss = required_other[!file.exists(required_other)]
+  if(is.na(pvar_path)) miss = c(miss, paste0(pref, ".pvar[.zst]"))
+  if(length(miss)) {
+    stop("pfile_to_afs: missing PFILE triplet members: ",
+         paste(miss, collapse = ", "),
+         ". A PFILE input requires .pgen, .pvar (or .pvar.zst), and .psam ",
+         "alongside the prefix.")
+  }
+
+  if(verbose) alert_info('Reading allele frequencies from PFILE files...\n')
+
+  pvar = .read_pvar(pvar_path)
+  psam = .read_psam(paste0(pref, ".psam"))
+
+  # PFILE permits duplicate variant IDs, but we use SNP id as the rowname
+  # of the AFS matrix downstream, so reject duplicates up front with a
+  # clear message rather than failing at the rownames<- step in the block
+  # loop.
+  dup_snps = pvar$SNP[duplicated(pvar$SNP)]
+  if(length(dup_snps)) {
+    examples = head(unique(dup_snps), 5)
+    stop(sprintf(paste0(
+      "pfile_to_afs: %d duplicate SNP id%s in .pvar (e.g. %s%s). ",
+      "Variant IDs must be unique for the AFS row index. ",
+      "De-duplicate with `plink2 --pfile %s --rm-dup force-first --make-pgen --out %s_dedup`, ",
+      "then call pfile_to_afs() on the de-duplicated prefix."),
+      length(dup_snps), if(length(dup_snps) == 1) "" else "s",
+      paste(examples, collapse = ", "),
+      if(length(unique(dup_snps)) > length(examples)) ", ..." else "",
+      basename(pref), basename(pref)))
+  }
+
+  # cm grafting: .pvar may carry CM (rare; .read_pvar populates pvar$cm from
+  # it when present). If cm_file is supplied, it overrides — useful when
+  # the user has cm from a separate genetic-map source (e.g. pgen-samplebind's
+  # afs_snp.tsv with grafted cm, or a HapMap recombination-rate file).
+  # If both .pvar CM and cm_file are absent, leave cm = 0 but warn —
+  # extract_f2(blgsize < 100) will silently collapse to one block otherwise.
+  if (!is.null(cm_file)) {
+    if (verbose) alert_info(paste0("Reading cm from ", cm_file, "...\n"))
+    pvar$cm = .read_cm_file(cm_file, pvar$SNP)
+    n_missing_cm = sum(is.na(pvar$cm))
+    if (n_missing_cm > 0L && verbose) {
+      alert_warning(paste0(n_missing_cm, " / ", nrow(pvar),
+                           " variants have NA cm after cm_file lookup ",
+                           "(SNP id not present in cm_file)\n"))
+    }
+  } else if (all(pvar$cm == 0)) {
+    if (verbose) {
+      alert_warning(paste0(
+        "All variants have cm = 0. PLINK 2 .pvar does not carry cm data ",
+        "in the standard format, and no cm_file was supplied. Downstream ",
+        "extract_f2(blgsize < 100) will collapse every SNP into one block ",
+        "and produce nonsense jackknife variances. Pass `cm_file = <path>` ",
+        "with a TSV containing variant_id / SNP / ID and cm columns, ",
+        "or use blgsize >= 100 (interpreted as bp distance).\n"))
+    }
+  }
+
+  nsnpall = nrow(pvar)
+  nindall = nrow(psam)
+  first = max(1, first)
+  last  = if(is.null(last)) nsnpall else min(last, nsnpall)
+  if(first > last) {
+    stop("pfile_to_afs: 'first' must be <= 'last' (got first=", first,
+         ", last=", last, "). Reversed ranges produce an empty (or descending) ",
+         "variant index that fails opaquely deeper in pgenlibr.")
+  }
+
+  # ---- multiallelic policy ----
+  multi_idx = which(pvar$is_multi)
+  n_multi = length(multi_idx)
+  if(n_multi > 0 && multiallelic == "error") {
+    examples = head(multi_idx, 5)
+    stop(sprintf(paste0(
+      "pfile_to_afs: %d multiallelic site%s found in .pvar (e.g. row%s %s%s). ",
+      "admixtools is biallelic-only. Three options:\n",
+      "  1. Pre-filter with `plink2 --pfile %s --max-alleles 2 --make-pgen --out %s_bi`, ",
+      "then call pfile_to_afs() on the filtered prefix.\n",
+      "  2. pfile_to_afs(..., multiallelic = \"skip\")  -- drops multiallelic sites entirely (statistically clean).\n",
+      "  3. pfile_to_afs(..., multiallelic = \"first_alt\")  -- takes the first ALT allele per site ",
+      "(BIASED unless ALT ordering is known to be major-allele-first; see ?pfile_to_afs)."
+      ),
+      n_multi, if(n_multi == 1) "" else "s",
+      if(length(examples) == 1) "" else "s",
+      paste(examples, collapse = ", "),
+      if(n_multi > length(examples)) ", ..." else "",
+      basename(pref), basename(pref)))
+  }
+
+  # match_samples uses (IID list, FID list) -> indvec (1-based pop number, 0 = skip)
+  ip = match_samples(psam$IID, psam$FID, inds, pops)
+  indvec = ip$indvec
+  upops  = ip$upops
+  keep = which(indvec > 0)
+  indvec_kept = indvec[keep]
+  nsamples_kept = length(keep)
+
+  # Build the variant subset that will actually be read. Under "skip" mode
+  # we exclude multiallelic from the read AND from the resulting snpfile;
+  # under "first_alt" we keep them but route them through Read() instead of
+  # ReadIntList. Under "error" we'd have stopped above.
+  variant_subset = first:last
+  if(n_multi > 0 && multiallelic == "skip") {
+    multi_in_range = intersect(variant_subset, multi_idx)
+    if(verbose && length(multi_in_range) > 0) {
+      alert_info(paste0("Skipping ", length(multi_in_range),
+                        " multiallelic variant(s) (multiallelic=\"skip\")\n"))
+    }
+    variant_subset = setdiff(variant_subset, multi_idx)
+  }
+
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.pgen has ', nindall, ' samples and ',
+                      nsnpall, ' variants',
+                      if(n_multi > 0) paste0(' (', n_multi, ' multiallelic)') else '',
+                      '\n'))
+    alert_info(paste0('Calculating allele frequencies from ', nsamples_kept,
+                      ' samples in ', length(upops), ' populations\n'))
+  }
+
+  # Open pgen handle. sample_subset = `keep` restricts subsequent reads to
+  # just the samples we care about, saving I/O and memory at the pgenlibr
+  # layer for the common case where pops= picks a small subset of a large
+  # cohort. NOTE: this pgen handle is local to this frame. Do not pass it
+  # to fork-based parallel workers — pgenlibr external pointers don't
+  # survive fork(). on.exit with after=FALSE prepends to the on-exit queue
+  # so resources close in inner-to-outer order even if more on.exit clauses
+  # get added in future revisions.
+  # pgenlibr::NewPvar handles both .pvar and .pvar.zst natively, so pass the
+  # resolved path through unchanged regardless of compression.
+  pvar_handle = pgenlibr::NewPvar(pvar_path)
+  on.exit(pgenlibr::ClosePvar(pvar_handle), add = TRUE, after = FALSE)
+  pgen = pgenlibr::NewPgen(paste0(pref, ".pgen"),
+                           pvar = pvar_handle,
+                           sample_subset = keep)
+  on.exit(pgenlibr::ClosePgen(pgen),       add = TRUE, after = FALSE)
+
+  # ---- ploidy probe (pseudohaploid detection) ----
+  # Mirrors the family default: ntest=1000 unless caller passed an integer
+  # adjust_pseudohaploid value. Probe = read first ntest variants in the
+  # range, infer per-sample ploidy from the set of observed genotypes.
+  # adjust_pseudohaploid = 0 (or FALSE) skips the probe entirely — without
+  # this guard, ntest=0 reads an empty probe matrix and apply() then
+  # assigns ploidy = 1 (haploid) to every sample, silently breaking the
+  # AFS for diploid input.
+  if(isTRUE(adjust_pseudohaploid) ||
+     (is.numeric(adjust_pseudohaploid) && adjust_pseudohaploid > 0)) {
+    ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
+    probe_subset = head(variant_subset, min(ntest, length(variant_subset)))
+    probe = pgenlibr::ReadIntList(pgen, probe_subset)   # nsamples_kept x ntest
+    # Per-sample inference: a sample that only ever shows {0, 2} (no 1
+    # heterozygote) is treated as haploid (ploidy=1); otherwise diploid.
+    # Identical inference rule to eigenstrat_to_afs / cpp_plink_ploidy.
+    ploidy_kept = apply(probe, 1, function(x) max(1, length(unique(na.omit(x))) - 1))
+  } else {
+    ploidy_kept = rep(2L, nsamples_kept)
+  }
+
+  # ---- block loop ----
+  # Same pattern as plink_to_afs: split variant_subset into numblocks chunks,
+  # accumulate (nvar x npop) afs and counts via list-rbind. This bounds
+  # peak memory to one block's worth of (nsamples_kept x block_nvar) doubles.
+  aflist = countlist = list()
+  snp_indices_kept = c()                      # positions into variant_subset
+  if(length(variant_subset) == 0) {
+    stop("pfile_to_afs: no variants in range [", first, ", ", last,
+         "]", if(multiallelic == "skip" && n_multi > 0) " after multiallelic skip" else "")
+  }
+  block_breaks = round(seq(1, length(variant_subset) + 1, length.out = numblocks + 1))
+
+  for(i in seq_len(numblocks)) {
+    s = block_breaks[i]
+    e = block_breaks[i + 1] - 1
+    if(s > e) next
+    if(verbose && numblocks > 1)
+      message(sprintf('Reading block %d of %d...', i, numblocks))
+
+    block_variant_idx = variant_subset[s:e]
+    geno = .pfile_read_block(pgen, block_variant_idx, multi_idx, multiallelic,
+                              nsamples_kept)
+    # geno is (nsamples_kept x nvar_block); pgenlibr's row=sample convention.
+    # Group rows (samples) by indvec_kept (pop number), summing along the
+    # variant columns. Gives (npops_present x nvar_block); transpose once
+    # at the end to get (nvar_block x npops_present), then reorder/pad to
+    # full upops width.
+    # ploidy divisor convention (matches eigenstrat_to_afs / cpp_plink_to_afs):
+    #   diploid (ploidy=2): genotype {0,1,2} ÷ (3-2)=1 → {0,1,2} ALT counts,
+    #     counts_block = 2 × n_diploid_samples, ratio is allele frequency.
+    #   haploid (ploidy=1): genotype {0,2}   ÷ (3-1)=2 → {0,1} ALT counts,
+    #     counts_block = 1 × n_haploid_samples, ratio is allele frequency.
+    counts_block = t(rowsum(ploidy_kept * (!is.na(geno) + 0), indvec_kept))
+    af_num       = t(rowsum(geno / (3 - ploidy_kept), indvec_kept, na.rm = TRUE))
+    af_block     = af_num / counts_block
+
+    # rowsum sorts by group label, so columns are in 1..length(upops) order
+    # but only pops that appear in indvec_kept are present.
+    present_pops = as.integer(colnames(counts_block))
+    full_counts = matrix(0,        nrow = nrow(counts_block), ncol = length(upops))
+    full_afs    = matrix(NA_real_, nrow = nrow(counts_block), ncol = length(upops))
+    full_counts[, present_pops] = counts_block
+    full_afs[,    present_pops] = af_block
+
+    if(poly_only) {
+      # Match the AFS-level filter used in discard_from_aftable: keep
+      # variants that are polymorphic *across populations* (any pair of
+      # population AFs differ), not just those whose row-mean isn't 0/1.
+      # rowMeans-based filtering keeps a SNP fixed REF in pop1 + fixed
+      # ALT in pop2 (mean = 0.5) by accident but drops one fixed REF in
+      # pop1 + missing in pop2 (mean = 0).
+      mask = as.logical(cpp_is_polymorphic(full_afs))
+      full_afs    = full_afs[mask, , drop = FALSE]
+      full_counts = full_counts[mask, , drop = FALSE]
+      snp_indices_kept = c(snp_indices_kept, (s:e)[mask])
+    } else {
+      snp_indices_kept = c(snp_indices_kept, s:e)
+    }
+    aflist[[i]]    = full_afs
+    countlist[[i]] = full_counts
+  }
+
+  afmatrix    = do.call(rbind, aflist)
+  countmatrix = do.call(rbind, countlist)
+  # 0/0 → NaN from the divide above; canonicalize to NA for downstream f-stat
+  # math, matching eigenstrat_to_afs's `afs[!is.finite(afs)] <- NA` line.
+  afmatrix[!is.finite(afmatrix)] = NA
+
+  snpfile = pvar[variant_subset[snp_indices_kept],
+                 c("SNP", "CHR", "cm", "POS", "A1", "A2")]
+  rownames(afmatrix) = rownames(countmatrix) = snpfile$SNP
+  colnames(afmatrix) = colnames(countmatrix) = upops
+
+  if(verbose) alert_success(paste0(nrow(afmatrix), ' SNPs read in total\n'))
+  list(afs = afmatrix, counts = countmatrix, snpfile = snpfile)
+}
+
+
 #' Read allele frequencies from `PLINK` files
 #'
 #' @export
@@ -1322,7 +1850,13 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
 anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(is.null(format)) {
-    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
+    has_pvar = file.exists(paste0(pref, '.pvar')) ||
+               file.exists(paste0(pref, '.pvar.zst'))
+    if(has_pvar &&
+       all(file.exists(paste0(pref, c('.pgen', '.psam'))))) {
+      format = 'pfile'
+      geno_to_aftable = pfile_to_afs
+    } else if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
       format = 'plink'
       geno_to_aftable = plink_to_afs
     } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
@@ -1337,6 +1871,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
   }
   geno_to_aftable = switch(format,
                            'plink' = plink_to_afs,
+                           'pfile' = pfile_to_afs,
                            'packedancestrymap' = packedancestrymap_to_afs,
                            'eigenstrat' = eigenstrat_to_afs)
   if(is.null(geno_to_aftable)) stop('Invalid format!')

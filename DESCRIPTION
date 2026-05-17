@@ -35,6 +35,7 @@ Imports:
     igraph,
     lobstr,
     magrittr,
+    pgenlibr,
     quadprog,
     purrr,
     Rcpp,
@@ -63,7 +64,9 @@ Suggests:
     shinythemes,
     shinyWidgets,
     shinydashboard,
-    tidyverse
+    testthat (>= 3.0.0),
+    tidyverse,
+    withr
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: knitr
