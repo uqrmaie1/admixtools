@@ -692,6 +692,16 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 #' canonical R binding to plink-ng's pgenlib, maintained by the plink2
 #' author). No external plink2 binary is needed; everything runs in-process.
 #'
+#' ## Format precedence in `anygeno_to_aftable()`
+#'
+#' When `anygeno_to_aftable()` auto-detects the format at a prefix and
+#' **both** PFILE (`.pgen` / `.pvar` / `.psam`) and BED (`.bed` / `.bim` /
+#' `.fam`) triplets exist, PFILE wins. PFILE is the newer of the two PLINK
+#' formats and the canonical interchange for plink2 pipelines, so a prefix
+#' that carries both is treated as PFILE-primary. To force BED dispatch in
+#' that situation, pass `format = "plink"` explicitly to
+#' `anygeno_to_aftable()` (or call `plink_to_afs()` directly).
+#'
 #' ## Multiallelic sites
 #'
 #' admixtools' f-statistic model is biallelic. PFILE format supports
