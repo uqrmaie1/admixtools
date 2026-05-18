@@ -1058,6 +1058,12 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
   if(any(!nzchar(names(right_sets))))  stop("All 'right_sets' entries must be named")
   if(any(duplicated(names(source_sets)))) stop("'source_sets' names must be unique")
   if(any(duplicated(names(right_sets))))  stop("'right_sets' names must be unique")
+  if(!all(vapply(source_sets, is.character, logical(1))))
+    stop("All 'source_sets' entries must be character vectors")
+  if(!all(vapply(right_sets, is.character, logical(1))))
+    stop("All 'right_sets' entries must be character vectors")
+  if(any(duplicated(targets)))
+    warning("'targets' contains duplicates; the same model will be fit multiple times")
 
   combos = expand.grid(target     = as.character(targets),
                        source_set = names(source_sets),
