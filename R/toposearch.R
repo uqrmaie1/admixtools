@@ -1192,7 +1192,9 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' # Making new mutation functions by modifying or combining existing ones:
 #' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-#' find_graphs_old(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+#' find_graphs_old(f2_blocks,
+#'                 mutfuns = namedList(spr_leaves, newfun1, newfun2),
+#'                 mutprobs = c(0.2, 0.3, 0.5))
 #' }
 find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
@@ -2614,7 +2616,8 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' res %>% slice_min(score)
 #' }
 #' \dontrun{
-#' # Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
+#' # Start with a graph with 0 admixture events, increase up to 3,
+#' # and stop after 10 generations of no improvement
 #' pops = dimnames(example_f2_blocks)[[1]]
 #' initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
 #' res = find_graphs(example_f2_blocks, initgraph = initgraph, stop_gen2 = 10, max_admix = 3)

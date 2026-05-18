@@ -1047,7 +1047,8 @@ qpadmmodels_to_popcombs = function(models) {
 #' @return A list where each element is the output of one qpadm model.
 #' @examples
 #' \dontrun{
-#' # the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
+#' # the following specifies two models: one with 2/3/1 and one with
+#' # 1/2/1 left/right/target populations
 #' models = tibble(
 #'            left = list(c('pop1', 'pop2'), c('pop3')),
 #'            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8')),

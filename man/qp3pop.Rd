@@ -92,7 +92,8 @@ qp3pop(f2_dir, pop1, pop2, pop3)
 
 # Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
 # should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
-# `qp3pop_wrapper()`, and the original qp3pop program, expect populations to be in the order `B`, `C`, `A`.
+# `qp3pop_wrapper()`, and the original qp3pop program, expect populations
+# to be in the order `B`, `C`, `A`.
 
 prefix = '/path/to/geno/prefix'
 qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'
