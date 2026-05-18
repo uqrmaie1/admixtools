@@ -3059,8 +3059,50 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     mutate(popind = map(pp, ~match(., pops))) %$% popind
   usesnps = matrix(0)
 
+  # Per-block chromosome assignment for end-of-chrom progress messages.
+  # snpfile$CHR for any kept SNP in block i gives the chromosome — blocks
+  # are partitioned per-chromosome by get_block_lengths(), so all kept SNPs
+  # in a block share a single CHR. The fill() above also propagates `block`
+  # to dropped SNPs, but we filter to keep=TRUE here so CHR comes from a
+  # real (autosomal/keepsnps) variant.
+  block_chr = vapply(seq_len(numblocks), function(i) {
+    snpfile$CHR[snpfile$block == i & snpfile$keep][1]
+  }, character(1))
+
+  # Heartbeat-progress state. Per chromosome, we accumulate variant count
+  # and elapsed time; on the first block of a NEW chromosome (or on the
+  # end of the loop) we emit one summary line to stderr via message().
+  # Orchestrators that monitor extract_f2 for a heartbeat get one line
+  # per chromosome — typically 22-24 lines total over a 10-60 minute run.
+  process_start_time = Sys.time()
+  chr_start_time     = process_start_time
+  current_chr        = NA_character_
+  chr_block_count    = 0L
+  chr_variant_count  = 0L
+
   numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
   for(i in 1:numblocks) {
+    # On transition to a new chromosome, emit the rollup for the chromosome
+    # we just finished.
+    this_chr = block_chr[i]
+    if(verbose && !is.na(current_chr) && !is.na(this_chr) && this_chr != current_chr) {
+      dt_sec = as.numeric(difftime(Sys.time(), chr_start_time, units = 'secs'))
+      message(sprintf('[extract_f2] chr%s: %d variants in %d blocks (%.1fs)',
+                      current_chr, chr_variant_count, chr_block_count, dt_sec))
+      chr_start_time    = Sys.time()
+      chr_block_count   = 0L
+      chr_variant_count = 0L
+    }
+    # Skip accumulation for blocks with no kept SNPs (block_chr is NA). Without
+    # this guard, an empty block's variant count would silently roll into the
+    # next valid chromosome's rollup, inflating it. Triggers only if keepsnps
+    # or auto_only removes every variant from a block.
+    if(!is.na(this_chr)) {
+      current_chr       = this_chr
+      chr_block_count   = chr_block_count + 1L
+      chr_variant_count = chr_variant_count + block_lengths[i]
+    }
+
     if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
                                   i, ' out of ', numblocks, '...\r'))
     # replace following two lines with cpp_geno_to_afs?
@@ -3084,6 +3126,23 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
       den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
       denom[i,] = unname(rowMeans(den, na.rm = TRUE))
     }
+  }
+  # Emit the rollup for the final chromosome (the in-loop transition
+  # check fires on chrom CHANGE, so the last chrom needs its own emit).
+  # Then a single "done" line with totals for the orchestrator's
+  # final-state marker.
+  if(verbose && !is.na(current_chr)) {
+    dt_sec = as.numeric(difftime(Sys.time(), chr_start_time, units = 'secs'))
+    message(sprintf('[extract_f2] chr%s: %d variants in %d blocks (%.1fs)',
+                    current_chr, chr_variant_count, chr_block_count, dt_sec))
+  }
+  if(verbose) {
+    total_sec = as.numeric(difftime(Sys.time(), process_start_time, units = 'secs'))
+    n_chr     = length(unique(block_chr[!is.na(block_chr)]))
+    mins      = floor(total_sec / 60)
+    secs      = total_sec - 60 * mins
+    message(sprintf('[extract_f2] done: %d variants across %d block(s) on %d chromosome(s) in %dm%05.2fs',
+                    sum(block_lengths), numblocks, n_chr, mins, secs))
   }
   if(verbose) cat('\n')
 
