@@ -24,9 +24,15 @@ plotly_graph(
 the number of intersecting edges. This can take very long for large graphs.
 By default this is only done for graphs with fewer than 10 leaves.}
 
+\item{print_highlow}{Print high/low weight labels on admixture edges (default \code{FALSE}).}
+
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.}
 
 \item{pos}{Optional data frame with node coordinates (columns \code{node}, \code{x}, \code{y})}
+
+\item{nudge_y}{Vertical offset applied to node labels (default \code{-0.1}).}
+
+\item{annot}{Annotation string appended to the graph (default empty string).}
 }
 \value{
 A plotly object
@@ -35,5 +41,7 @@ A plotly object
 Plot an admixture graph using plotly
 }
 \examples{
+\dontrun{
 plotly_graph(example_graph)
+}
 }

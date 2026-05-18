@@ -812,6 +812,7 @@ fitted_f4_from_f4blockdat = function(f4blockdat, weights, target, left, right) {
 #' admixture events.
 #' @export
 #' @inheritParams qpadm
+#' @param f2_data Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.
 #' @param rnk Rank of f4-matrix. Defaults to one less than full rank.
 #' @param weights Return weights (default = `FALSE`)
 #' @return Data frame with `f4rank`, `dof`, `chisq`, `p`, `feasible`
@@ -851,6 +852,7 @@ qpadm_p = function(f2_data, left, right, target = NULL, auto_only = TRUE, fudge 
 #' A thin wrapper around \code{\link{qpadm_p}} with `rnk` set to zero
 #' @export
 #' @inheritParams qpadm
+#' @param f2_data Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
   qpadm_p(f2_data, left, right, fudge = fudge, boot = boot, rnk = 0, cpp = cpp)
 }
@@ -1039,6 +1041,7 @@ qpadmmodels_to_popcombs = function(models) {
 #' }
 #' @param models A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing `left`, `right`, (and `target`) populations.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results. This option only has an effect if `data` is the prefix of a genotype file. If `data` are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.
+#' @param full_results Return the full qpadm output list for each model; if `FALSE`, return only summary statistics (default `TRUE`).
 #' @param verbose Print progress updates
 #' @param ... Further arguments passed to \code{\link{qpadm}}
 #' @return A list where each element is the output of one qpadm model.

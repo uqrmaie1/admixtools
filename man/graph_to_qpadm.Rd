@@ -35,6 +35,8 @@ graph_to_qpadm(
 
 \item{allpops}{Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}}
 
+\item{more_right}{Passed to \code{\link{qpadm_models}}: prefer models with more right than left populations (default \code{TRUE}).}
+
 \item{return_f4}{Include f4 statistic matrices in the results (default \code{FALSE})}
 
 \item{eps}{Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.}

@@ -8,6 +8,10 @@ graph_splittrees(graph, return_admix = FALSE, simplify = TRUE)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
+
+\item{return_admix}{Include a column of admixture edges for each tree in the output (default \code{FALSE}).}
+
+\item{simplify}{Apply \code{\link{simplify_graph}} to each output tree (default \code{TRUE}).}
 }
 \value{
 A data frame with columns \code{name} and \code{graph}

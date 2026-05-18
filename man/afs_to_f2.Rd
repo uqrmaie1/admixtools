@@ -34,6 +34,14 @@ afs_to_f2(
 
 \item{overwrite}{Overwrite existing files (default \code{FALSE})}
 
+\item{type}{Type of statistic to compute: \code{'f2'} (default), \code{'ap'} (allele frequency products), or \code{'fst'}.}
+
+\item{poly_only}{Only use polymorphic SNPs (default \code{FALSE}).}
+
+\item{snpdat}{SNP metadata data frame; if \code{NULL}, loaded from \code{snpdat.tsv.gz} in \code{afdir}.}
+
+\item{apply_corr}{Apply bias correction to f2 estimates (default \code{TRUE}).}
+
 \item{verbose}{Print progress updates}
 }
 \description{

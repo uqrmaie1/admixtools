@@ -33,19 +33,27 @@ afs_to_f2_blocks(
 
 \item{blgsize}{SNP block size in Morgan. Default is 0.05 (5 cM). If \code{blgsize} is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.}
 
+\item{pops1}{Populations for the first dimension; if \code{NULL} (default), all populations are used.}
+
+\item{pops2}{Populations for the second dimension; if \code{NULL} (default), all populations are used.}
+
 \item{outpop}{If specified, f2-statistics will be weighted by heterozygosity in this population}
 
 \item{outdir}{Directory into which to write f2 data (if \code{NULL}, data is returned instead)}
 
 \item{overwrite}{Should existing files be overwritten? Only relevant if \code{outdir} is not \code{NULL}}
 
+\item{afprod}{Compute allele frequency products in addition to f2-statistics (default \code{TRUE}).}
+
+\item{fst}{Compute FST in addition to f2-statistics (default \code{TRUE}).}
+
 \item{poly_only}{Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of \code{c("f2", "ap", "fst")}}
 
+\item{apply_corr}{Apply bias correction to f2 estimates (default \code{TRUE}).}
+
+\item{n_cores}{Number of cores for parallel computation (default 1).}
+
 \item{verbose}{Print progress updates}
-
-\item{pop1}{\code{pops1} and \code{pops2} can be specified if only a subset of pairs should be computed.}
-
-\item{pop2}{\code{pops1} and \code{pops2} can be specified if only a subset of pairs should be computed.}
 }
 \description{
 This function takes a allele frequency data and computes blocked f2 statistics for all population pairs,

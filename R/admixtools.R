@@ -28,7 +28,7 @@ TRUE
 #' ADMIXTOOLS software, as well as functions to read genotype files and precompute the data necessary
 #' to quickly compute f statistics.
 #'
-#' @author Robert Maier \email{<robertmaier@@gmx.net>}
+#' @author Robert Maier \email{robertmaier@@gmx.net}
 #' @author Nick Patterson
 #'
 #' @references Patterson, N. et al. (2012) \emph{Ancient admixture in human history.} Genetics
@@ -76,6 +76,12 @@ NULL
 #'
 #' @format A list with parsed qpGraph output
 "example_qpgraph_ref_results"
+
+#' Simulated f2-statistics for 5 populations
+#'
+#' @format A 3d array of f2-statistics computed from msprime simulation output,
+#'         with populations along the first two dimensions and SNP blocks along the 3rd
+"example_f2sim1"
 
 
 .onUnload = function (libpath) {

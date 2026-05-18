@@ -8,6 +8,10 @@ summarize_fits(fits, q_low = 0.05, q_high = 0.95)
 }
 \arguments{
 \item{fits}{A nested data frame where each line is the output of \code{qpgraph()}}
+
+\item{q_low}{Lower quantile for the weight confidence interval (default 0.05).}
+
+\item{q_high}{Upper quantile for the weight confidence interval (default 0.95).}
 }
 \value{
 A data frame summarizing the fits

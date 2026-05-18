@@ -30,9 +30,11 @@ plot_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param name2 Optional name for second model
 #' @return A plotly object.
 #' @examples
+#' \dontrun{
 #' fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
 #' fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
 #' plotly_comparison(fit1, fit2)
+#' }
 plotly_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
 
   if(is.null(name1)) name1 = enexpr(out1)
@@ -521,9 +523,9 @@ plot_graph_pcs = function(graph, pcs) {
 #' @param shapedata shapedata
 #' @return a plotly object
 #' @examples
-# #' \dontrun{
+#' \dontrun{
 #' plot_graph_map(example_igraph, example_anno)
-# #' }
+#' }
 plot_graph_map = function(graph, leafcoords, shapedata = NULL) {
 
   stopifnot(all(c('iid', 'group', 'lat', 'lon') %in% names(leafcoords)))
@@ -806,9 +808,14 @@ plot_comparison_qpadm = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' By default this is only done for graphs with fewer than 10 leaves.
 #' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs. See \code{\link{unidentifiable_edges}}.
 #' @param pos Optional data frame with node coordinates (columns `node`, `x`, `y`)
+#' @param print_highlow Print high/low weight labels on admixture edges (default `FALSE`).
+#' @param nudge_y Vertical offset applied to node labels (default `-0.1`).
+#' @param annot Annotation string appended to the graph (default empty string).
 #' @return A plotly object
 #' @examples
+#' \dontrun{
 #' plotly_graph(example_graph)
+#' }
 plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
                         print_highlow = FALSE, highlight_unidentifiable = FALSE, pos = NULL,
                         nudge_y = -0.1, annot = '') {

@@ -28,8 +28,6 @@ will specify the number of bootstrap resamplings. If \code{boot = TRUE}, the num
 equal to the number of SNP blocks.}
 
 \item{...}{named arguments which are passed to the \code{qp} function.}
-
-\item{verbose}{print progress updates}
 }
 \value{
 a nested data frame where each model is a row, and the columns are model parameters and model outputs

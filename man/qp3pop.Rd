@@ -50,15 +50,13 @@ from accidently computing all combinations if that number is large.}
 
 \item{unique_only}{If \code{TRUE} (the default), redundant combinations will be excluded}
 
+\item{blgsize}{SNP block size in Morgan when computing from genotype data (default 0.05).}
+
+\item{block_lengths}{Optional vector of block lengths; if \code{NULL}, inferred from the data.}
+
 \item{verbose}{Print progress updates}
 
-\item{...}{Additional arguments passed to \code{\link{f3blockdat_from_geno}} if \code{data} is a genotype prefix, or to \code{\link{get_f2}} otherwise}
-
-\item{apply_corr}{With \code{apply_corr = FALSE}, no bias correction is performed. With \code{apply_corr = TRUE} (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. The option is ineffective if the first argument is an array of pre-computed f2-statistics. In that case, the bias correction can be toggled by the \code{apply_corr} parameter in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}. The heterozygosity calculation used in \code{apply_corr = TRUE} requires at least two haploid samples or one diploid sample in the first population. Otherwise, \code{apply_corr = TRUE} will result in missing values.}
-
-\item{outgroupmode}{With \code{outgroupmode = FALSE}, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, then no normalization can be performed, which corresponds to \code{outgroupmode = TRUE}. As with \code{apply_corr = TRUE}, the heterozygosity calculation used in \code{outgroupmode = FALSE} requires at least two pseudodiploid samples or one diploid sample in the first population. Otherwise, \code{outgroupmode = FALSE} will result in missing values.}
-
-\item{poly_only}{Only keep SNPs with mean allele frequency not equal to 0 or 1. Defaults to \code{FALSE}. Only effective if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, use the \code{poly_only} argument in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}}
+\item{...}{Additional arguments passed to \code{\link{f3blockdat_from_geno}} if \code{data} is a genotype prefix, or to \code{\link{get_f2}} otherwise. Commonly passed arguments include \code{apply_corr}, \code{outgroupmode}, and \code{poly_only}.}
 }
 \value{
 \code{qp3pop} returns a data frame with f3 statistics, with columns for populations 1 to 3,

@@ -22,7 +22,9 @@ A plotly object.
 Plot a comparison of two runs of qpgraph or two runs of qpadm
 }
 \examples{
+\dontrun{
 fit1 = qpgraph(example_f2_blocks, example_graph, lsqmode = FALSE)
 fit2 = qpgraph(example_f2_blocks, example_graph, lsqmode = TRUE)
 plotly_comparison(fit1, fit2)
+}
 }

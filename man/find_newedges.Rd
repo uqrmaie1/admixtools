@@ -8,6 +8,10 @@ find_newedges(graph, fix_outgroup = TRUE, all = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
+
+\item{fix_outgroup}{Exclude edges that would displace the root-to-outgroup edge (default \code{TRUE}).}
+
+\item{all}{If \code{TRUE} (default), use the fast algorithm; if \code{FALSE}, use the more conservative \code{find_newedges_cautiously}.}
 }
 \value{
 A data frame with columns \code{from} and \code{to}. New edges which begin above \code{from}

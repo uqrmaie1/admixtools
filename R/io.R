@@ -6,6 +6,8 @@
 #' @param inds Individuals from which to compute allele frequencies
 #' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
+#' @param first Index of the first SNP to read (1-based, default 1).
+#' @param last Index of the last SNP to read (1-based); if NULL, reads all SNPs.
 #' @param verbose Print progress updates
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
@@ -1448,7 +1450,7 @@ write_f2 = function(est_arr, count_arr, outdir, id = 'f2', overwrite = FALSE) {
 #' @param pops Populations for which f2 statistics should be read. Defaults to all populations,
 #' which may require a lot of memory.
 #' @param pops2 Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.
-#' @param afprod Return allele frequency products instead of f2 estimates
+#' @param type Type of statistic to read: `'f2'` (default), `'ap'` (allele frequency products), or `'fst'`.
 #' @param counts Return allele counts instead of f2 estimates
 #' @param remove_na Remove blocks with missing values
 #' @param verbose Print progress updates
@@ -1631,6 +1633,10 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param snpwt A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.
 #' @param overwrite Overwrite existing files (default `FALSE`)
+#' @param type Type of statistic to compute: `'f2'` (default), `'ap'` (allele frequency products), or `'fst'`.
+#' @param poly_only Only use polymorphic SNPs (default `FALSE`).
+#' @param snpdat SNP metadata data frame; if `NULL`, loaded from `snpdat.tsv.gz` in `afdir`.
+#' @param apply_corr Apply bias correction to f2 estimates (default `TRUE`).
 #' @param verbose Print progress updates
 #' @seealso \code{\link{extract_f2}} Does the same thing in one step for smaller data.
 #' @examples
@@ -1944,6 +1950,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared
 #' to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly
 #' less than bias in regular f3-statistics introduced by large amounts of missing data.
+#' @param remove_na Remove blocks with missing values (default `TRUE`).
 #' @return A 3d array of f2-statistics (or scaled allele frequency products if `afprod = TRUE`)
 #' @seealso \code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
@@ -2011,6 +2018,7 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
 #' `extract_f2_large` does the same as \code{\link{extract_f2}}, but it requires less memory and is slower. `outdir` has to be set in `extract_f2_large`.
 #' @inheritParams extract_f2
 #' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running
+#' @param snpblocks Optional named integer vector assigning each SNP to a block; if `NULL`, blocks are computed from `blgsize`.
 #' @details `extract_f2_large` requires less memory because it writes allele frequency data to disk, and doesn't store the allele frequency matrix for all populations and SNPs in memory. If you still run out of memory, reduce `cols_per_chunk`. This function is a wrapper around \code{\link{extract_afs}} and \code{\link{afs_to_f2}}, and is slower than \code{\link{extract_f2}}. It may be faster to call \code{\link{extract_afs}} and \code{\link{afs_to_f2}} directly, parallelizing over the different calls to \code{\link{afs_to_f2}}.
 #' @return SNP metadata (invisibly)
 #' @seealso \code{\link{extract_f2}}
@@ -2604,6 +2612,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' @param pops2 Optional second vector of populations. Useful if a f4 statistics of a few against many populations should be computed. `pops2` should not be specified in other cases, as most functions depend on f2-statistics for all population pairs in `pops`.
 #' @param afprod Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 #' This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.
+#' @param fst Read FST statistics instead of f2 (default `FALSE`).
 #' @param return_array Return a 3d array (default). If false, a data frame will be returned.
 #' @param apply_corr Subtract the f2 correction factor. Setting this to `FALSE` can occasionally be useful
 #' @param remove_na Remove blocks with missing values
@@ -3113,6 +3122,8 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1 (default `FALSE`).
 #' @param snpwt A vector of SNP weights
 #' @param keepsnps A vector of SNP IDs to keep
+#' @param cm_file Optional path to a TSV file with per-variant centimorgan positions
+#'   (columns: a SNP-identifier column and `cm`). Overrides cM values in `.pvar` when supplied.
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
@@ -3417,6 +3428,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With `apply_corr = 2`, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.
 #' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of precomputed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`.
+#' @param poly_only Only use polymorphic SNPs (default `FALSE`).
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
@@ -3792,6 +3804,7 @@ qpfstats_regression = function(x, ymat, y, ridge = 0.00001) {
 #' If `include_f3` is a positive integer, it specifies how many randomly chosen f3-statistics should be used.
 #' @param include_f4 Should f4-statistics be used to get smoothed f2-statistics?
 #' If `include_f4` is a positive integer, it specifies how many randomly chosen f4-statistics should be used.
+#' @param verbose Print progress updates (default `TRUE`).
 #' @return A 3d-array of smoothed f2-statistics
 #' @examples
 #' \dontrun{

@@ -8,6 +8,8 @@ spr_leaves(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
+
+\item{fix_outgroup}{Prevent the outgroup leaf from being regrafted (default \code{TRUE}).}
 }
 \value{
 A new admixture graph

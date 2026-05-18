@@ -181,6 +181,10 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
 #' @param numadmix Number of admixture events
 #' @param simple Should edges leading to admixture nodes consist of separate admix edges and normal edges
 #' @param outpop Outgroup population
+#' @param nonzero_f4 Optional constraint: population pairs for which f4 must be non-zero.
+#' @param admix_constraints Optional constraint on admixture counts per population (see \code{\link{satisfies_constraints}}).
+#' @param event_order Optional constraint on the ordering of demographic events (see \code{\link{satisfies_constraints}}).
+#' @param ntry Maximum number of attempts to generate a graph satisfying all constraints (default 100).
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
@@ -710,6 +714,7 @@ insert_admix_random = function(graph, nadmix) {
 #' @param dest_from Parent node of the destination edge
 #' @param dest_to Child node of the destination edge
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @param fix_outgroup Prevent insertion of edges that affect the root-to-outgroup edge (default `TRUE`).
 #' @return Adxmiture graph with inserted edge
 #' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_n}}
 insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL,
@@ -754,9 +759,8 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
 #'
 #' @export
 #' @param graph An admixture graph
-#' @param from List of nodes. New edges will originate above these nodes.
-#' @param to List of nodes. New edges will end above these nodes.
-#' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @param n Number of admixture edges to insert (default 1).
+#' @param fix_outgroup Prevent insertion of edges that affect the root-to-outgroup edge (default `TRUE`).
 #' @return Admixture graph with inserted edges
 #' @seealso \code{\link{insert_admix}} \code{\link{delete_admix}}
 insert_admix_n = function(graph, n = 1, fix_outgroup = TRUE) {
@@ -844,6 +848,7 @@ admixturegraph_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outg
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param fix_outgroup Prevent the outgroup leaf from being regrafted (default `TRUE`).
 #' @return A new admixture graph
 spr_leaves = function(graph, fix_outgroup = TRUE)
   admixturegraph_prune_and_regraft(graph, only_leaves = TRUE, fix_outgroup = fix_outgroup)
@@ -852,6 +857,7 @@ spr_leaves = function(graph, fix_outgroup = TRUE)
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param fix_outgroup Prevent the outgroup from being regrafted (default `TRUE`).
 #' @return A new admixture graph
 spr_all = function(graph, fix_outgroup = TRUE)
   admixturegraph_prune_and_regraft(graph, only_leaves = FALSE, fix_outgroup = fix_outgroup)
@@ -1460,6 +1466,8 @@ identify_edge = function(graph, from, to) {
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
+#' @param return_admix Include a column of admixture edges for each tree in the output (default `FALSE`).
+#' @param simplify Apply \code{\link{simplify_graph}} to each output tree (default `TRUE`).
 #' @return A data frame with columns `name` and `graph`
 #' @examples
 #' \dontrun{
@@ -1608,6 +1616,7 @@ graph_plusone = function(graph, ntry = Inf) {
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
+#' @param ntry Maximum number of admixture edges to sample; if `Inf` (default), samples up to 100.
 #' @return A data frame with columns `from`, `to`, and `graph`
 #' @examples
 #' \dontrun{
@@ -1743,6 +1752,8 @@ graph_addleaf = function(graph, pop) {
 #' Find possible new edges
 #'
 #' @param graph An admixture graph
+#' @param fix_outgroup Exclude edges that would displace the root-to-outgroup edge (default `TRUE`).
+#' @param all If `TRUE` (default), use the fast algorithm; if `FALSE`, use the more conservative \code{find_newedges_cautiously}.
 #' @return A data frame with columns `from` and `to`. New edges which begin above `from`
 #'   and end above `to` could be inserted
 #' @export
@@ -3234,6 +3245,7 @@ all_node_events = function(graph) {
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param unique_only Return only unique, unambiguous event-order relationships (default `TRUE`).
 #' @return A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
 #' @examples
 #' \dontrun{
@@ -3360,6 +3372,7 @@ path_triples = function(graph) {
 #' @param graph An admixture graph
 #' @param substitute Should edge names be represented by shorter symbols?
 #' @param nam Symbols used to shorten edge names
+#' @param return_everything If `TRUE`, return all intermediate columns in addition to equations; if `FALSE` (default), return only `equations` and `coding`.
 #' @return A list with two data frames: `equations` holds the equtions for all f2-statistics; `coding` has the mapping from edge names to edge symbols, which is used when `substitute = TRUE`
 graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f'), return_everything = FALSE) {
 
@@ -3577,7 +3590,8 @@ predicted_f4 = function(graph, a = NULL, e = NULL) {
 
 graph_to_groebner = function(graph) {
 
-  require(m2r)
+  if (!requireNamespace("m2r", quietly = TRUE)) stop("Package 'm2r' is required for this function.")
+
   ge = graph_equations(graph, return_everything = TRUE)
   #vrs = eq %>% str_replace_all('[\\*\\+\\(\\)]', ' ') %>% str_replace_all('1-', '') %>% str_replace_all('-', '') %>%
   #  str_squish() %>% str_split(' ') %>% unlist %>% unique
@@ -3898,6 +3912,7 @@ satisfies_numadmix = function(graph, admix_constraints) {
 #' @param event_order A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
 #' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
 #' @seealso \code{\link{satisfies_numadmix}}, \code{\link{satisfies_zerof4}}, \code{\link{satisfies_eventorder}}
+#' @examples
 #' \dontrun{
 #' # At least one admixture event for C, and none for D:
 #' constrain_cd = tibble(pop = c('C', 'D'), min = c(1, NA), max = c(NA, 0))
@@ -3918,6 +3933,7 @@ satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = N
 #' @param tree An admixture graph without admixture event
 #' @param graph An admixture graph
 #' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
+#' @examples
 #' \dontrun{
 #' tree = graph_splittrees(example_igraph) %>% pull(graph) %>% pluck(1)
 #' tree_in_graph(tree, example_igraph)
@@ -4200,6 +4216,7 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' @param weights Set this to `FALSE` to return only information on the ranks, not the weights, of each qpadm model. The ranks should depend only on the graph topology, while the weights and weight-validity (all weights for left populations between 0 and 1) can depend on the branch lengths of the graph. By default f4-statistics are based on equal branch lengths and admixture weights of 0.5. This can be overridden by providing `f4dat`.
 #' @param f4dat A data frame of f4-statistics which can be provided to override the default branch lengths.
 #' @param allpops Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}
+#' @param more_right Passed to \code{\link{qpadm_models}}: prefer models with more right than left populations (default `TRUE`).
 #' @param return_f4 Include f4 statistic matrices in the results (default `FALSE`)
 #' @param eps Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.
 #' @return A data frame with one qpadm model per row and columns `valid_rank` and `valid_weights` indicating whether a model should be valid under the graph.
@@ -4475,8 +4492,8 @@ graph_boot_pval = function(bootfit) {
 #'
 #' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link{agraph}} format
-#' @return An admixture graph in \code{\link{igraph}} format
+#' @param agraph An admixture graph in \code{\link[admixturegraph]{agraph}} format
+#' @return An admixture graph in \code{igraph} format
 #' @examples
 #' \dontrun{
 #' agraph_to_igraph(agraph)
@@ -4487,10 +4504,10 @@ agraph_to_igraph = function(agraph) {
 
 #' Convert igraph to agraph
 #'
-#' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
+#' `agraph` is the format used by the `admixturegraph` package. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link{igraph}} format
-#' @return An admixture graph in \code{\link{agraph}} format
+#' @param igraph An admixture graph in igraph format (as used by admixtools).
+#' @return An admixture graph in agraph format (as used by the `admixturegraph` package).
 #' @examples
 #' \dontrun{
 #' igraph_to_agraph(example_igraph)

@@ -171,7 +171,7 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' \item A directory which contains pre-computed f2-statistics
 #' \item The prefix of genotype files (slowest option)
 #' }
-#' @param graph An admixture graph represented as a matrix of edges, an \code{\link{igraph}} object, or the path to a *qpGraph* graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled `lower` and `upper` with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.
+#' @param graph An admixture graph represented as a matrix of edges, an \code{\link[igraph]{igraph}} object, or the path to a *qpGraph* graph file. Edges can be constrained by providing a matrix or data frame of edges with columns titled `lower` and `upper` with lower and upper bounds, respectively. By default, admixture edges are constrained to be between zero and one (with paired edges summing to one), and drift edges have a lower bound at zero.
 #' @param lambdascale Scales f2-statistics. This has no effect on the fit, but is used in the original *qpGraph* program to display branch weights on a scale that corresponds to FST distances.
 #' @param boot If `FALSE` (the default), each block will be left out at a time and the covariance matrix of
 #' f3 statistics will be computed using block-jackknife. Otherwise bootstrap resampling is performed `n` times,
@@ -188,6 +188,7 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' @param seed Random seed for generating starting weights.
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param return_fstats Return estimated and fitted f2- and f4-statistics, as well as the worst f4-statistic residual Z-score. Defaults to `FALSE` because this can be slow.
+#' @param return_pvalue Return a p-value for the graph fit based on the jackknife score distribution (default `FALSE`).
 #' @param f3precomp Optional precomputed f3-statistics. This should be the output of \code{\link{qpgraph_precompute_f3}} and can be provided instead of `data`. This can speed things up if many graphs are evaluated using the same set of f3-statistics.
 #' @param f3basepop Optional f3-statistics base population. Inference will be based on f3-statistics of the form `f3(f3basepop; i, j)` for all population pairs `(i, j)`. Defaults to the outgroup population if the graph has one. This option is ignored if `f3precomp` is provided. Changing `f3basepop` should make very little difference.
 #' @param constrained Constrain estimated drift edge weights to be non-negative, and admixture edge weights to be between zero and one.
@@ -201,7 +202,7 @@ treemix_score = function(f3_fit, f3_est, ppinv) {
 #' the column `weight` is the estimated edge length, and for admixture edges, it is the estimated admixture weight.
 #' \item `score`: The likelihood score of the fitted graph. Lower values correspond to better fits.
 #' The score is calculated as the inner product of the residuals (difference between estimated and
-#' fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{\link{qpgraph_score}}
+#' fitted f3 statistics), weighted by the inverse of the f3 covariance matrix. See \code{qpgraph_score}
 #' \item `f2`: Estimated and fitted f2 statistics (if `return_fstats = TRUE`). p-values and z-scores test the significance of the difference.
 #' \item `f3`: Estimated and fitted f3 statistics. p-values and z-scores test the significance of the difference.
 #' \item `f4`: Estimated and fitted f4 statistics (if `return_fstats = TRUE`). p-values and z-scores test the significance of the difference.

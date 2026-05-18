@@ -17,6 +17,8 @@ graph_equations(
 \item{substitute}{Should edge names be represented by shorter symbols?}
 
 \item{nam}{Symbols used to shorten edge names}
+
+\item{return_everything}{If \code{TRUE}, return all intermediate columns in addition to equations; if \code{FALSE} (default), return only \code{equations} and \code{coding}.}
 }
 \value{
 A list with two data frames: \code{equations} holds the equtions for all f2-statistics; \code{coding} has the mapping from edge names to edge symbols, which is used when \code{substitute = TRUE}
