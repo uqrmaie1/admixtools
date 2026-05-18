@@ -1371,8 +1371,7 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
       else chr_pos = c(chr_pos, chr_pos[i] + seq_length[i])
     }
   } else {
-    print("seq_lenght must be either a scalar or a vector with the same length as nchar")
-    break
+    stop("seq_length must be either a scalar or a vector with the same length as nchr")
   }
   out = paste0(out, 'chrom_positions = [', paste0(chr_pos, collapse=", "), ']\n')
 
