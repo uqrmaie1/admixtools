@@ -4,7 +4,14 @@
 \alias{result_to_json}
 \title{Serialize an admixtools result to JSON}
 \usage{
-result_to_json(result, fn = NULL, args = list(), file = "", pretty = FALSE, digits = NA)
+result_to_json(
+  result,
+  fn = NULL,
+  args = list(),
+  file = "",
+  pretty = FALSE,
+  digits = NA
+)
 }
 \arguments{
 \item{result}{The result list (or single data frame, or array) returned by
@@ -13,12 +20,16 @@ an admixtools fitter.}
 \item{fn}{Character scalar naming the function that produced \code{result}
 (e.g. \code{"qpadm"}, \code{"qpgraph"}). Stamped into the JSON envelope so consumers
 can dispatch on the shape. Defaults to \code{NULL}, which renders as
-"unknown" - useful for ad-hoc serialization where the caller doesn't
-want to plumb the producer name through.}
+\code{"unknown"}: useful for ad-hoc serialization where the caller doesn't
+want to plumb the producer name through. \code{NA} (any flavour: untyped,
+\code{NA_character_}, etc.) is treated the same as \code{NULL}.}
 
 \item{args}{Optional named list of the arguments used in the call. Echoed
 verbatim into the envelope's \code{args} field. Use \code{list()} (the default) to
-skip.}
+skip. \strong{Values must be primitives} (scalars, atomic vectors, or nested
+lists thereof): non-primitives like functions, environments, or external
+pointers don't have well-defined JSON representations and may serialize
+to \code{{}} or error from \code{jsonlite}.}
 
 \item{file}{Path or connection to write to. The default (\code{""}) returns the
 JSON as a character scalar without writing.}
@@ -37,12 +48,12 @@ Otherwise the JSON is written to \code{file} and the path is returned invisibly.
 \description{
 Wraps the output of one of the admixtools fitters
 (\code{\link[=qpadm]{qpadm()}}, \code{\link[=qpwave]{qpwave()}}, \code{\link[=qpgraph]{qpgraph()}}, \code{\link[=qpfstats]{qpfstats()}}, \code{\link[=f4]{f4()}}, \code{\link[=f3]{f3()}}, \code{\link[=f2]{f2()}},
-\code{\link[=qpdstat]{qpdstat()}}, \code{qpadm_sweep()}, ...) in a schema-versioned envelope and
+\code{\link[=qpdstat]{qpdstat()}}, \code{\link[=qpadm_sweep]{qpadm_sweep()}}, ...) in a schema-versioned envelope and
 returns a JSON string (or writes to a file / connection).
 }
 \details{
 Non-R orchestrators currently call admixtools from Rscript and do their own
-JSON marshaling per result type — five or six bespoke serializer paths, one
+JSON marshaling per result type: five or six bespoke serializer paths, one
 per output shape. \code{result_to_json()} consolidates that into a single
 contract: pass the result, the function name, and (optionally) the args you
 invoked it with, and get back a stable JSON document. Consumers in any
@@ -62,7 +73,7 @@ The envelope is:
 Tibbles / data.frames are serialized row-wise (each row becomes a JSON
 object), \code{NA} becomes \code{null}, integers/doubles are auto-unboxed, and nested
 list-columns / lists-of-tibbles are recursed into. 3D arrays (e.g. the raw
-return of \code{\link[=qpfstats]{qpfstats()}}) serialize to nested JSON arrays without dimnames —
+return of \code{\link[=qpfstats]{qpfstats()}}) serialize to nested JSON arrays without dimnames;
 if you need named pop axes, convert to a long tibble first via
 \code{\link[cubelyr:as.tbl_cube]{cubelyr::as.tbl_cube()}} or manual unpacking.
 }

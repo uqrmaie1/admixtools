@@ -1,3 +1,12 @@
+# Schema version baked into the JSON envelope's `schema_version` field. Bump
+# this constant when the envelope's structure changes in a way consumers must
+# adapt to (e.g. renaming a top-level key, changing the dataframe orientation,
+# or removing a field). Decoupled from `utils::packageVersion("admixtools")`
+# so pure bug-fix patch releases don't force consumers to re-version their
+# parsers when the envelope hasn't actually changed.
+.result_to_json_schema_version = 1L
+
+
 #' Serialize an admixtools result to JSON
 #'
 #' Wraps the output of one of the admixtools fitters
@@ -6,7 +15,7 @@
 #' returns a JSON string (or writes to a file / connection).
 #'
 #' Non-R orchestrators currently call admixtools from Rscript and do their own
-#' JSON marshaling per result type — five or six bespoke serializer paths, one
+#' JSON marshaling per result type: five or six bespoke serializer paths, one
 #' per output shape. `result_to_json()` consolidates that into a single
 #' contract: pass the result, the function name, and (optionally) the args you
 #' invoked it with, and get back a stable JSON document. Consumers in any
@@ -26,7 +35,7 @@
 #' Tibbles / data.frames are serialized row-wise (each row becomes a JSON
 #' object), `NA` becomes `null`, integers/doubles are auto-unboxed, and nested
 #' list-columns / lists-of-tibbles are recursed into. 3D arrays (e.g. the raw
-#' return of [qpfstats()]) serialize to nested JSON arrays without dimnames —
+#' return of [qpfstats()]) serialize to nested JSON arrays without dimnames;
 #' if you need named pop axes, convert to a long tibble first via
 #' [cubelyr::as.tbl_cube()] or manual unpacking.
 #'
@@ -36,11 +45,15 @@
 #' @param fn Character scalar naming the function that produced `result`
 #'   (e.g. `"qpadm"`, `"qpgraph"`). Stamped into the JSON envelope so consumers
 #'   can dispatch on the shape. Defaults to `NULL`, which renders as
-#'   `"unknown"` — useful for ad-hoc serialization where the caller doesn't
-#'   want to plumb the producer name through.
+#'   `"unknown"`: useful for ad-hoc serialization where the caller doesn't
+#'   want to plumb the producer name through. `NA` (any flavour: untyped,
+#'   `NA_character_`, etc.) is treated the same as `NULL`.
 #' @param args Optional named list of the arguments used in the call. Echoed
 #'   verbatim into the envelope's `args` field. Use `list()` (the default) to
-#'   skip.
+#'   skip. **Values must be primitives** (scalars, atomic vectors, or nested
+#'   lists thereof): non-primitives like functions, environments, or external
+#'   pointers don't have well-defined JSON representations and may serialize
+#'   to `{}` or error from `jsonlite`.
 #' @param file Path or connection to write to. The default (`""`) returns the
 #'   JSON as a character scalar without writing.
 #' @param pretty If `TRUE`, indent the JSON for human reading. Default
@@ -66,11 +79,11 @@
 #' cat(result_to_json(fit, fn = "qpadm", pretty = TRUE))
 result_to_json = function(result, fn = NULL, args = list(), file = "",
                           pretty = FALSE, digits = NA) {
-  if(is.null(fn) || identical(fn, NA)) {
-    # No producer name supplied. Stamp "unknown" so the JSON shape is still
-    # valid for naive callers (`result_to_json(res)` with no plumbing).
-    # Callers who want their consumers to dispatch on the function name
-    # should pass it explicitly.
+  # NULL and any NA flavour (untyped NA, NA_character_, NA_integer_, ...) all
+  # map to "unknown". `is.na()` on length-1 inputs returns TRUE for every NA
+  # type; we guard the length first because is.na() on a NULL returns logical(0)
+  # which would short-circuit the || incorrectly otherwise.
+  if(is.null(fn) || (length(fn) == 1 && is.na(fn))) {
     fn = "unknown"
   }
   if(!is.character(fn) || length(fn) != 1 || !nzchar(fn))
@@ -78,7 +91,7 @@ result_to_json = function(result, fn = NULL, args = list(), file = "",
   if(!is.list(args)) stop("'args' must be a (possibly empty) list")
 
   payload = list(
-    schema_version     = 1L,
+    schema_version     = .result_to_json_schema_version,
     `function`         = fn,
     admixtools_version = as.character(utils::packageVersion("admixtools")),
     args               = args,
