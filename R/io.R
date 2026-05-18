@@ -3093,9 +3093,15 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
       chr_block_count   = 0L
       chr_variant_count = 0L
     }
-    current_chr       = this_chr
-    chr_block_count   = chr_block_count + 1L
-    chr_variant_count = chr_variant_count + block_lengths[i]
+    # Skip accumulation for blocks with no kept SNPs (block_chr is NA). Without
+    # this guard, an empty block's variant count would silently roll into the
+    # next valid chromosome's rollup, inflating it. Triggers only if keepsnps
+    # or auto_only removes every variant from a block.
+    if(!is.na(this_chr)) {
+      current_chr       = this_chr
+      chr_block_count   = chr_block_count + 1L
+      chr_variant_count = chr_variant_count + block_lengths[i]
+    }
 
     if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
                                   i, ' out of ', numblocks, '...\r'))
