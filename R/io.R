@@ -2393,8 +2393,83 @@ format_info = function(pref, format = NULL) {
     l$cpp_geno_ploidy = cpp_plink_ploidy
     l$cpp_geno_to_afs = cpp_plink_to_afs
     l$cpp_read_geno = cpp_read_plink
+  } else if(all(file.exists(paste0(pref, c('.pgen', '.psam')))) &&
+            !is.na(.resolve_pvar_path(pref)) ||
+            isTRUE(format == 'pfile')) {
+    # PLINK 2 PFILE format. Unlike the other formats, PFILE has no
+    # cpp_read_geno equivalent -- block reads are delegated to the pgenlibr
+    # package at the R level (.make_block_reader handles the dispatch).
+    # The cpp_* fields are left unset for safety: callers that try to use
+    # them directly on a PFILE prefix will fail loudly rather than silently
+    # misbehave.
+    l$format = 'pfile'
+    l$is_pfile = TRUE
+    l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')   # canonical AT2 shape
+    l$indnam = c('ind', 'pop')                            # synthesized from .psam IID/FID
+    l$snpend = '.pvar'                                    # or .pvar.zst; .resolve_pvar_path picks
+    l$indend = '.psam'
+    l$genoend = '.pgen'
   } else stop('Genotype files not found!')
   l
+}
+
+
+# Construct a per-call block-reader closure for f4blockdat_from_geno.
+#
+# Returns a list with two elements:
+#   reader(first, last) -> (nind_kept x (last - first)) integer matrix in
+#                          {0, 1, 2, NA}. first/last are 0-based / half-open
+#                          to match cpp_read_geno's existing API.
+#   finalizer()         -> releases any per-handle resources (no-op for the
+#                          BED-class formats; closes the pgen + pvar handles
+#                          for PFILE). Caller must run via on.exit.
+#
+# This is the seam where PFILE plugs into f4blockdat_from_geno's per-block
+# compute. The BED-class branch is a thin wrapper around the existing
+# cpp_read_geno call (no behavior change for those formats). The PFILE
+# branch opens a pgen handle with sample_subset = which(indvec > 0) so
+# subsequent ReadIntList calls return only the kept samples -- same
+# semantics as cpp_read_geno's internal indvec filtering, plus pgenlibr's
+# I/O+memory savings at open time.
+#
+# Fork-safety: pgenlibr handles do not survive fork(). This helper opens
+# the handle in the caller's frame and the caller closes it via on.exit;
+# the handle never escapes a single call to f4blockdat_from_geno. If a
+# future revision parallelizes the per-block loop, each worker must call
+# .make_block_reader independently.
+.make_block_reader = function(l, pref, nsnpall, nindall, indvec) {
+  if(isTRUE(l$is_pfile)) {
+    if(!requireNamespace('pgenlibr', quietly = TRUE)) {
+      stop('PFILE inputs require the pgenlibr package: install.packages("pgenlibr")')
+    }
+    sample_subset = which(indvec > 0)
+    pvar_path = .resolve_pvar_path(pref)
+    pvar_handle = pgenlibr::NewPvar(pvar_path)
+    pgen = pgenlibr::NewPgen(paste0(pref, '.pgen'),
+                              pvar = pvar_handle,
+                              sample_subset = sample_subset)
+    list(
+      reader = function(first, last) {
+        # first..last is 0-based half-open in the existing API;
+        # pgenlibr variant indices are 1-based inclusive.
+        pgenlibr::ReadIntList(pgen, (first + 1L):last)
+      },
+      finalizer = function() {
+        # Close in LIFO order: handle that depends on pvar_handle first.
+        try(pgenlibr::ClosePgen(pgen), silent = TRUE)
+        try(pgenlibr::ClosePvar(pvar_handle), silent = TRUE)
+      }
+    )
+  } else {
+    cpp_fn = l$cpp_read_geno
+    fl = paste0(pref, l$genoend)
+    list(
+      reader = function(first, last) {
+        cpp_fn(fl, nsnpall, nindall, indvec, first, last, TRUE, FALSE)
+      },
+      finalizer = function() invisible(NULL)
+    )
+  }
 }
 
 
@@ -2975,7 +3050,8 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
                                 block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
-                                poly_only = FALSE, snpwt = NULL, keepsnps = NULL, verbose = TRUE) {
+                                poly_only = FALSE, snpwt = NULL, keepsnps = NULL,
+                                cm_file = NULL, verbose = TRUE) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -3011,10 +3087,40 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   pref = normalizePath(pref, mustWork = FALSE)
   l = format_info(pref)
 
-  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
-  cpp_read_geno = l$cpp_read_geno
-  fl = paste0(pref, l$genoend)
+  if(isTRUE(l$is_pfile)) {
+    # PFILE metadata path. .read_pvar / .read_psam (added by pfile_to_afs)
+    # return tibbles in the same shape the rest of this function expects.
+    # The pvar path resolution handles plaintext .pvar and Zstd .pvar.zst.
+    # cm grafting from cm_file mirrors pfile_to_afs's semantics: .pvar
+    # rarely carries cm, and downstream get_block_lengths(blgsize < 100)
+    # needs real cm -- same warning fires when neither source is available.
+    pvar_path = .resolve_pvar_path(pref)
+    if(is.na(pvar_path)) stop('PFILE .pvar (or .pvar.zst) not found at prefix: ', pref)
+    snpfile = .read_pvar(pvar_path)
+    if(!is.null(cm_file)) {
+      if(verbose) alert_info(paste0('Reading cm from ', cm_file, '...\n'))
+      snpfile$cm = .read_cm_file(cm_file, snpfile$SNP)
+      n_missing_cm = sum(is.na(snpfile$cm))
+      if(n_missing_cm > 0L && verbose) {
+        alert_warning(paste0(n_missing_cm, ' / ', nrow(snpfile),
+                             ' variants have NA cm after cm_file lookup\n'))
+      }
+    } else if(all(snpfile$cm == 0) && verbose) {
+      alert_warning(paste0(
+        'All variants have cm = 0. PLINK 2 .pvar does not carry cm in the ',
+        'standard format, and no cm_file was supplied. Block boundaries ',
+        'from blgsize < 100 will collapse to a single block. Pass ',
+        'cm_file = <path> with a TSV (variant_id/SNP/ID + cm columns), ',
+        'or use blgsize >= 100 (bp distance).\n'))
+    }
+    # Drop is_multi (.read_pvar's extra column) and reorder to AT2 canonical.
+    snpfile = snpfile[, c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')]
+    psam = .read_psam(paste0(pref, '.psam'))
+    indfile = tibble::tibble(ind = psam$IID, pop = psam$FID)
+  } else {
+    indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+    snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  }
 
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
@@ -3058,6 +3164,14 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     summarize(pp = list(unique(c(pop1, pop2, pop3, pop4)))) %>%
     mutate(popind = map(pp, ~match(., pops))) %$% popind
   usesnps = matrix(0)
+
+  # Format-dispatched block reader: closure returning a (nind_kept x nsnp_block)
+  # integer matrix in {0,1,2,NA}, plus a finalizer that releases any
+  # per-handle resources (no-op for BED-class formats; closes pgen + pvar
+  # handles for PFILE). The closure shape is identical across formats so the
+  # per-block loop below is format-agnostic.
+  block_reader = .make_block_reader(l, pref, nsnpall, nindall, indvec)
+  on.exit(block_reader$finalizer(), add = TRUE, after = FALSE)
 
   # Per-block chromosome assignment for end-of-chrom progress messages.
   # snpfile$CHR for any kept SNP in block i gives the chromosome — blocks
@@ -3106,7 +3220,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
                                   i, ' out of ', numblocks, '...\r'))
     # replace following two lines with cpp_geno_to_afs?
-    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]]]
+    gmat = block_reader$reader(start[i], end[i])[,snpind[[i]]]
     at = gmat_to_aftable(gmat, popvec)
     if(!allsnps) {
       usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
