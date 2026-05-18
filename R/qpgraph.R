@@ -746,7 +746,7 @@ qpgraph_resample_snps2 = function(f2_blocks, graph, f2_blocks_test, verbose = TR
   #pb = progress::progress_bar$new(total = length(f2_blocks))
   tibble(id = seq_len(length(f2_blocks)), graph = list(graph), f2_blocks, f2_blocks_test) %>%
     mutate(fun2 = pmap(list(f2_blocks, f2_blocks_test, graph), fun)) %>%
-    mutate(out = furrr::future_invoke_map(fun2, .progress = verbose, .options = furrr::furrr_options(seed = TRUE)),
+    mutate(out = furrr::future_map(fun2, function(f) f(), .progress = verbose, .options = furrr::furrr_options(seed = TRUE)),
            result = map(out, 'result', .null = tibble()), error = map(out, 'error')) %>%
     select(-out, -fun2) %>% unnest_wider(result)
   #})

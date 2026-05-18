@@ -733,7 +733,7 @@ plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
     left_join(pos %>% transmute(V2=node, xend=x, yend=y), by='V2') %>%
     mutate(type = ifelse(V2 %in% admixnodes, 'admix', 'normal')) %>% rename(name=V1, to=V2)
 
-  if(isTRUE(fix) || is.null(fix) && length(V(graph)) < 10) eg = admixtools:::fix_layout(eg, graph)
+  if(isTRUE(fix) || is.null(fix) && length(V(graph)) < 10) eg = fix_layout(eg, graph)
 
   if(!'label' %in% names(edges)) edges %<>% mutate(label='')
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))

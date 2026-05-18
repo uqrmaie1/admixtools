@@ -4558,7 +4558,7 @@ label_internal = function(edges) {
     node = .x
     igraph::all_simple_paths(graph, node, leaves) %>%
       set_names(map_chr(., ~attr(tail(., 1), 'name'))) %>%
-      map(admixtools:::vs_to_es) %>% map(~wvec[.]) %>% map(prod) %>%
+      map(vs_to_es) %>% map(~wvec[.]) %>% map(prod) %>%
       enframe %>% unnest(value) %>% group_by(name) %>%
       summarize(weight = sum(value)) %>% transmute(from = node, to = name, weight)
   })

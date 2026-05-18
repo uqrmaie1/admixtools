@@ -1683,7 +1683,7 @@ write_fastsimcoal_obs = function(afs, outfile = stdout()) {
   popcounts = apply(afs$counts, 2, max)
   out = "1 observations. No. of demes and sample sizes are on next line\n"
   out %<>% paste0(length(popcounts), '\t', paste(popcounts, collapse = '\t'), '\n')
-  out %<>% paste0(paste(admixtools:::joint_sfs(afs) %>% pull(n), collapse = '\t'))
+  out %<>% paste0(paste(joint_sfs(afs) %>% pull(n), collapse = '\t'))
 
   writeLines(out, outfile)
 }
