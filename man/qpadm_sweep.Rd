@@ -60,7 +60,7 @@ and columns:
 Patterson-style sweeps fit qpadm for every combination of
 (target, source-set, right-set). Each invocation through \code{\link[=qpadm]{qpadm()}} would re-load
 the f2 cache from disk; \code{qpadm_sweep()} loads it once via \code{\link[=qpadm_multi]{qpadm_multi()}} and
-returns a flat tibble with one row per combination — suitable for
+returns a flat tibble with one row per combination, suitable for
 filtering / ranking model fits across a sweep without unnesting nested lists.
 }
 \details{

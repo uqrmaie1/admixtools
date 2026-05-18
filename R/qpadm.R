@@ -997,7 +997,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #' Patterson-style sweeps fit qpadm for every combination of
 #' (target, source-set, right-set). Each invocation through [qpadm()] would re-load
 #' the f2 cache from disk; `qpadm_sweep()` loads it once via [qpadm_multi()] and
-#' returns a flat tibble with one row per combination — suitable for
+#' returns a flat tibble with one row per combination, suitable for
 #' filtering / ranking model fits across a sweep without unnesting nested lists.
 #'
 #' This is a convenience wrapper around [qpadm_multi()] that adds:
