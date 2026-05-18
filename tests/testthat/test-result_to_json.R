@@ -88,21 +88,37 @@ test_that("file = <tempfile> writes JSON that round-trips through fromJSON", {
 
 # -- result content -- pretty / digits --------------------------------------
 
-test_that("pretty = TRUE inserts newlines for human reading", {
+test_that("pretty = TRUE produces newline-formatted output that is still valid JSON", {
   one_line = result_to_json(.fit(), fn = "qpadm", pretty = FALSE)
   pretty   = result_to_json(.fit(), fn = "qpadm", pretty = TRUE)
   # One-line output has no embedded newlines; pretty has many.
   expect_false(grepl("\n", one_line))
   expect_true(grepl("\n", pretty))
+  # The pretty-printed JSON must still round-trip through fromJSON without
+  # error -- newlines / indentation are cosmetic, not structural.
+  expect_silent(jsonlite::fromJSON(pretty, simplifyVector = FALSE))
 })
 
-test_that("digits = 2 rounds numeric fields in the result", {
-  # Compare a small numeric extracted from the parsed JSON to its expected
-  # 2-significant-digit form. We test the chisq field of rankdrop row 1
-  # because it's a known double in the qpadm result.
+test_that("digits = 2 strictly shortens the JSON for a result with double-precision numerics", {
+  # qpadm's result contains many doubles in weights / rankdrop (weight, se,
+  # z, chisq, p, ...). At full precision each serializes to 15-17 chars; at
+  # `digits = 2` they collapse to 4-5 chars. The total JSON document is
+  # strictly shorter, not just <=. Using expect_lt catches a regression
+  # where digits is silently ignored (both outputs would be equal-length).
   json_full = result_to_json(.fit(), fn = "qpadm", digits = NA)
   json_lo   = result_to_json(.fit(), fn = "qpadm", digits = 2)
-  expect_true(nchar(json_lo) <= nchar(json_full))
+  expect_lt(nchar(json_lo), nchar(json_full))
+})
+
+test_that("NA values in result serialize to JSON null", {
+  # The function passes `na = 'null'` to jsonlite::toJSON, so any NA in the
+  # result list (or its nested data frames / list-columns) should appear as
+  # JSON null in the output.
+  json = result_to_json(list(missing = NA, present = 42L), fn = "manual")
+  expect_match(json, '"missing":null', fixed = TRUE)
+  obj = jsonlite::fromJSON(json, simplifyVector = FALSE)
+  expect_null(obj$result$missing)
+  expect_equal(obj$result$present, 42L)
 })
 
 # -- result soundness -------------------------------------------------------
