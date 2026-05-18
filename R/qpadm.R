@@ -1081,6 +1081,10 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
   models = tibble::tibble(left   = combos$left,
                           right  = combos$right,
                           target = combos$target)
+  # full_results = TRUE is required here so we can extract the summary columns
+  # (p, chisq, feasible via weights) below. The outer full_results param controls
+  # whether the list-columns survive into the returned tibble, not what qpadm_multi
+  # computes internally.
   fits = qpadm_multi(data, models, allsnps = allsnps,
                      full_results = TRUE, verbose = verbose, ...)
 
@@ -1105,7 +1109,7 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
                    r = top_row(f$rankdrop); if(is.null(r)) NA_integer_ else as.integer(r$dof) },
                    integer(1)),
     feasible   = vapply(fits, function(f) {
-                   w = f$weights; if(is.null(w)) NA else all(dplyr::between(w$weight, 0, 1)) },
+                   w = f$weights; if(is.null(w)) NA else all(w$weight >= 0 & w$weight <= 1) },
                    logical(1)))
 
   if(full_results) {
