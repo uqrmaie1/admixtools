@@ -182,7 +182,14 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     if(!is.null(target)) left = c(target, setdiff(left, target))
     if(is_geno_prefix(data)) {
       if(return_f4) {
-        popcombs = expand_grid(pop1 = target, pop2 = left[-1], pop3 = right, pop4 = right) %>% filter(pop3 != pop4)
+        # pop1 = left[1] handles both target != NULL (line above puts target at
+        # left[1]) and target = NULL (qpwave-style; the canonical anchor for
+        # the f4 parameterization f4(left[1], left[-1][i]; right[1], right[-1][j])
+        # used by f2blocks_to_f4blocks on the non-geno path). Previously this
+        # was `pop1 = target` which silently dropped the pop1 column on the
+        # target = NULL path, breaking the qpwave-with-allsnps call shape
+        # documented in #69.
+        popcombs = expand_grid(pop1 = left[1], pop2 = left[-1], pop3 = right, pop4 = right) %>% filter(pop3 != pop4)
         f4blockdat_all = f4blockdat_from_geno(data, popcombs = popcombs, auto_only = auto_only,
                                               blgsize = blgsize, poly_only = poly_only,  verbose = verbose, ...)
         f4blockdat = f4blockdat_all %>% filter(pop3 == right[1], pop4 != right[1])
