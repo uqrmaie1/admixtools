@@ -1503,7 +1503,14 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
   # of socket serialization is well below the I/O latency savings on
   # network or cold-cache filesystems.
   if(verbose) alert_info(paste0('Reading ', type, ' data for ', nrow(popcomb), ' pairs...\r'))
-  dat_list = furrr::future_map(paths, function(fl) readRDS(fl)[, col])
+  # seed = NULL asserts that readRDS doesn't use RNG -- suppresses furrr's
+  # defensive "UNRELIABLE VALUE" warning under plan(multisession), which it
+  # emits whenever the mapped function isn't statically proven RNG-free.
+  # .progress = verbose recovers the per-task heartbeat that the old
+  # per-iteration alert_info() line used to provide for large caches.
+  dat_list = furrr::future_map(paths, function(fl) readRDS(fl)[, col],
+                                .progress = verbose,
+                                .options = furrr::furrr_options(seed = NULL))
 
   # Assign back to the 3D array. This part is fast and serial — it's
   # just R array indexing, no I/O.
