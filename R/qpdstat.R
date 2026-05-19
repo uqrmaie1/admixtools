@@ -425,7 +425,14 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
 
 gmat_to_aftable = function(gmat, popvec) {
   # raw genotype matrix, not corrected for ploidy, nind x nsnp
-  rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+  # The math is:
+  #   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+  # The C++ version does this in one pass over gmat, with one (npop x nsnp)
+  # allocation instead of the R version's two (nind x nsnp) temporaries
+  # (the !is.na cast and its rowsum). Per-block savings are modest in
+  # isolation but accumulate across the ~1300+ blocks in production
+  # f4blockdat_from_geno / qpdstat_geno runs.
+  cpp_gmat_to_aftable(gmat, as.integer(popvec))
 }
 
 
