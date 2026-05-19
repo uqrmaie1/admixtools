@@ -257,7 +257,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   # the downstream pseudo-inverse fallback in cpp_qpadm_weights produce
   # weight SEs that look tight but reflect numerical noise, not sampling
   # uncertainty (issue #8).
-  f4_var_rcond = tryCatch(as.numeric(rcond(f4_var)), error = function(e) NA_real_)
+  f4_var_rcond = tryCatch(rcond(f4_var), error = function(e) NA_real_)
 
   # If rcond is concerningly low, compute the SVD-based attribution: the
   # smallest right-singular vector tells us which (left, right) f4 directions
@@ -317,7 +317,8 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     warning(sprintf(
       paste0("f4 variance matrix is near-singular (rcond = %.3g).%s ",
              "Weight SEs may be unreliable; see `?qpadm` (`singular_threshold`) for ",
-             "opt-in fail-loud gating, and `out$f4_var_singular_loadings` for the full table."),
+             "opt-in fail-loud gating; the returned list includes the full ",
+             "right-pop loading table on the `f4_var_singular_loadings` field."),
       f4_var_rcond, diag_msg))
   }
 
