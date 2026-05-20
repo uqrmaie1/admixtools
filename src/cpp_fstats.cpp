@@ -1,6 +1,8 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+#include <cmath>
+#include <vector>
 using namespace Rcpp;
 using namespace arma;
 
@@ -75,6 +77,112 @@ List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, a
   }
   //return num;
   return Rcpp::List::create(_["num"] = num, _["cnt"] = cnt);
+}
+
+
+// Streaming variant of cpp_aftable_to_dstatnum.
+//
+// Mathematically equivalent to:
+//   tmp = cpp_aftable_to_dstatnum(...)
+//   list(means = rowMeans(tmp$num, na.rm = TRUE), cnt = tmp$cnt)
+//
+// but accumulates per-row sum and count in scalars instead of materializing
+// the full (p1.n_elem x aftable.n_cols) matrix. This serves callers that
+// only need the row means (currently the f4mode path in
+// f4blockdat_from_geno when no per-SNP weights are applied).
+//
+// Motivation: on dense f-statistic runs (npopcomb in the millions, blocks
+// of a few thousand SNPs) the materialized matrix in cpp_aftable_to_dstatnum
+// is a many-GB transient that exceeds production servers' RAM. At
+// 1.57M popcombs x 3608 SNPs/block, the matrix is 1.57e6 * 3608 * 8 bytes
+// = ~45 GB per call. R either errors with "cannot allocate vector of size
+// X" or the OS OOM-kills the R process during the fill. Streaming brings
+// per-block peak from O(p1.n_elem * aftable.n_cols) down to O(p1.n_elem)
+// -- ~12 MB at the same scale -- so f4blockdat_from_geno completes on
+// machines where the materialized variant doesn't fit.
+//
+// (Earlier framings of this PR mentioned 32-bit integer overflow in arma's
+// indexing. On 64-bit builds RcppArmadillo auto-enables ARMA_64BIT_WORD,
+// so arma::uword is u64 and the matrix indexing has no 32-bit ceiling at
+// realistic admixtools scales. The bottleneck is memory, not arithmetic.)
+//
+// The poly_only / usesnps / allsnps semantics, NA propagation, and `cnt`
+// definition match cpp_aftable_to_dstatnum exactly; the only change is
+// that `means` (= sum / cnt, which yields NaN when cnt == 0, matching
+// rowMeans on an all-NA row) is returned in place of `num`.
+//
+// Precision: the per-row sum is accumulated in `long double`, matching
+// R's rowMeans which uses LDOUBLE internally (see src/main/array.c's
+// do_colsum / do_rowmeans). On x86_64 that's 80-bit x87 extended
+// precision; on arm64 / Apple Silicon long double == double (64-bit).
+// Using long double preserves byte-identical output vs the
+// pre-streaming-PR materialized + rowMeans path on every platform.
+// (Switching from double accumulation to long double costs ~5-10% in
+// the hot sum loop on x86_64 because x87 long-double ops aren't SSE-
+// vectorizable, but this is well below the win from skipping the
+// O(npopcomb * nsnp) matrix allocation + Rcpp::wrap + R-side rowMeans
+// pass that the streaming path replaces.)
+//
+// [[Rcpp::export]]
+List cpp_aftable_to_dstatnum_rowmeans(arma::mat& aftable,
+                                      arma::vec& p1, arma::vec& p2,
+                                      arma::vec& p3, arma::vec& p4,
+                                      arma::vec& modelvec,
+                                      arma::mat& usesnps,
+                                      bool allsnps, int poly_only) {
+
+  // sum_v in long double matches R's rowMeans precision; cnt is an
+  // integer count where 64-bit double is more than enough.
+  std::vector<long double> sum_v(p1.n_elem, 0.0L);
+  vec cnt = zeros<vec>(p1.n_elem);
+  NumericVector uni;
+
+  double w, x, y, z, val;
+  int i1, i2, i3, i4, m, valid = 0;
+  for(int j = 0; j < (int)p1.n_elem; j++) {
+    i1 = p1(j)-1;
+    i2 = p2(j)-1;
+    i3 = p3(j)-1;
+    i4 = p4(j)-1;
+    if(!allsnps) m = modelvec(j)-1;
+    for(int i = 0; i < (int)aftable.n_cols; i++) {
+      if(allsnps || usesnps(m, i)) {
+        w = aftable(i1, i);
+        x = aftable(i2, i);
+        y = aftable(i3, i);
+        z = aftable(i4, i);
+        if(!(poly_only && allsnps)) {
+          valid = 1;
+        } else {
+          uni = na_omit(unique(NumericVector::create(w, x, y, z)));
+          if(poly_only == 0 || uni.length() > 1 ||
+             (poly_only == 2 && (max(uni) > 0.0001 && max(uni) < 0.9999))) {
+            valid = 1;
+          }
+        }
+        if(valid) {
+          val = (w - x) * (y - z);
+          if(std::isfinite(val)) {
+            // double -> long double promotion in the add, matching R's
+            // LDOUBLE accumulator behavior.
+            sum_v[j] += val;
+            cnt(j) += 1;
+          }
+          valid = 0;
+        }
+      }
+    }
+  }
+
+  vec means(p1.n_elem);
+  for(int j = 0; j < (int)p1.n_elem; j++) {
+    // 0/0 -> NaN matches rowMeans(., na.rm=TRUE) on an all-NA row.
+    // Cast back to double for the return value, matching R's rowMeans
+    // `mean = sum / cnt` (LDOUBLE -> double on assignment).
+    means(j) = (double)(sum_v[j] / (long double)cnt(j));
+  }
+
+  return Rcpp::List::create(_["means"] = means, _["cnt"] = cnt);
 }
 
 
