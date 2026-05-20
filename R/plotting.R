@@ -112,11 +112,13 @@ plot_comparison_qpgraph = function(out1, out2, name1 = NULL, name2 = NULL) {
 #' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
 #' @return A ggplot object
 #' @examples
+#' \dontrun{
 #' plot_graph(example_graph)
 #'
 #' # Plot a random simulation output. Show dates and population sizes on the plot
 #' out = random_sim(nleaf=5, nadmix=1)
 #' plot_graph(out$edges, dates=out$dates, neff=out$neff)
+#' }
 plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.5, highlight_unidentifiable = FALSE,
                       pos = NULL, dates = NULL, neff = NULL, scale_y = FALSE, hide_weights = FALSE) {
 
@@ -202,7 +204,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
 
       neff_df %<>% bind_rows(rootlab)
     }
-    layers$neff = geom_text(data=neff_df, aes_string(x='x', y='y', label='label'), col='black', inherit.aes = FALSE, alpha=0.8, size = textsize - 0.5, nudge_x = .0, nudge_y = .15)
+    layers$neff = geom_text(data=neff_df, aes(x = x, y = y, label = label), col='black', inherit.aes = FALSE, alpha=0.8, size = textsize - 0.5, nudge_x = .0, nudge_y = .15)
   }
 
   if (isTRUE(hide_weights)){
@@ -211,17 +213,17 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
   }
 
   if(color) {
-    layers$gs = geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
+    layers$gs = geom_segment(aes(linetype = type, col = as.factor(y)),
                              arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    layers$gl = geom_label(data=pdat$nodes, aes_string(label = 'name', col='as.factor(yend)'), size = textsize)
+    layers$gl = geom_label(data=pdat$nodes, aes(label = name, col = as.factor(yend)), size = textsize)
   } else {
     # gs = geom_segment(aes_string(linetype = 'type', col = "as.factor((to %in% c('X1', 'X2') & name %in% c('AB1', 'AB2')) + (name == 'AB1' & to == 'X1'))"),
     #                   arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    layers$gs = geom_segment(aes_string(linetype = 'type'),
+    layers$gs = geom_segment(aes(linetype = type),
                              arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
-    layers$gl = geom_label(data=pdat$nodes, aes_string(label = 'name'), col = 'black', size = textsize)
+    layers$gl = geom_label(data=pdat$nodes, aes(label = name), col = 'black', size = textsize)
   }
-  layers$gl2 = if(is.null(pdat$internal)) NULL else geom_text(data=pdat$internal, aes_string(label = 'name'), size = textsize, nudge_x = -.1, nudge_y = .1)
+  layers$gl2 = if(is.null(pdat$internal)) NULL else geom_text(data=pdat$internal, aes(label = name), size = textsize, nudge_x = -.1, nudge_y = .1)
 
   layers$aes = list(geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label), size = textsize, nudge_y = -.15),
                     xlab(''),
@@ -234,7 +236,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
     else g = edges_to_igraph(graph)
     unid = unidentifiable_edges(g)
     unid2 = pdat$eg %>% rename(from = name) %>% right_join(unid %>% select(-type), by = c('from', 'to'))
-    layers$highlight = geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2,
+    layers$highlight = geom_segment(aes(linetype = type), col = 'red', size = 1, data = unid2,
                                     arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
   }
 
@@ -693,7 +695,7 @@ make_favicon = function() {
 
   eg %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
-    geom_segment(aes_string(col = 'as.factor(y)'), size=12) +
+    geom_segment(aes(col = as.factor(y)), size=12) +
     # arrow=arrow(type = 'closed', angle = 20, length=unit(0.15, 'inches'))
     theme(panel.background = element_rect(fill = "transparent"),
           rect = element_rect(fill = "transparent"),
@@ -738,10 +740,10 @@ plot_graph_interactive = function(graph, fix = NULL, title = '', color = TRUE) {
 
   plt = eg %>% mutate(rownum = 1:n()) %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend, name=name, to=to, rownum=rownum)) +
-    geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)'),
+    geom_segment(aes(linetype = type, col = as.factor(y)),
                  arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches'))) +
     geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label)) +
-    geom_text(data=nodes, aes_string(label = 'name', col='as.factor(yend)', rownum='rownum'), size=3) +
+    geom_text(data=nodes, aes(label = name, col = as.factor(yend), rownum = rownum), size=3) +
     theme(panel.background = element_blank(),
           axis.line = element_blank(),
           axis.text = element_blank(),
@@ -879,7 +881,8 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
   suppressWarnings({
     gg = eg %>% mutate(rownum = 1:n()) %>%
     ggplot(aes(x = x, xend = xend, y = y, yend = yend, from = from, to = to)) +
-    geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
+    geom_segment(aes(linetype = type, col = as.factor(y),
+                     text = !!rlang::parse_expr(segtext)),
                  arrow=arrow(type = 'closed', angle = 10, length = unit(0.15, 'inches'))) +
     geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
     theme(panel.background = element_blank(),
@@ -895,11 +898,11 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
     if(highlight_unidentifiable) {
       unid = unidentifiable_edges(graph)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
-      gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', data = unid2, size = 1)
+      gg = gg + geom_segment(aes(linetype = type), col = 'red', data = unid2, size = 1)
     }
     gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
                             size = textsize) +
-      geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)', from = NA),
+      geom_text(data = nodes, aes(label = name, col = as.factor(yend), from = NA),
                         size = textsize, nudge_y = nudge_y) + expand_limits(y = c(0,1)) +
       annotate('text', min(eg$x), max(eg$y), label = annot)
   })

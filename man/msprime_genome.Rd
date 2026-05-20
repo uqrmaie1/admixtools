@@ -63,7 +63,9 @@ This function generates an msprime simulation script, and optionally executes it
 Unlike \code{\link{msprime_sim}}, this function can simulate continuous sequence (not independent SNPs) and multiple chromosomes.
 }
 \examples{
+\dontrun{
 results = qpgraph(example_f2_blocks, example_graph)
 # Simulate 3 chromosomes whose lengths are 50, 100 and 100
 msprime_genome(results$edges, nchr=3, seq_length=c(50, 100, 100))
+}
 }

@@ -2,6 +2,7 @@
 % Please edit documentation in R/admixtools.R
 \docType{package}
 \name{admixtools}
+\alias{admixtools-package}
 \alias{admixtools}
 \title{Tools for inferring demographic history from genetic data}
 \description{
