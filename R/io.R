@@ -2459,11 +2459,23 @@ format_info = function(pref, format = NULL) {
 # semantics as cpp_read_geno's internal indvec filtering, plus pgenlibr's
 # I/O+memory savings at open time.
 #
-# Fork-safety: pgenlibr handles do not survive fork(). This helper opens
-# the handle in the caller's frame and the caller closes it via on.exit;
-# the handle never escapes a single call to f4blockdat_from_geno. If a
-# future revision parallelizes the per-block loop, each worker must call
-# .make_block_reader independently.
+# Process-safety: pgenlibr handles are process-local. They don't survive
+# socket-based future_map worker serialization (the external pointer
+# deserializes as a dead pointer on the worker), and forked workers
+# inherit the parent's handle as an extptr pointing at the same memory
+# region -- which is unsafe to use without re-opening because libpgenlib
+# state isn't generally fork-safe. The PFILE branch lazy-opens its pgen /
+# pvar handles inside reader() on first call, and re-opens if the current
+# process differs from the one that previously opened them (detected via
+# Sys.getpid() mismatch). Each future worker -- and the main process
+# under plan(sequential) -- gets its own pair of handles cached in a
+# per-process environment.
+#
+# Verified bit-identical output across plan(sequential), plan(multisession,
+# workers=4), and plan(multicore, workers=4) on phase5 BED + phase5 PFILE
+# (see dogfood/scripts/dogfood_pr106_multicore.R). Main-process handles
+# are released via finalizer(), worker handles are released when the
+# worker R session exits.
 .make_block_reader = function(l, pref, nsnpall, nindall, indvec) {
   if(isTRUE(l$is_pfile)) {
     if(!requireNamespace('pgenlibr', quietly = TRUE)) {
@@ -2471,20 +2483,37 @@ format_info = function(pref, format = NULL) {
     }
     sample_subset = which(indvec > 0)
     pvar_path = .resolve_pvar_path(pref)
-    pvar_handle = pgenlibr::NewPvar(pvar_path)
-    pgen = pgenlibr::NewPgen(paste0(pref, '.pgen'),
-                              pvar = pvar_handle,
-                              sample_subset = sample_subset)
+    pgen_path = paste0(pref, '.pgen')
+
+    # Per-process handle cache. Two scenarios trigger an open:
+    #   (a) First call in this process -- handles$pgen is R NULL.
+    #   (b) Closure was serialized to this process from another -- the
+    #       deserialized handles$pgen is an extptr but its address is
+    #       dead. Detect via Sys.getpid() mismatch.
+    handles = new.env(parent = emptyenv())
+
     list(
       reader = function(first, last) {
+        if(is.null(handles$pgen) || !identical(handles$pid, Sys.getpid())) {
+          handles$pvar = pgenlibr::NewPvar(pvar_path)
+          handles$pgen = pgenlibr::NewPgen(pgen_path, pvar = handles$pvar,
+                                           sample_subset = sample_subset)
+          handles$pid  = Sys.getpid()
+        }
         # first..last is 0-based half-open in the existing API;
         # pgenlibr variant indices are 1-based inclusive.
-        pgenlibr::ReadIntList(pgen, (first + 1L):last)
+        pgenlibr::ReadIntList(handles$pgen, (first + 1L):last)
       },
       finalizer = function() {
-        # Close in LIFO order: handle that depends on pvar_handle first.
-        try(pgenlibr::ClosePgen(pgen), silent = TRUE)
-        try(pgenlibr::ClosePvar(pvar_handle), silent = TRUE)
+        # Close in LIFO order: handle that depends on pvar first.
+        # Only closes handles owned by the current process; workers
+        # manage their own handles within their own R session lifetime.
+        if(!is.null(handles$pgen) && identical(handles$pid, Sys.getpid())) {
+          try(pgenlibr::ClosePgen(handles$pgen), silent = TRUE)
+          try(pgenlibr::ClosePvar(handles$pvar), silent = TRUE)
+          handles$pgen = NULL
+          handles$pvar = NULL
+        }
       }
     )
   } else {
@@ -2979,8 +3008,20 @@ is_plink_prefix = function(input) {
   filesexist
 }
 
+is_pfile_prefix = function(input) {
+  if(!is.character(input) || length(input) > 1) return(FALSE)
+  # PFILE inputs come in two .pvar flavors (plain and .zst-compressed).
+  # Either is acceptable; the rest of the pipeline picks the right one
+  # via .resolve_pvar_path. The .pgen and .psam are uncompressed.
+  has_pgen = file.exists(paste0(input, '.pgen'))
+  has_psam = file.exists(paste0(input, '.psam'))
+  has_pvar = file.exists(paste0(input, '.pvar')) ||
+             file.exists(paste0(input, '.pvar.zst'))
+  has_pgen && has_psam && has_pvar
+}
+
 is_geno_prefix = function(input) {
-  is_ancestrymap_prefix(input) || is_plink_prefix(input)
+  is_ancestrymap_prefix(input) || is_plink_prefix(input) || is_pfile_prefix(input)
 }
 
 is_precomp_dir = function(input) {
@@ -3195,95 +3236,124 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   # Format-dispatched block reader: closure returning a (nind_kept x nsnp_block)
   # integer matrix in {0,1,2,NA}, plus a finalizer that releases any
   # per-handle resources (no-op for BED-class formats; closes pgen + pvar
-  # handles for PFILE). The closure shape is identical across formats so the
-  # per-block loop below is format-agnostic.
+  # handles for PFILE). The closure shape is identical across formats so
+  # process_block below is format-agnostic. PFILE handles are lazy-opened
+  # per process (main + each future_map worker under plan(multisession));
+  # see .make_block_reader for the per-process handle cache mechanics.
   block_reader = .make_block_reader(l, pref, nsnpall, nindall, indvec)
   on.exit(block_reader$finalizer(), add = TRUE, after = FALSE)
 
-  # Per-block chromosome assignment for end-of-chrom progress messages.
-  # snpfile$CHR for any kept SNP in block i gives the chromosome — blocks
-  # are partitioned per-chromosome by get_block_lengths(), so all kept SNPs
-  # in a block share a single CHR. The fill() above also propagates `block`
-  # to dropped SNPs, but we filter to keep=TRUE here so CHR comes from a
-  # real (autosomal/keepsnps) variant.
+  # Per-block chromosome assignment, used for the post-loop chromosome
+  # rollup. snpfile$CHR for any kept SNP in block i gives the chromosome
+  # -- blocks are partitioned per-chromosome by get_block_lengths(), so
+  # all kept SNPs in a block share a single CHR. The fill() above also
+  # propagates `block` to dropped SNPs, but we filter to keep=TRUE here
+  # so CHR comes from a real (autosomal/keepsnps) variant.
   block_chr = vapply(seq_len(numblocks), function(i) {
     snpfile$CHR[snpfile$block == i & snpfile$keep][1]
   }, character(1))
 
-  # Heartbeat-progress state. Per chromosome, we accumulate variant count
-  # and elapsed time; on the first block of a NEW chromosome (or on the
-  # end of the loop) we emit one summary line to stderr via message().
-  # Orchestrators that monitor extract_f2 for a heartbeat get one line
-  # per chromosome — typically 22-24 lines total over a 10-60 minute run.
+  # Hoist nrow(pc) into a scalar so process_block can capture it cheaply
+  # (and assert against it for shape safety -- see stopifnot below).
+  ncombs = nrow(pc)
   process_start_time = Sys.time()
-  chr_start_time     = process_start_time
-  current_chr        = NA_character_
-  chr_block_count    = 0L
-  chr_variant_count  = 0L
 
-  numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
-  for(i in 1:numblocks) {
-    # On transition to a new chromosome, emit the rollup for the chromosome
-    # we just finished.
-    this_chr = block_chr[i]
-    if(verbose && !is.na(current_chr) && !is.na(this_chr) && this_chr != current_chr) {
-      dt_sec = as.numeric(difftime(Sys.time(), chr_start_time, units = 'secs'))
-      message(sprintf('[extract_f2] chr%s: %d variants in %d blocks (%.1fs)',
-                      current_chr, chr_variant_count, chr_block_count, dt_sec))
-      chr_start_time    = Sys.time()
-      chr_block_count   = 0L
-      chr_variant_count = 0L
-    }
-    # Skip accumulation for blocks with no kept SNPs (block_chr is NA). Without
-    # this guard, an empty block's variant count would silently roll into the
-    # next valid chromosome's rollup, inflating it. Triggers only if keepsnps
-    # or auto_only removes every variant from a block.
-    if(!is.na(this_chr)) {
-      current_chr       = this_chr
-      chr_block_count   = chr_block_count + 1L
-      chr_variant_count = chr_variant_count + block_lengths[i]
-    }
-
-    if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
-                                  i, ' out of ', numblocks, '...\r'))
-    # replace following two lines with cpp_geno_to_afs?
+  # Per-block worker. Each call reads its own SNP range and computes
+  # f4-statistics locally, so blocks are independent and can be
+  # parallelized through the active future::plan() (e.g.
+  # plan(multisession, workers = N) before calling this function).
+  # The default plan is sequential, so this preserves the original
+  # behavior for callers who don't set up a parallel plan.
+  process_block = function(i) {
     gmat = block_reader$reader(start[i], end[i])[,snpind[[i]]]
     at = gmat_to_aftable(gmat, popvec)
+    block_usesnps = usesnps
     if(!allsnps) {
-      usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
+      block_usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
       if(poly_only) {
         #fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1)+0
         fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1 | !max(na.omit(x)) %in% c(0,1))+0
-        usesnps = (usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
+        block_usesnps = (block_usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
       }
     }
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
     if(!is.null(snpwt)) {
       num$num = t(t(num$num) * snpwt[(start[i]+1):end[i]])
     }
-    numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
-    cnt[i,] = c(num$cnt)
+    res = list(numer = unname(rowMeans(num$num, na.rm = TRUE)),
+               cnt   = c(num$cnt))
     if(!f4mode) {
-      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
-      denom[i,] = unname(rowMeans(den, na.rm = TRUE))
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      res$denom = unname(rowMeans(den, na.rm = TRUE))
     }
+    # Defense in depth: worker-side shape assertion. If a future edit to
+    # process_block silently produces a wrong-length numer/cnt/denom,
+    # fail here (with the block index visible in the worker's traceback)
+    # rather than letting bad data flow into the indexed reducer below
+    # where the error message would just be "number of items to replace
+    # is not a multiple of replacement length".
+    stopifnot(length(res$numer) == ncombs,
+              length(res$cnt)   == ncombs,
+              f4mode || length(res$denom) == ncombs)
+    res
   }
-  # Emit the rollup for the final chromosome (the in-loop transition
-  # check fires on chrom CHANGE, so the last chrom needs its own emit).
-  # Then a single "done" line with totals for the orchestrator's
-  # final-state marker.
-  if(verbose && !is.na(current_chr)) {
-    dt_sec = as.numeric(difftime(Sys.time(), chr_start_time, units = 'secs'))
-    message(sprintf('[extract_f2] chr%s: %d variants in %d blocks (%.1fs)',
-                    current_chr, chr_variant_count, chr_block_count, dt_sec))
+
+  if(verbose) alert_info(paste0('Computing ', nrow(pc), ' f4-statistics across ',
+                                numblocks, ' blocks...\n'))
+  # seed = NULL asserts that process_block doesn't use RNG -- suppresses
+  # furrr's defensive "UNRELIABLE VALUE" warning under plan(multisession)
+  # and skips the L'Ecuyer parallel-stream setup overhead.
+  # .progress = verbose gives a per-block heartbeat through progressr's
+  # default handler, working consistently under any plan.
+  results = furrr::future_map(seq_len(numblocks), process_block,
+                              .progress = verbose,
+                              .options = furrr::furrr_options(seed = NULL))
+
+  # Pre-allocate output matrices and write into them by index. Restores
+  # the original sequential code's loud-error semantic: a wrong-length
+  # row triggers R's built-in "number of items to replace is not a
+  # multiple of replacement length" error with i directly traceable.
+  # Pairs with the worker-side stopifnot above for defense in depth.
+  numer = matrix(NA_real_, numblocks, ncombs)
+  cnt   = matrix(NA_real_, numblocks, ncombs)
+  denom = matrix(NA_real_, numblocks, ncombs)
+  for(i in seq_len(numblocks)) {
+    r = results[[i]]
+    if(is.null(r))
+      stop(sprintf("f4blockdat_from_geno: block %d returned NULL", i))
+    numer[i, ] = r$numer
+    cnt[i, ]   = r$cnt
+    if(!f4mode) denom[i, ] = r$denom
   }
+
+  # Post-loop per-chromosome rollup. Under parallel plans, blocks may
+  # complete out of order, so per-chromosome wall-clock is no longer
+  # meaningful; the rollup is emitted from block_chr + block_lengths
+  # in chromosome-order after future_map returns, with variant and
+  # block counts only. Total elapsed time across the parallel pass is
+  # reported once at the end. Orchestrators that monitor extract_f2
+  # for a heartbeat still get one line per chromosome plus the final
+  # totals line.
   if(verbose) {
     total_sec = as.numeric(difftime(Sys.time(), process_start_time, units = 'secs'))
-    n_chr     = length(unique(block_chr[!is.na(block_chr)]))
-    mins      = floor(total_sec / 60)
-    secs      = total_sec - 60 * mins
+    chr_summary = tibble(chr = block_chr, len = block_lengths) %>%
+      filter(!is.na(chr)) %>%
+      group_by(chr) %>%
+      summarize(variants = sum(len), blocks = n(), .groups = 'drop') %>%
+      # Sort numerically where the chromosome label parses as a number
+      # (1, 2, ..., 22) so chr10 doesn't appear before chr2 in the
+      # emitted rollup. Non-numeric labels (X, Y, MT) become NA via
+      # as.numeric() and dplyr's arrange puts NAs last; the second key
+      # (raw `chr`) breaks ties among them in stable string order.
+      arrange(suppressWarnings(as.numeric(chr)), chr)
+    for(j in seq_len(nrow(chr_summary))) {
+      message(sprintf('[extract_f2] chr%s: %d variants in %d blocks',
+                      chr_summary$chr[j], chr_summary$variants[j], chr_summary$blocks[j]))
+    }
+    mins = floor(total_sec / 60)
+    secs = total_sec - 60 * mins
     message(sprintf('[extract_f2] done: %d variants across %d block(s) on %d chromosome(s) in %dm%05.2fs',
-                    sum(block_lengths), numblocks, n_chr, mins, secs))
+                    sum(block_lengths), numblocks, nrow(chr_summary), mins, secs))
   }
   if(verbose) cat('\n')
 
