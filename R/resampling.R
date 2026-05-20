@@ -373,6 +373,7 @@ est_to_loo_nafix = function(arr) {
 #' @export
 #' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension.
 #' @param nboot Number of bootstrap iterations
+#' @param block_lengths Optional vector of block lengths; if `NULL`, parsed from the 3rd-dimension names of `arr`.
 #' @return A 3d array with bootstrap estimates. The first two dimensions are equal to those of `arr`.
 #'   The 3rd dimension is equal to `nboot`.
 #' @seealso \code{\link{est_to_loo}}
@@ -531,7 +532,6 @@ make_resample_inds_fun = function(qpfun) {
 #' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
 #' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
 #' equal to the number of SNP blocks.
-#' @param verbose print progress updates
 #' @param ... named arguments which are passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs
 #' @examples
@@ -601,6 +601,8 @@ qpgraph_resample_inds = make_resample_inds_fun(qpgraph)
 #' This function takes the output of \code{\link{qpgraph_resample_snps}} and creates a data frame with summaries of the estimated graph parameters. `weight` has the mean of all fits, while `low` and `high` have lower and upper quantiles.
 #' @export
 #' @param fits A nested data frame where each line is the output of `qpgraph()`
+#' @param q_low Lower quantile for the weight confidence interval (default 0.05).
+#' @param q_high Upper quantile for the weight confidence interval (default 0.95).
 #' @return A data frame summarizing the fits
 #' @seealso \code{\link{qpgraph_resample_snps}}
 summarize_fits = function(fits, q_low = 0.05, q_high = 0.95) {

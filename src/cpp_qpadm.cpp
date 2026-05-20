@@ -136,19 +136,19 @@ arma::vec cpp_is_polymorphic(arma::mat geno) {
   double first, val;
   bool isfirst = true;
   vec out = zeros<vec>(nr);
+  bool mismatch;
   for(int i = 0; i < nr; i++) {
     isfirst = true;
-    for(int j = 0; j < nc; j++) {
+    mismatch = false;
+    for(int j = 0; j < nc && !mismatch; j++) {
       val = geno(i,j);
-      if(is_finite(val)) {
+      if(std::isfinite(val)) {
         if(isfirst) {
           first = val;
           isfirst = false;
-        } else {
-          if(first != val) {
-            out(i) = 1;
-            break;
-          }
+        } else if(first != val) {
+          out(i) = 1;
+          mismatch = true;
         }
       }
     }

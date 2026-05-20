@@ -20,6 +20,8 @@ qpadm_p(
 )
 }
 \arguments{
+\item{f2_data}{Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.}
+
 \item{left}{Left populations (sources)}
 
 \item{right}{Right populations (outgroups)}

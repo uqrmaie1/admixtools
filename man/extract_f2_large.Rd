@@ -63,6 +63,8 @@ extract_f2_large(
 
 \item{keepsnps}{SNP IDs of SNPs to keep. Overrides other SNP filtering options}
 
+\item{snpblocks}{Optional named integer vector assigning each SNP to a block; if \code{NULL}, blocks are computed from \code{blgsize}.}
+
 \item{overwrite}{Overwrite existing files in \code{outdir}}
 
 \item{format}{Supply this if the prefix can refer to genotype data in different formats

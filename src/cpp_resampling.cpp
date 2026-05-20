@@ -58,10 +58,10 @@ List cpp_jack_vec_stats(NumericVector loo_vec, NumericVector block_lengths, doub
 
   block_lengths = block_lengths[!is_na(loo_vec)];
   loo_vec = loo_vec[!is_na(loo_vec)];
-  if(!is_finite(tot)) return(cpp_jack_vec_stats2(loo_vec, block_lengths));
+  if(!std::isfinite(tot)) return(cpp_jack_vec_stats2(loo_vec, block_lengths));
   double n = sum(block_lengths);
   NumericVector w = 1-block_lengths/n;
-  //if(!is_finite(tot)) tot = sum(loo_vec*w)/sum(w); // only valid when estimates are additive
+  //if(!std::isfinite(tot)) tot = sum(loo_vec*w)/sum(w); // only valid when estimates are additive
   double est = sum(tot - loo_vec) + sum(loo_vec*block_lengths)/n;
   NumericVector h = n/block_lengths;
   NumericVector tau = h*tot - (h-1)*loo_vec;

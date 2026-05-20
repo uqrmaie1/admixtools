@@ -26,6 +26,8 @@ insert_admix(
 \item{dest_to}{Child node of the destination edge}
 
 \item{substitute}{Should another edge be inserted, if the one specified doesn't work?}
+
+\item{fix_outgroup}{Prevent insertion of edges that affect the root-to-outgroup edge (default \code{TRUE}).}
 }
 \value{
 Adxmiture graph with inserted edge

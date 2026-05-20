@@ -17,6 +17,7 @@ f4blockdat_from_geno(
   poly_only = FALSE,
   snpwt = NULL,
   keepsnps = NULL,
+  cm_file = NULL,
   verbose = TRUE
 )
 }
@@ -44,6 +45,9 @@ f4blockdat_from_geno(
 \item{snpwt}{A vector of SNP weights}
 
 \item{keepsnps}{A vector of SNP IDs to keep}
+
+\item{cm_file}{Optional path to a TSV file with per-variant centimorgan positions
+(columns: a SNP-identifier column and \code{cm}). Overrides cM values in \code{.pvar} when supplied.}
 
 \item{verbose}{Print progress updates}
 }

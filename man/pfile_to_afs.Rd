@@ -31,6 +31,10 @@ and infers per-sample ploidy from observed-genotype uniqueness. Pass an
 integer to use that probe size instead. \code{FALSE} (or \code{0}) skips probing and
 assumes diploid for every sample.}
 
+\item{first}{Index of the first SNP to read (1-based, default 1).}
+
+\item{last}{Index of the last SNP to read (1-based); if NULL, reads all SNPs.}
+
 \item{numblocks}{Number of blocks in which to read genotype file. Setting this to a number
 greater than one is more memory efficient, but slower.}
 
@@ -89,7 +93,7 @@ admixtools' f-statistic model is biallelic. PFILE format supports
 multiallelic sites (ALT field with multiple comma-separated alleles).
 The \code{multiallelic} argument controls how those are handled:
 \itemize{
-\item \code{"error"} (default): Stop with an error listing a few example line
+\item \code{"error"} (default): stop with an error listing a few example line
 numbers and suggesting a pre-filter command. Safest. Matches the
 assumption baked into the rest of admixtools.
 \item \code{"skip"}: drop multiallelic sites entirely from the output. Clean

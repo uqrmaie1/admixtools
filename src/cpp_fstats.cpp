@@ -26,7 +26,7 @@ List cpp_aftable_to_dstatnum_old(arma::mat& aftable, arma::vec& p1, arma::vec& p
       y = aftable(i3, i);
       z = aftable(i4, i);
       num(j, i) = (w - x) * (y - z);
-      if(is_finite(num(j, i))) cnt(j) += 1;
+      if(std::isfinite(num(j, i))) cnt(j) += 1;
     }
   }
   //return num;
@@ -71,7 +71,7 @@ List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, a
           num(j, i) = (w - x) * (y - z);
           valid = 0;
         }
-        if(is_finite(num(j, i))) cnt(j) += 1;
+        if(std::isfinite(num(j, i))) cnt(j) += 1;
       }
     }
   }

@@ -15,11 +15,15 @@
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param poly_only Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of `c("f2", "ap", "fst")`
-#' @param pop1 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
-#' @param pop2 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
+#' @param pops1 Populations for the first dimension; if `NULL` (default), all populations are used.
+#' @param pops2 Populations for the second dimension; if `NULL` (default), all populations are used.
 #' @param outpop If specified, f2-statistics will be weighted by heterozygosity in this population
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
+#' @param afprod Compute allele frequency products in addition to f2-statistics (default `TRUE`).
+#' @param fst Compute FST in addition to f2-statistics (default `TRUE`).
+#' @param apply_corr Apply bias correction to f2 estimates (default `TRUE`).
+#' @param n_cores Number of cores for parallel computation (default 1).
 #' @param verbose Print progress updates
 #' @details For each population pair, each of the \eqn{i = 1, \ldots, n} resutling values
 #' (\eqn{n} is around 700 in practice) is the mean \eqn{f2} estimate across all SNPs except the ones in block \eqn{i}.
@@ -654,6 +658,7 @@ sfs_to_f2 = function(sfs) {
 #'
 #' @export
 #' @param f2dat A data frame of f2-statistics with columns `pop1`, `pop2`, `f2`
+#' @param popcomb Optional data frame specifying which population quadruples to compute; if `NULL`, all quadruples are used.
 #' @return A data frame with f4-statistics
 f2dat_f4dat = function(f2dat, popcomb = NULL) {
 

@@ -68,6 +68,12 @@ qpsolve = function(...) quadprog::solve.QP(...)$solution
 
 make_pseudohaploid = function(xmat) round(jitter(xmat/2))*2
 
+#' Create a named list from arguments
+#'
+#' Like `list()` but uses argument names as list names when names are not
+#' explicitly supplied.
+#' @param ... Objects to include in the list.
+#' @return A named list.
 #' @export
 namedList = function(...) {
   L <- list(...)

@@ -31,6 +31,8 @@ which may require a lot of memory.}
 \item{afprod}{Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.}
 
+\item{fst}{Read FST statistics instead of f2 (default \code{FALSE}).}
+
 \item{return_array}{Return a 3d array (default). If false, a data frame will be returned.}
 
 \item{apply_corr}{Subtract the f2 correction factor. Setting this to \code{FALSE} can occasionally be useful}

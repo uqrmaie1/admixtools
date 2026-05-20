@@ -63,11 +63,11 @@ If you want to use some other python installation, you can set \verb{run = /my/p
 }
 \value{
 A list with the path of simulation script, a data frame of graph edges, dates and population sizes:
-\itemize{
-\item{out - }{A file name and path of the simulation script}
-\item{edges - }{An edge dataframe with admixture weights}
-\item{dates - }{A named vector with a date for each node}
-\item{neffs - }{A named vector with an effective population size for each node}
+\describe{
+\item{out}{A file name and path of the simulation script}
+\item{edges}{An edge dataframe with admixture weights}
+\item{dates}{A named vector with a date for each node}
+\item{neffs}{A named vector with an effective population size for each node}
 }
 }
 \description{

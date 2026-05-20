@@ -10,6 +10,8 @@ est_to_boo(arr, nboot = dim(arr)[3], block_lengths = NULL)
 \item{arr}{3d array with blocked estimates, with blocks in the 3rd dimension.}
 
 \item{nboot}{Number of bootstrap iterations}
+
+\item{block_lengths}{Optional vector of block lengths; if \code{NULL}, parsed from the 3rd-dimension names of \code{arr}.}
 }
 \value{
 A 3d array with bootstrap estimates. The first two dimensions are equal to those of \code{arr}.

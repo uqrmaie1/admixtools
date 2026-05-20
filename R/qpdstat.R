@@ -163,10 +163,9 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' @export
 #' @inheritParams f2
 #' @param pop3 A vector of population labels
-#' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. The option is ineffective if the first argument is an array of pre-computed f2-statistics. In that case, the bias correction can be toggled by the `apply_corr` parameter in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}. The heterozygosity calculation used in `apply_corr = TRUE` requires at least two haploid samples or one diploid sample in the first population. Otherwise, `apply_corr = TRUE` will result in missing values.
-#' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`. As with `apply_corr = TRUE`, the heterozygosity calculation used in `outgroupmode = FALSE` requires at least two pseudodiploid samples or one diploid sample in the first population. Otherwise, `outgroupmode = FALSE` will result in missing values.
-#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1. Defaults to `FALSE`. Only effective if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, use the `poly_only` argument in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}
-#' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise
+#' @param blgsize SNP block size in Morgan when computing from genotype data (default 0.05).
+#' @param block_lengths Optional vector of block lengths; if `NULL`, inferred from the data.
+#' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise. Commonly passed arguments include `apply_corr`, `outgroupmode`, and `poly_only`.
 #' @details
 #' The default values of the parameters `apply_corr`, `outgroupmode`, `poly_only` depend on the first argument (`data`), and they can affect the estimated f3-statistics. When the `data` is the prefix of genotype data, the default parameters are generally the same as in the original qp3pop program. When `data` is an array of pre-computed f2-statistics, the parameters may be set while computing f2-statistics. If the first population is a single pseudodiploid sample, it is not possible to get unbiased estimates of f3. To get biased estimates for a single pseudodiploid sample from genotype data, set `outgroupmode = TRUE` and `apply_corr = FALSE`. Under this combination of parameters, `f3(A; B, C)` should also be identical to `f4(A, B; A, C)`, since f4-statistics generally do not require any bias correction.
 #' See `examples` for more information.
@@ -194,7 +193,8 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #'
 #' # Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
 #' # should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
-#' # `qp3pop_wrapper()`, and the original qp3pop program, expect populations to be in the order `B`, `C`, `A`.
+#' # `qp3pop_wrapper()`, and the original qp3pop program, expect populations
+#' # to be in the order `B`, `C`, `A`.
 #'
 #' prefix = '/path/to/geno/prefix'
 #' qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'

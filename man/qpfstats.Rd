@@ -26,6 +26,8 @@ If \code{include_f3} is a positive integer, it specifies how many randomly chose
 
 \item{include_f4}{Should f4-statistics be used to get smoothed f2-statistics?
 If \code{include_f4} is a positive integer, it specifies how many randomly chosen f4-statistics should be used.}
+
+\item{verbose}{Print progress updates (default \code{TRUE}).}
 }
 \value{
 A 3d-array of smoothed f2-statistics

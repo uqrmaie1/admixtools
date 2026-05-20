@@ -23,6 +23,10 @@ packedancestrymap_to_afs(
 
 \item{adjust_pseudohaploid}{Genotypes of pseudohaploid samples are usually coded as \code{0} or \code{2}, even though only one allele is observed. \code{adjust_pseudohaploid} ensures that the observed allele count increases only by \code{1} for each pseudohaploid sample. If \code{TRUE} (default), samples that don't have any genotypes coded as \code{1} among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to \code{FALSE} is equivalent to the ADMIXTOOLS \code{inbreed: NO} option. Setting \code{adjust_pseudohaploid} to an integer \code{n} will check the first \code{n} SNPs instead of the first 1000 SNPs.}
 
+\item{first}{Index of the first SNP to read (1-based, default 1).}
+
+\item{last}{Index of the last SNP to read (1-based); if NULL, reads all SNPs.}
+
 \item{verbose}{Print progress updates}
 }
 \value{
