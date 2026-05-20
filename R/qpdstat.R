@@ -4,6 +4,45 @@ f2_f3 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
 f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 
 
+# Per-pair jackknife (or bootstrap) statistics for f2() and fst().
+#
+# Replaces the dplyr expression
+#   out %<>% group_by(pop1, pop2) %>%
+#     summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
+#     mutate(sts = map(f2dat, ~statfun(., block_lengths)), ...)
+# which is mathematically right but scales super-linearly in the number
+# of groups: dplyr's data-mask re-evaluates the `f2_blocks[pop1, pop2, ]`
+# expression for each group via Rf_applyClosure, dominating wall time at
+# large pair counts. Production gdb traces on >~1000-pair runs show the
+# whole call stuck in Rf_eval recursion with all BLAS threads idle.
+#
+# The replacement is a direct base R loop over pairs calling the same
+# statfun on the same input. Bytewise-equivalent compute; orders of
+# magnitude less interpreter overhead. method = 'radix' makes the
+# pre-sort locale-independent so it matches dplyr's group_by() ordering
+# byte-for-byte even on non-ASCII pop labels (base::order() defaults to
+# LC_COLLATE, which can disagree with dplyr's radix sort).
+#
+# `statfun` is cpp_jack_vec_stats (jackknife) or cpp_boot_vec_stats
+# (bootstrap); both return a list with $est and $var. `out` must have
+# columns pop1, pop2 with values matching the first two dimnames of
+# `f2_blocks`. Returns a tibble with columns pop1, pop2, est, se.
+per_pair_jack_stats = function(out, f2_blocks, block_lengths, statfun) {
+  out = out[order(out$pop1, out$pop2, method = 'radix'), ]
+  n_pairs = nrow(out)
+  est_vec = numeric(n_pairs)
+  var_vec = numeric(n_pairs)
+  for(i in seq_len(n_pairs)) {
+    st = statfun(f2_blocks[out$pop1[i], out$pop2[i], ], block_lengths)
+    est_vec[i] = st$est
+    var_vec[i] = st$var
+  }
+  out$est = est_vec
+  out$se  = sqrt(var_vec)
+  tibble::as_tibble(out[, c('pop1', 'pop2', 'est', 'se')])
+}
+
+
 #' Estimate f2 statistics
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
@@ -57,13 +96,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
   #----------------- compute f2 -----------------
   if(verbose) alert_info('Computing f2-statistics\n')
 
-  out %<>% group_by(pop1, pop2) %>%
-    summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
-    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(pop1, pop2, est, se)
-
-  out
+  per_pair_jack_stats(out, f2_blocks, block_lengths, statfun)
 }
 
 #' Compute Fst
@@ -116,11 +149,7 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
   f2_blocks = do.call(get_f2, ell) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
-  out %>% group_by(pop1, pop2) %>%
-    summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
-    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(pop1, pop2, est, se)
+  per_pair_jack_stats(out, f2_blocks, block_lengths, statfun)
 }
 
 
