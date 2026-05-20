@@ -3119,7 +3119,8 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
                                 blgsize = 0.05,
                                 block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
                                 poly_only = FALSE, snpwt = NULL, keepsnps = NULL,
-                                cm_file = NULL, verbose = TRUE) {
+                                cm_file = NULL, verbose = TRUE,
+                                return_matrices = FALSE) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -3372,6 +3373,25 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   }
   if(verbose) cat('\n')
 
+  if(return_matrices) {
+    # Skip the long-format expand_grid build below. At dense f4 scales
+    # (e.g. 1.5M popcombs * ~1300 blocks = 2 billion rows) expand_grid
+    # materializes a tibble that peaks at hundreds of GB and is a hard
+    # ceiling on the workload. Callers like qpfstats that consume the
+    # result as matrices anyway can request the underlying matrices
+    # directly via return_matrices = TRUE; this early-return fires
+    # BEFORE expand_grid so the long-format frame is never built.
+    return(list(
+      numer    = numer,
+      cnt      = cnt,
+      denom    = if(f4mode) NULL else denom,
+      popcombs = pc,
+      block_lengths = block_lengths,
+      f4mode   = f4mode,
+      hasmodels = hasmodels
+    ))
+  }
+
   out = pc %>%
     expand_grid(block = 1:numblocks) %>%
     mutate(est = c(numer), n = c(cnt))
@@ -3613,25 +3633,43 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
     if(is.numeric(include_f4)) pcf4 %<>% slice_sample(n = include_f4)
     popcomb %<>% bind_rows(pcf4)
   }
-  f4blockdat = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE)
-  f4pass1 = f4blockdat %>% f4blockdat_to_f4out(FALSE)
+
+  # Request matrices directly from f4blockdat_from_geno instead of the
+  # long-format frame. Two costs in the long-format path:
+  #
+  #  1) building it: expand_grid(popcomb, block = 1:numblocks) materializes
+  #     a tibble with npopcomb * nblocks rows. At dense f4 scales (e.g.
+  #     1.5M popcombs * ~1300 blocks = 2 billion rows) this peaks at
+  #     hundreds of GB and is a hard ceiling on the workload.
+  #
+  #  2) consuming it: pivot_wider() below would re-materialize a
+  #     (npopcomb x nblocks) matrix that is exactly t(numer) — the same
+  #     matrix f4blockdat_from_geno already had before it expanded to
+  #     long format. The matrix path avoids both round-trips.
+  f4 = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE, return_matrices = TRUE)
+  numer = f4$numer
+  cnt   = f4$cnt
+  bl    = f4$block_lengths
+  rm(f4)
 
   if(verbose) alert_info(paste0('Constructing matrix...\n'))
   x = construct_fstat_matrix(popcomb)
-  ymat = f4blockdat %>%
-    select(pop1:pop4, block, est) %>%
-    pivot_wider(id_cols=1:4, names_from = block, values_from = est) %>%
-    select(-1:-4) %>% as.matrix
-  y = f4pass1$est
-  #ymat = ymat/f4pass1$se
-  #x = x/f4pass1$se
+  # ymat in the long-format path is built by pivot_wider() into a
+  # (npopcomb x nblocks) matrix; that's exactly t(numer).
+  ymat = t(numer)
+  # y was previously f4pass1$est: the bias-corrected jackknife mean per
+  # popcomb computed by f4blockdat_to_f4out (which iterates the long
+  # format with a dplyr group_by; super-linear in number of groups).
+  # matrix_jackknife_est computes the same value column-by-column over
+  # the matrices.
+  y = matrix_jackknife_est(numer, cnt)
+
   if(verbose) alert_info(paste0('Running regression...\n'))
   lh = solve((t(x) %*% x) + diag(ncol(x))*0.00001) %*% t(x)
   b = lh %*% ymat
   bglob = lh %*% y
 
   nblocks = ncol(b)
-  bl = f4blockdat %>% slice(1:nblocks) %>% pull(length)
   f2blocks = array(0, c(npop, npop, nblocks), list(sp, sp, paste0('l', bl)))
   m = matrix(1:npop^2, npop, npop)
   m2 = matrix(1:npop^2, npop, npop, byrow = T)
