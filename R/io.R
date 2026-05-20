@@ -3692,34 +3692,160 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 #' @export
 #' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')
 #' @param outfile Output file name
+#' @param fontsize Font size of edge and node labels
+#' @param color A boolean specifying if the plot will be in color or grey scale.
+#' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
+#' @param size1 Maximum width of the rendered graph in inches (the first value of Graphviz's `size` attribute). The default is `7.5`.
+#' @param size2 Maximum height of the rendered graph in inches (the second value of Graphviz's `size` attribute). The default is `10`.
+#' @param title Title displayed above the graph. Defaults to the empty string.
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs.
+#' @param nodesep The minimum space between two adjacent nodes in the same rank, in inches. The default is `0.25`.
+#' @param ranksep Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is `0.5`.
+#' @param fix_names If `TRUE`, replaces the dots (.) and dashes (-) in population names with underscores. The default is `FALSE`.
+#' @param dot2pdf If `FALSE`, the function will terminate after writing the dot file. If `TRUE`, it will try to execute the `dot -Tpdf` comment to create pdf file.
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
 write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
-                     title = '', dot2pdf = FALSE) {
-  # writes qpgraph output to a dot format file
-
+                     title = '', dot2pdf = FALSE,
+                     fontsize = 14, color = TRUE, hide_weights = FALSE,
+                     highlight_unidentifiable = FALSE, nodesep = 0.25,
+                     ranksep = 0.5, fix_names = FALSE) {
+  if (isTRUE(fix_names)){
+    if('igraph' %in% class(graph)) {
+      graph %<>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
+        mutate_all(list(function(x) gsub("\\.", "_", x))) %>%
+        mutate_all(list(function(y) gsub("-", "_", y))) %>%
+        edges_to_igraph()
+    }
+    else{
+      graph %<>%
+        mutate_at(c("from", "to"), function(x) gsub("\\.", "_", x)) %>%
+        mutate_at(c("from", "to"), function(x) gsub("-", "_", x))
+    }
+  }
   if('igraph' %in% class(graph)) {
     edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
-  } else edges = graph
+    ig = graph
+  } else{
+    edges = graph
+    ig = edges_to_igraph(graph)
+  }
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
+  if (isTRUE(hide_weights)){
+    edges %<>% mutate(weight = ifelse(type != "admix", " ", round(weight * 100)))
+  } else {
+    edges %<>% mutate(weight = ifelse(type != "admix", round(weight * 1000), round(weight * 100)))
+  }
 
   leaves = setdiff(edges$to, edges$from)
-  root = setdiff(edges$from, edges$to)
   internal = setdiff(c(edges$from, edges$to), c(leaves))
-  edges = mutate(edges, lab = ifelse(type == 'edge',
-                                     paste0(' [ label = "', round(weight * 1000), '" ];'),
-                                     paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''),
-                 to = str_replace_all(to, '[\\.-]', ''))
-  nodes = paste0(internal, ' [shape = point];', collapse = '\n')
+
+  if (isTRUE(color)) {
+    p = plot_graph(graph, fix=F)
+    pp = ggplot_build(p)
+    pdat = graph_to_plotdat(graph, fix=F)
+
+    # Identify layers by column presence — pp$data positional indexing silently
+    # misindexes if plot_graph or ggplot2 reorders layers.
+    edge_layer = NULL
+    text_layer = NULL
+    for (i in seq_along(pp$data)) {
+      d = pp$data[[i]]
+      if (is.null(text_layer) && all(c("label", "colour") %in% names(d))) text_layer = d
+      if (is.null(edge_layer) && all(c("y", "colour") %in% names(d)) && !"label" %in% names(d)) edge_layer = d
+    }
+    if (is.null(edge_layer) || is.null(text_layer)) {
+      stop("write_dot: could not identify expected layers in plot_graph's ggplot output. ",
+           "Likely means plot_graph or ggplot2 has changed. Workaround: call write_dot(..., color=FALSE).")
+    }
+
+    # Join is keyed on y; warn if any y carries multiple edge colors —
+    # the right_join below would duplicate edges with conflicting colors.
+    y_collisions = edge_layer %>%
+      select(y, colour) %>%
+      distinct() %>%
+      count(y) %>%
+      filter(n > 1)
+    if (nrow(y_collisions) > 0) {
+      warning("write_dot: ", nrow(y_collisions),
+              " y-coordinate(s) carry multiple ggplot colors; edges may be ",
+              "duplicated with conflicting colors in the dot output. ",
+              "Workaround: call write_dot(..., color=FALSE).")
+    }
+
+    cols = edge_layer %>%
+      arrange(desc(y)) %>%
+      select(y, colour) %>%
+      distinct() %>%
+      right_join(pdat$eg, by = "y") %>%
+      transmute(from=name, to, colour)
+
+    # Fall back to Black on join misses rather than emit literal "NA" to Graphviz.
+    na_count = sum(is.na(cols$colour))
+    if (na_count > 0) {
+      warning("write_dot: ", na_count, " edge(s) received no color from plot_graph; falling back to Black.")
+      cols$colour[is.na(cols$colour)] = "Black"
+    }
+
+    leaf_cols = text_layer %>% select(label, colour)
+  } else {
+    # color=FALSE skips both plot_graph and graph_to_plotdat entirely.
+    cols = edges %>% transmute(from, to, colour = "Black")
+    leaf_cols = tibble(label = leaves, colour = "Black")
+  }
+
+  if (isTRUE(highlight_unidentifiable)){
+    cols = unidentifiable_edges(ig) %>%
+      transmute(from, to, lab="uniden") %>%
+      right_join(cols, by=c("from", "to")) %>%
+      replace_na(list(lab = "iden")) %>%
+      mutate(colour2 = colour) %>%
+      mutate(colour = ifelse(lab == "uniden", "Red", colour)) %>%
+      select(-lab)
+  }
+
+  edges = edges %>%
+    left_join(cols, by=c("from", "to")) %>%
+    mutate(lab = ifelse(type != 'admix',
+                        paste0(' [ label = "', weight, '", color = "', colour, '", fontsize = "', fontsize, '" ];'),
+                        paste0(' [ style=dotted, label = "', weight, '%", color = "', colour, '", fontsize = "', fontsize, '" ];')),
+           from = str_replace_all(from, '[\\.-]', ''),
+           to = str_replace_all(to, '[\\.-]', ''))
+
+  if (isTRUE(highlight_unidentifiable)){
+    ints = cols %>%
+      transmute(from, colour = colour2)
+  } else{
+    ints = cols %>%
+      select(from, colour)
+  }
+
+  # Strip `.` and `-` from node identifiers to match the same stripping
+  # applied to edge endpoints earlier — otherwise the declarations don't
+  # match the edge references and Graphviz rejects the file.
+  int_nodes = ints %>%
+    distinct() %>%
+    mutate(from = str_replace_all(from, '[\\.-]', '')) %>%
+    transmute(lab = paste0(from, ' [shape = point, color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+
+  term_nodes = leaf_cols %>%
+    mutate(label = str_replace_all(label, '[\\.-]', '')) %>%
+    transmute(lab = paste0(label, ' [color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
 
   out = paste0('digraph G {\nlabel = "',title,'";\nlabelloc=t;\nlabeljust=l;\n')
   out = paste0(out, 'size = "',size1,',',size2,'";\n')
-  out = paste0(out, nodes, '\n')
+  out = paste0(out, 'nodesep = "', nodesep, '";\n')
+  out = paste0(out, 'ranksep = "', ranksep, '";\n')
+  out = paste0(out, int_nodes, '\n')
+  out = paste0(out, term_nodes, '\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
 
