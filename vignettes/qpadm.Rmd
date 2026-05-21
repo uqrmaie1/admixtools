@@ -150,7 +150,7 @@ res$rankdrop
 When `data` is the prefix of a genotype file rather than precomputed f2-statistics, `qpadm()` reads from disk in parallel under any active `future::plan()` (see [the parallelization vignette](parallel.html)).
 
 
-## Diagnosing collinear right populations
+### Diagnosing collinear right populations
 
 `qpadm()` inverts a square matrix of f4 covariances. When two right populations are close to cladal with each other — for example, a sister-clade pair, or one right population too close to a source — that matrix becomes near-singular, the inversion falls back to a pseudo-inverse, and the returned standard errors look misleadingly tight. The fitted weights themselves remain interpretable; the *uncertainty* on them does not.
 
@@ -167,7 +167,7 @@ qpadm(data, left, right, target, singular_threshold = 1e-12)
 ```
 
 
-## Multiple models: qpadm_multi and qpadm_sweep
+### Multiple models: qpadm_multi and qpadm_sweep
 
 `qpadm_multi()` runs a fixed list of `(left, right, target)` models, re-using f4-statistics where possible:
 
@@ -196,7 +196,7 @@ res %>% dplyr::arrange(target, p)
 Both functions parallelize across models under `future::plan(multisession)` (or `multicore` on Linux). Be aware that the per-block layer inside each model also parallelizes when `data` is a genotype-file prefix, so two layers compose — usually you want only one of them parallel.
 
 
-## qpwave-style runs against genotype data
+### qpwave-style runs against genotype data
 
 When you only care about the rank of $X$ and not about admixture weights for a specific target, the qpwave-on-genotype-data pattern is `qpadm(..., target = NULL, return_f4 = TRUE)`:
 
