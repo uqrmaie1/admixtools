@@ -1,7 +1,7 @@
 ---
 title: "Plotting"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
     toc: false
@@ -25,17 +25,45 @@ library(admixtools)
 
 ## Plot admixture graph
 
+The simplest way to visualize an admixture graph is `plot_graph()`, which returns a static `ggplot`:
+
 ```{r}
 plot_graph(example_igraph)
 ```
 
+For an interactive 3D version that's easier to inspect inner-node labels on, use `plotly_graph()`:
 
-<!-- ## Admixture graph on a map -->
+```{r, warning = FALSE}
+plotly_graph(example_igraph)
+```
+
+For an external Graphviz `dot`-rendered version (useful for papers, presentations, or batch rendering pipelines), use `write_dot()`. It supports several display options:
+
+```{r, eval = FALSE}
+# Basic export
+write_dot(example_igraph, "graph.dot")
+
+# Color scheme + label tweaks
+write_dot(example_igraph, "graph.dot",
+          color = FALSE,            # B&W
+          fontsize = 18,            # larger labels
+          hide_weights = TRUE)      # drop the drift-value annotations
+
+# Highlight edges that are not identifiable from the data
+write_dot(example_igraph, "graph.dot",
+          highlight_unidentifiable = TRUE)
+```
+
+See the [data formats vignette](io.html) for the full set of `write_dot()` args and round-tripping with `parse_dot()`.
 
 
-<!-- ```{r, fig.height = 7, fig.align='center'} -->
-<!-- plot_graph_map(example_igraph, example_anno) -->
-<!-- ``` -->
+## Admixture graph on a map
+
+`plot_graph_map()` overlays the graph on a geographic map, using per-individual coordinates (e.g., from `example_anno`) to place leaf nodes. It returns an interactive 3D plotly widget — best explored interactively rather than as a static screenshot:
+
+```{r, eval = FALSE}
+plot_graph_map(example_igraph, example_anno)
+```
 
 
 ## All samples on a map
