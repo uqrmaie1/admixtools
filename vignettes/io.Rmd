@@ -24,7 +24,7 @@ vignette: >
 
 *PACKEDANCESTRYMAP* and *EIGENSTRAT* are described [here](https://reich.hms.harvard.edu/software/InputFileFormats)
 
-In all three formats a dataset consists of three files: one file for the genotype matrix, one file for the SNP metadata, and one file for the sample metadata.
+In all four formats a dataset consists of three files: one file for the genotype matrix, one file for the SNP metadata, and one file for the sample metadata.
 
 The following shows what a data set for three SNPs and five samples grouped into two populations (French.DG, Onge.DG) could look like:
 
@@ -300,5 +300,11 @@ fit = qpgraph(example_f2_blocks, example_igraph)$edges
 write_dot(fit, 'graph.dot')
 ```
 
-*ADMIXTOOLS 2* currently doesn't have a function for reading DOT files.
+You can read a DOT file back into an igraph with `parse_dot()`:
+
+```{r, eval = FALSE}
+graph = parse_dot("graph.dot")
+```
+
+`parse_dot()` is a minimal reader that recovers the topology from `from -> to` edges. Edge attributes (weights, types) are not preserved on the round trip; for full round-tripping of fitted graphs, use the edge-list format instead.
 
