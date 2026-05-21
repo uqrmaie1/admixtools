@@ -15,11 +15,12 @@ vignette: >
 
 ## Genotype data formats 
 
-*ADMIXTOOLS 2* can read genotype data in three formats.
+*ADMIXTOOLS 2* can read genotype data in four formats.
 
 1. Binary *PLINK* format (PACKEDPED), described [here](https://www.cog-genomics.org/plink2/input)
-2. Binary *PACKEDANCESTRYMAP* format
-3. Text based *EIGENSTRAT* format
+2. Binary *PLINK 2* format (PFILE), described [here](https://www.cog-genomics.org/plink/2.0/input)
+3. Binary *PACKEDANCESTRYMAP* format
+4. Text based *EIGENSTRAT* format
 
 *PACKEDANCESTRYMAP* and *EIGENSTRAT* are described [here](https://reich.hms.harvard.edu/software/InputFileFormats)
 
@@ -46,6 +47,34 @@ PLINK `.bim` file:
 1	rs12124819	0.020242	776546	A	G
 1	rs28765502	0.022137	832918	T	C
 ```
+
+### PLINK 2 (PFILE)
+
+A *PLINK 2* dataset consists of three files: `.pgen` (binary genotype matrix), `.pvar` (variant metadata), and `.psam` (sample metadata). The prefix convention is the same as for binary *PLINK* (one prefix that resolves to all three), so *ADMIXTOOLS 2* auto-detects PFILE format whenever `<prefix>.pgen`, `<prefix>.pvar`, and `<prefix>.psam` all exist at the prefix you pass.
+
+`.psam` is a tab-separated text file. Population labels live in the `#FID` column when present (matching the PLINK convention of FID-as-population); when `#FID` is missing or `0`, *ADMIXTOOLS 2* falls back to `IID`:
+
+```
+#FID	IID	SEX
+French.DG	S_French-1.DG	1
+French.DG	S_French-2.DG	2
+French.DG	B_French-3.DG	1
+Onge.DG	BR_Onge-2.DG	2
+Onge.DG	BR_Onge-1.DG	2
+```
+
+`.pvar` is tab-separated text and (unlike `.bim`) supports multi-allelic sites by allowing comma-separated `ALT` alleles. The `pfile_to_afs()` function accepts a `multiallelic = c("error", "skip", "first_alt")` argument to control how those sites are handled (default `"error"`):
+
+```
+#CHROM	POS	ID	REF	ALT
+1	752566	rs3094315	G	A
+1	776546	rs12124819	A	G
+1	832918	rs28765502	T	C
+```
+
+`.pvar` may also be supplied in Zstd-compressed form as `.pvar.zst` — *ADMIXTOOLS 2* picks up either form transparently. Reading `.pvar.zst` requires the `zstd` CLI on PATH (the genotype access via `pgenlibr` handles `.zst` natively, but the R-side metadata parser shells out to `zstd -d`).
+
+Note: `.pvar` does *not* by default carry centimorgan positions. When the `CM` column is absent *ADMIXTOOLS 2* leaves `cm = 0` for all variants and falls back to base-pair distance for block partitioning (`blgsize = 1e6` works well at typical block sizes). Alternatively you can supply an external recombination map via `cm_file =` (a TSV with a SNP-identifier column — `variant_id`, `SNP`, or `ID` — and a `cm` column).
 
 ### EIGENSTRAT/PACKEDANCESTRYMAP
 
@@ -105,6 +134,8 @@ geno = read_packedancestrymap("packedancestrymap/prefix", first = 1000, last = 2
 geno = read_packedancestrymap("packedancestrymap/prefix", inds = c('ind1', 'ind2'))
 ```
 
+For PFILE, there is no `read_pfile` — PFILE inputs are consumed directly by the f-statistic pipeline (`extract_f2`, `f2_from_geno`, `f4blockdat_from_geno`, `qpfstats`) which auto-detect the format from the file extensions at the prefix.
+
 
 ## Extracting populations
 
@@ -128,6 +159,16 @@ extract_samples("input/prefix", "output/prefix", pops = c("pop1", "pop2"))
 afs = plink_to_afs("plink/prefix")
 afs = eigenstrat_to_afs("eigenstrat/prefix")
 afs = packedancestrymap_to_afs("packedancestrymap/prefix")
+afs = pfile_to_afs("plink2/prefix")
+
+# pfile_to_afs supports the same range/subset args as the others
+afs = pfile_to_afs("plink2/prefix", inds = c('ind1', 'ind2'))
+afs = pfile_to_afs("plink2/prefix", pops = c('pop1', 'pop2'))
+afs = pfile_to_afs("plink2/prefix", first = 1000, last = 2000)
+
+# When .pvar lacks centimorgan positions (the default), supply a map
+# via cm_file (TSV with variant_id + cm columns)
+afs = pfile_to_afs("plink2/prefix", cm_file = "ref_genmap.tsv")
 ```
 
 
