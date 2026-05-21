@@ -66,7 +66,7 @@ equal to the number of SNP blocks.}
 
 \item{singular_threshold}{If not \code{NA} (the default), error out when the
 reciprocal condition number of the (fudged) f4 variance matrix is below
-this threshold. A common choice is \code{1e-12} - below that the downstream
+this threshold. A common choice is \code{1e-12} -- below that the downstream
 \code{solve()} and the C++ weight optimization fall back to a pseudo-inverse,
 which makes the returned weight standard errors numerically tight in a
 way that doesn't reflect actual sampling uncertainty. The default
@@ -83,7 +83,7 @@ can gate downstream interpretations programmatically.}
 \code{qpadm} returns a list with up to four data frames describing the model fit, plus a numeric \code{f4_var_rcond} diagnostic:
 \enumerate{
 \item \code{f4_var_rcond}: Reciprocal condition number of the (fudged) f4 variance matrix that was inverted to compute weights and standard errors. Values near machine epsilon (~\code{1e-15}) indicate that the right populations are linearly dependent (e.g., a right pop is a sister to one of the sources), and the returned weight SEs may be artificially tight as a result of the pseudo-inverse fallback. See \code{singular_threshold} for opt-in error gating.
-\item \code{f4_var_singular_loadings}: When \code{f4_var_rcond} is concerningly low (< \code{1e-8}), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of \code{f4_var}. Right pops at the top of this list are the most likely offenders - typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. \code{NULL} otherwise.
+\item \code{f4_var_singular_loadings}: When \code{f4_var_rcond} is concerningly low (< \code{1e-8}), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of \code{f4_var}. Right pops at the top of this list are the most likely offenders -- typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. \code{NULL} otherwise.
 \item \code{weights}: A data frame with estimated admixture proportions where each row is a left population.
 \item \code{f4}: A data frame with estimated and fitted f4-statistics
 \item \code{rankdrop}: A data frame describing model fits with different ranks, including \emph{p}-values for the overall fit

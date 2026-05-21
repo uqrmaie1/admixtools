@@ -116,7 +116,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
 #' @param singular_threshold If not `NA` (the default), error out when the
 #'   reciprocal condition number of the (fudged) f4 variance matrix is below
-#'   this threshold. A common choice is `1e-12` — below that the downstream
+#'   this threshold. A common choice is `1e-12` -- below that the downstream
 #'   `solve()` and the C++ weight optimization fall back to a pseudo-inverse,
 #'   which makes the returned weight standard errors numerically tight in a
 #'   way that doesn't reflect actual sampling uncertainty. The default
@@ -129,7 +129,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @return `qpadm` returns a list with up to four data frames describing the model fit, plus a numeric `f4_var_rcond` diagnostic:
 #' \enumerate{
 #' \item `f4_var_rcond`: Reciprocal condition number of the (fudged) f4 variance matrix that was inverted to compute weights and standard errors. Values near machine epsilon (~`1e-15`) indicate that the right populations are linearly dependent (e.g., a right pop is a sister to one of the sources), and the returned weight SEs may be artificially tight as a result of the pseudo-inverse fallback. See `singular_threshold` for opt-in error gating.
-#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of `f4_var`. Right pops at the top of this list are the most likely offenders — typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. `NULL` otherwise.
+#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of `f4_var`. Right pops at the top of this list are the most likely offenders -- typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. `NULL` otherwise.
 #' \item `weights`: A data frame with estimated admixture proportions where each row is a left population.
 #' \item `f4`: A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
@@ -262,7 +262,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   # If rcond is concerningly low, compute the SVD-based attribution: the
   # smallest right-singular vector tells us which (left, right) f4 directions
   # are in the degenerate subspace. Reshape to a (R-1, L-1) matrix (f4_var's
-  # vec ordering puts right-pop fast, left-pop slow — see f4blocks_to_f4stats
+  # vec ordering puts right-pop fast, left-pop slow -- see f4blocks_to_f4stats
   # in this file and arr3d_to_mat in utility.R) and take row norms to get
   # per-right-pop loadings on the degenerate direction. Two right pops with
   # large opposing loadings = sister-like pair; one with a dominant loading
@@ -294,7 +294,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
       diag_msg = paste0(
         "\n  Right pops loading on the degenerate direction (top 5):\n",
         paste0(sprintf("    %-40s loading %.3f", top$right, top$loading), collapse = "\n"),
-        "\n  Pops at the top of this list are the likely offenders — typically a\n",
+        "\n  Pops at the top of this list are the likely offenders -- typically a\n",
         "  sister-clade pair (two pops with similar high loadings) or a lone right\n",
         "  pop too close to a source. Drop one and refit.")
     }
