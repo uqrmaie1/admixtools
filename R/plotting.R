@@ -40,7 +40,7 @@ plotly_comparison = function(out1, out2, name1 = NULL, name2 = NULL) {
   if(is.null(name1)) name1 = enexpr(out1)
   if(is.null(name2)) name2 = enexpr(out2)
   p = plot_comparison(out1, out2, name1 = name1, name2 = name2)
-  plotly::ggplotly(p)
+  plotly::ggplotly(p) %>% plotly::layout(margin = list(b = 80))
 }
 
 
