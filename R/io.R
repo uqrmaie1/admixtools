@@ -3125,6 +3125,12 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param cm_file Optional path to a TSV file with per-variant centimorgan positions
 #'   (columns: a SNP-identifier column and `cm`). Overrides cM values in `.pvar` when supplied.
 #' @param verbose Print progress updates
+#' @param return_matrices If `TRUE`, return a list with `numer`, `cnt`,
+#'   `denom`, and `block_lengths` matrices directly (the matrices the per-
+#'   block reducer writes into) instead of the long-format data frame. Used
+#'   by `qpfstats()` to skip the costly long-format expansion and immediate
+#'   collapse back to matrices. Default `FALSE` preserves the historical
+#'   return shape for all other callers.
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
@@ -3277,7 +3283,12 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   # The default plan is sequential, so this preserves the original
   # behavior for callers who don't set up a parallel plan.
   process_block = function(i) {
-    gmat = block_reader$reader(start[i], end[i])[,snpind[[i]]]
+    # drop = FALSE: when snpind[[i]] selects a single column R would
+    # silently degrade the matrix to a vector, causing gmat_to_aftable
+    # to throw "Not a matrix" downstream. Triggered by sparse-SNP blocks
+    # (common at chromosome tails or with tight blgsize). The original
+    # extract_f2 path at L3516 has the same guard.
+    gmat = block_reader$reader(start[i], end[i])[, snpind[[i]], drop = FALSE]
     at = gmat_to_aftable(gmat, popvec)
     block_usesnps = usesnps
     if(!allsnps) {
@@ -3679,7 +3690,7 @@ construct_fstat_matrix = function(popcomb) {
 #'   `1e-5` matches the original literal `0.00001` constant.
 #' @return List with elements `b` (npairs x nblocks) and `bglob`
 #'   (length npairs).
-#' @keywords internal
+#' @noRd
 qpfstats_regression = function(x, ymat, y, ridge = 0.00001) {
   nblocks  = ncol(ymat)
   npairs   = ncol(x)

@@ -25,17 +25,19 @@ write_dot(
 
 \item{outfile}{Output file name}
 
-\item{fontsize}{Font size of edge and node labels}
-
-\item{color}{A boolean specifying if the plot will be in color or grey scale.}
-
-\item{hide_weights}{A boolean value specifying if the drift values on the edges will be hidden. The default is \code{FALSE}.}
-
 \item{size1}{Maximum width of the rendered graph in inches (the first value of Graphviz's \code{size} attribute). The default is \code{7.5}.}
 
 \item{size2}{Maximum height of the rendered graph in inches (the second value of Graphviz's \code{size} attribute). The default is \code{10}.}
 
 \item{title}{Title displayed above the graph. Defaults to the empty string.}
+
+\item{dot2pdf}{If \code{FALSE}, the function will terminate after writing the dot file. If \code{TRUE}, it will try to execute the \code{dot -Tpdf} comment to create pdf file.}
+
+\item{fontsize}{Font size of edge and node labels}
+
+\item{color}{A boolean specifying if the plot will be in color or grey scale.}
+
+\item{hide_weights}{A boolean value specifying if the drift values on the edges will be hidden. The default is \code{FALSE}.}
 
 \item{highlight_unidentifiable}{Highlight unidentifiable edges in red. Can be slow for large graphs.}
 
@@ -44,8 +46,6 @@ write_dot(
 \item{ranksep}{Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is \code{0.5}.}
 
 \item{fix_names}{If \code{TRUE}, replaces the dots (.) and dashes (-) in population names with underscores. The default is \code{FALSE}.}
-
-\item{dot2pdf}{If \code{FALSE}, the function will terminate after writing the dot file. If \code{TRUE}, it will try to execute the \code{dot -Tpdf} comment to create pdf file.}
 }
 \description{
 Convert graph to dot format
