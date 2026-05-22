@@ -112,7 +112,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
   }
   #for(i in 1:length(popvecs1)) {
   foreach::foreach(i=1:length(popvecs1)) %do% {
-    if(length(popvecs1) > 1 & verbose) cli::cli_inform(c(i = "pop pair block {i} of {length(popvecs1)}"))
+    if(length(popvecs1) > 1 & verbose) .heartbeat("pop pair block {i} of {length(popvecs1)}")
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
     am1 = afmat[, s1]
@@ -171,7 +171,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     }
     rm(counts, f2); gc()
   }
-  if(length(popvecs1) > 1 & verbose) cat('\n')
+  if(length(popvecs1) > 1 & verbose) .heartbeat(done = TRUE)
   # `block_lengths_f2` is always returned so callers (extract_f2's metadata
   # writer) can size `n_blocks` / `n_snps` without re-reading
   # block_lengths_f2.rds from disk. When outdir is NULL the rest of the in-

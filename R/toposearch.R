@@ -1011,7 +1011,7 @@ get_mutfuns = function(mutfuns, probs, fix_outgroup = TRUE) {
 
 add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_residual = FALSE, parallel = TRUE, verbose = TRUE) {
 
-  if(verbose) cli::cli_inform(c(i = 'Selecting winners...'))
+  if(verbose) .heartbeat('Selecting winners...')
   lastgen = max(models$generation)
   oldmodels = models %>% filter(generation == lastgen, !is.na(score))
   numsel = min(nrow(oldmodels), numsel)
@@ -1029,15 +1029,17 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_
     map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
     imap = function(...) furrr::future_imap(..., .options = furrr::furrr_options(seed = TRUE))
   }
-  if(verbose) cli::cli_inform(c(i = 'Generating new graphs...'))
+  if(verbose) .heartbeat('Generating new graphs...')
   newmodels %<>% mutate(mutation = names(mutations),
                         igraph = imap(igraph, ~tryCatch(exec(mutations[[.y]], .x), error = function(e) .x)))
-  if(verbose) cli::cli_inform(c(i = 'Evaluating graphs...'))
+  if(verbose) .heartbeat('Evaluating graphs...')
   newmodels %<>% mutate(out = map(igraph, qpgfun))
-  if(verbose) cli::cli_inform(c(i = 'Attaching to previous generations...'))
-  winners %>%
+  if(verbose) .heartbeat('Attaching to previous generations...')
+  out = winners %>%
     mutate(generation = lastgen+1, index = 1:n()) %>%
     bind_rows(newmodels %>% unnest_wider(out))
+  if(verbose) .heartbeat(done = TRUE)
+  out
 }
 
 
@@ -1101,15 +1103,16 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
   }
 
   # qpgfun = possibly(qpgfun, otherwise = NULL)
-  if(verbose) cli::cli_inform(c(i = 'Generate new graphs...'))
+  if(verbose) .heartbeat('Generate new graphs...')
   if(is.null(initgraphs)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop = outpop),
                                                 simplify = FALSE)
   else initgraphs = initgraphs[round(seq(1, length(initgraphs), numgraphs))]
-  if(verbose) cli::cli_inform(c(i = 'Evaluate graphs...'))
+  if(verbose) .heartbeat('Evaluate graphs...')
   if(parallel) map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
   init = tibble(generation=0, index = seq_len(numgraphs),
                 igraph = initgraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun), isn = map_lgl(out, is.null))
+  if(verbose) .heartbeat(done = TRUE)
   if(all(init$isn)) stop('All NULL!')
 
   init %<>% select(-isn) %>% unnest_wider(out) %>% mutate(oldscore = score, oldindex = index)
@@ -3557,10 +3560,11 @@ identifiable_comb = function(graph, edge, jac = NULL, verbose = TRUE) {
   edges = colnames(jac)
 
   for(i in seq_len(length(E(graph)))) {
-    if(verbose) cli::cli_inform(c(i = "{i}..."))
+    if(verbose) .heartbeat("{i}...")
     us = identifiable_sets(graph, jac, edge = which(edges == edge), n = i)
     if(edge %in% unlist(us)) break
   }
+  if(verbose) .heartbeat(done = TRUE)
   us[map_lgl(seq_len(nrow(us)), ~edge %in% us[.,]),,drop=FALSE]
 }
 
