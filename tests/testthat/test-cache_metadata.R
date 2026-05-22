@@ -86,12 +86,13 @@ test_that("cache_metadata.json cache_id matches the .f2_cache_id sidecar", {
 
 
 test_that("compute_f2_cache_id falls back to cache_metadata.json when sidecar missing", {
-  # extract_f2 writes cache_metadata.json FIRST and .f2_cache_id second, both
-  # via atomic rename. A SIGKILL between the two leaves cache_metadata.json
-  # present (atomically) and .f2_cache_id absent. compute_f2_cache_id's mode-1
-  # must recover the hash from cache_metadata.json in that case, otherwise an
-  # orchestrator probe would mis-report a populated cache as missing and
-  # trigger a needless rebuild.
+  # extract_f2 writes cache_metadata.json FIRST (atomically: tempfile +
+  # file.rename) and .f2_cache_id second (also atomic). A SIGKILL between the
+  # two leaves cache_metadata.json present and .f2_cache_id absent —
+  # cache_metadata.json's POSIX-atomic rename guarantees no truncation at
+  # that final path. compute_f2_cache_id's mode-1 must recover the hash from
+  # cache_metadata.json in that case, otherwise an orchestrator probe would
+  # mis-report a populated cache as missing and trigger a needless rebuild.
   withr::with_tempdir({
     fix = build_pfile_fixture(getwd(), with_fid = TRUE)
     pref = fix$bed_pref
@@ -149,5 +150,47 @@ test_that("read_f2_cache_metadata errors clearly when the file is missing", {
   withr::with_tempdir({
     expect_error(read_f2_cache_metadata(getwd()),
                  "cache_metadata.json not found")
+  })
+})
+
+
+test_that("compute_f2_cache_id rejects a malformed cache_id field in JSON", {
+  # The JSON parses cleanly but the cache_id field doesn't match the
+  # sha256:<64hex> contract (truncated hash from a bad tool, manual edit,
+  # or older incompatible schema). compute_f2_cache_id must fall through
+  # to the same stop() that fires on a missing field — not silently return
+  # a bogus hash that an orchestrator would then use as a cache key.
+  withr::with_tempdir({
+    dir.create("outdir")
+    # Well-formed JSON, malformed cache_id (too short / wrong charset).
+    writeLines('{"schema_version":1,"cache_id":"sha256:not-a-valid-hash"}',
+               file.path("outdir", "cache_metadata.json"))
+    expect_error(compute_f2_cache_id("outdir"), "cache_metadata.json")
+  })
+})
+
+
+test_that("cache_metadata.json is written atomically (no truncated file on disk)", {
+  # `.write_atomic` uses tempfile + file.rename so the final path either
+  # holds the previous version or fully-committed new bytes — never a
+  # partial write. We can't simulate a SIGKILL in-process, but we can
+  # verify the file ends up well-formed (the rename committed in full)
+  # and that no .tmp sidecar leaks into the outdir after a successful
+  # extract_f2 run.
+  withr::with_tempdir({
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    pref = fix$bed_pref
+    testthat::skip_if(is.na(pref), "BED fixture unavailable")
+
+    outdir = file.path(getwd(), "f2_out")
+    suppressMessages(suppressWarnings(
+      extract_f2(pref, outdir, pops = fix$fid_pops, verbose = FALSE)))
+
+    # File parses (committed in full).
+    expect_silent(jsonlite::fromJSON(file.path(outdir, "cache_metadata.json"),
+                                     simplifyVector = TRUE))
+    # No leftover tempfiles (file.rename succeeded; cleanup happened).
+    leftovers = list.files(outdir, pattern = "\\.tmp$", all.files = TRUE)
+    expect_length(leftovers, 0)
   })
 })

@@ -34,10 +34,30 @@ The exact set of fields depends on which code path produced the cache:
 because they don't apply on this code path.
 }
 
+\code{n_snps} is the count of SNPs that actually contributed to the f2 blocks
+(i.e. \code{sum(block_lengths_f2)}), not the post-filter row count of the
+snpfile. With the default \code{poly_only = c('f2')}, non-polymorphic SNPs
+survive filtering but are excluded from f2 blocks, so \code{n_snps} can be
+smaller than the visible row count in \code{snpdat.tsv.gz}. Both the regular
+and qpfstats paths report \code{n_snps} with this same definition.
+
 \code{cache_id} is \code{NULL} (rendered as JSON \code{null}) if the cache-id
 computation failed at build time; \code{built_at} is ISO 8601 with
 millisecond precision in UTC. The \code{cache_id} value mirrors the
 \code{.f2_cache_id} sidecar contents.
+
+\code{cache_metadata.json} is written via tempfile + \code{file.rename}, which is
+atomic on POSIX filesystems: a SIGKILL mid-\code{extract_f2} either leaves the
+previous version intact or commits the new one — never a truncated file.
+}
+\examples{
+\dontrun{
+extract_f2("my_geno_prefix", "f2_out/")
+meta = read_f2_cache_metadata("f2_out/")
+meta$n_snps      # SNPs that contributed to f2 blocks
+meta$n_blocks    # number of jackknife blocks
+meta$cache_id    # matches the .f2_cache_id sidecar
+}
 }
 \seealso{
 \code{\link[=extract_f2]{extract_f2()}}, \code{\link[=compute_f2_cache_id]{compute_f2_cache_id()}}, \code{\link[=result_to_json]{result_to_json()}}

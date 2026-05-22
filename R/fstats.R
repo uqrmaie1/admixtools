@@ -172,7 +172,16 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     rm(counts, f2); gc()
   }
   if(length(popvecs1) > 1 & verbose) cat('\n')
-  if(is.null(outdir)) namedList(f2_blocks, ap_blocks, fst_blocks)
+  # `block_lengths_f2` is always returned so callers (extract_f2's metadata
+  # writer) can size `n_blocks` / `n_snps` without re-reading
+  # block_lengths_f2.rds from disk. When outdir is NULL the rest of the in-
+  # memory arrays are also returned, matching the historical f2_from_geno
+  # contract that pulls `$f2_blocks` etc.
+  if(is.null(outdir)) {
+    namedList(f2_blocks, ap_blocks, fst_blocks, block_lengths_f2)
+  } else {
+    invisible(namedList(block_lengths_f2))
+  }
 }
 
 

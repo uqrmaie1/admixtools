@@ -1921,6 +1921,8 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
       # cache_metadata.json is the authoritative sidecar — write it first so a
       # crash before the `.f2_cache_id` write leaves a recoverable outdir
       # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
+      # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+      # leaves a truncated file at the final path.
       meta = list(
         schema_version        = 1L,
         admixtools_version    = as.character(utils::packageVersion("admixtools")),
@@ -1933,11 +1935,12 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
         adjust_pseudohaploid  = adjust_pseudohaploid,
         qpfstats              = TRUE,
         cache_id              = if(!is.na(cache_id)) cache_id else NULL)
-      writeLines(
-        jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null", null = "null", pretty = FALSE),
+      .write_atomic(
+        as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                      null = "null", pretty = FALSE)),
         file.path(outdir, 'cache_metadata.json'))
 
-      if(!is.na(cache_id)) writeLines(cache_id, file.path(outdir, '.f2_cache_id'))
+      if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
 
       return()
     }
@@ -1978,15 +1981,23 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   # cache_metadata.json is the authoritative sidecar — write it first so a
   # crash before the `.f2_cache_id` write leaves a recoverable outdir
   # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
-  bl_path = file.path(outdir, 'block_lengths_f2.rds')
-  n_blocks = if(file.exists(bl_path)) length(readRDS(bl_path)) else NA_integer_
+  # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+  # leaves a truncated file at the final path.
+  #
+  # `arrs$block_lengths_f2` is threaded out of afs_to_f2_blocks even when
+  # outdir is set, so we don't readRDS the block_lengths_f2.rds we just
+  # wrote. `n_snps` reports SNPs that actually contributed to f2 blocks
+  # (i.e. sum of block lengths), matching the qpfstats path's definition —
+  # this can be smaller than nrow(afdat$snpfile) when poly_only excludes
+  # non-polymorphic SNPs from f2.
+  block_lengths_f2 = arrs$block_lengths_f2
   meta = list(
     schema_version        = 1L,
     admixtools_version    = as.character(utils::packageVersion("admixtools")),
     built_at              = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
     pops                  = I(colnames(afdat$afs)),
-    n_snps                = nrow(afdat$snpfile),
-    n_blocks              = n_blocks,
+    n_snps                = sum(block_lengths_f2),
+    n_blocks              = length(block_lengths_f2),
     blgsize               = blgsize,
     maxmiss               = maxmiss,
     minmaf                = minmaf,
@@ -2002,11 +2013,12 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
     fst                   = fst,
     qpfstats              = FALSE,
     cache_id              = if(!is.na(cache_id)) cache_id else NULL)
-  writeLines(
-    jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null", null = "null", pretty = FALSE),
+  .write_atomic(
+    as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                  null = "null", pretty = FALSE)),
     file.path(outdir, 'cache_metadata.json'))
 
-  if(!is.na(cache_id)) writeLines(cache_id, file.path(outdir, '.f2_cache_id'))
+  if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)

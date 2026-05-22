@@ -127,19 +127,63 @@ result_to_json = function(result, fn = NULL, args = list(), file = "",
 #'   (`minmaf`, `maxmaf`, `auto_only`, `transitions`, etc.) are omitted
 #'   because they don't apply on this code path.
 #'
+#' `n_snps` is the count of SNPs that actually contributed to the f2 blocks
+#' (i.e. `sum(block_lengths_f2)`), not the post-filter row count of the
+#' snpfile. With the default `poly_only = c('f2')`, non-polymorphic SNPs
+#' survive filtering but are excluded from f2 blocks, so `n_snps` can be
+#' smaller than the visible row count in `snpdat.tsv.gz`. Both the regular
+#' and qpfstats paths report `n_snps` with this same definition.
+#'
 #' `cache_id` is `NULL` (rendered as JSON `null`) if the cache-id
 #' computation failed at build time; `built_at` is ISO 8601 with
 #' millisecond precision in UTC. The `cache_id` value mirrors the
 #' `.f2_cache_id` sidecar contents.
 #'
+#' `cache_metadata.json` is written via tempfile + `file.rename`, which is
+#' atomic on POSIX filesystems: a SIGKILL mid-`extract_f2` either leaves the
+#' previous version intact or commits the new one — never a truncated file.
+#'
 #' @export
 #' @param outdir Path to the f2 output directory passed to [extract_f2()].
 #' @return A named list with the fields described above.
 #' @seealso [extract_f2()], [compute_f2_cache_id()], [result_to_json()]
+#' @examples
+#' \dontrun{
+#' extract_f2("my_geno_prefix", "f2_out/")
+#' meta = read_f2_cache_metadata("f2_out/")
+#' meta$n_snps      # SNPs that contributed to f2 blocks
+#' meta$n_blocks    # number of jackknife blocks
+#' meta$cache_id    # matches the .f2_cache_id sidecar
+#' }
 read_f2_cache_metadata = function(outdir) {
   path = file.path(outdir, 'cache_metadata.json')
   if(!file.exists(path))
     stop(paste0("cache_metadata.json not found in '", outdir,
                 "'. Run extract_f2() with an outdir to generate it."))
   jsonlite::fromJSON(path, simplifyVector = TRUE)
+}
+
+
+# Atomically write `content` to `target` via a sibling tempfile + file.rename.
+#
+# On POSIX, rename(2) is atomic within a filesystem: a SIGKILL mid-write
+# either leaves the previous `target` intact or commits the new bytes —
+# never a truncated file. This matters for cache_metadata.json: a partial
+# file would fail compute_f2_cache_id's mode-1 JSON parse, leaving the
+# orchestrator with a "malformed" warning instead of a clean "missing
+# cache" signal.
+#
+# On Windows, file.rename fails when `target` already exists; we fall back
+# to file.copy + unlink. That fallback is not atomic, but Windows has no
+# portable atomic-rename-replace primitive in base R anyway, and the
+# common case (fresh outdir) never exercises the fallback.
+.write_atomic = function(content, target) {
+  tmp = tempfile(tmpdir = dirname(target), fileext = ".tmp")
+  on.exit(unlink(tmp), add = TRUE)
+  writeLines(content, tmp)
+  if(!file.rename(tmp, target)) {
+    if(!file.copy(tmp, target, overwrite = TRUE))
+      stop("failed to commit atomic write to ", target)
+  }
+  invisible(target)
 }
