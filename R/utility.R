@@ -59,8 +59,12 @@ alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
 # `cat(file = stderr())`, which is not a message condition. Interactive users
 # who want silence should pass `verbose = FALSE` — that gates the call site
 # unconditionally and works in both modes.
-.heartbeat = function(msg = "", done = FALSE) {
-  if(isatty(stderr())) {
+# `.tty` is a test seam (leading dot — not part of the contract for production
+# callers, which always omit it and let `isatty(stderr())` decide). It exists so
+# tests/testthat/test-heartbeat.R can pin both branches deterministically without
+# OS-level PTY juggling.
+.heartbeat = function(msg = "", done = FALSE, .tty = isatty(stderr())) {
+  if(.tty) {
     if(done) {
       cat("\n", file = stderr())
     } else if(nzchar(msg)) {
