@@ -68,7 +68,10 @@ recomputes the hash from the on-disk inputs and filter args. Requires
 isn't reproducible from the prefix alone.
 \item \strong{f2 directory} (typical: orchestrator probe of an existing cache):
 reads the \code{.f2_cache_id} sidecar previously written by \code{\link[=extract_f2]{extract_f2()}}.
-Cheap; no genotype-file access. Most callers want this mode.
+Cheap; no genotype-file access. Most callers want this mode. If the
+sidecar is absent (e.g. extract_f2 was killed after writing
+\code{cache_metadata.json} but before the sidecar), the call falls back to
+reading \code{cache_id} from \code{cache_metadata.json} in the same directory.
 }
 
 The hash payload (when computing fresh) is:

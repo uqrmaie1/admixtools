@@ -1232,7 +1232,10 @@ match_samples = function(haveinds, havepops, inds, pops) {
 #'   isn't reproducible from the prefix alone.
 #' * **f2 directory** (typical: orchestrator probe of an existing cache):
 #'   reads the `.f2_cache_id` sidecar previously written by [extract_f2()].
-#'   Cheap; no genotype-file access. Most callers want this mode.
+#'   Cheap; no genotype-file access. Most callers want this mode. If the
+#'   sidecar is absent (e.g. extract_f2 was killed after writing
+#'   `cache_metadata.json` but before the sidecar), the call falls back to
+#'   reading `cache_id` from `cache_metadata.json` in the same directory.
 #'
 #' The hash payload (when computing fresh) is:
 #' * **Sample set**: sorted list of IIDs that contributed to the f2 blocks,
@@ -1279,6 +1282,11 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
                                snpfile_kept = NULL, blgsize = 0.05, extra_args = list()) {
 
   # Mode 1: pref is an f2 directory — read the sidecar emitted by extract_f2().
+  # `cache_metadata.json` is treated as the authoritative source: extract_f2
+  # writes it before `.f2_cache_id`, so a crash between the two writes leaves
+  # cache_metadata.json present and recoverable. `.f2_cache_id` is a fast-read
+  # shortcut; falling through to the JSON keeps mode-1 working when only the
+  # shortcut is absent.
   if(is.character(pref) && length(pref) == 1 && dir.exists(pref)) {
     sidecar = file.path(pref, '.f2_cache_id')
     if(file.exists(sidecar)) {
@@ -1286,9 +1294,24 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
       id = id[nzchar(id)]
       if(length(id) >= 1 && grepl('^sha256:[0-9a-f]{64}$', id[1])) return(id[1])
     }
-    stop('f2 directory has no `.f2_cache_id` sidecar (must be from an extract_f2 ',
-         'run that wrote one). To compute fresh, pass the genotype prefix and ',
-         '`snpfile_kept` instead of the f2 directory.')
+    meta_path = file.path(pref, 'cache_metadata.json')
+    if(file.exists(meta_path)) {
+      # Surface parse errors as a warning before falling through to the
+      # "no valid cache_id" error: a present-but-malformed cache_metadata.json
+      # is a different debugging signal than a missing one.
+      meta = tryCatch(jsonlite::fromJSON(meta_path, simplifyVector = TRUE),
+                      error = function(e) {
+                        warning("cache_metadata.json present but unparseable: ",
+                                conditionMessage(e))
+                        NULL
+                      })
+      id = meta$cache_id
+      if(!is.null(id) && !is.na(id) && grepl('^sha256:[0-9a-f]{64}$', id)) return(id)
+    }
+    stop('f2 directory has no `.f2_cache_id` sidecar or `cache_metadata.json` ',
+         'with a valid cache_id (must be from an extract_f2 run that wrote ',
+         'one). To compute fresh, pass the genotype prefix and `snpfile_kept` ',
+         'instead of the f2 directory.')
   }
 
   # Mode 2: pref is a genotype prefix — compute fresh from inputs.
@@ -1894,7 +1917,30 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                             extra_args = list(qpfstats = TRUE, auto_only = auto_only,
                                               adjust_pseudohaploid = adjust_pseudohaploid))
       }, error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
-      if(!is.na(cache_id)) writeLines(cache_id, file.path(outdir, '.f2_cache_id'))
+
+      # cache_metadata.json is the authoritative sidecar — write it first so a
+      # crash before the `.f2_cache_id` write leaves a recoverable outdir
+      # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
+      # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+      # leaves a truncated file at the final path.
+      meta = list(
+        schema_version        = 1L,
+        admixtools_version    = as.character(utils::packageVersion("admixtools")),
+        built_at              = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
+        pops                  = I(dimnames(f2blocks)[[1]]),
+        n_snps                = sum(block_lengths),
+        n_blocks              = length(block_lengths),
+        blgsize               = blgsize,
+        maxmiss               = maxmiss,
+        adjust_pseudohaploid  = adjust_pseudohaploid,
+        qpfstats              = TRUE,
+        cache_id              = if(!is.na(cache_id)) cache_id else NULL)
+      .write_atomic(
+        as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                      null = "null", pretty = FALSE)),
+        file.path(outdir, 'cache_metadata.json'))
+
+      if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
 
       return()
     }
@@ -1931,7 +1977,48 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                           afprod = afprod, fst = fst, poly_only = poly_only,
                                           apply_corr = apply_corr, qpfstats = qpfstats)),
     error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
-  if(!is.na(cache_id)) writeLines(cache_id, file.path(outdir, '.f2_cache_id'))
+
+  # cache_metadata.json is the authoritative sidecar — write it first so a
+  # crash before the `.f2_cache_id` write leaves a recoverable outdir
+  # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
+  # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+  # leaves a truncated file at the final path.
+  #
+  # `arrs$block_lengths_f2` is threaded out of afs_to_f2_blocks even when
+  # outdir is set, so we don't readRDS the block_lengths_f2.rds we just
+  # wrote. `n_snps` reports SNPs that actually contributed to f2 blocks
+  # (i.e. sum of block lengths), matching the qpfstats path's definition —
+  # this can be smaller than nrow(afdat$snpfile) when poly_only excludes
+  # non-polymorphic SNPs from f2.
+  block_lengths_f2 = arrs$block_lengths_f2
+  meta = list(
+    schema_version        = 1L,
+    admixtools_version    = as.character(utils::packageVersion("admixtools")),
+    built_at              = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
+    pops                  = I(colnames(afdat$afs)),
+    n_snps                = sum(block_lengths_f2),
+    n_blocks              = length(block_lengths_f2),
+    blgsize               = blgsize,
+    maxmiss               = maxmiss,
+    minmaf                = minmaf,
+    maxmaf                = maxmaf,
+    minac2                = minac2,
+    auto_only             = auto_only,
+    transitions           = transitions,
+    transversions         = transversions,
+    adjust_pseudohaploid  = adjust_pseudohaploid,
+    poly_only             = poly_only,
+    apply_corr            = apply_corr,
+    afprod                = afprod,
+    fst                   = fst,
+    qpfstats              = FALSE,
+    cache_id              = if(!is.na(cache_id)) cache_id else NULL)
+  .write_atomic(
+    as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                  null = "null", pretty = FALSE)),
+    file.path(outdir, 'cache_metadata.json'))
+
+  if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
 
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
