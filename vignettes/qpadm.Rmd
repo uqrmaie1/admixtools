@@ -1,7 +1,7 @@
 ---
 title: "qpWave and qpAdm"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -123,5 +123,92 @@ It is important to keep in mind that the true source populations of $T$ are almo
 <!-- In most cases the sampled left populations L will not be the true source populations for T. However, the ancestry proportions of the true source populations can still be estimated accurately if each true source population forms a clade with its representative in L relative to all other modelled populations, and if the right populations are chosen such that no two left populations form a clade relative to all right populations. While the second assumption can be tested, the first assumption is untestable because it depends on potentially unobserved populations, which should be considered when interpreting qpAdm results. -->
 
 
+## qpadm in practice
 
+The theory above maps onto a single function call. With f-statistics in `example_f2_blocks`, we can ask whether the Pleistocene European `Switzerland_Bichon.SG` can be modeled as a mix of an Ust'-Ishim-like ancestor (`Russia_Ust_Ishim.DG`, an early modern Eurasian) plus Neanderthal admixture from `Vindija.DG`, with the remaining populations as outgroups:
+
+```{r}
+res = qpadm(example_f2_blocks,
+            target = "Switzerland_Bichon.SG",
+            left   = c("Russia_Ust_Ishim.DG", "Vindija.DG"),
+            right  = c("Chimp.REF", "Mbuti.DG",
+                       "Altai_Neanderthal.DG", "Denisova.DG"),
+            verbose = FALSE)
+```
+
+The most-frequently-consumed pieces of the return value are the admixture weights and the rank-by-rank fit table:
+
+```{r}
+res$weights
+res$rankdrop
+```
+
+- `weights$weight` are the estimated proportions of each source. `se` is the standard error; the row `weight / se = z` follows. For this fit, essentially all of Bichon's ancestry is modeled as Ust'-Ishim-like, with a small (statistically negligible) Vindija contribution — consistent with the published biology that the Neanderthal trickle into Pleistocene Europeans is largely already carried by the Ust'-Ishim-like ancestor in this set.
+- `rankdrop$p[1]` is the *p*-value for the model at the auto-selected rank (the top row, `length(left) - 1`). A small *p* rejects the null hypothesis that the right populations are connected to `target` only through the sources. Here `p ≈ 0.07`: the 2-source model is not rejected at α = 0.05.
+- `rankdrop$p_nested[1]` compares the full 2-source model to the simpler one-rank-lower model (the cladal alternative, where `target` is cladal with one of the sources). A small value rejects the cladal alternative in favor of the 2-source model. This is a structural test about model topology — distinct from the per-source weight z-scores. `p_nested` can reject the cladal alternative even when the second source's weight is itself statistically small (as in this fit, where `p_nested = 0` despite Vindija's `z = −1.75`); the f4 patterns simply don't fit the rank-0 topology.
+
+When `data` is the prefix of a genotype file rather than precomputed f2-statistics, `qpadm()` reads from disk in parallel under any active `future::plan()` (see [the parallelization vignette](parallel.html)).
+
+
+### Diagnosing collinear right populations
+
+`qpadm()` inverts a square matrix of f4 covariances. When two right populations are close to cladal with each other — for example, a sister-clade pair, or one right population too close to a source — that matrix becomes near-singular, the inversion falls back to a pseudo-inverse, and the returned standard errors look misleadingly tight. The fitted weights themselves remain interpretable; the *uncertainty* on them does not.
+
+`qpadm()` surfaces this with two diagnostics on the returned list:
+
+- `res$f4_var_rcond` — the reciprocal condition number of the (fudged) f4 variance matrix. Values near machine epsilon (~`1e-15`) signal a degenerate variance matrix. A value below `1e-8` triggers an automatic warning.
+- `res$f4_var_singular_loadings` — when `f4_var_rcond < 1e-8`, this tibble surfaces *which right populations* are responsible. Mechanically: the singular value decomposition of `f4_var` produces a right-singular vector for the smallest singular value — the direction in f4-space where the matrix has lost rank. That vector has one entry per `(left, right)` f4-pair; reshaping it to a `(R−1) × (L−1)` matrix and taking row L2 norms gives one loading per right population. Right pops at the top of the sorted tibble are the most-likely offenders — typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source.
+
+For pipelines that should fail loudly on degenerate inputs, the `singular_threshold` argument promotes the warning to an error:
+
+```{r, eval = FALSE}
+# Error out (rather than warn) if rcond < 1e-12
+qpadm(data, left, right, target, singular_threshold = 1e-12)
+```
+
+
+### Multiple models: qpadm_multi and qpadm_sweep
+
+`qpadm_multi()` runs a fixed list of `(left, right, target)` models, re-using f4-statistics where possible:
+
+```{r, eval = FALSE}
+models = tibble::tibble(
+  target = c("Switzerland_Bichon.SG", "Russia_Ust_Ishim.DG"),
+  left   = list(c("Altai_Neanderthal.DG"),
+                c("Altai_Neanderthal.DG", "Denisova.DG")),
+  right  = list(c("Chimp.REF", "Mbuti.DG", "Vindija.DG"),
+                c("Chimp.REF", "Mbuti.DG", "Vindija.DG")))
+qpadm_multi(example_f2_blocks, models)
+```
+
+`qpadm_sweep()` covers the "many targets across a grid of source / outgroup configurations" question. Given vectors of `targets`, `source_sets`, and `right_sets`, it fits every combination in the Cartesian product and returns a flat tibble of *p*-values, weights, and `feasible` flags ready for filtering:
+
+```{r, eval = FALSE}
+targets = c("Vindija.DG", "Switzerland_Bichon.SG")
+sources = list(neanderthal_only     = c("Altai_Neanderthal.DG"),
+               neanderthal_denisova = c("Altai_Neanderthal.DG", "Denisova.DG"))
+rights  = list(distal  = c("Chimp.REF", "Mbuti.DG"),
+               refined = c("Chimp.REF", "Mbuti.DG", "Russia_Ust_Ishim.DG"))
+res = qpadm_sweep(example_f2_blocks, targets, sources, rights)
+res %>% dplyr::arrange(target, p)
+```
+
+Both functions parallelize across models under `future::plan(multisession)` (or `multicore` on Linux). Be aware that the per-block layer inside each model also parallelizes when `data` is a genotype-file prefix, so two layers compose — usually you want only one of them parallel.
+
+
+### qpwave-style runs against genotype data
+
+When you only care about the rank of $X$ and not about admixture weights for a specific target, the qpwave-on-genotype-data pattern is `qpadm(..., target = NULL, return_f4 = TRUE)`:
+
+```{r, eval = FALSE}
+# Equivalent to qpwave(geno_prefix, left, right), but uses qpadm's
+# parallel per-block f4 computation when data is a genotype-file prefix.
+qpadm("path/to/geno_prefix",
+      left   = c("L1", "L2"),
+      right  = c("R1", "R2", "R3"),
+      target = NULL,
+      return_f4 = TRUE)
+```
+
+This shape is useful in sweep-style workflows where the rank-only question is one of many you're asking against the same genotype data — you get the same parallel f4 read for free.
 
