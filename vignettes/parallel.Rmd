@@ -1,78 +1,81 @@
 ---
 title: "Parallelization"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
-  toc: false
-toc_depth: 2
+    toc: true
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{Parallelization}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 
-### Update 2023-07-07
 
-Some (mostly superseded) functions in ADMIXTOOLS 2 can parallelize computations across multiple cores or compute nodes by making use of the packages [`future`](https://github.com/HenrikBengtsson/future) and [`furrr`](https://github.com/DavisVaughan/furrr). In `find_graphs_old()`, this was used to rerun the topology optimization multiple times (possibly with different starting graphs). The more recent `find_graphs()` function doesn't support this, first because it's faster than `find_graphs_old()`, and second because packages like `furrr` and `foreach` make it easy to manually run `find_graphs()` multiple times in parallel.
-The examples below should therefore be considered outdated. The page is still up in case the instructions are useful in another context.
-
-### Parallelization across cores
-
-To parallelize computations across cores, run
+*ADMIXTOOLS 2* uses the [`future`](https://github.com/HenrikBengtsson/future) / [`furrr`](https://github.com/DavisVaughan/furrr) framework. The default plan is sequential, so functions behave like single-core code unless you opt in. Opt-in is one line:
 
 ```{r, eval = FALSE}
-future::plan('multiprocess')
+library(future)
+plan(multisession, workers = 4)
 ```
 
-To turn parallelization off, run
+Switch back with `plan(sequential)`. The same `plan()` call applies to every `admixtools` function that supports parallelism — there are no per-function flags to toggle.
+
+
+## What's parallelized
+
+Core data-extraction and model-fitting workflows:
+
+* **`extract_f2`** and **`f4blockdat_from_geno`** parallelize across SNP blocks. This is the highest-impact case: a 15-pop / 5565-popcomb / 713-block run takes about 200 s sequentially and 75 s under `plan(multisession, workers = 4)`.
+* **`qpadm`**, **`qp3pop`**, **`qp4ratio`**, and **`qpfstats`** call `f4blockdat_from_geno` when the input is a genotype-file prefix, so they benefit transparently.
+* **`qpadm_multi`** and **`qpadm_sweep`** parallelize across models on top of that — each model's f4 computation also parallelizes per block, so two layers compose. On a clean compute budget you usually want only one layer parallel (set workers to match cores, and let either the per-block or per-model layer absorb them).
+* **`read_f2`** parallelizes the per-pair `.rds` reads when loading a precomputed f2 cache. Useful on slow disks or NFS where I/O latency dominates.
+* **`qpgraph_resample_snps`** and **`qpgraph_resample_snps2`** parallelize across resamples.
+* **`find_graphs_old`** parallelizes its independent repeats (with `parallel = TRUE`, the default).
+
+Not parallelized:
+
+* **`find_graphs`** (the newer fitter — fast enough single-threaded that parallel overhead would dominate; if you want N independent runs in parallel, wrap it yourself in `furrr::future_map(1:N, ~find_graphs(...))`).
+* **`qpgraph`** itself (single-graph fit).
+
+
+## multisession vs multicore
+
+`multisession` (workers = R subprocesses, communicating via sockets) is the default-portable choice. It works on all platforms including Windows.
+
+`multicore` (workers = forked processes, sharing memory copy-on-write) is faster on Linux: a 15-pop qpadm run sees 1.9× speedup vs sequential under `plan(multicore, workers = 4)` and only 1.1× under `plan(multisession, workers = 4)` because forking skips the worker-startup and data-marshalling cost. On macOS it works at the command line but fails inside RStudio. On Windows it's unsupported.
+
+If you're on Linux and not in RStudio:
 
 ```{r, eval = FALSE}
-future::plan('sequential')
+plan(multicore, workers = 4)
+```
+
+Otherwise:
+
+```{r, eval = FALSE}
+plan(multisession, workers = 4)
 ```
 
 
-### Parallelization on a compute cluster
+## Parallelization on a compute cluster
 
-Sometimes it makes more sense to parallelize across compute nodes rather than across cores. This can be done either in the traditional way of writing an R script and submitting it many times in parallel as separate jobs, or interactively from within R again using the `furrr`/`future` framework. However, it is more complicated to set up than parallelization across cores.
+Sometimes it makes more sense to parallelize across compute nodes rather than across cores. This can be done either in the traditional way of writing an R script and submitting it many times in parallel as separate jobs, or interactively from within R again using the `furrr` / `future` framework. The interactive route is more complicated to set up than parallelization across cores.
 
 On a cluster using the *Slurm* job scheduler, the following command will set up parallelization across compute nodes.
 
 ```{r, eval = FALSE}
-future::plan(tweak(batchtools_slurm, workers = 50,
-                   resources=list(ncpus = 1, memory = 1024,
-                                  walltime = 10*60*60, partition = 'short')))
-```
-It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`.
-
-This requires the R package `future.batchtools` and a batchtools template file in the working directory, such as [this one](https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
-
-With this setup, the `find_graphs` function will submit each of the 200 repeats as a separate job.
-
-As it will still take a while for this to finish, it is a good idea to submit this as one job which calls an R script. That R script will in turn spawn 200 new jobs and wait for them to finish and return their results.
-
-The R script could look like this.
-```{r, eval = FALSE}
-library(admixtools)
 library(future.batchtools)
-
-future::plan(tweak(batchtools_slurm, workers=50,
-                   resources=list(ncpus = 1, memory=1024,
-                                  walltime=10*60*60, partition='short')))
-
-pops = c('popA', 'popB', 'popC', 'popD')
-opt_results = find_graphs_old('/my/f2/dir/', pops, outpop = pops[1], numrep = 200,
-                          numgen = 20, numgraphs = 100, numadmix = 3, verbose = FALSE)
-
-saveRDS(opt_results, file='opt_results.rds')
+plan(tweak(batchtools_slurm, workers = 50,
+           resources = list(ncpus = 1, memory = 1024,
+                            walltime = 10 * 60 * 60, partition = 'short')))
 ```
 
-It could be in a file called `opt_graphs.Rscript` and be run like this, or submitted as a job.
-```{r, eval = FALSE}
-Rscript opt_graphs.Rscript
-```
-
-It takes more time to evaluate larger graphs, and in particular graphs with more admixture nodes. It's probably a good idea to start with a small number of repeats, generations, and graphs per generation to get a sense of the runtime before scaling it up.
+It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`. This requires the [`future.batchtools`](https://github.com/HenrikBengtsson/future.batchtools) R package and a batchtools template file in the working directory — see [this example template](https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
 
 
+## When parallelization doesn't help
 
+* **Tiny workloads** — for a 5-pop / 10-popcomb / 100-block `extract_f2`, the sequential version finishes in under a second. The worker-spawn overhead of `multisession` can make parallel slower than serial on tiny inputs.
+* **Memory-constrained machines** — `multisession` workers each hold their own copy of the input data after R serializes-and-sends it. For a 100 GB f2 cache and 8 workers, you'd need ~100 GB × 8 of headroom. Use `multicore` (copy-on-write) on Linux, fewer workers, or stay sequential.
