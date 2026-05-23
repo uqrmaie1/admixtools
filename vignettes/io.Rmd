@@ -184,6 +184,33 @@ packedancestrymap_to_plink("packedancestrymap_input_prefix", "plink_output_prefi
 ```
 
 
+## f2 cache metadata
+
+When `extract_f2()` writes to disk it emits two sidecar files alongside the per-pair `.rds` arrays:
+
+  * **`.f2_cache_id`** — a short text file containing a `sha256:<64hex>` hash over the inputs and filter args. Cheap to read; useful as a cache key for orchestrators that want to skip re-extraction when nothing has changed.
+  * **`cache_metadata.json`** — a schema-versioned JSON file with `n_snps`, `n_blocks`, `pops`, build timestamp, filter args, and the same `cache_id`. Written atomically (tempfile + rename) before `.f2_cache_id`, so a crash between the two writes leaves a recoverable directory.
+
+Read the metadata programmatically:
+
+```{r, eval = FALSE}
+meta = read_f2_cache_metadata("my_f2_dir/")
+meta$n_snps     # SNPs that actually contributed to f2 blocks
+meta$pops       # populations in the cache
+meta$cache_id   # matches .f2_cache_id
+```
+
+To check whether an existing cache directory still matches your current inputs without re-extracting, recompute the cache id from the genotype prefix and compare:
+
+```{r, eval = FALSE}
+fresh  = compute_f2_cache_id("geno_prefix", pops = pops, ...)
+cached = read_f2_cache_metadata("my_f2_dir/")$cache_id
+identical(fresh, cached)  # TRUE if the cache is still valid for these inputs
+```
+
+If only the genotype prefix and the f2 directory are available (e.g. an orchestrator probe), `compute_f2_cache_id("my_f2_dir/")` reads the hash directly from the sidecar — no genotype-file access needed.
+
+
 ## Admixture graph formats
 
 There are several ways in which admixture graphs can be represented. Some of them are useful because they can be stored as human readable text files, and others are useful because they make it easier for R to process graphs. *ADMIXTOOLS 2* has several function for importing, exporting and converting between formats.
