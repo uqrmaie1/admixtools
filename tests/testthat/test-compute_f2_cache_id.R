@@ -189,3 +189,41 @@ test_that("compute_f2_cache_id propagates get_block_lengths errors instead of re
                           snpfile_kept = bad_snp, blgsize = 0.05))
   })
 })
+
+
+test_that("compute_f2_cache_id auto-detects PFILE when only .pvar.zst is present", {
+  # Regression test surfaced while documenting PFILE in vignettes/io.Rmd:
+  # the format-detection block in compute_f2_cache_id required `.pvar`
+  # specifically and didn't recognize a PFILE that ships only `.pvar.zst`,
+  # even though the rest of the PFILE pipeline (pfile_to_afs, extract_f2,
+  # f4blockdat_from_geno) handles both forms transparently via
+  # `.resolve_pvar_path()`. The fix routes the detection through the same
+  # resolver. Skip on systems without the `zstd` CLI (needed to construct
+  # the .pvar.zst fixture from the helper's .pvar output).
+  testthat::skip_if(Sys.which("zstd") == "", "zstd CLI not on PATH")
+  withr::with_tempdir({
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    pref = fix$pfile_pref
+    testthat::skip_if(is.na(pref), "PFILE fixture unavailable")
+
+    pvar_plain = paste0(pref, ".pvar")
+    pvar_zst   = paste0(pref, ".pvar.zst")
+    testthat::skip_if(!file.exists(pvar_plain),
+                      "PFILE fixture did not produce a .pvar")
+    rc = system2("zstd", args = c("-q", "-f", shQuote(pvar_plain),
+                                  "-o", shQuote(pvar_zst)),
+                 stdout = FALSE, stderr = FALSE)
+    testthat::skip_if(rc != 0L, "zstd compression failed")
+    # snpfile_kept comes from .read_pvar applied to the plain .pvar (which
+    # we still have at this point). Then we remove the plain form so only
+    # .pvar.zst is present at the prefix.
+    snpfile_kept = admixtools:::.read_pvar(pvar_plain)
+    file.remove(pvar_plain)
+    expect_false(file.exists(pvar_plain))
+    expect_true(file.exists(pvar_zst))
+
+    id = compute_f2_cache_id(pref, pops = fix$fid_pops,
+                             snpfile_kept = snpfile_kept, blgsize = 0.05)
+    expect_match(id, "^sha256:[0-9a-f]{64}$")
+  })
+})

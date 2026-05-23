@@ -1324,7 +1324,12 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
     if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
     else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
       format = if(is_packed(paste0(pref, '.geno'))) 'packedancestrymap' else 'eigenstrat'
-    } else if(all(file.exists(paste0(pref, c('.pgen', '.pvar', '.psam'))))) {
+    } else if(all(file.exists(paste0(pref, c('.pgen', '.psam')))) &&
+              !is.na(.resolve_pvar_path(pref))) {
+      # `.pvar` may be `.pvar.zst`; use the same resolver as the other PFILE
+      # entry points (pfile_to_afs, format_info) so a `.pvar.zst`-only PFILE
+      # is detected here too. Pre-fix this branch silently fell through to
+      # the catch-all stop().
       format = 'pfile'
     } else stop('Genotype files not found at prefix: ', pref)
   }
