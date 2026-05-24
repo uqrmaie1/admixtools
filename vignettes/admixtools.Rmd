@@ -339,7 +339,7 @@ qpwave_pairs(example_f2_blocks, left = c(target, left), right = right)
 qpadm_rotate(f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
 ```
 ```{r, echo = FALSE}
-qpadm_rotate(example_f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2])
+qpadm_rotate(example_f2_blocks, leftright = pops[3:7], target = pops[1], rightfix = pops[1:2], verbose = FALSE)
 ```
 
 #### Many qpadm models
@@ -360,7 +360,7 @@ models = tibble(
            left = list(pops[1:2], pops[3]),
            right = list(pops[4:6], pops[1:2]),
            target = c(pops[7], pops[7]))
-results = qpadm_multi(example_f2_blocks, models)
+results = qpadm_multi(example_f2_blocks, models, verbose = FALSE)
 ```
 
 The output is a list where each item is the result from one model. The following command would combine the weights for all models into a new data frame:
