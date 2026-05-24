@@ -1137,6 +1137,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
+#' @export
 #' @param data Input data in one of three forms:
 #' \enumerate{
 #' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
