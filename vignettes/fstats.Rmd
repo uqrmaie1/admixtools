@@ -398,7 +398,7 @@ The second step can take a long time when running one pair after another, so it 
 
 <br>
 
-To verify that two $f_2$-caches were extracted from the same data and parameters (useful when sharing caches across collaborators or pipelines), `extract_f2()` writes a `.f2_cache_id` sidecar file to the output directory containing a sha256 digest of the input variant set, population labels, and block boundaries. `compute_f2_cache_id(f2_dir)` reads this sidecar back; equal IDs mean the two caches were extracted from the same inputs and are freely interchangeable.
+To verify that two $f_2$-caches were extracted from the same data and parameters (useful when sharing caches across collaborators or pipelines), `extract_f2()` writes a `.f2_cache_id` sidecar file to the output directory containing a sha256 digest of the contributing samples, post-filter variant set, block boundaries, and SNP-filter arguments. `compute_f2_cache_id(f2_dir)` reads this sidecar back; equal IDs mean the two caches were extracted from the same inputs and are freely interchangeable.
 
 
 
