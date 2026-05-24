@@ -83,8 +83,12 @@ test_that(".heartbeat non-TTY mode emits a cli ℹ-bulleted message", {
   # condition system) catches it.
   out = testthat::capture_messages(.heartbeat("hello", .tty = FALSE))
   expect_length(out, 1)
-  # ℹ bullet + space + msg + \n
-  expect_match(out[1], "ℹ hello")
+  # Bullet glyph + space + msg + \n. The glyph is `ℹ` (U+2139) when cli
+  # detects unicode output, and the ASCII fallback `i` otherwise.
+  # testthat edition 3 sets `cli.unicode = FALSE` inside each test_that()
+  # block (for reproducible output), so under `Config/testthat/edition: 3`
+  # we get the ASCII form. Pin the message content rather than the glyph.
+  expect_match(out[1], "[ℹi] hello")
 })
 
 
