@@ -1,7 +1,7 @@
 ---
 title: "f-statistics"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -155,11 +155,12 @@ The two scenarios are illustrated for SNPs with different missingness patterns i
 
 <br>
 
-This means that when working with samples or populations with significant amounts of missing data, it can matter which SNPs we decide to use. There is a trade-off between minimizing the chance of bias (using few SNPs) and maximizing power (using many SNPs). Here are the three basic options, ordered from most conservative / fewest SNPs (which is the default) to least conservative / most SNPs.
+This means that when working with samples or populations with significant amounts of missing data, it can matter which SNPs we decide to use. There is a trade-off between minimizing the chance of bias (using few SNPs) and maximizing power (using many SNPs). Here are four basic options. The first three are ordered from most conservative / fewest SNPs (which is the default) to least conservative / most SNPs; the fourth (`qpfstats`) takes a different approach.
 
 1. Use the same SNPs for every $f_4$-statistic (`maxmiss = 0` / `allsnps: NO`)
 2. Use different SNPs for each $f_4$-statistic (`allsnps: YES / allsnps = TRUE`)
 3. Use different SNPs for each $f_2$-statistic (`maxmiss > 0`)
+4. Smooth $f_2$-statistics jointly across $f_2$, $f_3$, and $f_4$ (`qpfstats()`)
 
 These options are discussed in more detail below. The second option makes it necessary to read data from genotype files directly. To choose between option 1 and option 3, adjust the `maxmiss` parameter in `extract_f2()` or `f2_from_geno()`. Which of this solutions is most suitable in your case depends on a few different factors:
 
@@ -226,6 +227,16 @@ What follows are more detailed descriptions of the different strategies for deal
     *Using allele frequency products rather than $f_2$-statistics to compute $f_4$-statistics*
 
     If you end up using `maxmiss > 0`, there is another thing you can do to reduce the chance of bias. If you recall the equation above in which $f_4$ is expressed as a sum of four $f_2$-statistics, you will see that it can be expressed equally as a sum of four allele frequency products (averaged across SNPs). When no SNPs are missing, there is no difference between $f_4$ as a sum of $f_2$ and $f_4$ as a sum of allele frequency products. However, when some SNPs are missing, it is often better to compute $f_4$ as a sum of allele frequency products. This is because the $f_2$ bias correction factor is more influenced by using different sets of SNPs than allele frequency products. In *ADMIXTOOLS 2*, allele frequency products are always extracted from genotype data in parallel with $f_2$-statistics. Functions which directly or indirectly use $f_4$-statistics will automatically use these allele frequency products when reading data from disk. When data from disk is read manually, for example using `f2_from_precomp()`, the option `afprod = TRUE` can be used to read allele frequency products instead of $f_2$-statistics.
+
+4. Smooth $f_2$-statistics using `qpfstats()`
+
+    `qpfstats()` takes a different approach to missingness than Options 1–3: instead of choosing which SNPs to use per *f*-statistic, it computes $f_2$, $f_3$, and $f_4$ statistics from the genotype data, then uses linear regression to recover bias-corrected pseudo-$f_2$ estimates that incorporate information from all three. The resulting "smoothed" $f_2$-statistics behave like a regular $f_2$ cache, but with bias-correction that draws on signal from $f_3$ and $f_4$. This is often more effective than Option 3 alone when populations have large amounts of missing data — each individual statistic might suffer from missingness bias, but the joint smoothing across all three regresses much of that bias out.
+
+    Like Options 2 and 3, `qpfstats()` reads directly from genotype files. The output is a 3d array of $f_2$-blocks compatible with all the downstream consumers (`qpadm`, `qpgraph`, etc.):
+
+    ```{r, eval = FALSE}
+    f2_blocks = qpfstats(genotype_data, mypops)
+    ```
 
 
 ### Bias due to SNP ascertainment
@@ -294,6 +305,8 @@ In *ADMIXTOOLS 2*, the simplest way to compute *f*-statistics from genotype data
 genotype_data = "/my/geno/prefix"
 f2_blocks = f2_from_geno(genotype_data)
 ```
+
+`f2_from_geno()` (and `extract_f2()`) auto-detect the genotype format from the prefix's file extensions — PACKEDPED, PLINK 2 (PFILE), PACKEDANCESTRYMAP, or EIGENSTRAT. See the [data formats vignette](io.html) for details on each.
 
 However, in most cases it will save you time to store $f_2$-statistics on disk in a way that lets you access only some of the population pairs. 
 
@@ -382,6 +395,10 @@ Increasing `cols_per_chunk` in the first step can speed things up, but will requ
 Once `extract_afs()` has finished, $f_2$-statistics can be computed for each pair of chunks.
 
 The second step can take a long time when running one pair after another, so it can make sense to run the calls to `afs_to_f2()` in parallel.
+
+<br>
+
+To verify that two $f_2$-caches were extracted from the same data and parameters (useful when sharing caches across collaborators or pipelines), `extract_f2()` writes a `.f2_cache_id` sidecar file to the output directory containing a sha256 digest of the contributing samples, post-filter variant set, block boundaries, and SNP-filter arguments. `compute_f2_cache_id(f2_dir)` reads this sidecar back; equal IDs mean the two caches were extracted from the same inputs and are freely interchangeable.
 
 
 
