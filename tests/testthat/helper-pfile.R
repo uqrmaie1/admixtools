@@ -181,6 +181,23 @@ build_pfile_fixture = function(dir, with_multi = FALSE, with_fid = TRUE,
       txt[body_idx] = sapply(body, paste, collapse = "\t")
       writeLines(txt, pvar_path)
     }
+
+    # Also inject non-zero CM into the .bim (column 3). plink2 ships .bim
+    # with CM=0 for every variant; tests that read the .bim via plink_to_afs
+    # would otherwise hit get_block_lengths()'s "No genetic linkage map
+    # found!" warning even when this flag is on. Same POS/1e6 rate as .pvar
+    # so the two formats stay consistent for cross-format equivalence tests.
+    if(!is.na(bed_pref)) {
+      bim_path = paste0(bed_pref, ".bim")
+      if(file.exists(bim_path)) {
+        bim = read.table(bim_path, header = FALSE, sep = "\t",
+                         stringsAsFactors = FALSE,
+                         col.names = c("CHR", "SNP", "CM", "POS", "A1", "A2"))
+        bim$CM = bim$POS / 1e6
+        write.table(bim, bim_path, sep = "\t", quote = FALSE,
+                    row.names = FALSE, col.names = FALSE)
+      }
+    }
   }
 
   list(pfile_pref = pfile_pref,
