@@ -30,8 +30,11 @@ test_that("compute_f2_cache_id changes when the IID subset changes", {
   # different cache ids. Mode-1 direct call avoids extract_f2's "informative
   # SNPs" requirement (which can't be met with a 3-sample-per-pop fixture
   # restricted to one pop).
+  # `with_cm_col = TRUE` populates a synthetic CM column in the fixture so
+  # get_block_lengths takes the cm-distance path rather than warning about a
+  # missing linkage map (incidental to this test's SUT).
   withr::with_tempdir({
-    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE, with_cm_col = TRUE)
     pref = fix$bed_pref
     testthat::skip_if(is.na(pref), "BED fixture unavailable")
 
@@ -55,8 +58,10 @@ test_that("compute_f2_cache_id changes when the IID subset changes", {
 test_that("compute_f2_cache_id changes when the variant set changes", {
   # Same IIDs, perturb one variant tuple, cache id must change. Direct
   # mode-1 call so we can control snpfile_kept precisely.
+  # `with_cm_col = TRUE` silences the incidental no-linkage-map warning
+  # (see notes on the IID-subset test above).
   withr::with_tempdir({
-    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE, with_cm_col = TRUE)
     pref = fix$bed_pref
     testthat::skip_if(is.na(pref), "BED fixture unavailable")
 
@@ -119,7 +124,7 @@ test_that("FID-less PFILE: compute_f2_cache_id delegates to .read_psam (issue 1)
   #      proving the helper is actually wired in (not just the column
   #      detection bypassed).
   withr::with_tempdir({
-    fix = build_pfile_fixture(getwd(), with_fid = FALSE)
+    fix = build_pfile_fixture(getwd(), with_fid = FALSE, with_cm_col = TRUE)
     pref = fix$pfile_pref
 
     afdat = suppressMessages(suppressWarnings(pfile_to_afs(pref)))
@@ -155,7 +160,7 @@ test_that("PFILE .pvar parses through compute_f2_cache_id without read_table err
   # this guards against is "any read of .pvar via read_table inside the
   # cache-id codepath".
   withr::with_tempdir({
-    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE, with_cm_col = TRUE)
     pref = fix$pfile_pref
 
     # Direct .read_pvar usage (the helper now wired into the qpfstats branch):
@@ -183,10 +188,14 @@ test_that("compute_f2_cache_id propagates get_block_lengths errors instead of re
     testthat::skip_if(is.na(pref), "BED fixture unavailable")
 
     # Hand-crafted snpfile missing the CHR column required by get_block_lengths.
+    # suppressWarnings: the malformed input also surfaces an incidental
+    # "no linkage map" warning before the SUT error fires; we only care that
+    # the error propagates.
     bad_snp = tibble::tibble(POS = 1:10, A1 = "A", A2 = "G")
     expect_error(
-      compute_f2_cache_id(pref, format = "plink", pops = fix$fid_pops,
-                          snpfile_kept = bad_snp, blgsize = 0.05))
+      suppressWarnings(
+        compute_f2_cache_id(pref, format = "plink", pops = fix$fid_pops,
+                            snpfile_kept = bad_snp, blgsize = 0.05)))
   })
 })
 
@@ -202,7 +211,7 @@ test_that("compute_f2_cache_id auto-detects PFILE when only .pvar.zst is present
   # the .pvar.zst fixture from the helper's .pvar output).
   testthat::skip_if(Sys.which("zstd") == "", "zstd CLI not on PATH")
   withr::with_tempdir({
-    fix = build_pfile_fixture(getwd(), with_fid = TRUE)
+    fix = build_pfile_fixture(getwd(), with_fid = TRUE, with_cm_col = TRUE)
     pref = fix$pfile_pref
     testthat::skip_if(is.na(pref), "PFILE fixture unavailable")
 
