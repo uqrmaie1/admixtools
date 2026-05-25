@@ -188,14 +188,26 @@ test_that("compute_f2_cache_id propagates get_block_lengths errors instead of re
     testthat::skip_if(is.na(pref), "BED fixture unavailable")
 
     # Hand-crafted snpfile missing the CHR column required by get_block_lengths.
-    # suppressWarnings: the malformed input also surfaces an incidental
-    # "no linkage map" warning before the SUT error fires; we only care that
-    # the error propagates.
+    # Mute only the predictable scaffolding noise that the malformed input
+    # provokes BEFORE the SUT error fires: tibble's "Unknown or uninitialised
+    # column" warnings on `$CHR` / `$cm` access (deliberately absent in
+    # bad_snp), and the pre-error "No genetic linkage map" warning from
+    # get_block_lengths(). Anything else surfaces — narrower than blanket
+    # `suppressWarnings()` so a future-added real warning in this code path
+    # doesn't silently hide.
     bad_snp = tibble::tibble(POS = 1:10, A1 = "A", A2 = "G")
+    expected_noise = c("No genetic linkage map",
+                       "Unknown or uninitialised column")
+    mute_expected = function(w) {
+      msg = conditionMessage(w)
+      if(any(vapply(expected_noise, grepl, logical(1), msg)))
+        invokeRestart("muffleWarning")
+    }
     expect_error(
-      suppressWarnings(
+      withCallingHandlers(
         compute_f2_cache_id(pref, format = "plink", pops = fix$fid_pops,
-                            snpfile_kept = bad_snp, blgsize = 0.05)))
+                            snpfile_kept = bad_snp, blgsize = 0.05),
+        warning = mute_expected))
   })
 })
 
