@@ -1,0 +1,1041 @@
+# dplyr verbs reference column names as bare symbols; declare them here so
+# R CMD check does not warn about "no visible binding for global variable".
+utils::globalVariables(c("from", "to", "type", "weight", "n"))
+
+#' Default drift-to-time conversion (identity)
+#'
+#' The default `drift_to_time` function for [graph_to_lgo()]. Returns
+#' `drift_vec` unchanged (treats drift values directly as LEGOFIT time
+#' starting values).
+#'
+#' Supply a custom function here when you want to convert drift values to
+#' absolute generation times before writing the `.lgo`. The function must
+#' accept two arguments: `drift_vec` (numeric) and `segment_vec` (character),
+#' and return a numeric vector of the same length as `drift_vec`.
+#'
+#' @param drift_vec numeric vector of per-edge drift values.
+#' @param segment_vec character vector of segment names (the `to` endpoint of
+#'   each edge); ignored by this default but required by the contract so
+#'   user-supplied alternatives can index per-segment.
+#' @return Numeric vector, same length as `drift_vec`.
+#' @export
+default_drift_to_time <- function(drift_vec, segment_vec = NULL) {
+  drift_vec
+}
+
+#' @keywords internal
+coerce_to_edge_tibble <- function(x) {
+  if (inherits(x, "igraph")) {
+    edges <- igraph::as_edgelist(x) %>%
+      tibble::as_tibble(.name_repair = ~ c("from", "to"))
+    # Edge schema: `weight` (numeric), `type` (character), `time` (numeric).
+    # `samples` and `twoN` are segment-level concepts (downstream they're
+    # resolved against node names, not edges); not copied off the igraph here.
+    edge_attr_types <- list(weight = "numeric", type = "character",
+                            time = "numeric")
+    for (attr in names(edge_attr_types)) {
+      if (attr %in% igraph::edge_attr_names(x)) {
+        val <- igraph::edge_attr(x, attr)
+        if (length(val) != nrow(edges)) {
+          rlang::abort(
+            sprintf("igraph edge attribute `%s` has length %d but graph has %d edges.",
+                    attr, length(val), nrow(edges)),
+            class = "legofit_invalid_input"
+          )
+        }
+        expected <- edge_attr_types[[attr]]
+        type_ok <- switch(expected,
+          numeric   = is.numeric(val),
+          character = is.character(val)
+        )
+        if (!type_ok) {
+          rlang::abort(
+            sprintf("igraph edge attribute `%s` must be %s; got %s.",
+                    attr, expected, typeof(val)),
+            class = "legofit_invalid_input"
+          )
+        }
+        edges[[attr]] <- val
+      }
+    }
+  } else if (is.data.frame(x)) {
+    edges <- tibble::as_tibble(x)
+  } else {
+    rlang::abort(
+      paste0("`graph` must be an igraph or edge tibble; got: ", class(x)[1]),
+      class = "legofit_invalid_input"
+    )
+  }
+
+  # Derive 'type' from in-degree if not present. Use "normal" / "admix"
+  # to match the convention emitted by random_sim() and consumed by
+  # msprime_sim() elsewhere in admixtools.
+  if (!"type" %in% names(edges)) {
+    edges <- edges %>%
+      dplyr::add_count(to) %>%
+      dplyr::mutate(type = ifelse(n == 1, "normal", "admix")) %>%
+      dplyr::select(-n)
+  }
+
+  # Default weight when absent
+  if (!"weight" %in% names(edges)) edges$weight <- 0
+
+  edges
+}
+
+#' @keywords internal
+validate_edge_tibble <- function(x) {
+  required <- c("from", "to", "type", "weight")
+  missing_cols <- setdiff(required, names(x))
+  if (length(missing_cols) > 0) {
+    rlang::abort(
+      c("Missing required columns in edge tibble.",
+        "x" = paste("Missing:", paste(missing_cols, collapse = ", ")),
+        "i" = "Required columns: from, to, type, weight."),
+      class = "legofit_invalid_input"
+    )
+  }
+  type_ok <- c(
+    from   = is.character(x$from),
+    to     = is.character(x$to),
+    type   = is.character(x$type),
+    weight = is.numeric(x$weight)
+  )
+  if (!all(type_ok)) {
+    rlang::abort(
+      c("Edge tibble has invalid column types.",
+        "x" = paste("Wrong type:", paste(names(type_ok)[!type_ok], collapse = ", ")),
+        "i" = "from, to, type must be character; weight must be numeric."),
+      class = "legofit_invalid_input"
+    )
+  }
+  # Accept both "normal" (random_sim / msprime_sim convention) and "edge"
+  # (qpgraph convention). Admixtools is internally inconsistent on this;
+  # we treat any non-"admix" type as a derive-edge downstream.
+  if (!all(x$type %in% c("normal", "edge", "admix"))) {
+    rlang::abort(
+      c("Invalid `type` values.",
+        "x" = paste("Got:", paste(unique(x$type), collapse = ", ")),
+        "i" = "Allowed: 'normal' or 'edge' for non-admix edges, 'admix' for admix edges."),
+      class = "legofit_invalid_input"
+    )
+  }
+  # admix invariant: each 'to' with type='admix' has exactly 2 incoming edges
+  admix_groups <- table(x$to[x$type == "admix"])
+  bad <- names(admix_groups)[admix_groups != 2]
+  if (length(bad) > 0) {
+    rlang::abort(
+      c("admix-typed edges must come in pairs sharing `to`.",
+        "x" = paste("Offending node(s):", paste(bad, collapse = ", ")),
+        "i" = "Each admixture event needs exactly 2 incoming admix edges."),
+      class = "legofit_invalid_input"
+    )
+  }
+  invisible(x)
+}
+
+#' @keywords internal
+generate_param_names <- function(edges) {
+  all_nodes <- unique(c(edges$from, edges$to))
+  admix_dests <- unique(edges$to[edges$type == "admix"])
+  # Each admix event also gets its own "admix time" parameter — the time
+  # at which the event happens. LEGOFIT requires both parent segments of
+  # an admix to reference a SINGLE shared time parameter (not merely the
+  # same value); per-admix-event params satisfy this constraint.
+  list(
+    time       = setNames(paste0("T_", all_nodes), all_nodes),
+    twoN       = setNames(paste0("twoN_", all_nodes), all_nodes),
+    mixFrac    = setNames(paste0("m_", admix_dests), admix_dests),
+    admix_time = setNames(paste0("T_admix_", admix_dests), admix_dests)
+  )
+}
+
+# Generate ghost-segment names for each admix parent. The LEGOFIT
+# convention is to introduce a segment per admix-parent lineage at the
+# admix event time. We name them <dest>_<original> so the round-trip
+# parser can recognize them by structure.
+#' @keywords internal
+admix_ghost_name <- function(dest, parent) {
+  paste0(dest, "_", parent)
+}
+
+#' @keywords internal
+resolve_twoN_decls <- function(edges, twoN) {
+  if (!is.data.frame(edges) || !all(c("from", "to") %in% names(edges))) {
+    rlang::abort(
+      "resolve_twoN_decls() requires an edge tibble with `from` and `to`.",
+      class = "legofit_invalid_input"
+    )
+  }
+  all_nodes <- unique(c(edges$from, edges$to))
+
+  if (is.null(twoN)) {
+    return(list(
+      declarations = "twoN fixed one=1",
+      per_segment  = setNames(rep("one", length(all_nodes)), all_nodes)
+    ))
+  }
+  if (length(twoN) == 1 && is.numeric(twoN)) {
+    return(list(
+      declarations = sprintf("twoN fixed shared=%g", twoN),
+      per_segment  = setNames(rep("shared", length(all_nodes)), all_nodes)
+    ))
+  }
+  if (is.numeric(twoN) && !is.null(names(twoN))) {
+    missing_nodes <- setdiff(all_nodes, names(twoN))
+    if (length(missing_nodes) > 0) {
+      rlang::abort(
+        c("twoN named vector missing entries for some segments.",
+          "x" = paste("Missing:", paste(missing_nodes, collapse = ", "))),
+        class = "legofit_invalid_input"
+      )
+    }
+    extra <- setdiff(names(twoN), all_nodes)
+    if (length(extra) > 0) {
+      rlang::abort(
+        c("twoN named vector has entries that do not match any node.",
+          "x" = paste("Unknown:", paste(extra, collapse = ", ")),
+          "i" = paste("Known:", paste(all_nodes, collapse = ", "))),
+        class = "legofit_invalid_input"
+      )
+    }
+    return(list(
+      declarations = paste(sprintf("twoN free twoN_%s=%g", names(twoN), twoN),
+                           collapse = "\n"),
+      per_segment  = setNames(paste0("twoN_", names(twoN)), names(twoN))
+    ))
+  }
+  rlang::abort("twoN must be NULL, a scalar numeric, or a named numeric vector.",
+               class = "legofit_invalid_input")
+}
+
+#' @keywords internal
+strip_outgroup <- function(edges, outpop) {
+  if (!outpop %in% edges$to) {
+    rlang::abort(
+      c("`outpop` not found among the graph's leaf nodes.",
+        "x" = paste("Got:", outpop),
+        "i" = paste("Available leaves:",
+                    paste(setdiff(edges$to, edges$from), collapse = ", "))),
+      class = "legofit_invalid_input"
+    )
+  }
+  outpop_parent <- edges$from[edges$to == outpop]
+  if (length(outpop_parent) != 1) {
+    rlang::abort("`outpop` must have exactly one parent (root split).",
+                 class = "legofit_invalid_input")
+  }
+  root <- setdiff(edges$from, edges$to)
+  if (length(root) != 1 || outpop_parent != root) {
+    rlang::abort(
+      c("`outpop` is not adjacent to the topology root.",
+        "i" = "Only direct outgroup leaves can be stripped via `outpop`."),
+      class = "legofit_invalid_input"
+    )
+  }
+  n_root_children <- sum(edges$from == root)
+  if (n_root_children != 2) {
+    rlang::abort(
+      c("Cannot strip `outpop`: root must be strictly bifurcating.",
+        "x" = sprintf("Root `%s` has %d children, not 2.",
+                      root, n_root_children),
+        "i" = "Re-root the graph before calling graph_to_lgo, or omit `outpop`."),
+      class = "legofit_invalid_input"
+    )
+  }
+  edges %>% dplyr::filter(to != outpop, from != root)
+}
+
+#' @keywords internal
+resolve_scalar_or_named <- function(arg, nodes, default = NULL) {
+  if (!is.character(nodes) || length(nodes) < 1) {
+    rlang::abort(
+      "resolve_scalar_or_named() requires a non-empty character vector of node names.",
+      class = "legofit_invalid_input"
+    )
+  }
+  if (is.null(arg)) {
+    if (is.null(default)) {
+      rlang::abort(
+        "`arg` is NULL and no default supplied.",
+        class = "legofit_invalid_input"
+      )
+    }
+    return(setNames(rep(default, length(nodes)), nodes))
+  }
+  if (is.null(names(arg))) {
+    if (length(arg) != 1) {
+      rlang::abort(
+        "Unnamed numeric must be length 1 (used as scalar default).",
+        class = "legofit_invalid_input"
+      )
+    }
+    return(setNames(rep(arg, length(nodes)), nodes))
+  }
+  # Named vector: reject unknown names (usually a typo'd leaf name).
+  unknown <- setdiff(names(arg), nodes)
+  if (length(unknown) > 0) {
+    rlang::abort(
+      c("Named numeric has entries that do not match any node.",
+        "x" = paste("Unknown:", paste(unknown, collapse = ", ")),
+        "i" = paste("Known:", paste(nodes, collapse = ", "))),
+      class = "legofit_invalid_input"
+    )
+  }
+  # Validate coverage
+  missing_nodes <- setdiff(nodes, names(arg))
+  if (length(missing_nodes) > 0) {
+    if (is.null(default)) {
+      rlang::abort(
+        c("Named numeric missing entries (no default to fall back on).",
+          "x" = paste("Missing:", paste(missing_nodes, collapse = ", "))),
+        class = "legofit_invalid_input"
+      )
+    }
+    out <- setNames(rep(default, length(nodes)), nodes)
+  } else {
+    out <- setNames(rep(if (!is.null(default)) default else NA_real_,
+                        length(nodes)), nodes)
+  }
+  overlap <- intersect(nodes, names(arg))
+  out[overlap] <- arg[overlap]
+  out
+}
+
+#' @keywords internal
+topology_walk_bottom_up <- function(edges, branch_lengths, leaf_times,
+                                    tol = 1e-6) {
+  if (length(branch_lengths) != nrow(edges)) {
+    rlang::abort(
+      sprintf("branch_lengths length (%d) must equal nrow(edges) (%d).",
+              length(branch_lengths), nrow(edges)),
+      class = "legofit_invalid_input"
+    )
+  }
+  all_nodes <- unique(c(edges$from, edges$to))
+  node_time <- setNames(rep(NA_real_, length(all_nodes)), all_nodes)
+
+  leaves <- setdiff(edges$to, edges$from)
+  if (!setequal(names(leaf_times), leaves)) {
+    rlang::abort(
+      "`leaf_times` must name exactly the leaf nodes.",
+      class = "legofit_invalid_input"
+    )
+  }
+  node_time[leaves] <- leaf_times[leaves]
+
+  progress <- TRUE
+  while (progress) {
+    progress <- FALSE
+    for (i in seq_len(nrow(edges))) {
+      u <- edges$from[[i]]
+      v <- edges$to[[i]]
+      if (is.na(node_time[u]) && !is.na(node_time[v])) {
+        node_time[u] <- node_time[v] + branch_lengths[[i]]
+        progress <- TRUE
+      } else if (!is.na(node_time[u]) && !is.na(node_time[v])) {
+        proposed <- node_time[v] + branch_lengths[[i]]
+        if (abs(node_time[u] - proposed) > tol) {
+          rlang::abort(
+            c(sprintf("Inconsistent branch lengths at node `%s`.", u),
+              "x" = sprintf("Computed t=%g via one path and t=%g via edge %s->%s.",
+                            node_time[u], proposed, u, v),
+              "i" = "Input drifts imply inconsistent absolute times."),
+            class = "legofit_invalid_input"
+          )
+        }
+      }
+    }
+  }
+
+  if (any(is.na(node_time))) {
+    unreachable <- names(node_time)[is.na(node_time)]
+    rlang::abort(
+      c("Some nodes unreachable from leaves during topology walk.",
+        "x" = paste("Unreachable:", paste(unreachable, collapse = ", ")),
+        "i" = "Input graph may be disconnected, may contain cycles, or the leaf set may be incomplete."),
+      class = "legofit_invalid_input"
+    )
+  }
+  node_time
+}
+
+#' Longest-path depth from any leaf to each node.
+#'
+#' Used to seed starting values for `time_handling = "free"`. LEGOFIT
+#' requires `free` declarations to carry a starting value; depth gives
+#' a monotonic deterministic series (parent > child) without requiring
+#' consistent drift values across the topology.
+#' @keywords internal
+compute_node_depths <- function(edges) {
+  all_nodes <- unique(c(edges$from, edges$to))
+  leaves <- setdiff(edges$to, edges$from)
+  depth <- setNames(rep(NA_integer_, length(all_nodes)), all_nodes)
+  depth[leaves] <- 0L
+  # Cap iterations at V: in any acyclic graph the longest path is at
+  # most V-1, so depth converges within V passes. A cycle would let
+  # the longest-path algorithm grow without bound, so cap and error.
+  max_iter <- length(all_nodes)
+  progress <- TRUE
+  iter <- 0L
+  while (progress && iter < max_iter) {
+    progress <- FALSE
+    iter <- iter + 1L
+    for (i in seq_len(nrow(edges))) {
+      u <- edges$from[[i]]
+      v <- edges$to[[i]]
+      if (!is.na(depth[v])) {
+        candidate <- depth[v] + 1L
+        if (is.na(depth[u]) || candidate > depth[u]) {
+          depth[u] <- candidate
+          progress <- TRUE
+        }
+      }
+    }
+  }
+  if (progress && iter >= max_iter) {
+    rlang::abort(
+      c("Cycle detected during depth computation.",
+        "x" = sprintf("Longest path did not converge in %d iterations.", max_iter),
+        "i" = "Input graph must be a DAG; cycles are not supported."),
+      class = "legofit_invalid_input"
+    )
+  }
+  if (any(is.na(depth))) {
+    unreachable <- names(depth)[is.na(depth)]
+    rlang::abort(
+      c("Some nodes are unreachable from any leaf during depth computation.",
+        "x" = paste("Unreachable:", paste(unreachable, collapse = ", ")),
+        "i" = "Input graph may contain a disconnected component."),
+      class = "legofit_invalid_input"
+    )
+  }
+  depth
+}
+
+#' @keywords internal
+compute_times <- function(edges, time_handling, drift_to_time,
+                          dates_terminal) {
+  required_cols <- c("from", "to", "type", "weight")
+  if (!is.data.frame(edges) || !all(required_cols %in% names(edges))) {
+    rlang::abort(
+      "compute_times() requires an edge tibble with from/to/type/weight columns.",
+      class = "legofit_invalid_input"
+    )
+  }
+  if (!time_handling %in% c("fix_admix", "init", "free")) {
+    rlang::abort(
+      sprintf("Invalid `time_handling`: %s (allowed: fix_admix, init, free).",
+              time_handling),
+      class = "legofit_invalid_input"
+    )
+  }
+  if (!is.function(drift_to_time)) {
+    rlang::abort(
+      "`drift_to_time` must be a function.",
+      class = "legofit_invalid_input"
+    )
+  }
+  all_nodes <- unique(c(edges$from, edges$to))
+  leaves    <- setdiff(edges$to, edges$from)
+
+  if (length(leaves) == 0) {
+    rlang::abort(
+      c("Graph has no leaves.",
+        "x" = "Every node appears as both `from` and `to`.",
+        "i" = "Likely a cyclic input or malformed edges tibble; a finite DAG always has at least one leaf."),
+      class = "legofit_invalid_input"
+    )
+  }
+
+  admix_dests <- unique(edges$to[edges$type == "admix"])
+  terminal_t  <- resolve_scalar_or_named(dates_terminal, leaves, default = 0)
+
+  if (time_handling == "free") {
+    # LEGOFIT requires `free` declarations to carry a starting value;
+    # emit topological-depth-based values so parent > child holds.
+    # The optimizer will adjust from there.
+    non_leaf <- setdiff(all_nodes, leaves)
+    depths   <- compute_node_depths(edges)
+    init_t   <- setNames(as.numeric(depths[non_leaf]), non_leaf)
+    return(list(
+      value = c(terminal_t, init_t)[all_nodes],
+      free  = setNames(!(all_nodes %in% leaves), all_nodes),
+      omit  = character(0)
+    ))
+  }
+
+  # "init" or "fix_admix": derive branch lengths, then topology-walk
+  bl <- if ("time" %in% names(edges)) {
+    ifelse(!is.na(edges$time),
+           edges$time,
+           drift_to_time(edges$weight, edges$to))
+  } else {
+    drift_to_time(edges$weight, edges$to)
+  }
+  if (time_handling == "fix_admix") {
+    bl <- ifelse(edges$type == "admix", 0, bl)
+  }
+
+  node_time <- topology_walk_bottom_up(edges, bl, leaf_times = terminal_t)
+
+  # Path B (ghost segments) means admix dests get their own t= field
+  # like any other node — they aren't omitted from time declarations.
+  # The LEGOFIT param-sharing constraint is handled by the ghost
+  # segments anchoring at T_admix_<dest> instead.
+  free <- switch(time_handling,
+    "fix_admix" = setNames(!(all_nodes %in% leaves), all_nodes),
+    "init"      = setNames(!(all_nodes %in% leaves), all_nodes)
+  )
+
+  list(value = node_time[all_nodes], free = free, omit = character(0))
+}
+
+# Single source of truth for (high, low) parent-pair ordering in admix events.
+# Sort: desc(weight) primary, ascending `from` as tiebreaker.
+admix_parent_pairs <- function(edges) {
+  edges %>%
+    dplyr::filter(type == "admix") %>%
+    dplyr::group_by(to) %>%
+    dplyr::arrange(desc(weight), from, .by_group = TRUE) %>%
+    dplyr::summarise(
+      high          = dplyr::first(from),
+      low           = dplyr::last(from),
+      mixfrac_value = dplyr::last(weight),
+      .groups       = "drop"
+    )
+}
+
+format_time_declarations <- function(time_param_names, times,
+                                     admix_time_param_names = NULL,
+                                     admix_pairs = NULL) {
+  # Per-node time declarations (every node gets one — admix dests are no
+  # longer omitted; ghost segments handle the param-sharing constraint).
+  keep <- names(time_param_names)
+  fixed   <- keep[!times$free[keep]]
+  freed   <- keep[ times$free[keep]]
+  ordered <- c(fixed, freed)
+  free_str <- ifelse(times$free[ordered], "free", "fixed")
+  node_lines <- sprintf("time %s %s=%g",
+                        free_str,
+                        time_param_names[ordered],
+                        times$value[ordered])
+
+  # Per-admix-event time declarations (T_admix_<M>). Always free — the
+  # admix event time is what LEGOFIT optimizes.
+  admix_lines <- character(0)
+  if (!is.null(admix_pairs) && nrow(admix_pairs) > 0) {
+    admix_lines <- sprintf("time free %s=%g",
+                           admix_time_param_names[admix_pairs$to],
+                           times$value[admix_pairs$high])
+  }
+
+  out <- c(node_lines, admix_lines)
+  if (length(out) == 0) return(character(0))
+  paste(out, collapse = "\n")
+}
+
+format_mixfrac_declarations <- function(mixfrac_param_names, edges) {
+  pairs <- admix_parent_pairs(edges)
+  if (nrow(pairs) == 0) return(character(0))
+  paste(sprintf("mixFrac free %s=%g",
+                mixfrac_param_names[pairs$to],
+                pairs$mixfrac_value),
+        collapse = "\n")
+}
+
+format_segment_declarations <- function(nodes, time_param_names,
+                                        twoN_param_per_node, samples_vec) {
+  # Every segment carries an explicit `t=<param>`. (Ghost segments for
+  # admix events are emitted separately by format_ghost_segments.)
+  lines <- vapply(nodes, function(n) {
+    parts <- paste0("segment ", n, " t=", time_param_names[n],
+                    " twoN=", twoN_param_per_node[n])
+    if (!is.na(samples_vec[n])) parts <- paste0(parts, " samples=", samples_vec[n])
+    parts
+  }, character(1))
+  paste(lines, collapse = "\n")
+}
+
+# Emit the "ghost" segments LEGOFIT requires for each admix event. Both
+# parents of an admix must reference the SAME time parameter; we anchor
+# them at T_admix_<dest>. The ghost is named <dest>_<parent>.
+format_ghost_segments <- function(admix_pairs, admix_time_param_names,
+                                  twoN_param_per_node) {
+  if (nrow(admix_pairs) == 0) return(character(0))
+  lines <- character(0)
+  for (i in seq_len(nrow(admix_pairs))) {
+    m    <- admix_pairs$to[[i]]
+    high <- admix_pairs$high[[i]]
+    low  <- admix_pairs$low[[i]]
+    anchor <- admix_time_param_names[[m]]
+    lines <- c(lines,
+      sprintf("segment %s t=%s twoN=%s",
+              admix_ghost_name(m, high), anchor, twoN_param_per_node[[high]]),
+      sprintf("segment %s t=%s twoN=%s",
+              admix_ghost_name(m, low),  anchor, twoN_param_per_node[[low]])
+    )
+  }
+  paste(lines, collapse = "\n")
+}
+
+# Each ghost derives from its corresponding real parent population.
+format_ghost_derives <- function(admix_pairs) {
+  if (nrow(admix_pairs) == 0) return(character(0))
+  lines <- character(0)
+  for (i in seq_len(nrow(admix_pairs))) {
+    m    <- admix_pairs$to[[i]]
+    high <- admix_pairs$high[[i]]
+    low  <- admix_pairs$low[[i]]
+    lines <- c(lines,
+      sprintf("derive %s from %s", admix_ghost_name(m, high), high),
+      sprintf("derive %s from %s", admix_ghost_name(m, low),  low)
+    )
+  }
+  paste(lines, collapse = "\n")
+}
+
+format_derive_statements <- function(edges_non_admix) {
+  paste(sprintf("derive %s from %s",
+                edges_non_admix$to,
+                edges_non_admix$from),
+        collapse = "\n")
+}
+
+format_mix_statements <- function(edges_admix, mixfrac_param_names) {
+  pairs <- admix_parent_pairs(edges_admix)
+  if (nrow(pairs) == 0) return(character(0))
+  # Mix references the ghost segments (named <dest>_<parent>), not the
+  # real parents, because LEGOFIT requires both mix parents to share a
+  # time parameter and the ghosts anchor at T_admix_<dest>.
+  paste(sprintf("mix %s from %s + %s * %s",
+                pairs$to,
+                admix_ghost_name(pairs$to, pairs$high),
+                mixfrac_param_names[pairs$to],
+                admix_ghost_name(pairs$to, pairs$low)),
+        collapse = "\n")
+}
+
+#' @keywords internal
+assemble_lgo <- function(edges, params, times, twoN_decls, samples_vec) {
+  all_nodes   <- unique(c(edges$from, edges$to))
+  admix_pairs <- admix_parent_pairs(edges)
+
+  # Guard against user-supplied node names colliding with the synthetic
+  # ghost-segment names we will emit (<dest>_<parent>). A collision would
+  # create duplicate `segment` declarations and break LEGOFIT parse.
+  if (nrow(admix_pairs) > 0) {
+    proposed_ghosts <- c(
+      admix_ghost_name(admix_pairs$to, admix_pairs$high),
+      admix_ghost_name(admix_pairs$to, admix_pairs$low)
+    )
+    collisions <- intersect(proposed_ghosts, all_nodes)
+    if (length(collisions) > 0) {
+      rlang::abort(
+        c("Node names collide with synthetic ghost-segment names.",
+          "x" = paste("Collisions:", paste(collisions, collapse = ", ")),
+          "i" = "Ghost names follow <dest>_<parent>; rename the offending nodes."),
+        class = "legofit_invalid_input"
+      )
+    }
+  }
+
+  time_decls   <- format_time_declarations(params$time, times,
+                                           params$admix_time, admix_pairs)
+  mfrac_decls  <- format_mixfrac_declarations(params$mixFrac, edges)
+  seg_decls    <- format_segment_declarations(all_nodes, params$time,
+                                              twoN_decls$per_segment,
+                                              samples_vec)
+  ghost_segs   <- format_ghost_segments(admix_pairs, params$admix_time,
+                                        twoN_decls$per_segment)
+  derive_stmts <- format_derive_statements(
+    edges %>% dplyr::filter(type != "admix")
+  )
+  ghost_derives <- format_ghost_derives(admix_pairs)
+  mix_stmts     <- format_mix_statements(
+    edges %>% dplyr::filter(type == "admix"),
+    params$mixFrac
+  )
+
+  # Combine real and ghost segment / derive blocks, dropping empty pieces
+  # so we don't emit blank inner lines.
+  seg_block    <- paste(c(seg_decls, ghost_segs)[nzchar(c(seg_decls, ghost_segs))],
+                        collapse = "\n")
+  derive_block <- paste(c(derive_stmts, ghost_derives)[nzchar(c(derive_stmts, ghost_derives))],
+                        collapse = "\n")
+
+  paste(
+    "## .lgo generated by admixtools::graph_to_lgo()",
+    "",
+    "### Parameters",
+    time_decls,
+    twoN_decls$declarations,
+    mfrac_decls,
+    "",
+    "### Segments",
+    seg_block,
+    "",
+    "### Relationships",
+    derive_block,
+    mix_stmts,
+    sep = "\n"
+  )
+}
+
+# Safely evaluate an arithmetic expression from a `time constrained` RHS.
+# Only allows numeric literals, identifier lookups against `env`, and the
+# operators + - * / ^ (). Anything else aborts with
+# `legofit_lgo_unsupported`. Avoids the security risk of plain
+# `eval(parse(text=...))` on third-party .lgo files.
+#' @keywords internal
+safe_eval_arith <- function(expr, env) {
+  if (is.numeric(expr)) return(as.numeric(expr))
+  if (is.name(expr)) {
+    name <- as.character(expr)
+    if (!exists(name, envir = env, inherits = FALSE)) {
+      rlang::abort(
+        sprintf("Unknown identifier `%s` in constrained expression.", name),
+        class = "legofit_lgo_unsupported"
+      )
+    }
+    return(get(name, envir = env, inherits = FALSE))
+  }
+  if (is.call(expr)) {
+    op <- as.character(expr[[1]])
+    if (!op %in% c("+", "-", "*", "/", "^", "(")) {
+      rlang::abort(
+        sprintf("Unsafe operator `%s` in constrained expression.", op),
+        class = "legofit_lgo_unsupported"
+      )
+    }
+    args <- lapply(as.list(expr)[-1], safe_eval_arith, env = env)
+    return(do.call(op, args))
+  }
+  rlang::abort(
+    "Unsupported expression syntax in constrained declaration.",
+    class = "legofit_lgo_unsupported"
+  )
+}
+
+#' Parse a LEGOFIT .lgo file (minimum-viable subset)
+#'
+#' Parses the subset of LEGOFIT 1.87 `.lgo` grammar that
+#' [graph_to_lgo()] emits. Full grammar coverage (line continuation,
+#' `constrained` expressions, bounded `free`) is deferred to Phase 2.
+#'
+#' Exactly one of `path` or `text` must be supplied.
+#'
+#' @param path Path to a `.lgo` file (UTF-8 encoded).
+#' @param text A character scalar (full file text) or character vector
+#'   (one element per line).
+#' @param as Output format. Only `"edges"` (canonical edge tibble) is
+#'   supported in this version; `"igraph"` errors with
+#'   `legofit_lgo_unsupported` and arrives in Phase 2.
+#' @return A tibble with columns `from`, `to`, `type`, `weight`.
+#' @export
+read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
+  as <- match.arg(as)
+
+  if (is.null(path) == is.null(text)) {
+    rlang::abort(
+      "Exactly one of `path` or `text` must be supplied.",
+      class = "legofit_invalid_input"
+    )
+  }
+
+  if (as == "igraph") {
+    rlang::abort(
+      "`as = 'igraph'` is not yet implemented; only `as = 'edges'` is supported.",
+      class = "legofit_lgo_unsupported"
+    )
+  }
+
+  lines <- if (!is.null(path)) {
+    readLines(path, encoding = "UTF-8")
+  } else if (is.character(text) && length(text) == 1) {
+    strsplit(text, "\n", fixed = TRUE)[[1]]
+  } else if (is.character(text)) {
+    text
+  } else {
+    rlang::abort(
+      "`text` must be a character scalar or vector.",
+      class = "legofit_invalid_input"
+    )
+  }
+
+  # Strip comments (#...) and trailing whitespace; skip blank lines
+  lines <- gsub("#.*$", "", lines)
+  lines <- trimws(lines, which = "right")
+  lines <- lines[nzchar(lines)]
+
+  # Building tibbles
+  params_rows <- list()
+  derive_rows <- list()
+  mix_rows    <- list()
+
+  for (ln in lines) {
+    tok <- strsplit(trimws(ln), "\\s+")[[1]]
+
+    if (tok[[1]] %in% c("time", "twoN", "mixFrac")) {
+      if (length(tok) < 3) {
+        rlang::abort(
+          sprintf("Malformed %s declaration at line: %s", tok[[1]], ln),
+          class = "legofit_lgo_unsupported"
+        )
+      }
+      # Robust to whitespace around `=`: rejoin tokens and split on the
+      # first `=`. graph_to_lgo emits `name=value` (no spaces) but other
+      # writers (e.g., rha20.lgo) use `name = value`.
+      rest   <- paste(tok[3:length(tok)], collapse = " ")
+      eq_pos <- regexpr("=", rest, fixed = TRUE)
+      if (eq_pos == -1) {
+        rlang::abort(
+          sprintf("Malformed %s declaration (missing `=`): %s", tok[[1]], ln),
+          class = "legofit_lgo_unsupported"
+        )
+      }
+      p_name <- trimws(substr(rest, 1, eq_pos - 1))
+      rhs    <- trimws(substr(rest, eq_pos + 1, nchar(rest)))
+
+      p_val <- if (tok[[2]] == "constrained") {
+        # `constrained` RHS is an arithmetic expression over previously
+        # declared parameters. Evaluate safely (only +, -, *, /, ^, and
+        # parenthesization allowed; identifiers must already be in the
+        # params parsed so far).
+        env <- list2env(
+          setNames(lapply(params_rows, function(r) r$value),
+                   vapply(params_rows, function(r) r$name, character(1))),
+          parent = emptyenv()
+        )
+        safe_eval_arith(parse(text = rhs)[[1]], env)
+      } else {
+        suppressWarnings(as.numeric(rhs))
+      }
+      params_rows[[length(params_rows) + 1]] <- list(
+        name = p_name, value = p_val
+      )
+
+    } else if (tok[[1]] == "segment") {
+      # segment <name> [t=<param>] twoN=<param> [samples=<int>]
+      # Parsed for syntactic validity only; the edge tibble is built from
+      # derive/mix statements below. Segment-level metadata (samples, twoN
+      # bindings) is not surfaced in the current return value.
+      next
+
+    } else if (tok[[1]] == "derive") {
+      # derive <child> from <parent>
+      if (length(tok) != 4 || tok[[3]] != "from") {
+        rlang::abort(
+          sprintf("Malformed derive statement: %s", ln),
+          class = "legofit_lgo_unsupported"
+        )
+      }
+      derive_rows[[length(derive_rows) + 1]] <- list(child = tok[[2]], parent = tok[[4]])
+
+    } else if (tok[[1]] == "mix") {
+      # mix <child> from <high> + <mixfrac_param> * <low>
+      # tok: mix, child, from, high, +, mixfrac_param, *, low
+      if (length(tok) != 8 || tok[[3]] != "from" || tok[[5]] != "+" || tok[[7]] != "*") {
+        rlang::abort(
+          sprintf("Malformed mix statement: %s", ln),
+          class = "legofit_lgo_unsupported"
+        )
+      }
+      child      <- tok[[2]]
+      parent_high <- tok[[4]]
+      mf_param   <- tok[[6]]
+      parent_low  <- tok[[8]]
+      mix_rows[[length(mix_rows) + 1]] <- list(
+        child = child, parent_high = parent_high,
+        mf_param = mf_param, parent_low = parent_low
+      )
+
+    } else {
+      rlang::abort(
+        sprintf("Unsupported `.lgo` construct: %s", ln),
+        class = "legofit_lgo_unsupported"
+      )
+    }
+  }
+
+  # Build params lookup: name -> value
+  param_val <- if (length(params_rows) > 0) {
+    setNames(
+      vapply(params_rows, function(r) r$value, numeric(1)),
+      vapply(params_rows, function(r) r$name,  character(1))
+    )
+  } else {
+    numeric(0)
+  }
+
+  # Identify "ghost segments" — segments named in mix statements that are
+  # NOT real populations but synthetic admix-event anchors written by our
+  # writer. A name is a ghost iff it appears as the high or low parent in
+  # a mix statement. We resolve each ghost back to its real parent via
+  # the corresponding `derive <ghost> from <real>` statement.
+  ghost_names <- character(0)
+  for (mr in mix_rows) {
+    ghost_names <- c(ghost_names, mr$parent_high, mr$parent_low)
+  }
+  ghost_names <- unique(ghost_names)
+
+  ghost_to_real <- list()
+  real_derive_rows <- list()
+  for (dr in derive_rows) {
+    if (dr$child %in% ghost_names) {
+      ghost_to_real[[dr$child]] <- dr$parent
+    } else {
+      real_derive_rows[[length(real_derive_rows) + 1]] <- dr
+    }
+  }
+
+  # Build edge tibble from real-derive + mix rows
+  edge_rows <- list()
+  for (dr in real_derive_rows) {
+    # The .lgo format does not carry edge drift directly; weight is unknown
+    # on round-trip. NA_real_ is the honest sentinel.
+    edge_rows[[length(edge_rows) + 1]] <- list(
+      from = dr$parent, to = dr$child, type = "normal", weight = NA_real_
+    )
+  }
+
+  for (mr in mix_rows) {
+    mf_val <- if (mr$mf_param %in% names(param_val)) param_val[[mr$mf_param]] else NA_real_
+    # Resolve ghost names back to real parents (graph_to_lgo emits ghosts
+    # named <dest>_<real>; resolve via the derive that produced them).
+    real_high <- if (mr$parent_high %in% names(ghost_to_real)) {
+      ghost_to_real[[mr$parent_high]]
+    } else {
+      mr$parent_high
+    }
+    real_low <- if (mr$parent_low %in% names(ghost_to_real)) {
+      ghost_to_real[[mr$parent_low]]
+    } else {
+      mr$parent_low
+    }
+    edge_rows[[length(edge_rows) + 1]] <- list(
+      from = real_high, to = mr$child, type = "admix",
+      weight = if (!is.na(mf_val)) 1 - mf_val else NA_real_
+    )
+    edge_rows[[length(edge_rows) + 1]] <- list(
+      from = real_low, to = mr$child, type = "admix",
+      weight = if (!is.na(mf_val)) mf_val else NA_real_
+    )
+  }
+
+  if (length(edge_rows) == 0) {
+    return(tibble::tibble(from = character(), to = character(),
+                          type = character(), weight = numeric()))
+  }
+
+  result <- do.call(rbind, lapply(edge_rows, as.data.frame, stringsAsFactors = FALSE))
+  tibble::as_tibble(result)
+}
+
+#' @keywords internal
+validate_via_roundtrip <- function(lgo_text, edges) {
+  parsed <- tryCatch(
+    read_lgo(text = lgo_text, as = "edges"),
+    error = function(e) {
+      rlang::abort(
+        c("graph_to_lgo produced .lgo that read_lgo cannot parse.",
+          "i" = "This is a bug in graph_to_lgo or read_lgo.",
+          "x" = paste("Parser error:", conditionMessage(e))),
+        class = "legofit_validation_failed",
+        parent = e
+      )
+    }
+  )
+
+  # read_lgo emits type="normal" for non-admix edges; the input may use
+  # "edge" (qpgraph convention) or "normal" (random_sim convention) —
+  # treat them as equivalent for the topology check.
+  norm_type <- function(t) ifelse(t == "edge", "normal", t)
+  expected <- edges  %>% dplyr::select(from, to, type) %>%
+              dplyr::mutate(type = norm_type(type)) %>%
+              dplyr::arrange(from, to)
+  got      <- parsed %>% dplyr::select(from, to, type) %>%
+              dplyr::mutate(type = norm_type(type)) %>%
+              dplyr::arrange(from, to)
+  if (!isTRUE(all.equal(expected, got))) {
+    rlang::abort(
+      c("graph_to_lgo's output round-trips to a different topology.",
+        "i" = "Likely a bug in parameter naming or .lgo assembly."),
+      class = "legofit_validation_failed"
+    )
+  }
+  invisible(TRUE)
+}
+
+#' Export an admixtools admixture graph to LEGOFIT .lgo format
+#'
+#' Converts an admixtools admixture graph (as an edge tibble or igraph) into
+#' a LEGOFIT-compatible `.lgo` file.
+#'
+#' @param graph An edge tibble (columns `from`, `to`, `type`, `weight`) or an
+#'   igraph with `type` and `weight` edge attributes.
+#' @param file Output file path. If `NULL` (default), returns the `.lgo` text
+#'   invisibly without writing.
+#' @param samples Samples per leaf. A scalar (applied to all leaves) or a named
+#'   integer vector (per-leaf overrides). Default `1`.
+#' @param dates_terminal Starting time value for terminal (leaf) nodes. Default
+#'   `0`.
+#' @param outpop Name of an outgroup leaf to strip from the graph before export.
+#'   `NULL` (default) skips stripping.
+#' @param twoN Population size parameterization. `NULL` (default) emits
+#'   `twoN fixed one=1` (coalescent units). A scalar numeric emits a fixed
+#'   shared `twoN`. A named numeric vector emits per-segment free `twoN`
+#'   parameters.
+#' @param time_handling How to handle node times. One of:
+#'   - `"fix_admix"` (default): admixture-destination nodes get no `t=`
+#'     declaration (their time is implicit). Requires drift values that are
+#'     additively consistent along every root-to-leaf path.
+#'   - `"init"`: all non-leaf nodes are free starting points; respects an
+#'     explicit `time` column on the edge tibble. Same consistency
+#'     requirement as `"fix_admix"`.
+#'   - `"free"`: all non-leaf times are declared `free` with depth-based
+#'     starting values. Bypasses the topology walk entirely, so it accepts
+#'     edge tibbles whose drifts are not additively consistent (e.g.,
+#'     outputs from [qpgraph()], which optimizes drift for f-stat fit
+#'     rather than time-walk consistency).
+#' @param drift_to_time Function converting per-edge drift to branch length.
+#'   Default [default_drift_to_time()] (identity). Ignored when
+#'   `time_handling = "free"` or when an explicit `time` column is present.
+#' @param validate If `TRUE` (default), round-trips the output through
+#'   [read_lgo()] to confirm topology is preserved.
+#' @return The `.lgo` text, invisibly.
+#' @export
+graph_to_lgo <- function(graph,
+                         file = NULL,
+                         samples = 1,
+                         dates_terminal = 0,
+                         outpop = NULL,
+                         twoN = NULL,
+                         time_handling = c("fix_admix", "init", "free"),
+                         drift_to_time = default_drift_to_time,
+                         validate = TRUE) {
+
+  time_handling <- match.arg(time_handling)
+
+  edges <- coerce_to_edge_tibble(graph)
+  validate_edge_tibble(edges)
+
+  if (!is.null(outpop)) edges <- strip_outgroup(edges, outpop)
+
+  params <- generate_param_names(edges)
+  times  <- compute_times(edges, time_handling, drift_to_time, dates_terminal)
+  twoN_decls <- resolve_twoN_decls(edges, twoN)
+
+  leaves       <- setdiff(edges$to, edges$from)
+  all_nodes    <- unique(c(edges$from, edges$to))
+  samples_vec  <- resolve_scalar_or_named(samples, leaves, default = NA_integer_)
+  full_samples <- setNames(rep(NA_integer_, length(all_nodes)), all_nodes)
+  full_samples[leaves] <- as.integer(samples_vec[leaves])
+
+  lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
+
+  if (validate) validate_via_roundtrip(lgo_text, edges)
+  if (!is.null(file)) writeLines(lgo_text, file)
+
+  invisible(lgo_text)
+}
