@@ -1116,8 +1116,9 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #'   set of "right" / outgroup populations. If unnamed, names default to
 #'   `R1`, `R2`, .... Empty names are an error.
 #' @param full_results If `TRUE` (the default), the returned tibble includes
-#'   list-columns `weights` and `rankdrop` with the full per-model output of
-#'   [qpadm()]. If `FALSE`, only the flat summary columns are returned.
+#'   list-columns `weights`, `rankdrop`, and `f4_var_singular_loadings` with the
+#'   full per-model output of [qpadm()]. If `FALSE`, only the flat summary
+#'   columns are returned.
 #' @return A tibble with one row per `(target, source_set, right_set)` combination
 #'   and columns:
 #'   \itemize{
@@ -1126,8 +1127,16 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #'     \item `f4rank`: tested rank in the top row of [qpadm()]'s `rankdrop` (= `length(left) - 1`)
 #'     \item `p`, `chisq`, `dof`: top-row of `rankdrop` (the "auto" model fit)
 #'     \item `feasible`: `TRUE` if all weights are between 0 and 1
+#'     \item `f4_var_rcond`: scalar reciprocal-condition diagnostic of the f4
+#'       variance matrix used in the GLS solve. Values near machine epsilon
+#'       (`~1e-15`) signal near-singular `f4_var` and warrant inspection of
+#'       `f4_var_singular_loadings`. Always returned.
 #'     \item `weights`: list-column with the per-source `weight` / `se` / `z` tibble (`full_results = TRUE`)
 #'     \item `rankdrop`: list-column with the full rankdrop table (`full_results = TRUE`)
+#'     \item `f4_var_singular_loadings`: list-column. Each cell is either a tibble
+#'       identifying which right population is loading-heaviest on the singular
+#'       direction (when `f4_var_rcond < 1e-8`) or `NULL` otherwise. Useful for
+#'       SVD-guided right-pop pruning. (`full_results = TRUE`)
 #'   }
 #' @seealso [qpadm()], [qpadm_multi()]
 #' @examples
@@ -1209,11 +1218,21 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
                    integer(1)),
     feasible   = vapply(fits, function(f) {
                    w = f$weights; if(is.null(w)) NA else all(w$weight >= 0 & w$weight <= 1) },
-                   logical(1)))
+                   logical(1)),
+    # f4_var_rcond is a scalar diagnostic — exposed unconditionally (same
+    # treatment as p / chisq / dof) so downstream pruners can gate on rank
+    # deficiency without paying the full_results = TRUE cost.
+    f4_var_rcond = vapply(fits, function(f) {
+                   r = f$f4_var_rcond; if(is.null(r)) NA_real_ else as.numeric(r) },
+                   numeric(1)))
 
   if(full_results) {
     out$weights  = lapply(fits, `[[`, 'weights')
     out$rankdrop = lapply(fits, `[[`, 'rankdrop')
+    # f4_var_singular_loadings is a tibble (or NULL when above the
+    # singular-detection threshold) — gated on full_results because of the
+    # variable payload size.
+    out$f4_var_singular_loadings = lapply(fits, `[[`, 'f4_var_singular_loadings')
   }
   out
 }

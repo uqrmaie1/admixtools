@@ -187,6 +187,53 @@ test_that("feasible is FALSE when any weight is outside [0, 1]", {
   expect_true(isFALSE(res$feasible))
 })
 
+# ── test 8: f4_var_rcond + f4_var_singular_loadings (issue #16) ─────────────
+#
+# Acceptance criteria from fork issue #16: qpadm_sweep(..., full_results = TRUE)
+# must surface f4_var_rcond as a numeric column and f4_var_singular_loadings as
+# a list-column. Both values must match what a direct qpadm() call with the
+# same inputs would return — proving the flatten preserves rather than
+# recomputes the underlying qpadm() values.
+
+test_that("qpadm_sweep surfaces f4_var_rcond + f4_var_singular_loadings (issue #16)", {
+  res = suppressWarnings(do.call(qpadm_sweep, .feas_args()))
+
+  # New columns are present and well-typed.
+  expect_true("f4_var_rcond" %in% names(res))
+  expect_true("f4_var_singular_loadings" %in% names(res))
+  expect_type(res$f4_var_rcond, "double")
+  expect_type(res$f4_var_singular_loadings, "list")
+  expect_length(res$f4_var_rcond, nrow(res))
+  expect_length(res$f4_var_singular_loadings, nrow(res))
+
+  # Values match a direct qpadm() call with the swept row's inputs — proves
+  # the flatten preserves rather than recomputes (a regression that recomputed
+  # would silently de-couple the diagnostic from the actual fit).
+  args = .feas_args()
+  direct = suppressWarnings(qpadm(
+    data   = args$data,
+    target = args$targets[1],
+    left   = args$source_sets[[1]],
+    right  = args$right_sets[[1]],
+    verbose = FALSE))
+
+  expect_equal(res$f4_var_rcond[1], direct$f4_var_rcond, tolerance = 1e-12)
+  expect_identical(res$f4_var_singular_loadings[[1]],
+                   direct$f4_var_singular_loadings)
+})
+
+test_that("qpadm_sweep returns f4_var_rcond even when full_results = FALSE", {
+  # Design choice: f4_var_rcond is a scalar diagnostic comparable to p / chisq —
+  # surfaced unconditionally so a pruner using full_results = FALSE for memory
+  # efficiency can still gate on rank deficiency. The list-column
+  # f4_var_singular_loadings is gated.
+  res = suppressWarnings(do.call(qpadm_sweep,
+                                 c(.feas_args(), list(full_results = FALSE))))
+  expect_true("f4_var_rcond" %in% names(res))
+  expect_type(res$f4_var_rcond, "double")
+  expect_false("f4_var_singular_loadings" %in% names(res))
+})
+
 # ── test 8: n=1 edge case ────────────────────────────────────────────────────
 
 test_that("single target x single source-set x single right-set works without error", {
