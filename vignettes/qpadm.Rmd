@@ -193,6 +193,8 @@ res = qpadm_sweep(example_f2_blocks, targets, sources, rights)
 res %>% dplyr::arrange(target, p)
 ```
 
+The same `f4_var_rcond` and `f4_var_singular_loadings` diagnostics described above are surfaced on `qpadm_sweep()`'s output (`f4_var_rcond` unconditionally; `f4_var_singular_loadings` as a list-column when `full_results = TRUE`), making it straightforward to flag or filter rank-deficient fits across an entire sweep.
+
 Both functions parallelize across models under `future::plan(multisession)` (or `multicore` on Linux). Be aware that the per-block layer inside each model also parallelizes when `data` is a genotype-file prefix, so two layers compose — usually you want only one of them parallel.
 
 

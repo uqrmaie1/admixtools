@@ -187,7 +187,7 @@ test_that("feasible is FALSE when any weight is outside [0, 1]", {
   expect_true(isFALSE(res$feasible))
 })
 
-# ── test 8: f4_var_rcond + f4_var_singular_loadings (issue #16) ─────────────
+# ── test 8: f4_var_rcond + f4_var_singular_loadings (fork issue #16) ─────────
 #
 # Acceptance criteria from fork issue #16: qpadm_sweep(..., full_results = TRUE)
 # must surface f4_var_rcond as a numeric column and f4_var_singular_loadings as
@@ -234,7 +234,7 @@ test_that("qpadm_sweep returns f4_var_rcond even when full_results = FALSE", {
   expect_false("f4_var_singular_loadings" %in% names(res))
 })
 
-# ── test 8: n=1 edge case ────────────────────────────────────────────────────
+# ── test 9: n=1 edge case ────────────────────────────────────────────────────
 
 test_that("single target x single source-set x single right-set works without error", {
   res = do.call(qpadm_sweep, .feas_args())
