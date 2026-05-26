@@ -1,4 +1,5 @@
 // [[Rcpp::plugins(cpp11)]]
+// [[Rcpp::plugins(openmp)]]
 // [[Rcpp::depends(RcppArmadillo)]]
 // Defensive uniformity with cpp_qpadm.cpp / cpp_qpgraph.cpp: this TU contains
 // no arma::solve/inv/pinv/chol/svd calls today, but the macro is set here so
@@ -10,8 +11,109 @@
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <vector>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 using namespace Rcpp;
 using namespace arma;
+
+// Resolve the OpenMP team size for the parallel kernels in this file
+// by delegating to parallelly::availableCores(). This composes with the
+// package's future::plan() convention:
+//
+//   * plan(sequential): full core count, OMP uses all cores.
+//   * plan(multisession, workers = W): inside each future worker,
+//     parallelly returns 1 (future sets the relevant fallback), so
+//     each worker runs serial OMP, blocks dispatch via furrr, total
+//     active threads = W, no oversubscription.
+//   * Honors OMP_NUM_THREADS, MC_CORES, _R_CHECK_LIMIT_CORES_, and the
+//     parallelly.availableCores.* options as explicit overrides.
+//
+// Call this before entering a #pragma omp parallel region (the R API
+// is not thread-safe). The integer result is cached process-locally;
+// parallelly::availableCores() is ~300 us on aarch64 macOS and ~1 ms
+// on x86_64 Linux (probes /proc and cgroups), and a dense qpdstat
+// run invokes the kernels ~1400 times, so caching matters. The cache
+// is fixed for the life of the current R session (or future worker);
+// users who flip OMP_NUM_THREADS mid-session should restart R.
+static int admixtools_omp_threads() {
+  static int cached_n = -1;
+  if (cached_n < 0) {
+    Rcpp::Environment pkg = Rcpp::Environment::namespace_env("parallelly");
+    Rcpp::Function availableCores = pkg["availableCores"];
+    int n = Rcpp::as<int>(availableCores());
+    cached_n = (n > 0) ? n : 1;
+  }
+  return cached_n;
+}
+
+// Serial pre-pass shared by the three cpp_aftable_to_dstat* functions.
+// Catches NA / NaN / Inf and out-of-range integer values in p1..p4
+// and modelvec before the parallel region. Errors surface as a clean
+// Rcpp::stop with the offending row index, instead of a wild memory
+// access or silent corruption inside the OMP region (Rcpp::stop is
+// not callable from parallel code). O(npopcomb), negligible vs the
+// inner i loop.
+static inline void validate_dstat_inputs(
+    const arma::mat& aftable,
+    const arma::vec& p1, const arma::vec& p2,
+    const arma::vec& p3, const arma::vec& p4,
+    const arma::vec& modelvec, const arma::mat& usesnps,
+    bool allsnps, int npopcomb) {
+  const int npop   = (int)aftable.n_rows;
+  const int nmodel = (int)usesnps.n_rows;
+  for (int j = 0; j < npopcomb; ++j) {
+    if (!R_FINITE(p1(j)) || !R_FINITE(p2(j)) ||
+        !R_FINITE(p3(j)) || !R_FINITE(p4(j))) {
+      Rcpp::stop("p1/p2/p3/p4 contains NA / NaN / Inf at index %d", j + 1);
+    }
+    const int i1 = (int)p1(j) - 1, i2 = (int)p2(j) - 1,
+              i3 = (int)p3(j) - 1, i4 = (int)p4(j) - 1;
+    if (i1 < 0 || i1 >= npop || i2 < 0 || i2 >= npop ||
+        i3 < 0 || i3 >= npop || i4 < 0 || i4 >= npop) {
+      Rcpp::stop("p1/p2/p3/p4 index out of range [1..%d] at j=%d", npop, j + 1);
+    }
+    if (!allsnps) {
+      if (!R_FINITE(modelvec(j))) {
+        Rcpp::stop("modelvec contains NA / NaN / Inf at index %d", j + 1);
+      }
+      const int m = (int)modelvec(j) - 1;
+      if (m < 0 || m >= nmodel) {
+        Rcpp::stop("modelvec value out of range [1..%d] at j=%d", nmodel, j + 1);
+      }
+    }
+  }
+}
+
+// Pure C++ replacement for the Rcpp idiom
+//   uni = na_omit(unique(NumericVector::create(w, x, y, z)));
+//   valid = uni.length() > 1 || (poly_only == 2 && max(uni) in (0, 1));
+// Thread-safe (no Rcpp R-API allocations) so the j loop can be
+// parallelized via OpenMP. Uses ISNAN to match na_omit / R's !is.na
+// (dropping NA and NaN but keeping +/-Inf), preserving byte-for-byte
+// equivalence with the upstream idiom on all inputs.
+static inline bool poly_only_keep(double w, double x, double y, double z, int poly_only) {
+  if (poly_only == 0) return true;
+  double kept[4];
+  int nk = 0;
+  if (!ISNAN(w)) kept[nk++] = w;
+  if (!ISNAN(x)) kept[nk++] = x;
+  if (!ISNAN(y)) kept[nk++] = y;
+  if (!ISNAN(z)) kept[nk++] = z;
+  if (nk == 0) return false;
+  // length(uni) > 1 -- any two kept values differ
+  bool has_diff = false;
+  for (int k = 1; k < nk; ++k) {
+    if (kept[k] != kept[0]) { has_diff = true; break; }
+  }
+  if (has_diff) return true;
+  if (poly_only == 2) {
+    double maxv = kept[0];
+    for (int k = 1; k < nk; ++k) if (kept[k] > maxv) maxv = kept[k];
+    if (maxv > 0.0001 && maxv < 0.9999) return true;
+  }
+  return false;
+}
 
 // [[Rcpp::export]]
 List cpp_aftable_to_dstatnum_old(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4) {
@@ -49,40 +151,40 @@ List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, a
   mat num(p1.n_elem, aftable.n_cols);
   num.fill(NA_REAL);
   vec cnt = zeros(p1.n_elem);
-  NumericVector uni;
 
-  double w, x, y, z;
-  int i1, i2, i3, i4, m, valid = 0;
-  for(int j = 0; j < p1.n_elem; j++) {
-    i1 = p1(j)-1;
-    i2 = p2(j)-1;
-    i3 = p3(j)-1;
-    i4 = p4(j)-1;
-    if(!allsnps) m = modelvec(j)-1;
-    for(int i = 0; i < aftable.n_cols; i++) {
-      if(allsnps || usesnps(m, i)) {
-        w = aftable(i1, i);
-        x = aftable(i2, i);
-        y = aftable(i3, i);
-        z = aftable(i4, i);
-        if(!(poly_only && allsnps)) {
-          valid = 1;
-        } else {
-          // original admixtools only excludes polymorphic SNPs if they are all 0 or all 1
-          uni = na_omit(unique(NumericVector::create(w, x, y, z)));
-          if(poly_only == 0 || uni.length() > 1 || (poly_only == 2 && (max(uni) > 0.0001 && max(uni) < 0.9999))) {
-            valid = 1;
-          }
-        }
-        if(valid) {
-          num(j, i) = (w - x) * (y - z);
-          valid = 0;
-        }
-        if(std::isfinite(num(j, i))) cnt(j) += 1;
+  const int npopcomb = (int)p1.n_elem;
+  const int nsnp     = (int)aftable.n_cols;
+  validate_dstat_inputs(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, npopcomb);
+
+  // Parallel over the popcomb dimension. Each thread writes a distinct
+  // row of num and a distinct slot of cnt, so no reduction is needed.
+  // poly_only_keep is pure-C++ (no Rcpp allocations) so it is safe
+  // inside the parallel region.
+  const int nthreads = admixtools_omp_threads();
+  #pragma omp parallel for num_threads(nthreads) schedule(dynamic, 16)
+  for (int j = 0; j < npopcomb; ++j) {
+    const int i1 = (int)p1(j) - 1;
+    const int i2 = (int)p2(j) - 1;
+    const int i3 = (int)p3(j) - 1;
+    const int i4 = (int)p4(j) - 1;
+    const int m  = allsnps ? 0 : (int)modelvec(j) - 1;
+    double row_cnt = 0.0;
+    for (int i = 0; i < nsnp; ++i) {
+      if (!allsnps && !usesnps(m, i)) continue;
+      const double w = aftable(i1, i);
+      const double x = aftable(i2, i);
+      const double y = aftable(i3, i);
+      const double z = aftable(i4, i);
+      bool valid = true;
+      if (poly_only && allsnps) valid = poly_only_keep(w, x, y, z, poly_only);
+      if (valid) {
+        const double v = (w - x) * (y - z);
+        num(j, i) = v;
+        if (std::isfinite(v)) row_cnt += 1.0;
       }
     }
+    cnt(j) = row_cnt;
   }
-  //return num;
   return Rcpp::List::create(_["num"] = num, _["cnt"] = cnt);
 }
 
@@ -140,49 +242,50 @@ List cpp_aftable_to_dstatnum_rowmeans(arma::mat& aftable,
 
   // sum_v in long double matches R's rowMeans precision; cnt is an
   // integer count where 64-bit double is more than enough.
-  std::vector<long double> sum_v(p1.n_elem, 0.0L);
-  vec cnt = zeros<vec>(p1.n_elem);
-  NumericVector uni;
+  const int npopcomb = (int)p1.n_elem;
+  const int nsnp     = (int)aftable.n_cols;
+  validate_dstat_inputs(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, npopcomb);
 
-  double w, x, y, z, val;
-  int i1, i2, i3, i4, m, valid = 0;
-  for(int j = 0; j < (int)p1.n_elem; j++) {
-    i1 = p1(j)-1;
-    i2 = p2(j)-1;
-    i3 = p3(j)-1;
-    i4 = p4(j)-1;
-    if(!allsnps) m = modelvec(j)-1;
-    for(int i = 0; i < (int)aftable.n_cols; i++) {
-      if(allsnps || usesnps(m, i)) {
-        w = aftable(i1, i);
-        x = aftable(i2, i);
-        y = aftable(i3, i);
-        z = aftable(i4, i);
-        if(!(poly_only && allsnps)) {
-          valid = 1;
-        } else {
-          uni = na_omit(unique(NumericVector::create(w, x, y, z)));
-          if(poly_only == 0 || uni.length() > 1 ||
-             (poly_only == 2 && (max(uni) > 0.0001 && max(uni) < 0.9999))) {
-            valid = 1;
-          }
-        }
-        if(valid) {
-          val = (w - x) * (y - z);
-          if(std::isfinite(val)) {
-            // double -> long double promotion in the add, matching R's
-            // LDOUBLE accumulator behavior.
-            sum_v[j] += val;
-            cnt(j) += 1;
-          }
-          valid = 0;
-        }
+  std::vector<long double> sum_v(npopcomb, 0.0L);
+  vec cnt = zeros<vec>(npopcomb);
+
+  // Parallel over the popcomb dimension. Each thread writes a distinct
+  // sum_v[j] and cnt(j); aftable / usesnps are read-only shared. The
+  // poly_only path uses poly_only_keep (pure C++, no Rcpp), so the
+  // parallel region is safe regardless of poly_only && allsnps.
+  const int nthreads = admixtools_omp_threads();
+  #pragma omp parallel for num_threads(nthreads) schedule(dynamic, 16)
+  for (int j = 0; j < npopcomb; ++j) {
+    const int i1 = (int)p1(j) - 1;
+    const int i2 = (int)p2(j) - 1;
+    const int i3 = (int)p3(j) - 1;
+    const int i4 = (int)p4(j) - 1;
+    const int m  = allsnps ? 0 : (int)modelvec(j) - 1;
+    long double s = 0.0L;
+    double      c = 0.0;
+    for (int i = 0; i < nsnp; ++i) {
+      if (!allsnps && !usesnps(m, i)) continue;
+      const double w = aftable(i1, i);
+      const double x = aftable(i2, i);
+      const double y = aftable(i3, i);
+      const double z = aftable(i4, i);
+      bool valid = true;
+      if (poly_only && allsnps) valid = poly_only_keep(w, x, y, z, poly_only);
+      if (!valid) continue;
+      const double val = (w - x) * (y - z);
+      if (std::isfinite(val)) {
+        // double -> long double promotion in the add, matching R's
+        // LDOUBLE accumulator behavior.
+        s += val;
+        c += 1.0;
       }
     }
+    sum_v[j] = s;
+    cnt(j)   = c;
   }
 
-  vec means(p1.n_elem);
-  for(int j = 0; j < (int)p1.n_elem; j++) {
+  vec means(npopcomb);
+  for (int j = 0; j < npopcomb; ++j) {
     // 0/0 -> NaN matches rowMeans(., na.rm=TRUE) on an all-NA row.
     // Cast back to double for the return value, matching R's rowMeans
     // `mean = sum / cnt` (LDOUBLE -> double on assignment).
@@ -197,25 +300,30 @@ List cpp_aftable_to_dstatnum_rowmeans(arma::mat& aftable,
 arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4,
                                   arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only) {
 
-  mat den(p1.n_elem, aftable.n_cols);
+  const int npopcomb = (int)p1.n_elem;
+  const int nsnp     = (int)aftable.n_cols;
+  validate_dstat_inputs(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, npopcomb);
+
+  mat den(npopcomb, nsnp);
   den.fill(NA_REAL);
 
-  double w, x, y, z;
-  int i1, i2, i3, i4, m;
-  for(int j = 0; j < p1.n_elem; j++) {
-    i1 = p1(j)-1;
-    i2 = p2(j)-1;
-    i3 = p3(j)-1;
-    i4 = p4(j)-1;
-    if(!allsnps) m = modelvec(j)-1;
-    for(int i = 0; i < aftable.n_cols; i++) {
-      if(allsnps || usesnps(m, i)) {
-        w = aftable(i1, i);
-        x = aftable(i2, i);
-        y = aftable(i3, i);
-        z = aftable(i4, i);
-        den(j, i) = (w + x - 2*w*x) * (y + z - 2*y*z);
-      }
+  // Parallel over popcomb dimension. Each thread writes a distinct row
+  // of den; aftable / usesnps are read-only shared.
+  const int nthreads = admixtools_omp_threads();
+  #pragma omp parallel for num_threads(nthreads) schedule(dynamic, 16)
+  for (int j = 0; j < npopcomb; ++j) {
+    const int i1 = (int)p1(j) - 1;
+    const int i2 = (int)p2(j) - 1;
+    const int i3 = (int)p3(j) - 1;
+    const int i4 = (int)p4(j) - 1;
+    const int m  = allsnps ? 0 : (int)modelvec(j) - 1;
+    for (int i = 0; i < nsnp; ++i) {
+      if (!allsnps && !usesnps(m, i)) continue;
+      const double w = aftable(i1, i);
+      const double x = aftable(i2, i);
+      const double y = aftable(i3, i);
+      const double z = aftable(i4, i);
+      den(j, i) = (w + x - 2*w*x) * (y + z - 2*y*z);
     }
   }
   return den;
@@ -340,22 +448,40 @@ NumericVector row_prods(NumericMatrix x) {
 //
 // [[Rcpp::export]]
 arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec) {
-  int nind = gmat.n_rows;
-  int nsnp = gmat.n_cols;
+  const int nind = (int)gmat.n_rows;
+  const int nsnp = (int)gmat.n_cols;
+  if ((int)popvec.n_elem != nind) {
+    Rcpp::stop("popvec length (%d) != gmat n_rows (%d)",
+               (int)popvec.n_elem, nind);
+  }
   int npop = 0;
-  for(int i = 0; i < nind; i++) {
-    if(popvec(i) < 1) Rcpp::stop("popvec contains values < 1 (or NA); expected 1-based pop indices");
-    if(popvec(i) > npop) npop = popvec(i);
+  for (int i = 0; i < nind; ++i) {
+    if (popvec(i) < 1) Rcpp::stop("popvec contains values < 1 (or NA); expected 1-based pop indices");
+    // Upper bound: popvec is a 1-based index from R-side match() against
+    // a pop list of length <= nind. Larger values indicate a malformed
+    // caller and would otherwise cause an enormous npop*nsnp allocation.
+    if (popvec(i) > nind) {
+      Rcpp::stop("popvec(%d) = %d exceeds nind (%d); expected 1-based index into a pop list with length <= nind",
+                 i + 1, (int)popvec(i), nind);
+    }
+    if (popvec(i) > npop) npop = popvec(i);
   }
 
   mat sum_g = zeros<mat>(npop, nsnp);
   mat cnt   = zeros<mat>(npop, nsnp);
 
-  for(int s = 0; s < nsnp; s++) {
-    for(int i = 0; i < nind; i++) {
-      double g = gmat(i, s);
-      if(!ISNAN(g)) {
-        int p = popvec(i) - 1;   // 1-based -> 0-based
+  // Parallel over SNPs. Each thread writes a distinct column of sum_g
+  // and cnt (gmat and sum_g/cnt are arma::mat, column-major), so column
+  // s is a contiguous slice owned by one thread; no cross-thread writes
+  // collide. Rcpp::stop is not callable inside the parallel region;
+  // the popvec validation above runs serially before we enter.
+  const int nthreads = admixtools_omp_threads();
+  #pragma omp parallel for num_threads(nthreads) schedule(static)
+  for (int s = 0; s < nsnp; ++s) {
+    for (int i = 0; i < nind; ++i) {
+      const double g = gmat(i, s);
+      if (!ISNAN(g)) {
+        const int p = popvec(i) - 1;   // 1-based -> 0-based
         sum_g(p, s) += g;
         cnt(p, s)   += 1.0;
       }

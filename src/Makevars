@@ -1,2 +1,8 @@
 CXX_STD = CXX17
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+# SHLIB_OPENMP_CXXFLAGS is the R-provided OpenMP flag for the active
+# toolchain ("-fopenmp" on Linux gcc/clang, empty on macOS Apple clang
+# without libomp). When OpenMP is unavailable the package still builds
+# and runs; the parallel pragmas are silently ignored and the hot loops
+# fall back to serial execution.
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)

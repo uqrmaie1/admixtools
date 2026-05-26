@@ -15,6 +15,7 @@
 #' @importFrom igraph V E neighbors subcomponent degree incident_edges all_simple_paths distances
 #' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices delete_vertices
 #' add_edges delete_edges difference set_vertex_attr
+#' @importFrom parallelly availableCores
 #' @useDynLib admixtools
 
 TRUE
