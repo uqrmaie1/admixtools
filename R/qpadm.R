@@ -1527,14 +1527,27 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 #'     informative drop.}
 #' }
 #'
-#' The pruner is greedy in the sense that it commits to a drop at each step;
-#' it does not backtrack across iterations. For tightly-constrained panels
-#' where a globally-optimal subset matters more than runtime, a full
-#' branch-and-bound enumeration would be the next escalation; that is out of
-#' scope for v1.
+#' The pruner commits to a drop at each step and does not backtrack across
+#' iterations. For tightly-constrained panels where a globally-optimal subset
+#' matters more than runtime, a full branch-and-bound enumeration would be the
+#' next escalation; that is out of scope for v1.
+#'
+#' **`right[1]` is the reference anchor and cannot be pruned.** [qpadm()]'s f4
+#' parameterization is `f4(left[1], left[-1]; right[1], right[-1])`, and the
+#' SVD attribution covers only `right[-1]`. A near-collinear `right[1]` would
+#' not appear in the loadings table and the pruner cannot detect or remove it.
+#' Convention is to place a phylogenetically-distant, unambiguous outgroup
+#' (e.g. `Chimp.REF`) at `right[1]`. If you suspect `right[1]` is the
+#' offender, try rotating it with a different pop and re-running.
+#'
+#' **Performance note for genotype-prefix data.** When `data` is a file-system
+#' prefix rather than a pre-computed `f2_blocks` array, each inner [qpadm()]
+#' call reads from disk. With `lookahead_top_j = 3` and ten iterations, that
+#' is up to 40 disk reads. Pre-compute with [extract_f2()] and pass the
+#' resulting array for batch work.
 #'
 #' Defensive guards return early with `converged = FALSE` and a populated
-#' `reason` slot (rather than guessing) if `qpadm()`'s diagnostic surface
+#' `reason` slot (rather than guessing) if [qpadm()]'s diagnostic surface
 #' returns something the pruner cannot interpret: an empty / `NULL`
 #' loadings table, a named drop pop that's not in the active right set
 #' (stale loading from a prior fit), the floor `min_right_pops` being hit
@@ -1542,19 +1555,25 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 #'
 #' @export
 #' @inheritParams qpadm
+#' @param target Target population, or `NULL` for a qpwave-style (no-target)
+#'   fit. Passed directly to [qpadm()]. Default `NULL`.
 #' @param right Character vector of initial right ("outgroup") populations.
-#'   Pruning drops pops from this set; the final retained set is reported as
+#'   `right[1]` is the reference anchor and cannot be pruned (see Details).
+#'   Pruning drops from `right[-1]`; the final retained set is reported as
 #'   `right_final` on the returned object.
 #' @param singular_threshold Reciprocal condition number floor; the loop
 #'   terminates with `converged = TRUE` once `f4_var_rcond` clears this bar.
 #'   Unlike [qpadm()]'s `singular_threshold` (which raises an error on trip),
 #'   here the threshold is the convergence criterion, not a fail-loud gate.
-#'   Default `1e-12` aligns with the documented near-singular concern bar.
+#'   Default `1e-12`. Values above `1e-8` trigger a warning because inner
+#'   fits may not populate loadings in the `(1e-8, singular_threshold)` band.
 #' @param min_right_pops Minimum size of the right set; the loop terminates
 #'   with `converged = FALSE` and `reason = "floor"` if pruning would
-#'   reduce `right` below this floor without converging. Default `4`
-#'   (qpadm needs at least `length(left)` right pops to be identified;
-#'   `4` is a conservative floor for typical 2-3-source models).
+#'   reduce `right` below this floor without converging. Defaults to
+#'   `length(left) + (!is.null(target))`, the structural minimum for qpadm
+#'   identification. When `reason = "floor"`, the returned fit corresponds to
+#'   the last (near-singular) right set; inspect `$f4_var_rcond` before using
+#'   the weights.
 #' @param max_iterations Hard cap on iterations; defaults to
 #'   `length(right) - min_right_pops + 1`. The default is the largest
 #'   number of drops the floor allows, so it should never trip; this is a
@@ -1585,12 +1604,12 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 #'     singular_threshold`, `FALSE` otherwise.
 #'   \item `reason`: character scalar explaining the terminal state. One of
 #'     `"converged"` (the success case), `"floor"` (would have dropped below
-#'     `min_right_pops`), `"iter_cap"` (defensive; max_iterations reached),
-#'     `"null_loadings"` (qpadm's loadings table was missing or empty when
-#'     the pruner needed it -- typically means rcond was already fine but
-#'     the threshold disagrees), `"stale_pop"` (the named drop pop was not
-#'     in the active right set; defensive guard against a future qpadm
-#'     internal change).
+#'     `min_right_pops`; returned fit is near-singular), `"iter_cap"`
+#'     (defensive; max_iterations reached), `"null_loadings"` (loadings table
+#'     missing or empty; can happen when `singular_threshold > 1e-8`),
+#'     `"stale_pop"` (the named drop pop was not in the active right set;
+#'     defensive guard), `"inner_error"` (an inner [qpadm()] call errored;
+#'     a warning is emitted and the partial trail is preserved).
 #' }
 #'
 #'   For a converged fit, calling `qpadm(data, left, right_final, target, ...)`
@@ -1611,9 +1630,9 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 #' fit$pruning_trail      # tibble: which pop was dropped, when, why
 #' fit$right_final        # the converged right set
 #' }
-qpadm_with_pruning = function(data, left, right, target,
+qpadm_with_pruning = function(data, left, right, target = NULL,
                               singular_threshold = 1e-12,
-                              min_right_pops = 4,
+                              min_right_pops = NULL,
                               max_iterations = NULL,
                               strategy = c("greedy", "lookahead"),
                               lookahead_top_j = 3,
@@ -1623,30 +1642,66 @@ qpadm_with_pruning = function(data, left, right, target,
   strategy = match.arg(strategy)
 
   # ---- argument validation ----
-  if(!is.character(right) || length(right) < min_right_pops)
-    stop("'right' must be a character vector of at least ", min_right_pops,
-         " populations (= min_right_pops). Got ", length(right), ".")
   if(!is.numeric(singular_threshold) || length(singular_threshold) != 1 ||
      is.na(singular_threshold) || singular_threshold <= 0)
     stop("'singular_threshold' must be a single positive numeric. ",
          "Use a fail-loud value like 1e-12; see ?qpadm's singular_threshold.")
-  if(!is.numeric(min_right_pops) || length(min_right_pops) != 1 ||
-     min_right_pops < 1)
-    stop("'min_right_pops' must be a single positive integer.")
-  min_right_pops = as.integer(min_right_pops)
+
+  # Warn when singular_threshold exceeds the auto-concern bar (1e-8). In that
+  # band, inner qpadm() calls won't populate f4_var_singular_loadings (the
+  # trigger_loadings condition inside qpadm() fires only at rcond < 1e-8 OR
+  # when the inner singular_threshold trips -- and we force the inner threshold
+  # to NA to avoid mid-loop errors). The pruner would exit with
+  # reason = "null_loadings" rather than pruning, which is confusing. The
+  # default 1e-12 is always below the concern bar, so this fires only for
+  # unusual caller-specified thresholds.
+  if(singular_threshold > .rcond_concern)
+    cli::cli_warn(
+      c("!" = paste0("'singular_threshold' = ", singular_threshold,
+                     " is above the auto-concern bar (", .rcond_concern, "). ",
+                     "Inner qpadm() fits may not populate loadings for rcond in ",
+                     "(", .rcond_concern, ", ", singular_threshold, "), causing ",
+                     "premature reason = 'null_loadings' exits."),
+        "i" = "The default singular_threshold = 1e-12 is always below the concern bar."))
+
+  # min_right_pops: default to the structural minimum for qpadm identification.
+  # qpadm's f4 parameterization is f4(left[1], left[-1][i]; right[1], right[-1][j]),
+  # so the f4_var matrix has shape (R-1) x (R-1). With L = length(left) + 1
+  # (target prepended), the system is identified when R >= L, i.e. length(right)
+  # >= length(left) + (!is.null(target)). We use this as the default floor.
+  if(is.null(min_right_pops)) {
+    min_right_pops = as.integer(length(left) + (!is.null(target)))
+    min_right_pops = max(min_right_pops, 1L)
+  } else {
+    if(!is.numeric(min_right_pops) || length(min_right_pops) != 1 ||
+       is.na(min_right_pops) || min_right_pops < 1)
+      stop("'min_right_pops' must be a single positive integer.")
+    # Catch non-integer values (e.g. 3.7) that as.integer() would silently truncate.
+    if(min_right_pops != as.integer(min_right_pops))
+      stop("'min_right_pops' must be a whole number; ", min_right_pops, " is not.")
+    min_right_pops = as.integer(min_right_pops)
+  }
+
+  if(!is.character(right) || length(right) < min_right_pops)
+    stop("'right' must be a character vector of at least ", min_right_pops,
+         " populations (min_right_pops). Got ", length(right), ".")
 
   if(is.null(max_iterations)) {
     max_iterations = length(right) - min_right_pops + 1L
   } else {
     if(!is.numeric(max_iterations) || length(max_iterations) != 1 ||
-       max_iterations < 1)
+       is.na(max_iterations) || max_iterations < 1)
       stop("'max_iterations' must be a single positive integer or NULL.")
+    if(max_iterations != as.integer(max_iterations))
+      stop("'max_iterations' must be a whole number; ", max_iterations, " is not.")
     max_iterations = as.integer(max_iterations)
   }
   if(strategy == "lookahead") {
     if(!is.numeric(lookahead_top_j) || length(lookahead_top_j) != 1 ||
-       lookahead_top_j < 1)
+       is.na(lookahead_top_j) || lookahead_top_j < 1)
       stop("'lookahead_top_j' must be a single positive integer.")
+    if(lookahead_top_j != as.integer(lookahead_top_j))
+      stop("'lookahead_top_j' must be a whole number; ", lookahead_top_j, " is not.")
     lookahead_top_j = as.integer(lookahead_top_j)
   }
 
@@ -1673,7 +1728,19 @@ qpadm_with_pruning = function(data, left, right, target,
   fit       = NULL
 
   for(iter in seq_len(max_iterations)) {
-    fit = fit_one(right_now)
+    # Wrap in tryCatch so an inner qpadm() error (e.g. a degenerate right set
+    # after a bad drop) returns a partial trail rather than losing all progress.
+    fit = tryCatch(fit_one(right_now), error = function(e) {
+      cli::cli_warn(
+        c("!" = paste0("[qpadm_with_pruning] inner qpadm() errored at iter ",
+                       iter, "; returning partial trail."),
+          "i" = conditionMessage(e)))
+      NULL
+    })
+    if(is.null(fit)) {
+      reason = "inner_error"
+      break
+    }
 
     # Success?
     if(isTRUE(is.finite(fit$f4_var_rcond)) &&
@@ -1697,6 +1764,13 @@ qpadm_with_pruning = function(data, left, right, target,
 
     # Pick which pop to drop.
     if(strategy == "greedy") {
+      # Guard against a degenerate loadings table where all entries are NA
+      # (defensive; qpadm's SVD tryCatch returns NULL on error, so this should
+      # be unreachable in practice, but a future qpadm change could alter that).
+      if(all(is.na(loadings$loading))) {
+        reason = "null_loadings"
+        break
+      }
       best_idx = which.max(abs(loadings$loading))
       pop_to_drop = loadings$right[best_idx]
       drop_loading = abs(loadings$loading[best_idx])
@@ -1710,8 +1784,12 @@ qpadm_with_pruning = function(data, left, right, target,
       cand_loadings = abs(ordered$loading[seq_len(n_cand)])
       cand_rconds = vapply(candidates, function(p) {
         cand_right = setdiff(right_now, p)
-        cand_fit = tryCatch(fit_one(cand_right),
-                            error = function(e) NULL)
+        # suppressWarnings: probe fits on a near-singular candidate may emit
+        # qpadm's near-singular R-level warning; these are expected during
+        # lookahead scoring and would flood the user's console.
+        cand_fit = tryCatch(
+          suppressWarnings(fit_one(cand_right)),
+          error = function(e) NULL)
         if(is.null(cand_fit) || !is.finite(cand_fit$f4_var_rcond %||% NA_real_))
           NA_real_
         else
@@ -1721,15 +1799,24 @@ qpadm_with_pruning = function(data, left, right, target,
       # rcond_after on the trail is a plain unnamed double per row.
       names(cand_rconds) = NULL
       if(all(is.na(cand_rconds))) {
-        # All candidates errored or returned non-finite rcond -- defensive
-        # bail; fall back to greedy's choice this iteration.
-        best_idx = 1L
+        # All probes errored or returned non-finite rcond. Emit a breadcrumb
+        # so the user knows lookahead degenerated, then fall back to the
+        # loading-ranked (greedy) choice.
+        cli::cli_warn(
+          c("!" = paste0("[qpadm_with_pruning] lookahead iter ", iter,
+                         ": all ", n_cand, " probe fit(s) failed; ",
+                         "falling back to loading-ranked greedy choice."),
+            "i" = paste0("Candidates: ",
+                          paste(candidates, collapse = ", "))),
+          class = "qpadm_with_pruning_lookahead_all_na")
+        best_idx    = 1L
+        rcond_after = NA_real_
       } else {
-        best_idx = which.max(cand_rconds)
+        best_idx    = which.max(cand_rconds)
+        rcond_after = cand_rconds[best_idx]
       }
-      pop_to_drop = candidates[best_idx]
+      pop_to_drop  = candidates[best_idx]
       drop_loading = cand_loadings[best_idx]
-      rcond_after = cand_rconds[best_idx]
     }
 
     # Stale pop guard (defensive: the named drop must be in the active set).
@@ -1772,6 +1859,11 @@ qpadm_with_pruning = function(data, left, right, target,
   }
 
   # ---- return ----
+  # Floor exit note: when reason = "floor", the returned `fit` is the last
+  # fit_one() result on the current right_now (the set that triggered the
+  # floor check). It is near-singular by construction. Weights are present but
+  # their SEs may be unreliable; inspect $f4_var_rcond and consider reducing
+  # min_right_pops or expanding the right set.
   c(fit, list(pruning_trail = trail,
               right_final = right_now,
               converged = (reason == "converged"),

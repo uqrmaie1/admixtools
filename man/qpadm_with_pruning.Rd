@@ -8,9 +8,9 @@ qpadm_with_pruning(
   data,
   left,
   right,
-  target,
+  target = NULL,
   singular_threshold = 1e-12,
-  min_right_pops = 4,
+  min_right_pops = NULL,
   max_iterations = NULL,
   strategy = c("greedy", "lookahead"),
   lookahead_top_j = 3,
@@ -29,22 +29,27 @@ qpadm_with_pruning(
 \item{left}{Left populations (sources)}
 
 \item{right}{Character vector of initial right ("outgroup") populations.
-Pruning drops pops from this set; the final retained set is reported as
+\code{right[1]} is the reference anchor and cannot be pruned (see Details).
+Pruning drops from \code{right[-1]}; the final retained set is reported as
 \code{right_final} on the returned object.}
 
-\item{target}{Target population}
+\item{target}{Target population, or \code{NULL} for a qpwave-style (no-target)
+fit. Passed directly to \code{\link[=qpadm]{qpadm()}}. Default \code{NULL}.}
 
 \item{singular_threshold}{Reciprocal condition number floor; the loop
 terminates with \code{converged = TRUE} once \code{f4_var_rcond} clears this bar.
 Unlike \code{\link[=qpadm]{qpadm()}}'s \code{singular_threshold} (which raises an error on trip),
 here the threshold is the convergence criterion, not a fail-loud gate.
-Default \code{1e-12} aligns with the documented near-singular concern bar.}
+Default \code{1e-12}. Values above \code{1e-8} trigger a warning because inner
+fits may not populate loadings in the \verb{(1e-8, singular_threshold)} band.}
 
 \item{min_right_pops}{Minimum size of the right set; the loop terminates
 with \code{converged = FALSE} and \code{reason = "floor"} if pruning would
-reduce \code{right} below this floor without converging. Default \code{4}
-(qpadm needs at least \code{length(left)} right pops to be identified;
-\code{4} is a conservative floor for typical 2-3-source models).}
+reduce \code{right} below this floor without converging. Defaults to
+\code{length(left) + (!is.null(target))}, the structural minimum for qpadm
+identification. When \code{reason = "floor"}, the returned fit corresponds to
+the last (near-singular) right set; inspect \verb{$f4_var_rcond} before using
+the weights.}
 
 \item{max_iterations}{Hard cap on iterations; defaults to
 \code{length(right) - min_right_pops + 1}. The default is the largest
@@ -81,12 +86,12 @@ was already well-conditioned.
 \item \code{converged}: \code{TRUE} if the loop exited with \code{f4_var_rcond >= singular_threshold}, \code{FALSE} otherwise.
 \item \code{reason}: character scalar explaining the terminal state. One of
 \code{"converged"} (the success case), \code{"floor"} (would have dropped below
-\code{min_right_pops}), \code{"iter_cap"} (defensive; max_iterations reached),
-\code{"null_loadings"} (qpadm's loadings table was missing or empty when
-the pruner needed it -- typically means rcond was already fine but
-the threshold disagrees), \code{"stale_pop"} (the named drop pop was not
-in the active right set; defensive guard against a future qpadm
-internal change).
+\code{min_right_pops}; returned fit is near-singular), \code{"iter_cap"}
+(defensive; max_iterations reached), \code{"null_loadings"} (loadings table
+missing or empty; can happen when \code{singular_threshold > 1e-8}),
+\code{"stale_pop"} (the named drop pop was not in the active right set;
+defensive guard), \code{"inner_error"} (an inner \code{\link[=qpadm]{qpadm()}} call errored;
+a warning is emitted and the partial trail is preserved).
 }
 
 For a converged fit, calling \code{qpadm(data, left, right_final, target, ...)}
@@ -123,14 +128,27 @@ lookahead sees the post-drop landscape and picks the genuinely
 informative drop.}
 }
 
-The pruner is greedy in the sense that it commits to a drop at each step;
-it does not backtrack across iterations. For tightly-constrained panels
-where a globally-optimal subset matters more than runtime, a full
-branch-and-bound enumeration would be the next escalation; that is out of
-scope for v1.
+The pruner commits to a drop at each step and does not backtrack across
+iterations. For tightly-constrained panels where a globally-optimal subset
+matters more than runtime, a full branch-and-bound enumeration would be the
+next escalation; that is out of scope for v1.
+
+\strong{\code{right[1]} is the reference anchor and cannot be pruned.} \code{\link[=qpadm]{qpadm()}}'s f4
+parameterization is \verb{f4(left[1], left[-1]; right[1], right[-1])}, and the
+SVD attribution covers only \code{right[-1]}. A near-collinear \code{right[1]} would
+not appear in the loadings table and the pruner cannot detect or remove it.
+Convention is to place a phylogenetically-distant, unambiguous outgroup
+(e.g. \code{Chimp.REF}) at \code{right[1]}. If you suspect \code{right[1]} is the
+offender, try rotating it with a different pop and re-running.
+
+\strong{Performance note for genotype-prefix data.} When \code{data} is a file-system
+prefix rather than a pre-computed \code{f2_blocks} array, each inner \code{\link[=qpadm]{qpadm()}}
+call reads from disk. With \code{lookahead_top_j = 3} and ten iterations, that
+is up to 40 disk reads. Pre-compute with \code{\link[=extract_f2]{extract_f2()}} and pass the
+resulting array for batch work.
 
 Defensive guards return early with \code{converged = FALSE} and a populated
-\code{reason} slot (rather than guessing) if \code{qpadm()}'s diagnostic surface
+\code{reason} slot (rather than guessing) if \code{\link[=qpadm]{qpadm()}}'s diagnostic surface
 returns something the pruner cannot interpret: an empty / \code{NULL}
 loadings table, a named drop pop that's not in the active right set
 (stale loading from a prior fit), the floor \code{min_right_pops} being hit
