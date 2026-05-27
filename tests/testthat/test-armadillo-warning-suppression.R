@@ -45,7 +45,7 @@ test_that("near-singular qpadm fit emits zero RcppArmadillo stderr warnings", {
                                                  fixed = TRUE)),
                              ". Lines: ",
                              paste(head(stderr_lines, 3), collapse = " | ")))
-  expect_false(any(grepl("solve\\(\\):", stderr_lines)))
+  expect_false(any(grepl("solve():", stderr_lines, fixed = TRUE)))
   expect_false(any(grepl("attempting approx solution", stderr_lines, fixed = TRUE)))
 
   # Fit must still complete successfully -- silencing the warning must not
@@ -92,30 +92,42 @@ test_that("near-singular fit still surfaces the R-level diagnostic", {
   expect_true(is.finite(res$f4_var_rcond))
   expect_lt(res$f4_var_rcond, 1e-8)
   # Loadings table is populated for downstream "which right pop is the
-  # offender" introspection.
-  expect_true(!is.null(res$f4_var_singular_loadings))
+  # offender" introspection. Assert the specific structure AND content: the
+  # right-set's clone pair (Mbuti.DG / Mbuti_clone) is the source of the
+  # singularity, so those two pops must dominate the top two rows of the
+  # loadings table. A wrong-axis bug in the SVD attribution (e.g. left vs
+  # right pops swapped) would still leave the tibble non-NULL but would
+  # rank the unrelated outgroup pops as the offenders instead.
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")
+  expect_named(ld, c("right", "loading"), ignore.order = TRUE)
+  top2 = ld$right[order(abs(ld$loading), decreasing = TRUE)][1:2]
+  expect_setequal(top2, c("Mbuti.DG", "Mbuti_clone"))
 })
 
 test_that("clean fit emits zero stderr noise (sanity)", {
   # A well-conditioned fit on example_f2_blocks should produce no stderr
   # output at all. This catches a regression where ARMA_WARN_LEVEL gets
-  # raised back to 2 (Armadillo's default) and warnings creep back in via a
-  # different code path.
+  # raised back to 2 (Armadillo's default) and ANY Armadillo warning creeps
+  # back in -- not just `solve(): system is singular` but also `inv()`,
+  # `chol()`, `svd()`, etc. We assert zero captured lines outright rather
+  # than substring-match a fixed set of known warning strings.
   data("example_f2_blocks", package = "admixtools", envir = environment())
   ef = get("example_f2_blocks", envir = environment())
 
   stderr_lines = capture.output(
-    suppressWarnings(
+    suppressMessages(suppressWarnings(
       res <- qpadm(
         ef,
         left   = c("Altai_Neanderthal.DG", "Vindija.DG"),
         right  = c("Chimp.REF", "Mbuti.DG", "Russia_Ust_Ishim.DG",
                    "Switzerland_Bichon.SG"),
         target = "Denisova.DG",
-        verbose = FALSE)),
+        verbose = FALSE))),
     type = "message")
 
-  expect_false(any(grepl("solve\\(\\):", stderr_lines)))
-  expect_false(any(grepl("system is singular", stderr_lines, fixed = TRUE)))
+  expect_identical(stderr_lines, character(0),
+                   info = paste0("Expected empty stderr on a clean fit, got: ",
+                                 paste(head(stderr_lines, 5), collapse = " | ")))
   expect_true(is.list(res))
 })
