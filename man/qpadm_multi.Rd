@@ -25,11 +25,21 @@ qpadm_multi(
 
 \item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, \code{allsnps = TRUE} can lead to false positive results. This option only has an effect if \code{data} is the prefix of a genotype file. If \code{data} are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.}
 
-\item{full_results}{Return the full qpadm output list for each model; if \code{FALSE}, return only summary statistics (default \code{TRUE}).}
+\item{full_results}{Return the full qpadm output list for each model; if \code{FALSE}, return only summary statistics (default \code{TRUE}). Note: the lean (\code{FALSE}) path dispatches to \code{\link[=qpadm_p]{qpadm_p()}}, which omits \code{f4_var_rcond} and \code{f4_var_singular_loadings} from each per-fit result.}
 
 \item{verbose}{Print progress updates}
 
-\item{...}{Further arguments passed to \code{\link{qpadm}}}
+\item{...}{Further arguments forwarded to downstream functions. When \code{data}
+is a genotype-file prefix, kwargs matching \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}}'s
+formals are routed to the preflight f4 computation. Kwargs matching the
+per-fit function's formals (\code{\link{qpadm}} when \code{full_results=TRUE},
+\code{\link[=qpadm_p]{qpadm_p()}} when \code{FALSE}) are routed to each per-model fit.
+Unrecognised names raise a single error at entry naming both surfaces.
+\code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal) is forwarded but be aware that
+if any model trips its threshold, \code{\link[=qpadm]{qpadm()}} raises an error, the entire
+\code{qpadm_multi} call aborts via \code{furrr::future_map}, and no results are
+returned. For "mark and continue" semantics over a batch, omit
+\code{singular_threshold} and filter on \code{f4_var_rcond} after the call.}
 }
 \value{
 A list where each element is the output of one qpadm model.

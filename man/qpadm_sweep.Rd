@@ -36,12 +36,24 @@ set of "right" / outgroup populations. If unnamed, names default to
 \item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, \code{allsnps = TRUE} can lead to false positive results. This option only has an effect if \code{data} is the prefix of a genotype file. If \code{data} are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.}
 
 \item{full_results}{If \code{TRUE} (the default), the returned tibble includes
-list-columns \code{weights} and \code{rankdrop} with the full per-model output of
-\code{\link[=qpadm]{qpadm()}}. If \code{FALSE}, only the flat summary columns are returned.}
+list-columns \code{weights}, \code{rankdrop}, \code{popdrop}, and
+\code{f4_var_singular_loadings} with the full per-model output of \code{\link[=qpadm]{qpadm()}}.
+If \code{FALSE}, only the flat summary columns are returned (including the
+always-on \code{f4_var_rcond} diagnostic).}
 
 \item{verbose}{Print progress updates}
 
-\item{...}{Further arguments passed to \code{\link{qpadm}}}
+\item{...}{Further arguments forwarded to downstream functions. When \code{data}
+is a genotype-file prefix, kwargs matching \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}}'s
+formals are routed to the preflight f4 computation. Kwargs matching the
+per-fit function's formals (\code{\link{qpadm}} when \code{full_results=TRUE},
+\code{\link[=qpadm_p]{qpadm_p()}} when \code{FALSE}) are routed to each per-model fit.
+Unrecognised names raise a single error at entry naming both surfaces.
+\code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal) is forwarded but be aware that
+if any model trips its threshold, \code{\link[=qpadm]{qpadm()}} raises an error, the entire
+\code{qpadm_multi} call aborts via \code{furrr::future_map}, and no results are
+returned. For "mark and continue" semantics over a batch, omit
+\code{singular_threshold} and filter on \code{f4_var_rcond} after the call.}
 }
 \value{
 A tibble with one row per \verb{(target, source_set, right_set)} combination
@@ -52,9 +64,38 @@ and columns:
 \item \code{f4rank}: tested rank in the top row of \code{\link[=qpadm]{qpadm()}}'s \code{rankdrop} (= \code{length(left) - 1})
 \item \code{p}, \code{chisq}, \code{dof}: top-row of \code{rankdrop} (the "auto" model fit)
 \item \code{feasible}: \code{TRUE} if all weights are between 0 and 1
+\item \code{f4_var_rcond}: scalar reciprocal-condition diagnostic of the f4
+variance matrix used in the GLS solve. Values near machine epsilon
+(\code{~1e-15}) signal near-singular \code{f4_var} and warrant inspection of
+\code{f4_var_singular_loadings}. Always returned (not gated on
+\code{full_results}).
 \item \code{weights}: list-column with the per-source \code{weight} / \code{se} / \code{z} tibble (\code{full_results = TRUE})
 \item \code{rankdrop}: list-column with the full rankdrop table (\code{full_results = TRUE})
+\item \code{popdrop}: list-column with \code{\link[=qpadm]{qpadm()}}'s leave-one-out per-source-pop
+fit table (\code{full_results = TRUE}). Always populated since \code{qpadm_sweep}
+always supplies a target.
+\item \code{f4_var_singular_loadings}: list-column (\code{full_results = TRUE}).
+Cells are tibbles identifying which right population is
+loading-heaviest on the singular direction; populated when the
+auto-bar fires (\code{f4_var_rcond < 1e-8}). Cells are \code{NULL} when the
+auto-bar does not fire (the common clean-data case) and also \code{NULL}
+if \code{\link[=qpadm]{qpadm()}}'s SVD inside the loadings computation fails on a
+pathological matrix. Useful for SVD-guided right-pop pruning.
 }
+
+Kwargs in \code{...} are forwarded to \code{\link[=qpadm_multi]{qpadm_multi()}}, which validates them
+upfront against the union of formals for \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}} (the
+geno-path preflight) and \code{\link[=qpadm]{qpadm()}} (the per-fit call), then routes each
+to its respective downstream callee. Unrecognised names raise a single
+clear error at entry — see \code{\link[=qpadm_multi]{qpadm_multi()}}'s \code{...} docs for the full
+contract.
+
+\code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal, forwarded via \code{...}) does not
+produce a populated \code{f4_var_singular_loadings} cell in the sweep:
+\code{\link[=qpadm]{qpadm()}} raises an error when the threshold trips, propagates through
+\code{furrr::future_map}, and aborts the entire sweep. For "mark and continue"
+semantics, omit \code{singular_threshold} and filter on \code{f4_var_rcond} after
+the sweep returns.
 }
 \description{
 Patterson-style sweeps fit qpadm for every combination of

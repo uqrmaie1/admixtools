@@ -107,3 +107,33 @@ make_minimal_graph_with_outgroup <- function() {
     "M",           "X",            "normal",   0.02
   )
 }
+
+
+# Singular-case fixture builder for qpadm rcond / loadings tests.
+#
+# Adds a clone of `src` to a 3d f2_blocks array as a new dimname `dst`.
+# The cloned dim is row/col-for-row identical to src's row/col, which makes
+# the unfudged f4_var rank-deficient (perfectly collinear). Combined with
+# `fudge = 1e-12` on qpadm() this drives `f4_var_rcond` below the 1e-8
+# auto-bar and triggers the loadings tibble. Originally lived in
+# test-qpadm-singular-threshold.R; promoted here so test-qpadm_sweep.R can
+# exercise the same singular path without duplicating the helper.
+.clone_pop_in_f2_blocks = function(f2, src = "Mbuti.DG", dst = "Mbuti_clone") {
+  if(length(dim(f2)) != 3L)
+    stop("f2 must be a 3D array (n_pops x n_pops x n_blocks); got ndim = ",
+         length(dim(f2)))
+  nam = dimnames(f2)[[1]]
+  if(!(src %in% nam)) stop("source pop not in f2_blocks: ", src)
+  if(dst %in% nam)    stop("destination pop already exists: ", dst)
+  n   = length(nam)
+  nb  = dim(f2)[3]
+  new_nam = c(nam, dst)
+  out = array(NA_real_, dim = c(n + 1, n + 1, nb),
+              dimnames = list(new_nam, new_nam, dimnames(f2)[[3]]))
+  out[1:n, 1:n, ] = f2
+  src_idx = match(src, nam)
+  out[1:n,   n+1, ] = f2[1:n, src_idx, ]
+  out[n+1,   1:n, ] = f2[src_idx, 1:n, ]
+  out[n+1,   n+1, ] = 0
+  out
+}
