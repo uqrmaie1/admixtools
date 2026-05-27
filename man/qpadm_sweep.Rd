@@ -56,13 +56,18 @@ and columns:
 \item \code{f4_var_rcond}: scalar reciprocal-condition diagnostic of the f4
 variance matrix used in the GLS solve. Values near machine epsilon
 (\code{~1e-15}) signal near-singular \code{f4_var} and warrant inspection of
-\code{f4_var_singular_loadings}. Always returned.
+\code{f4_var_singular_loadings}. Always returned (not gated on
+\code{full_results}).
 \item \code{weights}: list-column with the per-source \code{weight} / \code{se} / \code{z} tibble (\code{full_results = TRUE})
 \item \code{rankdrop}: list-column with the full rankdrop table (\code{full_results = TRUE})
-\item \code{f4_var_singular_loadings}: list-column. Each cell is either a tibble
+\item \code{f4_var_singular_loadings}: list-column. Cells are tibbles
 identifying which right population is loading-heaviest on the singular
-direction (when \code{f4_var_rcond < 1e-8}) or \code{NULL} otherwise. Useful for
-SVD-guided right-pop pruning. (\code{full_results = TRUE})
+direction; populated when either the auto-bar fires
+(\code{f4_var_rcond < 1e-8}) or a caller-supplied \code{singular_threshold}
+(forwarded via \code{...}) fires. Cells are \code{NULL} when neither gate
+fires (the common clean-data case), and also \code{NULL} if \code{\link[=qpadm]{qpadm()}}'s
+SVD inside the loadings computation fails on a pathological matrix.
+Useful for SVD-guided right-pop pruning. (\code{full_results = TRUE})
 }
 }
 \description{

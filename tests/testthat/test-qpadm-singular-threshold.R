@@ -20,23 +20,8 @@
 # path we keep default fudge and set `singular_threshold` above the
 # fudge-induced rcond.
 
-.clone_pop_in_f2_blocks = function(f2, src = "Mbuti.DG", dst = "Mbuti_clone") {
-  nam = dimnames(f2)[[1]]
-  if(!(src %in% nam)) stop("source pop not in f2_blocks: ", src)
-  if(dst %in% nam)    stop("destination pop already exists: ", dst)
-  n   = length(nam)
-  nb  = dim(f2)[3]
-  new_nam = c(nam, dst)
-  out = array(NA_real_, dim = c(n + 1, n + 1, nb),
-              dimnames = list(new_nam, new_nam, dimnames(f2)[[3]]))
-  out[1:n, 1:n, ] = f2
-  src_idx = match(src, nam)
-  # Make column (n+1) and row (n+1) byte-identical to src's column/row.
-  out[1:n,   n+1, ] = f2[1:n, src_idx, ]
-  out[n+1,   1:n, ] = f2[src_idx, 1:n, ]
-  out[n+1,   n+1, ] = 0
-  out
-}
+# .clone_pop_in_f2_blocks() lives in tests/testthat/helper-fixtures.R so
+# multiple test files (this one + test-qpadm_sweep.R) share the same helper.
 
 # Standard 3-source / 4-right qpadm fit on example_f2_blocks.
 .example_setup = function() {

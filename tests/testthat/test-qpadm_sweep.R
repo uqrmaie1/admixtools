@@ -51,12 +51,14 @@ test_that("basic call returns (n_t * n_s * n_r)-row tibble with documented colum
   expect_equal(nrow(res), 1L)  # 1 target × 1 source_set × 1 right_set
 
   flat_cols = c("target", "source_set", "right_set",
-                "left", "right", "f4rank", "p", "chisq", "dof", "feasible")
+                "left", "right", "f4rank", "p", "chisq", "dof", "feasible",
+                "f4_var_rcond")
   for(col in flat_cols) expect_true(col %in% names(res), info = paste("missing column:", col))
 
   # full_results = TRUE (default) adds list-columns
   expect_true("weights"  %in% names(res))
   expect_true("rankdrop" %in% names(res))
+  expect_true("f4_var_singular_loadings" %in% names(res))
 })
 
 test_that("row count scales as n_t * n_s * n_r", {
@@ -164,14 +166,18 @@ test_that("integer right_sets entry raises a clear error", {
 
 # ── test 6: full_results = FALSE drops list-columns ──────────────────────────
 
-test_that("full_results = FALSE drops weights and rankdrop list-columns", {
+test_that("full_results = FALSE drops weights / rankdrop / loadings; keeps rcond", {
   res = do.call(qpadm_sweep, c(.feas_args(), list(full_results = FALSE)))
 
+  # Gated list-columns are dropped.
   expect_false("weights"  %in% names(res))
   expect_false("rankdrop" %in% names(res))
+  expect_false("f4_var_singular_loadings" %in% names(res))
 
+  # Always-on flat surface (including the scalar rcond diagnostic) survives.
   flat_cols = c("target", "source_set", "right_set",
-                "left", "right", "f4rank", "p", "chisq", "dof", "feasible")
+                "left", "right", "f4rank", "p", "chisq", "dof", "feasible",
+                "f4_var_rcond")
   for(col in flat_cols) expect_true(col %in% names(res), info = paste("missing column:", col))
 })
 
@@ -189,46 +195,166 @@ test_that("feasible is FALSE when any weight is outside [0, 1]", {
 
 # ── test 8: f4_var_rcond + f4_var_singular_loadings (fork issue #16) ─────────
 #
-# Acceptance criteria from fork issue #16: qpadm_sweep(..., full_results = TRUE)
-# must surface f4_var_rcond as a numeric column and f4_var_singular_loadings as
-# a list-column. Both values must match what a direct qpadm() call with the
-# same inputs would return — proving the flatten preserves rather than
-# recomputes the underlying qpadm() values.
+# Coverage: shape (8a), multi-row alignment (8b), singular-positive round-trip
+# (8c), defensive not-all-NA (8d), full_results = FALSE surface (8e).
+#
+# Implementation contract anchored by these tests:
+#   - f4_var_rcond is the byte-for-byte value qpadm() returns (no recompute,
+#     no fudge-of-fudge). expect_identical (no tolerance) catches drift from
+#     a single-source-of-truth refactor.
+#   - f4_var_singular_loadings is the actual tibble qpadm() emits, intact
+#     through the lapply (no row reorder, no column rename, no recompute).
+#   - Ordering: row i of qpadm_sweep's output corresponds to combo i of the
+#     Cartesian product. The 2x2x2 sweep in 8b probes this directly.
+#
+# Narrow warning muffler: silence only the two predictable-noise patterns
+# (the near-singular warning from qpadm() itself on the 8c fixture and
+# furrr's UNRELIABLE VALUE warning). Anything else surfaces — keeping the
+# regression-detection signal alive.
 
-test_that("qpadm_sweep surfaces f4_var_rcond + f4_var_singular_loadings (issue #16)", {
-  res = suppressWarnings(do.call(qpadm_sweep, .feas_args()))
+.mute_qpadm_sweep_noise = function(w) {
+  msg = conditionMessage(w)
+  noise = c("f4 variance matrix is near-singular",
+            "UNRELIABLE VALUE")
+  if(any(vapply(noise, grepl, logical(1), msg)))
+    invokeRestart("muffleWarning")
+}
 
-  # New columns are present and well-typed.
+test_that("8a: clean-case round-trip is byte-identical to direct qpadm()", {
+  args = .feas_args()
+  res  = withCallingHandlers(do.call(qpadm_sweep, args),
+                             warning = .mute_qpadm_sweep_noise)
+
+  # Shape + types.
   expect_true("f4_var_rcond" %in% names(res))
   expect_true("f4_var_singular_loadings" %in% names(res))
   expect_type(res$f4_var_rcond, "double")
   expect_type(res$f4_var_singular_loadings, "list")
-  expect_length(res$f4_var_rcond, nrow(res))
-  expect_length(res$f4_var_singular_loadings, nrow(res))
 
-  # Values match a direct qpadm() call with the swept row's inputs — proves
-  # the flatten preserves rather than recomputes (a regression that recomputed
-  # would silently de-couple the diagnostic from the actual fit).
-  args = .feas_args()
-  direct = suppressWarnings(qpadm(
-    data   = args$data,
-    target = args$targets[1],
-    left   = args$source_sets[[1]],
-    right  = args$right_sets[[1]],
-    verbose = FALSE))
+  # Direct qpadm() with the swept row's exact inputs.
+  direct = withCallingHandlers(
+    qpadm(data = args$data, target = args$targets[1],
+          left = args$source_sets[[1]], right = args$right_sets[[1]],
+          verbose = FALSE),
+    warning = .mute_qpadm_sweep_noise)
 
-  expect_equal(res$f4_var_rcond[1], direct$f4_var_rcond, tolerance = 1e-12)
+  # Byte-identical scalar — no tolerance, anchoring the no-recompute contract.
+  expect_identical(res$f4_var_rcond[1], direct$f4_var_rcond)
+  # Loadings cell matches the direct route. Either both NULL (the typical
+  # clean-data case for this fixture) or both the same tibble.
   expect_identical(res$f4_var_singular_loadings[[1]],
                    direct$f4_var_singular_loadings)
 })
 
-test_that("qpadm_sweep returns f4_var_rcond even when full_results = FALSE", {
-  # Design choice: f4_var_rcond is a scalar diagnostic comparable to p / chisq —
-  # surfaced unconditionally so a pruner using full_results = FALSE for memory
-  # efficiency can still gate on rank deficiency. The list-column
-  # f4_var_singular_loadings is gated.
-  res = suppressWarnings(do.call(qpadm_sweep,
-                                 c(.feas_args(), list(full_results = FALSE))))
+test_that("8b: multi-row sweep preserves per-row alignment with direct qpadm()", {
+  # Pop overlap rules out a true 2x2x2 in example_f2_blocks (7 pops, 2
+  # disjoint targets eat 2, sources need ≥2 each, rights need ≥2 each,
+  # and pairwise disjointness across all (target, source_set, right_set)
+  # combos quickly exhausts the pool). 2 targets x 1 source_set x 2
+  # right_sets = 4 rows is the largest valid grid here, and still exercises
+  # the alignment invariant across two grid dimensions (target and right
+  # vary; ordering bugs in either dimension surface).
+  f2 = .f2()
+  targets = c("Switzerland_Bichon.SG", "Vindija.DG")
+  sources = list(s1 = c("Russia_Ust_Ishim.DG", "Mbuti.DG"))
+  rights  = list(r1 = c("Chimp.REF", "Altai_Neanderthal.DG"),
+                 r2 = c("Chimp.REF", "Altai_Neanderthal.DG", "Denisova.DG"))
+
+  res = withCallingHandlers(
+    qpadm_sweep(f2, targets = targets, source_sets = sources,
+                right_sets = rights, verbose = FALSE),
+    warning = .mute_qpadm_sweep_noise)
+
+  expect_equal(nrow(res), 4L)
+  expect_length(res$f4_var_rcond, 4L)
+  expect_length(res$f4_var_singular_loadings, 4L)
+
+  for(i in seq_len(nrow(res))) {
+    # res$left and res$right are list-columns that round-trip the sweep's
+    # row-to-combo mapping. Driving direct qpadm() from those columns
+    # (rather than from the original Cartesian inputs) makes any
+    # row-shuffling bug visible: the diagnostic on row i must match the
+    # qpadm() call with row i's left and right.
+    direct = withCallingHandlers(
+      qpadm(data = f2, target = res$target[i],
+            left = res$left[[i]], right = res$right[[i]],
+            verbose = FALSE),
+      warning = .mute_qpadm_sweep_noise)
+    expect_identical(res$f4_var_rcond[i], direct$f4_var_rcond,
+                     info = sprintf("row %d rcond mismatch", i))
+    expect_identical(res$f4_var_singular_loadings[[i]],
+                     direct$f4_var_singular_loadings,
+                     info = sprintf("row %d loadings mismatch", i))
+  }
+
+  # Defensive: on the clean 8-row sweep every row should produce a finite
+  # rcond. A future refactor that silently routes through qpadm_p (which
+  # doesn't return f4_var_rcond) would produce all-NA here.
+  expect_true(all(is.finite(res$f4_var_rcond)))
+})
+
+test_that("8c: singular fixture preserves the loadings tibble through the sweep", {
+  # Closes the "NULL == NULL is vacuous" gap from earlier drafts of this
+  # test. Drive rcond below the 1e-8 auto-bar by including a cloned pop
+  # in the right set (perfectly collinear with its source) and using
+  # fudge = 1e-12 so the unfudged-matrix singularity isn't regularized
+  # away. Then verify the non-NULL loadings tibble survives the lapply
+  # byte-for-byte.
+  f2_clone = .clone_pop_in_f2_blocks(.f2(), src = "Mbuti.DG", dst = "Mbuti_clone")
+
+  args = list(
+    data        = f2_clone,
+    targets     = "Switzerland_Bichon.SG",
+    source_sets = list(s1 = c("Russia_Ust_Ishim.DG", "Vindija.DG")),
+    right_sets  = list(r1 = c("Chimp.REF", "Altai_Neanderthal.DG",
+                              "Mbuti.DG", "Mbuti_clone")),
+    fudge       = 1e-12,
+    verbose     = FALSE)
+
+  res = withCallingHandlers(do.call(qpadm_sweep, args),
+                            warning = .mute_qpadm_sweep_noise)
+  direct = withCallingHandlers(
+    qpadm(data = f2_clone, target = args$targets[1],
+          left = args$source_sets[[1]], right = args$right_sets[[1]],
+          fudge = 1e-12, verbose = FALSE),
+    warning = .mute_qpadm_sweep_noise)
+
+  # The fixture actually pushed rcond below the auto-bar.
+  expect_lt(res$f4_var_rcond[1], 1e-8)
+
+  # The loadings tibble is populated (not NULL) on both routes.
+  expect_false(is.null(res$f4_var_singular_loadings[[1]]))
+  expect_s3_class(res$f4_var_singular_loadings[[1]], "tbl_df")
+
+  # Byte-for-byte preservation: tibble columns, row order, and values
+  # are identical across the two routes. A recompute or reshape regression
+  # surfaces here.
+  expect_identical(res$f4_var_singular_loadings[[1]],
+                   direct$f4_var_singular_loadings)
+  expect_identical(res$f4_var_rcond[1], direct$f4_var_rcond)
+})
+
+test_that("8d: f4_var_rcond is finite on a clean sweep (catches all-NA regression)", {
+  # Defensive guard against the future-refactor scenario where qpadm_sweep
+  # propagates outer full_results = FALSE into qpadm_multi, which then
+  # dispatches to qpadm_p — a code path that doesn't carry f4_var_rcond.
+  # In that scenario the is.null(r) guard in the vapply yields NA_real_
+  # for every row, and the column would still pass an "exists" check but
+  # carry no diagnostic signal. This test catches that.
+  res = withCallingHandlers(do.call(qpadm_sweep, .feas_args()),
+                            warning = .mute_qpadm_sweep_noise)
+  expect_true(all(is.finite(res$f4_var_rcond)))
+})
+
+test_that("8e: full_results = FALSE keeps f4_var_rcond, drops loadings", {
+  # Design choice pinned: f4_var_rcond is a scalar diagnostic comparable
+  # to p / chisq / dof — surfaced unconditionally so a pruner using
+  # full_results = FALSE for smaller outputs can still gate on rank
+  # deficiency. The list-column f4_var_singular_loadings is gated on
+  # full_results because of variable per-row payload.
+  res = withCallingHandlers(
+    do.call(qpadm_sweep, c(.feas_args(), list(full_results = FALSE))),
+    warning = .mute_qpadm_sweep_noise)
   expect_true("f4_var_rcond" %in% names(res))
   expect_type(res$f4_var_rcond, "double")
   expect_false("f4_var_singular_loadings" %in% names(res))

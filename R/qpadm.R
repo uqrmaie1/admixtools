@@ -1130,13 +1130,18 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #'     \item `f4_var_rcond`: scalar reciprocal-condition diagnostic of the f4
 #'       variance matrix used in the GLS solve. Values near machine epsilon
 #'       (`~1e-15`) signal near-singular `f4_var` and warrant inspection of
-#'       `f4_var_singular_loadings`. Always returned.
+#'       `f4_var_singular_loadings`. Always returned (not gated on
+#'       `full_results`).
 #'     \item `weights`: list-column with the per-source `weight` / `se` / `z` tibble (`full_results = TRUE`)
 #'     \item `rankdrop`: list-column with the full rankdrop table (`full_results = TRUE`)
-#'     \item `f4_var_singular_loadings`: list-column. Each cell is either a tibble
+#'     \item `f4_var_singular_loadings`: list-column. Cells are tibbles
 #'       identifying which right population is loading-heaviest on the singular
-#'       direction (when `f4_var_rcond < 1e-8`) or `NULL` otherwise. Useful for
-#'       SVD-guided right-pop pruning. (`full_results = TRUE`)
+#'       direction; populated when either the auto-bar fires
+#'       (`f4_var_rcond < 1e-8`) or a caller-supplied `singular_threshold`
+#'       (forwarded via `...`) fires. Cells are `NULL` when neither gate
+#'       fires (the common clean-data case), and also `NULL` if [qpadm()]'s
+#'       SVD inside the loadings computation fails on a pathological matrix.
+#'       Useful for SVD-guided right-pop pruning. (`full_results = TRUE`)
 #'   }
 #' @seealso [qpadm()], [qpadm_multi()]
 #' @examples
@@ -1219,19 +1224,29 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
     feasible   = vapply(fits, function(f) {
                    w = f$weights; if(is.null(w)) NA else all(w$weight >= 0 & w$weight <= 1) },
                    logical(1)),
-    # f4_var_rcond is a scalar diagnostic — exposed unconditionally (same
-    # treatment as p / chisq / dof) so downstream pruners can gate on rank
-    # deficiency without paying the full_results = TRUE cost.
+    # f4_var_rcond is a scalar diagnostic. It is surfaced on the always-on
+    # flat-summary surface (alongside p / chisq / dof / feasible) rather than
+    # gated on full_results because callers using full_results = FALSE for
+    # smaller output tibbles still want to filter sweep rows by rank
+    # deficiency. Note: full_results = FALSE only suppresses output columns;
+    # the per-model qpadm() (including its f4_var_rcond computation) always
+    # runs because qpadm_multi is called with full_results = TRUE above. Use
+    # `[[` rather than `$` so a future longer slot name (e.g.
+    # `f4_var_rcond_threshold`) can't partial-match silently.
     f4_var_rcond = vapply(fits, function(f) {
-                   r = f$f4_var_rcond; if(is.null(r)) NA_real_ else as.numeric(r) },
+                   r = f[['f4_var_rcond']]
+                   if(is.null(r) || length(r) != 1L) NA_real_
+                   else as.numeric(r) },
                    numeric(1)))
 
   if(full_results) {
     out$weights  = lapply(fits, `[[`, 'weights')
     out$rankdrop = lapply(fits, `[[`, 'rankdrop')
-    # f4_var_singular_loadings is a tibble (or NULL when above the
-    # singular-detection threshold) — gated on full_results because of the
-    # variable payload size.
+    # f4_var_singular_loadings is a tibble (or NULL) — gated on full_results
+    # because of variable per-row payload. Each cell can be NULL for two
+    # reasons: the rcond gate did not fire (the common case on clean data),
+    # OR the gate fired but svd() inside qpadm errored on a pathological
+    # f4_var matrix (qpadm wraps the SVD in tryCatch with NULL fallback).
     out$f4_var_singular_loadings = lapply(fits, `[[`, 'f4_var_singular_loadings')
   }
   out
