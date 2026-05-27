@@ -1494,5 +1494,287 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 }
 
 
+# ---------------------------------------------------------------------------
+# qpadm_with_pruning: SVD-guided automated right-pop pruning
+# ---------------------------------------------------------------------------
 
+#' Iteratively prune sister-clade right pops from a qpadm fit
+#'
+#' Wraps [qpadm()] in a loop that drops the highest-loading right population
+#' from the f4-variance singular vector until the fit's reciprocal condition
+#' number clears `singular_threshold`. Codifies the hand-curation defense
+#' against near-singular f4 covariance matrices (the diagnostic surface from
+#' [qpadm()]'s `f4_var_rcond` + `f4_var_singular_loadings` outputs) as a
+#' first-class function with a load-bearing audit trail.
+#'
+#' Two pruning strategies are supported:
+#'
+#' \describe{
+#'   \item{`"greedy"` (default)}{At each iteration, drop the single right pop
+#'     with the largest absolute loading on the smallest right-singular vector
+#'     of `f4_var`. Cost: one [qpadm()] fit per iteration. Almost always
+#'     correct.}
+#'   \item{`"lookahead"`}{At each iteration, evaluate the top
+#'     `lookahead_top_j` candidate drops by actually performing the post-drop
+#'     [qpadm()] fit, and pick the candidate that maximizes post-drop
+#'     `f4_var_rcond`. Cost: `lookahead_top_j + 1` fits per iteration (e.g.
+#'     4x greedy at the default `lookahead_top_j = 3`). Protects against the
+#'     "sister-pair masking" edge case: when two right pops have near-equal
+#'     loadings but very different post-drop rconds (e.g. one is the true
+#'     sister-of-source while the other was sister-of-the-first), greedy
+#'     `which.max` can pick the wrong one and chain into over-pruning;
+#'     lookahead sees the post-drop landscape and picks the genuinely
+#'     informative drop.}
+#' }
+#'
+#' The pruner is greedy in the sense that it commits to a drop at each step;
+#' it does not backtrack across iterations. For tightly-constrained panels
+#' where a globally-optimal subset matters more than runtime, a full
+#' branch-and-bound enumeration would be the next escalation; that is out of
+#' scope for v1.
+#'
+#' Defensive guards return early with `converged = FALSE` and a populated
+#' `reason` slot (rather than guessing) if `qpadm()`'s diagnostic surface
+#' returns something the pruner cannot interpret: an empty / `NULL`
+#' loadings table, a named drop pop that's not in the active right set
+#' (stale loading from a prior fit), the floor `min_right_pops` being hit
+#' before convergence, or the iteration cap being reached.
+#'
+#' @export
+#' @inheritParams qpadm
+#' @param right Character vector of initial right ("outgroup") populations.
+#'   Pruning drops pops from this set; the final retained set is reported as
+#'   `right_final` on the returned object.
+#' @param singular_threshold Reciprocal condition number floor; the loop
+#'   terminates with `converged = TRUE` once `f4_var_rcond` clears this bar.
+#'   Unlike [qpadm()]'s `singular_threshold` (which raises an error on trip),
+#'   here the threshold is the convergence criterion, not a fail-loud gate.
+#'   Default `1e-12` aligns with the documented near-singular concern bar.
+#' @param min_right_pops Minimum size of the right set; the loop terminates
+#'   with `converged = FALSE` and `reason = "floor"` if pruning would
+#'   reduce `right` below this floor without converging. Default `4`
+#'   (qpadm needs at least `length(left)` right pops to be identified;
+#'   `4` is a conservative floor for typical 2-3-source models).
+#' @param max_iterations Hard cap on iterations; defaults to
+#'   `length(right) - min_right_pops + 1`. The default is the largest
+#'   number of drops the floor allows, so it should never trip; this is a
+#'   belt-and-suspenders bound against a logic bug.
+#' @param strategy Pruning strategy: `"greedy"` (default) or `"lookahead"`.
+#'   See Details.
+#' @param lookahead_top_j Only used when `strategy = "lookahead"`. Number
+#'   of top candidates (by absolute loading) to evaluate per iteration.
+#'   Default `3`. Higher values trade runtime for thoroughness; values above
+#'   ~5 rarely help on real panels.
+#' @param verbose If `TRUE`, emits a `cli` info line per iteration naming
+#'   the dropped pop and rcond. Default `FALSE` (batch-friendly).
+#' @param ... Additional arguments forwarded to each inner [qpadm()] call.
+#' @return A list with the slots of the final [qpadm()] fit (so `weights`,
+#'   `f4`, `rankdrop`, `popdrop`, `f4_var_rcond`, `f4_var_singular_loadings`
+#'   are all present) plus four pruner-specific slots:
+#' \itemize{
+#'   \item `pruning_trail`: tibble with one row per drop, columns `iteration`
+#'     (integer), `dropped` (character, the pop dropped), `loading` (double,
+#'     absolute loading of the dropped pop on the smallest singular vector
+#'     at drop time), `rcond_before` (double, `f4_var_rcond` of the fit
+#'     just before the drop), `rcond_after` (double, `f4_var_rcond` of the
+#'     fit after the drop is committed). Empty tibble if the initial fit
+#'     was already well-conditioned.
+#'   \item `right_final`: character vector of right pops in the final fit
+#'     (i.e. `setdiff(right, dropped pops in trail)` in original order).
+#'   \item `converged`: `TRUE` if the loop exited with `f4_var_rcond >=
+#'     singular_threshold`, `FALSE` otherwise.
+#'   \item `reason`: character scalar explaining the terminal state. One of
+#'     `"converged"` (the success case), `"floor"` (would have dropped below
+#'     `min_right_pops`), `"iter_cap"` (defensive; max_iterations reached),
+#'     `"null_loadings"` (qpadm's loadings table was missing or empty when
+#'     the pruner needed it -- typically means rcond was already fine but
+#'     the threshold disagrees), `"stale_pop"` (the named drop pop was not
+#'     in the active right set; defensive guard against a future qpadm
+#'     internal change).
+#' }
+#'
+#'   For a converged fit, calling `qpadm(data, left, right_final, target, ...)`
+#'   directly produces identical `weights`, `f4`, `rankdrop`, `popdrop`,
+#'   and `f4_var_rcond` to the returned object (the pruner emits the same
+#'   call shape for the terminal fit).
+#' @seealso [qpadm()], [qpadm_multi()], [qpadm_sweep()]
+#' @examples
+#' \dontrun{
+#' # Pruning loop converges in one step on a sister-pair fixture:
+#' fit = qpadm_with_pruning(
+#'   example_f2_blocks,
+#'   left   = c("Russia_Ust_Ishim.DG", "Vindija.DG"),
+#'   right  = c("Chimp.REF", "Altai_Neanderthal.DG", "Mbuti.DG",
+#'              "Switzerland_Bichon.SG"),
+#'   target = "Denisova.DG")
+#' fit$converged          # TRUE
+#' fit$pruning_trail      # tibble: which pop was dropped, when, why
+#' fit$right_final        # the converged right set
+#' }
+qpadm_with_pruning = function(data, left, right, target,
+                              singular_threshold = 1e-12,
+                              min_right_pops = 4,
+                              max_iterations = NULL,
+                              strategy = c("greedy", "lookahead"),
+                              lookahead_top_j = 3,
+                              verbose = FALSE,
+                              ...) {
+
+  strategy = match.arg(strategy)
+
+  # ---- argument validation ----
+  if(!is.character(right) || length(right) < min_right_pops)
+    stop("'right' must be a character vector of at least ", min_right_pops,
+         " populations (= min_right_pops). Got ", length(right), ".")
+  if(!is.numeric(singular_threshold) || length(singular_threshold) != 1 ||
+     is.na(singular_threshold) || singular_threshold <= 0)
+    stop("'singular_threshold' must be a single positive numeric. ",
+         "Use a fail-loud value like 1e-12; see ?qpadm's singular_threshold.")
+  if(!is.numeric(min_right_pops) || length(min_right_pops) != 1 ||
+     min_right_pops < 1)
+    stop("'min_right_pops' must be a single positive integer.")
+  min_right_pops = as.integer(min_right_pops)
+
+  if(is.null(max_iterations)) {
+    max_iterations = length(right) - min_right_pops + 1L
+  } else {
+    if(!is.numeric(max_iterations) || length(max_iterations) != 1 ||
+       max_iterations < 1)
+      stop("'max_iterations' must be a single positive integer or NULL.")
+    max_iterations = as.integer(max_iterations)
+  }
+  if(strategy == "lookahead") {
+    if(!is.numeric(lookahead_top_j) || length(lookahead_top_j) != 1 ||
+       lookahead_top_j < 1)
+      stop("'lookahead_top_j' must be a single positive integer.")
+    lookahead_top_j = as.integer(lookahead_top_j)
+  }
+
+  # ---- single-shot qpadm wrapper -------------------------------------
+  # Each inner call runs with verbose = FALSE (the loop's cli output owns
+  # the user-facing surface). qpadm's `singular_threshold` is also forced
+  # off because the OUTER convergence test treats it as a non-fatal floor,
+  # while qpadm()'s singular_threshold raises an error on trip; we don't
+  # want that to derail the loop. Both names are formals of this function,
+  # so R's argument matching ensures users can't sneak them into `...`.
+  user_dots = list(...)
+  fit_one = function(right_now) {
+    do.call(qpadm,
+            c(list(data = data, left = left, right = right_now,
+                   target = target, verbose = FALSE,
+                   singular_threshold = NA_real_),
+              user_dots))
+  }
+
+  # ---- pruning loop ----
+  trail_rows = list()  # accumulated row-list; cheaper than incremental rbind
+  right_now = right
+  reason    = NA_character_
+  fit       = NULL
+
+  for(iter in seq_len(max_iterations)) {
+    fit = fit_one(right_now)
+
+    # Success?
+    if(isTRUE(is.finite(fit$f4_var_rcond)) &&
+       fit$f4_var_rcond >= singular_threshold) {
+      reason = "converged"
+      break
+    }
+
+    # Floor?
+    if(length(right_now) <= min_right_pops) {
+      reason = "floor"
+      break
+    }
+
+    # Loadings table available?
+    loadings = fit$f4_var_singular_loadings
+    if(is.null(loadings) || nrow(loadings) == 0) {
+      reason = "null_loadings"
+      break
+    }
+
+    # Pick which pop to drop.
+    if(strategy == "greedy") {
+      best_idx = which.max(abs(loadings$loading))
+      pop_to_drop = loadings$right[best_idx]
+      drop_loading = abs(loadings$loading[best_idx])
+      rcond_after = NA_real_  # not measured for greedy at attribution time
+    } else {
+      # "lookahead": evaluate top-J candidates by absolute loading; pick the
+      # one whose post-drop fit has the largest f4_var_rcond.
+      ordered = loadings[order(abs(loadings$loading), decreasing = TRUE), ]
+      n_cand = min(lookahead_top_j, nrow(ordered))
+      candidates = ordered$right[seq_len(n_cand)]
+      cand_loadings = abs(ordered$loading[seq_len(n_cand)])
+      cand_rconds = vapply(candidates, function(p) {
+        cand_right = setdiff(right_now, p)
+        cand_fit = tryCatch(fit_one(cand_right),
+                            error = function(e) NULL)
+        if(is.null(cand_fit) || !is.finite(cand_fit$f4_var_rcond %||% NA_real_))
+          NA_real_
+        else
+          cand_fit$f4_var_rcond
+      }, numeric(1))
+      # vapply names its result by the input candidates vector; strip so
+      # rcond_after on the trail is a plain unnamed double per row.
+      names(cand_rconds) = NULL
+      if(all(is.na(cand_rconds))) {
+        # All candidates errored or returned non-finite rcond -- defensive
+        # bail; fall back to greedy's choice this iteration.
+        best_idx = 1L
+      } else {
+        best_idx = which.max(cand_rconds)
+      }
+      pop_to_drop = candidates[best_idx]
+      drop_loading = cand_loadings[best_idx]
+      rcond_after = cand_rconds[best_idx]
+    }
+
+    # Stale pop guard (defensive: the named drop must be in the active set).
+    if(!pop_to_drop %in% right_now) {
+      reason = "stale_pop"
+      break
+    }
+
+    if(verbose) {
+      cli::cli_inform(c("i" = paste0("[qpadm_with_pruning] iter ", iter,
+                                     ": rcond = ",
+                                     format(fit$f4_var_rcond, digits = 3),
+                                     " < ", singular_threshold,
+                                     ", dropping '", pop_to_drop, "' ",
+                                     "(loading = ",
+                                     format(drop_loading, digits = 3), ")")))
+    }
+
+    trail_rows[[iter]] = list(iteration = iter, dropped = pop_to_drop,
+                              loading = drop_loading,
+                              rcond_before = fit$f4_var_rcond,
+                              rcond_after = rcond_after)
+    right_now = setdiff(right_now, pop_to_drop)
+  }
+
+  # If we fell off the end of the loop without setting reason, the iter cap
+  # was reached. Should be unreachable given the default max_iterations
+  # formula, but defensive.
+  if(is.na(reason)) reason = "iter_cap"
+
+  # ---- assemble trail tibble ----
+  if(length(trail_rows) == 0) {
+    trail = tibble(iteration = integer(0),
+                   dropped = character(0),
+                   loading = double(0),
+                   rcond_before = double(0),
+                   rcond_after = double(0))
+  } else {
+    trail = bind_rows(trail_rows)
+  }
+
+  # ---- return ----
+  c(fit, list(pruning_trail = trail,
+              right_final = right_now,
+              converged = (reason == "converged"),
+              reason = reason))
+}
 

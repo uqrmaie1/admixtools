@@ -167,6 +167,42 @@ qpadm(data, left, right, target, singular_threshold = 1e-12)
 ```
 
 
+### Automating the diagnosis: `qpadm_with_pruning`
+
+Once a near-singular fit has been diagnosed, the hand-curation defense is the same loop every time: read the top of `f4_var_singular_loadings`, drop the offending right population, re-fit, and repeat until `f4_var_rcond` clears the concern bar. `qpadm_with_pruning()` codifies that loop:
+
+```{r, eval = FALSE}
+fit = qpadm_with_pruning(
+  data, left, right, target,
+  singular_threshold = 1e-12,   # convergence criterion (not a fail-loud gate)
+  min_right_pops = 4)
+fit$converged          # TRUE if rcond cleared the threshold
+fit$pruning_trail      # tibble: iteration, dropped pop, loading, rcond
+fit$right_final        # the converged right set
+fit$reason             # "converged" / "floor" / "null_loadings" / ...
+```
+
+The returned object is the final `qpadm()` fit (so `weights`, `f4`, `rankdrop`, `popdrop`, `f4_var_rcond`, and `f4_var_singular_loadings` are all present) with four pruner-specific slots appended. The `pruning_trail` is the load-bearing audit surface: a downstream batch tool can scan the trail across many calls and notice that a particular reference-panel pop is consistently being pruned, which is itself a signal that the panel needs review.
+
+Two strategies are available via the `strategy` argument:
+
+- `"greedy"` (default) drops the single right pop with the largest absolute loading on the smallest right-singular vector. Cost: one `qpadm()` fit per iteration. Almost always correct.
+- `"lookahead"` evaluates the top `lookahead_top_j` candidate drops at each step by actually performing the post-drop fit, then commits the candidate with the largest post-drop `f4_var_rcond`. Cost: `lookahead_top_j + 1` fits per iteration (e.g. 4x greedy at the default `lookahead_top_j = 3`). Worth the extra runtime when two right pops have near-equal loadings but very different post-drop rconds (the "sister-pair masking" edge case, where greedy's `which.max` would pick the wrong one and chain into over-pruning).
+
+```{r, eval = FALSE}
+# Greedy is fast and almost always right
+qpadm_with_pruning(data, left, right, target)
+
+# Lookahead trades ~4x runtime for robustness against sister-pair masking
+qpadm_with_pruning(data, left, right, target,
+                   strategy = "lookahead", lookahead_top_j = 3)
+```
+
+The pruner is greedy across iterations (it commits to a drop at each step and does not backtrack). For panels where a globally optimal subset matters more than runtime, the next escalation would be a full branch-and-bound enumeration; that is out of scope for the v1 function.
+
+Defensive guards return early with `converged = FALSE` and a populated `reason` if the diagnostic surface returns something unexpected: an empty or `NULL` loadings table, a named drop pop that is not in the active right set, the floor `min_right_pops` being hit before convergence, or the iteration cap being reached.
+
+
 ### Multiple models: qpadm_multi and qpadm_sweep
 
 `qpadm_multi()` runs a fixed list of `(left, right, target)` models, re-using f4-statistics where possible:
