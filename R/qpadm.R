@@ -114,10 +114,22 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @param constrained Constrain admixture weights to be non-negative
 #' @param return_f4 Return f4-statistics
 #' @param cpp Use C++ functions. Setting this to `FALSE` will be slower but can help with debugging.
+#' @param singular_threshold If not `NA` (the default), error out when the
+#'   reciprocal condition number of the (fudged) f4 variance matrix is below
+#'   this threshold. A common choice is `1e-12` -- below that the downstream
+#'   `solve()` and the C++ weight optimization fall back to a pseudo-inverse,
+#'   which makes the returned weight standard errors numerically tight in a
+#'   way that doesn't reflect actual sampling uncertainty. The default
+#'   (`NA`) preserves the historical behavior: silently fall through to the
+#'   pseudo-inverse fallback. In either mode, the reciprocal condition
+#'   number is reported as `f4_var_rcond` on the returned list so callers
+#'   can gate downstream interpretations programmatically.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
-#' @return `qpadm` returns a list with up to four data frames describing the model fit:
+#' @return `qpadm` returns a list with up to four data frames describing the model fit, plus a numeric `f4_var_rcond` diagnostic:
 #' \enumerate{
+#' \item `f4_var_rcond`: Reciprocal condition number of the (fudged) f4 variance matrix that was inverted to compute weights and standard errors. Values near machine epsilon (~`1e-15`) indicate that the right populations are linearly dependent (e.g., a right pop is a sister to one of the sources), and the returned weight SEs may be artificially tight as a result of the pseudo-inverse fallback. See `singular_threshold` for opt-in error gating.
+#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of `f4_var`. Right pops at the top of this list are the most likely offenders -- typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. `NULL` otherwise.
 #' \item `weights`: A data frame with estimated admixture proportions where each row is a left population.
 #' \item `f4`: A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
@@ -162,7 +174,8 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 qpadm = function(data, left, right, target, f4blocks = NULL,
                  fudge = 0.0001, fudge_twice = FALSE, auto_only = TRUE, blgsize = 0.05,
                  poly_only = FALSE, boot = FALSE, getcov = TRUE,
-                 constrained = FALSE, return_f4 = FALSE, cpp = TRUE, verbose = TRUE, ...) {
+                 constrained = FALSE, return_f4 = FALSE, cpp = TRUE,
+                 singular_threshold = NA_real_, verbose = TRUE, ...) {
 
   #----------------- prepare f4 stats -----------------
   f2_blocks = NULL
@@ -182,7 +195,14 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     if(!is.null(target)) left = c(target, setdiff(left, target))
     if(is_geno_prefix(data)) {
       if(return_f4) {
-        popcombs = expand_grid(pop1 = target, pop2 = left[-1], pop3 = right, pop4 = right) %>% filter(pop3 != pop4)
+        # pop1 = left[1] handles both target != NULL (line above puts target at
+        # left[1]) and target = NULL (qpwave-style; the canonical anchor for
+        # the f4 parameterization f4(left[1], left[-1][i]; right[1], right[-1][j])
+        # used by f2blocks_to_f4blocks on the non-geno path). Previously this
+        # was `pop1 = target` which silently dropped the pop1 column on the
+        # target = NULL path, breaking the qpwave-with-allsnps call shape
+        # documented in #69.
+        popcombs = expand_grid(pop1 = left[1], pop2 = left[-1], pop3 = right, pop4 = right) %>% filter(pop3 != pop4)
         f4blockdat_all = f4blockdat_from_geno(data, popcombs = popcombs, auto_only = auto_only,
                                               blgsize = blgsize, poly_only = poly_only,  verbose = verbose, ...)
         f4blockdat = f4blockdat_all %>% filter(pop3 == right[1], pop4 != right[1])
@@ -228,8 +248,82 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   block_lengths = f4stats$block_lengths
   diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
   if(fudge_twice) diag(f4_var) = diag(f4_var) + fudge*sum(diag(f4_var))
+
+  # Reciprocal condition number of (fudged) f4 variance matrix. Used as a
+  # diagnostic for "are the right pops independent of the sources?".
+  # Very low rcond (~1e-15 / machine epsilon) typically means one or more
+  # right pops are sister to a source, which makes f4_var near-singular and
+  # the downstream pseudo-inverse fallback in cpp_qpadm_weights produce
+  # weight SEs that look tight but reflect numerical noise, not sampling
+  # uncertainty (issue #8).
+  f4_var_rcond = tryCatch(rcond(f4_var), error = function(e) NA_real_)
+
+  # If rcond is concerningly low, compute the SVD-based attribution: the
+  # smallest right-singular vector tells us which (left, right) f4 directions
+  # are in the degenerate subspace. Reshape to a (R-1, L-1) matrix (f4_var's
+  # vec ordering puts right-pop fast, left-pop slow -- see f4blocks_to_f4stats
+  # in this file and arr3d_to_mat in utility.R) and take row norms to get
+  # per-right-pop loadings on the degenerate direction. Two right pops with
+  # large opposing loadings = sister-like pair; one with a dominant loading
+  # alone = the lone offender.
+  rcond_concern = 1e-8     # below ~sqrt(machine eps), the fit is suspect
+  # Trigger SVD attribution whenever either condition holds:
+  #   (a) the auto-concern bar is hit (always-on diagnostic at very low rcond), or
+  #   (b) the caller asked for fail-loud gating and the threshold actually trips
+  #       (so the error message can include the attribution).
+  trigger_loadings = is.finite(f4_var_rcond) &&
+    (f4_var_rcond < rcond_concern ||
+     (!is.na(singular_threshold) && f4_var_rcond < singular_threshold))
+  f4_var_singular_loadings = NULL
+  if(trigger_loadings) {
+    f4_var_singular_loadings = tryCatch({
+      svd_res = svd(f4_var)
+      v_min = svd_res$v[, ncol(svd_res$v)]                # smallest-sigma right singular vector
+      v_mat = matrix(v_min, nrow = length(right) - 1)     # rows = right[-1], cols = left[-1]
+      right_norms = sqrt(rowSums(v_mat^2))
+      tibble::tibble(right = right[-1], loading = right_norms) %>%
+        dplyr::arrange(dplyr::desc(loading))
+    }, error = function(e) NULL)
+  }
+
+  if(!is.na(singular_threshold) && is.finite(f4_var_rcond) && f4_var_rcond < singular_threshold) {
+    diag_msg = ""
+    if(!is.null(f4_var_singular_loadings)) {
+      top = utils::head(f4_var_singular_loadings, 5)
+      diag_msg = paste0(
+        "\n  Right pops loading on the degenerate direction (top 5):\n",
+        paste0(sprintf("    %-40s loading %.3f", top$right, top$loading), collapse = "\n"),
+        "\n  Pops at the top of this list are the likely offenders -- typically a\n",
+        "  sister-clade pair (two pops with similar high loadings) or a lone right\n",
+        "  pop too close to a source. Drop one and refit.")
+    }
+    stop(sprintf(
+      paste0("f4 variance matrix is near-singular (rcond = %.3g < threshold %.3g).\n",
+             "  This typically means right populations aren't independent of the\n",
+             "  sources (e.g. sister populations).%s\n",
+             "  (Pass `singular_threshold = NA` to allow the pseudo-inverse fallback\n",
+             "  anyway; weight SEs may be unreliable.)"),
+      f4_var_rcond, singular_threshold, diag_msg))
+  }
+  if(is.finite(f4_var_rcond) && f4_var_rcond < rcond_concern && is.na(singular_threshold) && verbose) {
+    # Concerning rcond, but no threshold gate set. Surface a warning so the
+    # user knows the result of the silent pseudo-inverse fallback might be
+    # numerically tight in a way that doesn't reflect sampling uncertainty.
+    top = if(!is.null(f4_var_singular_loadings)) utils::head(f4_var_singular_loadings, 3) else NULL
+    diag_msg = if(is.null(top)) "" else paste0(
+      " Right pops loading on the degenerate direction: ",
+      paste0(sprintf("%s (%.2f)", top$right, top$loading), collapse = ", "), ".")
+    warning(sprintf(
+      paste0("f4 variance matrix is near-singular (rcond = %.3g).%s ",
+             "Weight SEs may be unreliable; see `?qpadm` (`singular_threshold`) for ",
+             "opt-in fail-loud gating; the returned list includes the full ",
+             "right-pop loading table on the `f4_var_singular_loadings` field."),
+      f4_var_rcond, diag_msg))
+  }
+
   qinv = solve(f4_var)
-  out = list()
+  out = list(f4_var_rcond = f4_var_rcond,
+             f4_var_singular_loadings = f4_var_singular_loadings)
 
   #----------------- compute admixture weights -----------------
   if(!is.null(target)) {
@@ -293,10 +387,11 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
 #' qpwave(example_f2_blocks, left, right)
 qpwave = function(data, left, right,
                   fudge = 0.0001, auto_only = TRUE, blgsize = 0.05, poly_only = FALSE, boot = FALSE,
-                  constrained = FALSE, cpp = TRUE, verbose = TRUE)
+                  constrained = FALSE, cpp = TRUE, singular_threshold = NA_real_, verbose = TRUE)
   qpadm(data = data, left = left, right = right, target = NULL,
         fudge = fudge, auto_only = auto_only, blgsize = blgsize, poly_only = poly_only,  boot = boot,
-        constrained = constrained, cpp = cpp, verbose = verbose)
+        constrained = constrained, cpp = cpp,
+        singular_threshold = singular_threshold, verbose = verbose)
 
 
 
@@ -716,6 +811,7 @@ fitted_f4_from_f4blockdat = function(f4blockdat, weights, target, left, right) {
 #' admixture events.
 #' @export
 #' @inheritParams qpadm
+#' @param f2_data Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.
 #' @param rnk Rank of f4-matrix. Defaults to one less than full rank.
 #' @param weights Return weights (default = `FALSE`)
 #' @return Data frame with `f4rank`, `dof`, `chisq`, `p`, `feasible`
@@ -755,6 +851,7 @@ qpadm_p = function(f2_data, left, right, target = NULL, auto_only = TRUE, fudge 
 #' A thin wrapper around \code{\link{qpadm_p}} with `rnk` set to zero
 #' @export
 #' @inheritParams qpadm
+#' @param f2_data Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.
 test_cladality = function(f2_data, left, right, fudge = 0.0001, boot = FALSE, cpp = TRUE) {
   qpadm_p(f2_data, left, right, fudge = fudge, boot = boot, rnk = 0, cpp = cpp)
 }
@@ -943,12 +1040,14 @@ qpadmmodels_to_popcombs = function(models) {
 #' }
 #' @param models A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing `left`, `right`, (and `target`) populations.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results. This option only has an effect if `data` is the prefix of a genotype file. If `data` are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.
+#' @param full_results Return the full qpadm output list for each model; if `FALSE`, return only summary statistics (default `TRUE`).
 #' @param verbose Print progress updates
 #' @param ... Further arguments passed to \code{\link{qpadm}}
 #' @return A list where each element is the output of one qpadm model.
 #' @examples
 #' \dontrun{
-#' # the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
+#' # the following specifies two models: one with 2/3/1 and one with
+#' # 1/2/1 left/right/target populations
 #' models = tibble(
 #'            left = list(c('pop1', 'pop2'), c('pop3')),
 #'            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8')),
@@ -987,6 +1086,134 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
       fun(NULL, NULL, NULL, target = TRUE, f4blocks = .x, ...),
       .progress = verbose, ...)
   if(!full_results) out = bind_cols(models, out %<>% bind_rows)
+  out
+}
+
+
+#' Sweep qpadm over a Cartesian product of targets, source-sets, and right-sets
+#'
+#' Patterson-style sweeps fit qpadm for every combination of
+#' (target, source-set, right-set). Each invocation through [qpadm()] would re-load
+#' the f2 cache from disk; `qpadm_sweep()` loads it once via [qpadm_multi()] and
+#' returns a flat tibble with one row per combination, suitable for
+#' filtering / ranking model fits across a sweep without unnesting nested lists.
+#'
+#' This is a convenience wrapper around [qpadm_multi()] that adds:
+#' * named source-sets and right-sets so each combination is labelled in the output
+#' * implicit Cartesian product over `(targets x source_sets x right_sets)`
+#' * a flat tibble result with top-level columns extracted from each model fit
+#'
+#' For per-model parallel evaluation, set `future::plan('multisession')` before calling.
+#'
+#' @export
+#' @inheritParams qpadm_multi
+#' @param targets Character vector of target populations.
+#' @param source_sets Named list of character vectors; each element is a candidate
+#'   set of source ("left") populations for one model. If unnamed, names default
+#'   to `S1`, `S2`, .... Empty names are an error.
+#' @param right_sets Named list of character vectors; each element is a candidate
+#'   set of "right" / outgroup populations. If unnamed, names default to
+#'   `R1`, `R2`, .... Empty names are an error.
+#' @param full_results If `TRUE` (the default), the returned tibble includes
+#'   list-columns `weights` and `rankdrop` with the full per-model output of
+#'   [qpadm()]. If `FALSE`, only the flat summary columns are returned.
+#' @return A tibble with one row per `(target, source_set, right_set)` combination
+#'   and columns:
+#'   \itemize{
+#'     \item `target`, `source_set`, `right_set`: identifiers for the combination
+#'     \item `left`, `right`: list-columns with the source / right pops for this model
+#'     \item `f4rank`: tested rank in the top row of [qpadm()]'s `rankdrop` (= `length(left) - 1`)
+#'     \item `p`, `chisq`, `dof`: top-row of `rankdrop` (the "auto" model fit)
+#'     \item `feasible`: `TRUE` if all weights are between 0 and 1
+#'     \item `weights`: list-column with the per-source `weight` / `se` / `z` tibble (`full_results = TRUE`)
+#'     \item `rankdrop`: list-column with the full rankdrop table (`full_results = TRUE`)
+#'   }
+#' @seealso [qpadm()], [qpadm_multi()]
+#' @examples
+#' \dontrun{
+#' # Run 3 targets * 2 source-sets * 2 right-sets = 12 qpadm models from one f2 dir.
+#' targets    = c("Patterson_England_IA", "Patterson_England_BA",
+#'                "Patterson_England_C_EBA")
+#' sources    = list(canonical_3way = c("WHGA", "Balkan_N", "OldSteppe"),
+#'                   with_ehg       = c("WHGA", "Balkan_N", "OldSteppe", "EHG_Karelia"))
+#' rights     = list(distal_4pop    = c("OldAfrica", "WHGB", "Turkey_N", "Russia_Afanasievo"),
+#'                   distal_refined = c("OldAfrica", "WHGB", "Turkey_N", "Russia_Afanasievo",
+#'                                      "Iran_GanjDareh_N"))
+#' res = qpadm_sweep("f2_dir/", targets, sources, rights)
+#' res %>% arrange(target, p)
+#' }
+qpadm_sweep = function(data, targets, source_sets, right_sets,
+                       allsnps = FALSE, full_results = TRUE, verbose = TRUE, ...) {
+
+  if(length(targets) < 1) stop("'targets' must be a non-empty character vector")
+  if(!is.list(source_sets) || length(source_sets) < 1)
+    stop("'source_sets' must be a non-empty list of character vectors")
+  if(!is.list(right_sets) || length(right_sets) < 1)
+    stop("'right_sets' must be a non-empty list of character vectors")
+  if(is.null(names(source_sets))) names(source_sets) = paste0("S", seq_along(source_sets))
+  if(is.null(names(right_sets)))  names(right_sets)  = paste0("R", seq_along(right_sets))
+  if(any(!nzchar(names(source_sets)))) stop("All 'source_sets' entries must be named")
+  if(any(!nzchar(names(right_sets))))  stop("All 'right_sets' entries must be named")
+  if(any(duplicated(names(source_sets)))) stop("'source_sets' names must be unique")
+  if(any(duplicated(names(right_sets))))  stop("'right_sets' names must be unique")
+  if(!all(vapply(source_sets, is.character, logical(1))))
+    stop("All 'source_sets' entries must be character vectors")
+  if(!all(vapply(right_sets, is.character, logical(1))))
+    stop("All 'right_sets' entries must be character vectors")
+  if(any(duplicated(targets)))
+    warning("'targets' contains duplicates; the same model will be fit multiple times")
+
+  combos = expand.grid(target     = as.character(targets),
+                       source_set = names(source_sets),
+                       right_set  = names(right_sets),
+                       stringsAsFactors = FALSE,
+                       KEEP.OUT.ATTRS = FALSE)
+  combos$left  = unname(source_sets[combos$source_set])
+  combos$right = unname(right_sets[combos$right_set])
+
+  if(verbose) alert_info(paste0("Running ", nrow(combos),
+                                " qpadm models (", length(targets), " target * ",
+                                length(source_sets), " source-set * ",
+                                length(right_sets), " right-set)...\n"))
+
+  models = tibble::tibble(left   = combos$left,
+                          right  = combos$right,
+                          target = combos$target)
+  # full_results = TRUE is required here so we can extract the summary columns
+  # (p, chisq, feasible via weights) below. The outer full_results param controls
+  # whether the list-columns survive into the returned tibble, not what qpadm_multi
+  # computes internally.
+  fits = qpadm_multi(data, models, allsnps = allsnps,
+                     full_results = TRUE, verbose = verbose, ...)
+
+  # Flatten each qpadm() result into the top row of its rankdrop + the weights tibble.
+  top_row = function(x) if(is.null(x) || nrow(x) == 0) NULL else x[1, ]
+  out = tibble::tibble(
+    target     = combos$target,
+    source_set = combos$source_set,
+    right_set  = combos$right_set,
+    left       = combos$left,
+    right      = combos$right,
+    f4rank     = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_integer_ else as.integer(r$f4rank) },
+                   integer(1)),
+    p          = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_real_ else as.numeric(r$p) },
+                   numeric(1)),
+    chisq      = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_real_ else as.numeric(r$chisq) },
+                   numeric(1)),
+    dof        = vapply(fits, function(f) {
+                   r = top_row(f$rankdrop); if(is.null(r)) NA_integer_ else as.integer(r$dof) },
+                   integer(1)),
+    feasible   = vapply(fits, function(f) {
+                   w = f$weights; if(is.null(w)) NA else all(w$weight >= 0 & w$weight <= 1) },
+                   logical(1)))
+
+  if(full_results) {
+    out$weights  = lapply(fits, `[[`, 'weights')
+    out$rankdrop = lapply(fits, `[[`, 'rankdrop')
+  }
   out
 }
 

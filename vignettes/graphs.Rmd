@@ -1,7 +1,7 @@
 ---
 title: "Admixture graphs"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -223,7 +223,7 @@ dates['C'] = 0
 example_f2sim2 = f2_from_msprime(g, nsnps = 1e5, time = dates)
 ```
 
-```{r}
+```{r, eval = FALSE}
 qpgraph(example_f2sim2, g)$edges %>% plotly_graph(fix = TRUE)
 ```
 
@@ -320,7 +320,7 @@ Because it's usually not the case that any given admixture graph model (even wit
 
     The One True Admixture Graph
     
-    We know in fact that a large number of admixture events is generally a closer representation of reality than a small number. Admixture graphs typically group people into populations before modeling their history (that's true for observed samples as well as for unobserved ancestral samples). The process of grouping people into populations is never perfect, but it is necessary to create models of a complexity that we can handle. At least conceptually, we can imagine what it would look like if we didn't group people into populations, if we had an infinite number of SNPs for each sample, and if our goal was to recover not just a simplified model of reality, but the exact steps, generation by generation, that connect all people, present and past. What we would end up with is the pedigree connecting all these people. In this pedegree admixture graph, every child would be a 50/50 mixture of its parents. This means that in the limit of modelling more and more admixture events, an admixture graph eventually turns into a huge family pedigree. It's only at that point that the admixture graph stops being a simplified representation of the true demographic history. (The fact that admixture graphs can be seen as generalizations of pedigrees also means that we can use `qpraph()` or `find_graphs()` to infer regular family pedegrees.) When working with samples or populations which are separated by many generations, it's impossible to infer this pedigree admixture graph. The goal is instead to find the simplest model which is consistent with the data. While this simplification doesn't capture all aspects of demographic history, it is still very informative, because usually only a small minority of all possible models are consistent with the genetic data.
+    We know in fact that a large number of admixture events is generally a closer representation of reality than a small number. Admixture graphs typically group people into populations before modeling their history (that's true for observed samples as well as for unobserved ancestral samples). The process of grouping people into populations is never perfect, but it is necessary to create models of a complexity that we can handle. At least conceptually, we can imagine what it would look like if we didn't group people into populations, if we had an infinite number of SNPs for each sample, and if our goal was to recover not just a simplified model of reality, but the exact steps, generation by generation, that connect all people, present and past. What we would end up with is the pedigree connecting all these people. In this pedigree admixture graph, every child would be a 50/50 mixture of its parents. This means that in the limit of modelling more and more admixture events, an admixture graph eventually turns into a huge family pedigree. It's only at that point that the admixture graph stops being a simplified representation of the true demographic history. (The fact that admixture graphs can be seen as generalizations of pedigrees also means that we can use `qpgraph()` or `find_graphs()` to infer regular family pedigrees.) When working with samples or populations which are separated by many generations, it's impossible to infer this pedigree admixture graph. The goal is instead to find the simplest model which is consistent with the data. While this simplification doesn't capture all aspects of demographic history, it is still very informative, because usually only a small minority of all possible models are consistent with the genetic data.
 
 
 2. The model misrepresents reality beyond just simplifying it
@@ -387,14 +387,14 @@ The examples above have already demonstrated how admixture graphs can be created
 
 You can also generate random graphs with your choice of population labels and a set number of admixture events:
 
-```{r, warning = FALSE}
+```{r, warning = FALSE, fig.width = 9, fig.height = 7, out.width = "100%"}
 pops = unique(dplyr::starwars$species)
 newgraph = random_admixturegraph(pops, numadmix = 15)
 plotly_graph(newgraph)
 ```
 
 
-To load an existing graph, use `parse_qpgraph_graphfile()` if it's in the original *ADMIXTOOLS* format, `read_table2()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`.
+To load an existing graph, use `parse_qpgraph_graphfile()` if it's in the original *ADMIXTOOLS* format, `read_table()` if it's an edge list, or `readRDS()` if it was saved in R using `saveRDS()`.
 
 
 
@@ -443,7 +443,7 @@ example_qpgraph_ref_results$opt
 
 The range of estimated weights for each admixture edge is also stored in the `low` and `high` columns of the `edges` data frame returned by `qpgraph()`. The `plot_comparison()` function visualizes that information with gray error bars.
 
-```{r}
+```{r, warning = FALSE, message = FALSE, fig.width = 7, fig.height = 7, out.width = "100%"}
 plot_comparison(example_qpgraph_ref_results, example_qpgraph_ref_results)
 ```
 
@@ -495,9 +495,6 @@ In *ADMIXTOOLS 2*, you can compute confidence intervals for the estimated drift 
 ```{r, eval = FALSE}
 fits = qpgraph_resample_snps(example_f2_blocks, example_igraph, boot = 100)
 fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
-```
-```{r, echo = FALSE}
-example_fits %>% summarize_fits() %>% plotly_graph(print_highlow = TRUE)
 ```
 
 
@@ -822,9 +819,9 @@ msprime_sim(g, outprefix, nsnps = 1e5, ind_per_pop = 100, run = '/Users/robert/a
 <!-- f2_blocks = f2_from_geno(outprefix, verbose = FALSE) -->
 <!-- ``` -->
 
-The last two steps can also be combined into one step with the `f2_from_simulation()` function.
+The last two steps can also be combined into one step with the `f2_from_msprime()` function.
 ```{r, eval = F}
-f2_blocks = f2_from_simulation(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
+f2_blocks = f2_from_msprime(g, nsnps = 1e5, ind_per_pop = 100, numcores = 8)
 ```
 
 <!-- As expected, the graph under which the data were simulated has a very good fit: -->
@@ -870,18 +867,15 @@ If you want to override any of the default assumptions, you can do so in three w
     `msprime_sim()` will create a file `[outprefix].py` which may need to be modified before running the simulation.
 
 
-### fastsimcoal2
+<!-- ### fastsimcoal2 -->
 
 
 <br>
 
 
-## Admixture graphs and pedigrees
+<!-- ## Admixture graphs and pedigrees -->
 
 
-
-
-<br>
 
 <!-- ## Finding valid qpAdm models -->
 

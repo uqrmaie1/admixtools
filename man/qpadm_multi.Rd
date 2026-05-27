@@ -25,6 +25,8 @@ qpadm_multi(
 
 \item{allsnps}{Use all SNPs with allele frequency estimates in every population of any given population quadruple. If \code{FALSE} (the default) only SNPs which are present in all populations in \code{popcombs} (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, \code{allsnps = TRUE} can lead to false positive results. This option only has an effect if \code{data} is the prefix of a genotype file. If \code{data} are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.}
 
+\item{full_results}{Return the full qpadm output list for each model; if \code{FALSE}, return only summary statistics (default \code{TRUE}).}
+
 \item{verbose}{Print progress updates}
 
 \item{...}{Further arguments passed to \code{\link{qpadm}}}
@@ -37,7 +39,8 @@ This function runs multiple qpadm models, re-using f4-statistics where possible.
 }
 \examples{
 \dontrun{
-# the following specifies two models: one with 2/3/1 and one with 1/2/1 left/right/target populations
+# the following specifies two models: one with 2/3/1 and one with
+# 1/2/1 left/right/target populations
 models = tibble(
            left = list(c('pop1', 'pop2'), c('pop3')),
            right = list(c('pop5', 'pop6', 'pop7'), c('pop7', 'pop8')),

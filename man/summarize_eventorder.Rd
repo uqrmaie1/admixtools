@@ -8,6 +8,8 @@ summarize_eventorder(graph, unique_only = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
+
+\item{unique_only}{Return only unique, unambiguous event-order relationships (default \code{TRUE}).}
 }
 \value{
 A data frame with columns \code{earlier1}, \code{earlier2}, \code{later1}, \code{later2}

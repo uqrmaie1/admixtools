@@ -17,7 +17,9 @@ f4blockdat_from_geno(
   poly_only = FALSE,
   snpwt = NULL,
   keepsnps = NULL,
-  verbose = TRUE
+  cm_file = NULL,
+  verbose = TRUE,
+  return_matrices = FALSE
 )
 }
 \arguments{
@@ -45,7 +47,17 @@ f4blockdat_from_geno(
 
 \item{keepsnps}{A vector of SNP IDs to keep}
 
+\item{cm_file}{Optional path to a TSV file with per-variant centimorgan positions
+(columns: a SNP-identifier column and \code{cm}). Overrides cM values in \code{.pvar} when supplied.}
+
 \item{verbose}{Print progress updates}
+
+\item{return_matrices}{If \code{TRUE}, return a list with \code{numer}, \code{cnt},
+\code{denom}, and \code{block_lengths} matrices directly (the matrices the per-
+block reducer writes into) instead of the long-format data frame. Used
+by \code{qpfstats()} to skip the costly long-format expansion and immediate
+collapse back to matrices. Default \code{FALSE} preserves the historical
+return shape for all other callers.}
 }
 \value{
 A data frame with per-block f4-statistics for each population quadruple.

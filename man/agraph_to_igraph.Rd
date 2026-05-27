@@ -7,10 +7,10 @@
 agraph_to_igraph(agraph)
 }
 \arguments{
-\item{agraph}{An admixture graph in \code{\link{agraph}} format}
+\item{agraph}{An admixture graph in \code{\link[admixturegraph]{agraph}} format}
 }
 \value{
-An admixture graph in \code{\link{igraph}} format
+An admixture graph in \code{igraph} format
 }
 \description{
 \code{agraph} is the format used by the \code{admixturegraph} packge. \code{igraph} is used by the \code{admixtools} package

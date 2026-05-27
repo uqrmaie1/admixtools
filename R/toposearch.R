@@ -181,6 +181,10 @@ unify_vertex_names = function(graph, keep_unique = TRUE, sep1 = '.', sep2 = '_')
 #' @param numadmix Number of admixture events
 #' @param simple Should edges leading to admixture nodes consist of separate admix edges and normal edges
 #' @param outpop Outgroup population
+#' @param nonzero_f4 Optional constraint: population pairs for which f4 must be non-zero.
+#' @param admix_constraints Optional constraint on admixture counts per population (see \code{\link{satisfies_constraints}}).
+#' @param event_order Optional constraint on the ordering of demographic events (see \code{\link{satisfies_constraints}}).
+#' @param ntry Maximum number of attempts to generate a graph satisfying all constraints (default 100).
 #' @examples
 #' rand_graph = random_admixturegraph(10, numadmix = 5)
 #' plot_graph(rand_graph)
@@ -710,6 +714,7 @@ insert_admix_random = function(graph, nadmix) {
 #' @param dest_from Parent node of the destination edge
 #' @param dest_to Child node of the destination edge
 #' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @param fix_outgroup Prevent insertion of edges that affect the root-to-outgroup edge (default `TRUE`).
 #' @return Adxmiture graph with inserted edge
 #' @seealso \code{\link{delete_admix}}, \code{\link{insert_admix_n}}
 insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from = NULL, dest_to = NULL,
@@ -754,9 +759,8 @@ insert_admix = function(graph, source_from = NULL, source_to = NULL, dest_from =
 #'
 #' @export
 #' @param graph An admixture graph
-#' @param from List of nodes. New edges will originate above these nodes.
-#' @param to List of nodes. New edges will end above these nodes.
-#' @param substitute Should another edge be inserted, if the one specified doesn't work?
+#' @param n Number of admixture edges to insert (default 1).
+#' @param fix_outgroup Prevent insertion of edges that affect the root-to-outgroup edge (default `TRUE`).
 #' @return Admixture graph with inserted edges
 #' @seealso \code{\link{insert_admix}} \code{\link{delete_admix}}
 insert_admix_n = function(graph, n = 1, fix_outgroup = TRUE) {
@@ -844,6 +848,7 @@ admixturegraph_prune_and_regraft = function(graph, only_leaves = FALSE, fix_outg
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param fix_outgroup Prevent the outgroup leaf from being regrafted (default `TRUE`).
 #' @return A new admixture graph
 spr_leaves = function(graph, fix_outgroup = TRUE)
   admixturegraph_prune_and_regraft(graph, only_leaves = TRUE, fix_outgroup = fix_outgroup)
@@ -852,6 +857,7 @@ spr_leaves = function(graph, fix_outgroup = TRUE)
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param fix_outgroup Prevent the outgroup from being regrafted (default `TRUE`).
 #' @return A new admixture graph
 spr_all = function(graph, fix_outgroup = TRUE)
   admixturegraph_prune_and_regraft(graph, only_leaves = FALSE, fix_outgroup = fix_outgroup)
@@ -1005,8 +1011,7 @@ get_mutfuns = function(mutfuns, probs, fix_outgroup = TRUE) {
 
 add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_residual = FALSE, parallel = TRUE, verbose = TRUE) {
 
-  space = paste0(paste(rep(' ', 50), collapse=''), '\r')
-  if(verbose) alert_info(paste0('Selecting winners...', space))
+  if(verbose) .heartbeat('Selecting winners...')
   lastgen = max(models$generation)
   oldmodels = models %>% filter(generation == lastgen, !is.na(score))
   numsel = min(nrow(oldmodels), numsel)
@@ -1024,15 +1029,17 @@ add_generation = function(models, numgraphs, numsel, qpgfun, mutfuns, opt_worst_
     map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
     imap = function(...) furrr::future_imap(..., .options = furrr::furrr_options(seed = TRUE))
   }
-  if(verbose) alert_info(paste0('Generating new graphs...', space))
+  if(verbose) .heartbeat('Generating new graphs...')
   newmodels %<>% mutate(mutation = names(mutations),
                         igraph = imap(igraph, ~tryCatch(exec(mutations[[.y]], .x), error = function(e) .x)))
-  if(verbose) alert_info(paste0('Evaluating graphs...', space))
+  if(verbose) .heartbeat('Evaluating graphs...')
   newmodels %<>% mutate(out = map(igraph, qpgfun))
-  if(verbose) alert_info(paste0('Attaching to previous generations...', space))
-  winners %>%
+  if(verbose) .heartbeat('Attaching to previous generations...')
+  out = winners %>%
     mutate(generation = lastgen+1, index = 1:n()) %>%
     bind_rows(newmodels %>% unnest_wider(out))
+  if(verbose) .heartbeat(done = TRUE)
+  out
 }
 
 
@@ -1096,16 +1103,16 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
   }
 
   # qpgfun = possibly(qpgfun, otherwise = NULL)
-  space = paste0(paste(rep(' ', 50), collapse=''), '\r')
-  if(verbose) alert_info(paste0('Generate new graphs...', space))
+  if(verbose) .heartbeat('Generate new graphs...')
   if(is.null(initgraphs)) initgraphs = replicate(numgraphs, random_admixturegraph(pops, numadmix, outpop = outpop),
                                                 simplify = FALSE)
   else initgraphs = initgraphs[round(seq(1, length(initgraphs), numgraphs))]
-  if(verbose) alert_info(paste0('Evaluate graphs...', space))
+  if(verbose) .heartbeat('Evaluate graphs...')
   if(parallel) map = function(...) furrr::future_map(..., .options = furrr::furrr_options(seed = TRUE))
   init = tibble(generation=0, index = seq_len(numgraphs),
                 igraph = initgraphs, mutation = 'random_admixturegraph') %>%
     mutate(out = map(igraph, qpgfun), isn = map_lgl(out, is.null))
+  if(verbose) .heartbeat(done = TRUE)
   if(all(init$isn)) stop('All NULL!')
 
   init %<>% select(-isn) %>% unnest_wider(out) %>% mutate(oldscore = score, oldindex = index)
@@ -1130,6 +1137,7 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' to specify the details of the parallelization. This can be used to parallelize across cores or across nodes on
 #' a compute cluster. Setting `numadmix` to 0 will search for well fitting trees, which is much faster than searching
 #' for admixture graphs with many admixture nodes.
+#' @export
 #' @param data Input data in one of three forms:
 #' \enumerate{
 #' \item A 3d array of blocked f2 statistics, output of \code{\link{f2_from_precomp}} or \code{\link{f2_from_geno}}
@@ -1186,7 +1194,9 @@ optimize_admixturegraph_single = function(pops, precomp, mutlist, repnum, numgra
 #' # Making new mutation functions by modifying or combining existing ones:
 #' newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
 #' newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-#' find_graphs_old(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+#' find_graphs_old(f2_blocks,
+#'                 mutfuns = namedList(spr_leaves, newfun1, newfun2),
+#'                 mutprobs = c(0.2, 0.3, 0.5))
 #' }
 find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgraphs = 50,
                        numgen = 5, numsel = 5, numadmix = 0, numstart = 1, keep = c('all', 'best', 'last'), initgraphs = NULL,
@@ -1460,6 +1470,8 @@ identify_edge = function(graph, from, to) {
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
+#' @param return_admix Include a column of admixture edges for each tree in the output (default `FALSE`).
+#' @param simplify Apply \code{\link{simplify_graph}} to each output tree (default `TRUE`).
 #' @return A data frame with columns `name` and `graph`
 #' @examples
 #' \dontrun{
@@ -1608,6 +1620,7 @@ graph_plusone = function(graph, ntry = Inf) {
 #'
 #' @export
 #' @param graph Admixture graph in `igraph` format
+#' @param ntry Maximum number of admixture edges to sample; if `Inf` (default), samples up to 100.
 #' @return A data frame with columns `from`, `to`, and `graph`
 #' @examples
 #' \dontrun{
@@ -1743,6 +1756,8 @@ graph_addleaf = function(graph, pop) {
 #' Find possible new edges
 #'
 #' @param graph An admixture graph
+#' @param fix_outgroup Exclude edges that would displace the root-to-outgroup edge (default `TRUE`).
+#' @param all If `TRUE` (default), use the fast algorithm; if `FALSE`, use the more conservative \code{find_newedges_cautiously}.
 #' @return A data frame with columns `from` and `to`. New edges which begin above `from`
 #'   and end above `to` could be inserted
 #' @export
@@ -2293,7 +2308,6 @@ reconstruct_from_leafdist = function(leafdist) {
     l = leaves[i]
     ld = leafdist %>% filter(from == l)
     reachable = l
-    cat(paste0(i,'\r'))
     for(j in seq_len(max(ld$dist))) {
       nn = ld %>% filter(dist == j)
       reachable = union(reachable, nn$to)
@@ -2603,7 +2617,8 @@ rearrange_negadmix3 = function(graph, from, to) {
 #' res %>% slice_min(score)
 #' }
 #' \dontrun{
-#' # Start with a graph with 0 admixture events, increase up to 3, and stop after 10 generations of no improvement
+#' # Start with a graph with 0 admixture events, increase up to 3,
+#' # and stop after 10 generations of no improvement
 #' pops = dimnames(example_f2_blocks)[[1]]
 #' initgraph = random_admixturegraph(pops, 0, outpop = 'Chimp.REF')
 #' res = find_graphs(example_f2_blocks, initgraph = initgraph, stop_gen2 = 10, max_admix = 3)
@@ -2776,7 +2791,7 @@ find_graphs = function(data, numadmix = 0, outpop = NULL, stop_gen = 100, stop_g
         newmod = tibble()
       } else {
         newmod = e %>% slice_min(weight, n = floor(numgraphs/2)) %>%
-          mutate(mutfun = ifelse(type == 'admix', sample(names(wfuns), 1), sample(names(dfuns), 1)),
+          mutate(mutfun = dplyr::if_else(type == 'admix', sample(names(wfuns), 1), sample(names(dfuns), 1)),
                  fun = allfuns[mutfun],
                  g = pmap(list(fun, from, to), function(x, y, z) possibly(x, NULL)(graph, y, z))) %>%
           rowwise %>% filter(!is.null(g)) %>% ungroup
@@ -3234,6 +3249,7 @@ all_node_events = function(graph) {
 #'
 #' @export
 #' @param graph An admixture graph
+#' @param unique_only Return only unique, unambiguous event-order relationships (default `TRUE`).
 #' @return A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
 #' @examples
 #' \dontrun{
@@ -3360,6 +3376,7 @@ path_triples = function(graph) {
 #' @param graph An admixture graph
 #' @param substitute Should edge names be represented by shorter symbols?
 #' @param nam Symbols used to shorten edge names
+#' @param return_everything If `TRUE`, return all intermediate columns in addition to equations; if `FALSE` (default), return only `equations` and `coding`.
 #' @return A list with two data frames: `equations` holds the equtions for all f2-statistics; `coding` has the mapping from edge names to edge symbols, which is used when `substitute = TRUE`
 graph_equations = function(graph, substitute = TRUE, nam = c('a', 'e', 'f'), return_everything = FALSE) {
 
@@ -3544,10 +3561,11 @@ identifiable_comb = function(graph, edge, jac = NULL, verbose = TRUE) {
   edges = colnames(jac)
 
   for(i in seq_len(length(E(graph)))) {
-    if(verbose) alert_info(paste0(i, '...\r'))
+    if(verbose) .heartbeat("{i}...")
     us = identifiable_sets(graph, jac, edge = which(edges == edge), n = i)
     if(edge %in% unlist(us)) break
   }
+  if(verbose) .heartbeat(done = TRUE)
   us[map_lgl(seq_len(nrow(us)), ~edge %in% us[.,]),,drop=FALSE]
 }
 
@@ -3577,7 +3595,8 @@ predicted_f4 = function(graph, a = NULL, e = NULL) {
 
 graph_to_groebner = function(graph) {
 
-  require(m2r)
+  if (!requireNamespace("m2r", quietly = TRUE)) stop("Package 'm2r' is required for this function.")
+
   ge = graph_equations(graph, return_everything = TRUE)
   #vrs = eq %>% str_replace_all('[\\*\\+\\(\\)]', ' ') %>% str_replace_all('1-', '') %>% str_replace_all('-', '') %>%
   #  str_squish() %>% str_split(' ') %>% unlist %>% unique
@@ -3898,6 +3917,7 @@ satisfies_numadmix = function(graph, admix_constraints) {
 #' @param event_order A data frame with columns `earlier1`, `earlier2`, `later1`, `later2`
 #' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
 #' @seealso \code{\link{satisfies_numadmix}}, \code{\link{satisfies_zerof4}}, \code{\link{satisfies_eventorder}}
+#' @examples
 #' \dontrun{
 #' # At least one admixture event for C, and none for D:
 #' constrain_cd = tibble(pop = c('C', 'D'), min = c(1, NA), max = c(NA, 0))
@@ -3918,6 +3938,7 @@ satisfies_constraints = function(graph, nonzero_f4 = NULL, admix_constraints = N
 #' @param tree An admixture graph without admixture event
 #' @param graph An admixture graph
 #' @return `TRUE` if all admixture constraints are satisfied, else `FALSE`
+#' @examples
 #' \dontrun{
 #' tree = graph_splittrees(example_igraph) %>% pull(graph) %>% pluck(1)
 #' tree_in_graph(tree, example_igraph)
@@ -4200,6 +4221,7 @@ qpadm_models = function(pops, allpops = TRUE, more_right = TRUE) {
 #' @param weights Set this to `FALSE` to return only information on the ranks, not the weights, of each qpadm model. The ranks should depend only on the graph topology, while the weights and weight-validity (all weights for left populations between 0 and 1) can depend on the branch lengths of the graph. By default f4-statistics are based on equal branch lengths and admixture weights of 0.5. This can be overridden by providing `f4dat`.
 #' @param f4dat A data frame of f4-statistics which can be provided to override the default branch lengths.
 #' @param allpops Evaluate only models which use all populations in the admixture graph. See \code{\link{qpadm_models}}
+#' @param more_right Passed to \code{\link{qpadm_models}}: prefer models with more right than left populations (default `TRUE`).
 #' @param return_f4 Include f4 statistic matrices in the results (default `FALSE`)
 #' @param eps Epsilon value close to zero which is used for determining which f4 matrix elements should be considered non-zero, and which weights are strictly between 0 and 1.
 #' @return A data frame with one qpadm model per row and columns `valid_rank` and `valid_weights` indicating whether a model should be valid under the graph.
@@ -4475,8 +4497,8 @@ graph_boot_pval = function(bootfit) {
 #'
 #' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link{agraph}} format
-#' @return An admixture graph in \code{\link{igraph}} format
+#' @param agraph An admixture graph in \code{\link[admixturegraph]{agraph}} format
+#' @return An admixture graph in \code{igraph} format
 #' @examples
 #' \dontrun{
 #' agraph_to_igraph(agraph)
@@ -4487,10 +4509,10 @@ agraph_to_igraph = function(agraph) {
 
 #' Convert igraph to agraph
 #'
-#' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
+#' `agraph` is the format used by the `admixturegraph` package. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link{igraph}} format
-#' @return An admixture graph in \code{\link{agraph}} format
+#' @param igraph An admixture graph in igraph format (as used by admixtools).
+#' @return An admixture graph in agraph format (as used by the `admixturegraph` package).
 #' @examples
 #' \dontrun{
 #' igraph_to_agraph(example_igraph)
@@ -4541,7 +4563,7 @@ label_internal = function(edges) {
     node = .x
     igraph::all_simple_paths(graph, node, leaves) %>%
       set_names(map_chr(., ~attr(tail(., 1), 'name'))) %>%
-      map(admixtools:::vs_to_es) %>% map(~wvec[.]) %>% map(prod) %>%
+      map(vs_to_es) %>% map(~wvec[.]) %>% map(prod) %>%
       enframe %>% unnest(value) %>% group_by(name) %>%
       summarize(weight = sum(value)) %>% transmute(from = node, to = name, weight)
   })

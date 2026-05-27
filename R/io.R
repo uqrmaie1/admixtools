@@ -6,6 +6,8 @@
 #' @param inds Individuals from which to compute allele frequencies
 #' @param pops Populations from which to compute allele frequencies. If `NULL` (default), populations will be extracted from the third column in the `.ind` file. If population labels are provided, they should have the same length as `inds`, and will be matched to them by position
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
+#' @param first Index of the first SNP to read (1-based, default 1).
+#' @param last Index of the last SNP to read (1-based); if NULL, reads all SNPs.
 #' @param verbose Print progress updates
 #' @return A list with three data frames: allele frequency data, allele counts, and SNP metadata
 #' @examples
@@ -28,8 +30,8 @@ packedancestrymap_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseud
 
   pref %<>% normalizePath(mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = as.numeric(nrow(snpfile))
   first = max(1, first)
@@ -76,8 +78,8 @@ eigenstrat_to_afs_old = function(pref, inds = NULL, pops = NULL, adjust_pseudoha
   if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -136,8 +138,8 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
   if(verbose) alert_info('Reading allele frequencies from EIGENSTRAT files...\n')
 
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', progress = FALSE)
 
   ip = match_samples(indfile$X1, indfile$X3, inds, pops)
   indvec = ip$indvec
@@ -161,12 +163,13 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
   for(i in 1:numparts) {
 
-    if(verbose && numparts > 1) alert_info(paste0('Reading part ', i,' of ', numparts,'...\r'))
+    if(verbose && numparts > 1) .heartbeat("Reading part {i} of {numparts}...")
     geno = cpp_read_eigenstrat(fl, nsnp, nindall, (indvec != 0)+0, start[i]-1, end[i], FALSE, verbose && numparts == 1)
     colnames(geno) = inds
     counts[start[i]:end[i],] = t(rowsum((!is.na(t(geno)))*ploidy, pops))[,upops]
     afs[start[i]:end[i],] = t(rowsum(t(geno)/(3-ploidy), pops, na.rm=T))[,upops]/counts[start[i]:end[i],]
   }
+  if(verbose && numparts > 1) .heartbeat(done = TRUE)
   afs[!is.finite(afs)] = NA
   rownames(afs) = rownames(counts) = snpfile$SNP
   colnames(afs) = colnames(counts) = upops
@@ -182,11 +185,61 @@ eigenstrat_to_afs = function(pref, inds = NULL, pops = NULL, numparts = 100,
 
 
 
+#' Filter SNPs in an allele-frequency table
+#'
+#' Applies SNP-level filters to an allele-frequency object (the kind returned
+#' by [plink_to_afs()], [eigenstrat_to_afs()], or
+#' [packedancestrymap_to_afs()]) and returns the same shape with the dropped
+#' SNPs removed. This is the filter that [extract_f2()] applies internally between
+#' reading allele frequencies from disk and computing per-pair f2 blocks; it
+#' is exported here so callers who assemble the AFS-direct pipeline manually
+#' can apply the same filter without reaching into the package via `:::`.
+#'
+#' @export
+#' @param afdat An allele-frequency table: a list with elements `afs`
+#'   (nsnp x npop matrix of reference-allele frequencies), `counts`
+#'   (nsnp x npop matrix of observed allele counts), and `snpfile`
+#'   (a tibble of SNP metadata with at least `SNP`, `CHR`, `A1`, `A2`).
+#' @param maxmiss Drop SNPs where the fraction of populations with zero
+#'   called alleles exceeds this value. Default `0`: drop any SNP missing
+#'   from at least one population. Set to `1` to disable.
+#' @param minmaf Minimum minor-allele frequency (computed as a
+#'   count-weighted row mean across populations). Default `0` (no filter).
+#' @param maxmaf Maximum minor-allele frequency. Default `0.5`.
+#' @param minac2 If `TRUE` (or `2`), drop SNPs whose minimum per-population
+#'   allele count is below 2. With `minac2 = 2`, only non-singleton
+#'   populations are considered when computing the minimum. Default `FALSE`.
+#' @param outpop Optional name of an outgroup population. When supplied,
+#'   adds an `outgroupaf` column to the SNP metadata equal to the allele
+#'   frequency of `outpop` at each SNP; otherwise the column is set to a
+#'   sentinel value of `0.5` (the midpoint between 0 and 1), which makes
+#'   any subsequent outgroup-based filter a no-op.
+#' @param auto_only Drop SNPs on non-autosomal chromosomes (anything
+#'   outside `1:22`). Default `TRUE`.
+#' @param poly_only Drop SNPs that are monomorphic across the included
+#'   populations. Default `FALSE`.
+#' @param transitions Keep transition SNPs (A/G and C/T). Default `TRUE`.
+#'   Set to `FALSE` for ancient-DNA studies that want to exclude
+#'   transitions to avoid post-mortem C->T / G->A deamination artifacts.
+#' @param transversions Keep transversion SNPs. Default `TRUE`.
+#' @param keepsnps Optional character vector of SNP IDs to retain. When
+#'   supplied, overrides **all other filters** (`maxmiss`, `auto_only`,
+#'   `poly_only`, `minmaf`, `maxmaf`, `minac2`, `transitions`,
+#'   `transversions`) -- only the SNPs whose IDs appear in `keepsnps` are
+#'   kept, regardless of any other filter setting. Default `NULL`.
+#' @return A list with the same names as `afdat` (`afs`, `counts`, `snpfile`),
+#'   restricted to SNPs that pass all active filters. Errors if zero SNPs remain.
+#' @examples
+#' \dontrun{
+#' # Read allele frequencies for two populations from a PLINK1 dataset,
+#' # then drop any SNP that is missing in at least one population and any
+#' # non-autosomal site:
+#' afdat = plink_to_afs("/path/to/prefix", pops = c("PopA", "PopB"))
+#' afdat_filt = discard_from_aftable(afdat, maxmiss = 0, auto_only = TRUE)
+#' nrow(afdat_filt$afs) <= nrow(afdat$afs)   # TRUE
+#' }
 discard_from_aftable = function(afdat, maxmiss = 0, minmaf = 0, maxmaf = 0.5, minac2 = FALSE, outpop = NULL, auto_only = TRUE,
                                 poly_only = FALSE, transitions = TRUE, transversions = TRUE, keepsnps = NULL) {
-  # afdat is list with 'snpfile', 'afs', 'counts'
-  # returns same list with SNPs removed
-  # keepsnps overrides maxmiss and auto_only
 
   snpdat = afdat$snpfile
   if(maxmiss < 1) snpdat$miss = rowMeans(afdat$counts == 0)
@@ -334,8 +387,8 @@ read_packedancestrymap = function(pref, inds = NULL, pops = NULL, first = 1, las
 
   pref = normalizePath(pref, mustWork = FALSE)
   nam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')
-  indfile = read_table2(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
-  snpfile = read_table2(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
+  indfile = read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+  snpfile = read_table(paste0(pref, '.snp'), col_names = nam, col_types = 'ccddcc', skip = first-1,
                         n_max = last-first+1, progress = FALSE)
   if(!is.null(pops)) {
     if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
@@ -484,6 +537,534 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 }
 
 
+# Resolve the user's PFILE prefix to the actual on-disk .pvar (or .pvar.zst)
+# path. Returns the path that exists; errors if neither does. PFILE callers
+# may write either form (plink2 picks zstd when given --pvar-cols or
+# explicitly asked), and we want both to work transparently.
+.resolve_pvar_path = function(pref) {
+  plain = paste0(pref, ".pvar")
+  zst   = paste0(pref, ".pvar.zst")
+  if(file.exists(plain)) plain
+  else if(file.exists(zst)) zst
+  else NA_character_
+}
+
+# If pvar_path ends in .zst, decompress via the zstd CLI to a tempfile and
+# return the temp path; otherwise return pvar_path unchanged. Caller is
+# responsible for cleaning up the tempfile (typically via on.exit).
+.maybe_decompress_pvar = function(pvar_path) {
+  if(!grepl("\\.zst$", pvar_path)) return(pvar_path)
+  zstd = Sys.which("zstd")
+  if(zstd == "") {
+    stop(".pvar.zst (Zstd-compressed) needs the `zstd` CLI on PATH to ",
+         "decompress for R-side parsing (pgenlibr handles .zst natively for ",
+         ".pgen access, but the metadata read goes through readr). ",
+         "Either:\n",
+         "  1. Install zstd (https://github.com/facebook/zstd) and re-run, or\n",
+         "  2. Decompress manually: `zstd -d ", pvar_path, "` and drop the .zst ",
+         "extension from the prefix.\n",
+         "Sys.which('zstd') returned: '", zstd, "'.")
+  }
+  tmp = tempfile(fileext = ".pvar")
+  # system2(..., stdout = file) routes through a shell to redirect, so
+  # shQuote() on the input path is what protects against shell injection /
+  # whitespace splitting on user-controlled file names.
+  rc = system2(zstd, args = c("-d", "-c", shQuote(pvar_path)), stdout = tmp)
+  if(rc != 0 || !file.exists(tmp) || file.size(tmp) == 0) {
+    stop("zstd decompression of ", pvar_path, " failed (exit code ", rc, ").")
+  }
+  tmp
+}
+
+# Read the .pvar (PLINK 2 variant info) file and return a tibble shaped like
+# the snpfile / bim used elsewhere in admixtools. Returns columns
+#   SNP, CHR, cm, POS, A1, A2, is_multi
+# A1 is REF, A2 is the first ALT (matching plink_to_afs's convention).
+# is_multi is TRUE iff the original ALT field had more than one allele
+# (comma-separated), in which case A2 holds the first ALT and the rest are
+# dropped — but the flag lets callers refuse / skip / proceed-with-warning.
+.read_pvar = function(pvar_path) {
+  # .pvar is VCF-shaped TSV. "##" lines are metadata; the column header line
+  # starts with "#CHROM". For .pvar.zst we shell out to `zstd -d` (handled
+  # transparently below); pgenlibr::NewPvar reads .zst natively for the
+  # pgen-access path that follows.
+  read_path = .maybe_decompress_pvar(pvar_path)
+  if(read_path != pvar_path) on.exit(unlink(read_path), add = TRUE)
+
+  # Read just enough lines to locate the column-header line. PLINK 2 usually
+  # places <30 metadata lines before the #CHROM header, but a custom .pvar
+  # with hundreds of contigs can push it further out. Start with 200; if
+  # not found, fall back to a full read so unusual inputs still work.
+  head_lines = readr::read_lines(read_path, n_max = 200L, progress = FALSE)
+  header_lineno = which(grepl("^#[^#]", head_lines))[1]
+  if(is.na(header_lineno)) {
+    head_lines = readr::read_lines(read_path, progress = FALSE)
+    header_lineno = which(grepl("^#[^#]", head_lines))[1]
+    if(is.na(header_lineno)) {
+      stop("Could not find #CHROM header line in ", pvar_path,
+           ". Is this really a PLINK 2 .pvar file?")
+    }
+  }
+  header = sub("^#", "", head_lines[header_lineno])
+  header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
+  # Build the col_types spec — coerce known columns, default to character
+  # for unknown ones. POS / CM are numeric; everything else stays character.
+  col_types = paste0(ifelse(header_cols %in% c("POS", "CM"), "d", "c"), collapse = "")
+  # Skip past the header line directly via skip= rather than re-reading and
+  # filtering on `comment = "#"`. This avoids re-scanning the file for
+  # leading "##" lines a second time.
+  pvar = readr::read_tsv(read_path,
+                         col_names = header_cols,
+                         col_types = col_types,
+                         skip = header_lineno,
+                         progress = FALSE)
+  # Detect multiallelic: ALT field has commas
+  alt = pvar$ALT
+  is_multi = grepl(",", alt, fixed = TRUE)
+  # Take first ALT only for downstream snpfile compatibility
+  first_alt = ifelse(is_multi, sub(",.*$", "", alt), alt)
+  out = tibble::tibble(
+    SNP = pvar$ID,
+    CHR = pvar$CHROM,
+    cm  = if("CM" %in% header_cols) pvar$CM else rep(0, nrow(pvar)),
+    POS = pvar$POS,
+    A1  = pvar$REF,    # REF allele — matches plink_to_afs's A1 == .bim col 5
+    A2  = first_alt,   # first ALT — matches plink_to_afs's A2 == .bim col 6
+    is_multi = is_multi
+  )
+  out
+}
+
+
+# Read the .psam (PLINK 2 sample info) file. Returns a tibble with FID and
+# IID columns matching what match_samples() expects (haveinds=IID, havepops=FID).
+.read_psam = function(psam_path) {
+  lines = readr::read_lines(psam_path, progress = FALSE)
+  header_lineno = which(grepl("^#[^#]", lines))[1]
+  if(is.na(header_lineno)) stop("Could not find header line in ", psam_path)
+  header = sub("^#", "", lines[header_lineno])
+  header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
+  psam = readr::read_tsv(psam_path,
+                         col_names = header_cols,
+                         col_types = paste0(rep("c", length(header_cols)), collapse = ""),
+                         comment = "#",
+                         progress = FALSE)
+  # plink2 .psam may have IID-only (no FID) or both FID+IID. When FID is
+  # absent, match plink2's convention for the equivalent .fam: assign FID
+  # = "0" to all samples (a sentinel "no family ID" rather than IID, which
+  # would otherwise split every sample into its own population by FID).
+  if(!"IID" %in% header_cols) {
+    stop(".psam header must contain an IID column; got: ",
+         paste(header_cols, collapse = ", "))
+  }
+  fid = if("FID" %in% header_cols) psam$FID else rep("0", nrow(psam))
+  tibble::tibble(FID = fid, IID = psam$IID)
+}
+
+
+# Read a centimorgan-per-SNP companion file. PLINK 2 .pvar does not carry
+# cm by default — it is a VCF-derived format with REF/ALT/POS but no
+# genetic-distance column. Pipelines that need cm (e.g. for downstream
+# block-jackknife in extract_f2 with blgsize < 100) typically graft it in
+# from a separate source (genetic map / linkage disequilibrium reference /
+# upstream tool's output).
+#
+# The expected file format is a TSV with at minimum a SNP-identifier
+# column and a cm column. The function auto-detects the SNP-id column
+# name from a short list of common conventions (variant_id, SNP, ID).
+# Lookup is by SNP id — the cm_file may contain additional rows; only
+# matching ones are used.
+#
+# Returns a numeric vector of length(snp_ids), with NA for any SNP id
+# not present in cm_file.
+.read_cm_file = function(cm_file, snp_ids) {
+  if (!file.exists(cm_file)) {
+    stop("cm_file not found: ", cm_file)
+  }
+  tab = readr::read_tsv(cm_file, col_types = readr::cols(), progress = FALSE)
+  id_col = intersect(c("variant_id", "SNP", "ID", "snp", "id"), colnames(tab))[1]
+  if (is.na(id_col)) {
+    stop("cm_file must have a SNP-identifier column named one of ",
+         "{variant_id, SNP, ID, snp, id}. Found columns: ",
+         paste(colnames(tab), collapse = ", "))
+  }
+  if (!"cm" %in% colnames(tab)) {
+    stop("cm_file must have a 'cm' column. Found columns: ",
+         paste(colnames(tab), collapse = ", "))
+  }
+  cm_lookup = setNames(as.numeric(tab$cm), as.character(tab[[id_col]]))
+  out = unname(cm_lookup[as.character(snp_ids)])
+  out
+}
+
+
+# Read a block of variants from pgen and return an (nsamples_kept x nvariants)
+# integer matrix in {0,1,2,NA}. Handles the multi-allelic policy when
+# multiallelic = "first_alt": biallelic variants are read via the fast
+# ReadIntList batch API, multiallelic variants are read one at a time via
+# Read() with allele_num=2L so the result is the first-ALT dosage rather
+# than the all-ALT collapse that ReadIntList would produce.
+.pfile_read_block = function(pgen, variant_idx, multi_idx, multiallelic, nsamples_kept) {
+  bi_idx_pos = which(!(variant_idx %in% multi_idx))
+  mu_idx_pos = which(  variant_idx %in% multi_idx )
+
+  if(length(mu_idx_pos) == 0 || multiallelic == "skip") {
+    # Pure biallelic path (skip already filtered upstream, so this is the
+    # only path under "skip"). Fast: one ReadIntList for the whole block.
+    return(pgenlibr::ReadIntList(pgen, variant_idx))
+  }
+
+  # multiallelic == "first_alt": split, read in two passes, merge
+  out = matrix(NA_integer_, nrow = nsamples_kept, ncol = length(variant_idx))
+  if(length(bi_idx_pos) > 0) {
+    out[, bi_idx_pos] = pgenlibr::ReadIntList(pgen, variant_idx[bi_idx_pos])
+  }
+  if(length(mu_idx_pos) > 0) {
+    # Per-variant Read with allele_num=2 (first ALT). Slower than ReadIntList
+    # but only triggered for sites that the user has explicitly opted into
+    # with multiallelic="first_alt" — so the cost is bounded by their input.
+    buf = pgenlibr::IntBuf(pgen)
+    for(k in mu_idx_pos) {
+      pgenlibr::ReadHardcalls(pgen, buf, variant_idx[k], allele_num = 2L)
+      out[, k] = buf
+    }
+  }
+  out
+}
+
+
+#' Read allele frequencies from `PFILE` files (`.pgen` / `.pvar` / `.psam`)
+#'
+#' Reads a PLINK 2 PFILE genotype triplet and returns the same shape as
+#' [plink_to_afs()] / [eigenstrat_to_afs()]: per-population allele frequencies
+#' and allele counts plus a SNP-metadata tibble. This unlocks the rest of the
+#' admixtools pipeline (`extract_f2`, `qpadm`, `qpgraph`, ...) on PFILE inputs
+#' without a PFILE -> BED conversion step.
+#'
+#' The function is API-compatible with [plink_to_afs()] and returns an
+#' identically-shaped result, so any downstream code that consumes a
+#' `plink_to_afs` output works unchanged.
+#'
+#' Reading the `.pgen` is delegated to the `pgenlibr` CRAN package (the
+#' canonical R binding to plink-ng's pgenlib, maintained by the plink2
+#' author). No external plink2 binary is needed; everything runs in-process.
+#'
+#' ## Format precedence in `anygeno_to_aftable()`
+#'
+#' When `anygeno_to_aftable()` auto-detects the format at a prefix and
+#' **both** PFILE (`.pgen` / `.pvar` / `.psam`) and BED (`.bed` / `.bim` /
+#' `.fam`) triplets exist, PFILE wins. PFILE is the newer of the two PLINK
+#' formats and the canonical interchange for plink2 pipelines, so a prefix
+#' that carries both is treated as PFILE-primary. To force BED dispatch in
+#' that situation, pass `format = "plink"` explicitly to
+#' `anygeno_to_aftable()` (or call `plink_to_afs()` directly).
+#'
+#' ## Multiallelic sites
+#'
+#' admixtools' f-statistic model is biallelic. PFILE format supports
+#' multiallelic sites (ALT field with multiple comma-separated alleles).
+#' The `multiallelic` argument controls how those are handled:
+#'
+#' * `"error"` (default): stop with an error listing a few example line
+#'   numbers and suggesting a pre-filter command. Safest. Matches the
+#'   assumption baked into the rest of admixtools.
+#' * `"skip"`: drop multiallelic sites entirely from the output. Clean
+#'   statistically: the dropped sites contribute nothing, the surviving
+#'   biallelic sites are correct.
+#' * `"first_alt"`: use the first ALT allele at each multiallelic site,
+#'   ignoring the rest. **Produces biased f-statistics** unless the first
+#'   ALT happens to be the major non-REF allele at every multiallelic
+#'   site. PFILE allele ordering is determined by the input pipeline
+#'   (e.g. `plink2 --make-pgen`'s alphabetical or first-encountered order)
+#'   and is **not** guaranteed to put the major allele first. Use only if
+#'   you have independently verified the ordering for your data, or
+#'   accept the bias and document it. When in doubt prefer `"skip"`.
+#'
+#' @export
+#' @param pref Prefix of PFILE files (the triplet `<pref>.pgen`,
+#'   `<pref>.pvar`, `<pref>.psam`).
+#' @param adjust_pseudohaploid `TRUE` (default) probes the first 1000 variants
+#'   and infers per-sample ploidy from observed-genotype uniqueness. Pass an
+#'   integer to use that probe size instead. `FALSE` (or `0`) skips probing and
+#'   assumes diploid for every sample.
+#' @param multiallelic Multiallelic-site policy: one of `"error"` (default),
+#'   `"skip"`, or `"first_alt"`. See Details.
+#' @param cm_file Optional path to a TSV companion file carrying per-variant
+#'   centimorgan distances. PLINK 2 `.pvar` files do **not** carry genetic-map
+#'   `cm` data in the standard format (they are VCF-derived; cm is not part of
+#'   the VCF column spec). When `cm_file` is `NULL` and the `.pvar` has no
+#'   `CM` column, `cm` defaults to `0` for all SNPs and a warning is issued;
+#'   this matters because downstream `extract_f2(blgsize < 100)` uses `cm`
+#'   for jackknife block boundaries; with `cm = 0` everywhere, every SNP
+#'   collapses into a single block. The TSV must contain a SNP-id column
+#'   named one of `{variant_id, SNP, ID, snp, id}` and a `cm` column.
+#'   Extra columns are ignored. The file may have more rows than this prefix
+#'   has SNPs; lookup is by SNP id and unmatched SNPs receive `NA`.
+#' @inheritParams plink_to_afs
+#' @return A list with three items: allele-frequency matrix, allele-count
+#'   matrix, and SNP-metadata tibble. Same shape as [plink_to_afs()].
+#' @examples
+#' \dontrun{
+#' # PFILE without cm data: fine for analyses that don't need block jackknife
+#' afdat = pfile_to_afs(prefix, pops = pops)
+#'
+#' # PFILE with cm grafted from a separate genetic-map file
+#' afdat = pfile_to_afs(prefix, pops = pops, cm_file = "panel_cm.tsv")
+#'
+#' # Pre-filter multiallelic sites if necessary:
+#' # system2("plink2", c("--pfile", prefix, "--max-alleles", "2",
+#' #                     "--make-pgen", "--out", paste0(prefix, "_bi")))
+#' }
+pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = TRUE,
+                        first = 1, last = NULL, numblocks = 1, poly_only = FALSE,
+                        multiallelic = c("error", "skip", "first_alt"),
+                        cm_file = NULL, verbose = TRUE) {
+
+  multiallelic = match.arg(multiallelic)
+
+  # Triplet existence check up front, so the user gets a clear error
+  # before pgenlibr emits a generic "file not found" or before .read_pvar
+  # tries to parse half a corpus. The .pvar may be either plaintext or
+  # Zstd-compressed (.pvar.zst); both are valid PFILE.
+  pvar_path = .resolve_pvar_path(pref)
+  required_other = paste0(pref, c(".pgen", ".psam"))
+  miss = required_other[!file.exists(required_other)]
+  if(is.na(pvar_path)) miss = c(miss, paste0(pref, ".pvar[.zst]"))
+  if(length(miss)) {
+    stop("pfile_to_afs: missing PFILE triplet members: ",
+         paste(miss, collapse = ", "),
+         ". A PFILE input requires .pgen, .pvar (or .pvar.zst), and .psam ",
+         "alongside the prefix.")
+  }
+
+  if(verbose) alert_info('Reading allele frequencies from PFILE files...\n')
+
+  pvar = .read_pvar(pvar_path)
+  psam = .read_psam(paste0(pref, ".psam"))
+
+  # PFILE permits duplicate variant IDs, but we use SNP id as the rowname
+  # of the AFS matrix downstream, so reject duplicates up front with a
+  # clear message rather than failing at the rownames<- step in the block
+  # loop.
+  dup_snps = pvar$SNP[duplicated(pvar$SNP)]
+  if(length(dup_snps)) {
+    examples = head(unique(dup_snps), 5)
+    stop(sprintf(paste0(
+      "pfile_to_afs: %d duplicate SNP id%s in .pvar (e.g. %s%s). ",
+      "Variant IDs must be unique for the AFS row index. ",
+      "De-duplicate with `plink2 --pfile %s --rm-dup force-first --make-pgen --out %s_dedup`, ",
+      "then call pfile_to_afs() on the de-duplicated prefix."),
+      length(dup_snps), if(length(dup_snps) == 1) "" else "s",
+      paste(examples, collapse = ", "),
+      if(length(unique(dup_snps)) > length(examples)) ", ..." else "",
+      basename(pref), basename(pref)))
+  }
+
+  # cm grafting: .pvar may carry CM (rare; .read_pvar populates pvar$cm from
+  # it when present). If cm_file is supplied, it overrides — useful when
+  # the user has cm from a separate genetic-map source (e.g. pgen-samplebind's
+  # afs_snp.tsv with grafted cm, or a HapMap recombination-rate file).
+  # If both .pvar CM and cm_file are absent, leave cm = 0 but warn —
+  # extract_f2(blgsize < 100) will silently collapse to one block otherwise.
+  if (!is.null(cm_file)) {
+    if (verbose) alert_info(paste0("Reading cm from ", cm_file, "...\n"))
+    pvar$cm = .read_cm_file(cm_file, pvar$SNP)
+    n_missing_cm = sum(is.na(pvar$cm))
+    if (n_missing_cm > 0L && verbose) {
+      alert_warning(paste0(n_missing_cm, " / ", nrow(pvar),
+                           " variants have NA cm after cm_file lookup ",
+                           "(SNP id not present in cm_file)\n"))
+    }
+  } else if (all(pvar$cm == 0)) {
+    if (verbose) {
+      alert_warning(paste0(
+        "All variants have cm = 0. PLINK 2 .pvar does not carry cm data ",
+        "in the standard format, and no cm_file was supplied. Downstream ",
+        "extract_f2(blgsize < 100) will collapse every SNP into one block ",
+        "and produce nonsense jackknife variances. Pass `cm_file = <path>` ",
+        "with a TSV containing variant_id / SNP / ID and cm columns, ",
+        "or use blgsize >= 100 (interpreted as bp distance).\n"))
+    }
+  }
+
+  nsnpall = nrow(pvar)
+  nindall = nrow(psam)
+  first = max(1, first)
+  last  = if(is.null(last)) nsnpall else min(last, nsnpall)
+  if(first > last) {
+    stop("pfile_to_afs: 'first' must be <= 'last' (got first=", first,
+         ", last=", last, "). Reversed ranges produce an empty (or descending) ",
+         "variant index that fails opaquely deeper in pgenlibr.")
+  }
+
+  # ---- multiallelic policy ----
+  multi_idx = which(pvar$is_multi)
+  n_multi = length(multi_idx)
+  if(n_multi > 0 && multiallelic == "error") {
+    examples = head(multi_idx, 5)
+    stop(sprintf(paste0(
+      "pfile_to_afs: %d multiallelic site%s found in .pvar (e.g. row%s %s%s). ",
+      "admixtools is biallelic-only. Three options:\n",
+      "  1. Pre-filter with `plink2 --pfile %s --max-alleles 2 --make-pgen --out %s_bi`, ",
+      "then call pfile_to_afs() on the filtered prefix.\n",
+      "  2. pfile_to_afs(..., multiallelic = \"skip\")  -- drops multiallelic sites entirely (statistically clean).\n",
+      "  3. pfile_to_afs(..., multiallelic = \"first_alt\")  -- takes the first ALT allele per site ",
+      "(BIASED unless ALT ordering is known to be major-allele-first; see ?pfile_to_afs)."
+      ),
+      n_multi, if(n_multi == 1) "" else "s",
+      if(length(examples) == 1) "" else "s",
+      paste(examples, collapse = ", "),
+      if(n_multi > length(examples)) ", ..." else "",
+      basename(pref), basename(pref)))
+  }
+
+  # match_samples uses (IID list, FID list) -> indvec (1-based pop number, 0 = skip)
+  ip = match_samples(psam$IID, psam$FID, inds, pops)
+  indvec = ip$indvec
+  upops  = ip$upops
+  keep = which(indvec > 0)
+  indvec_kept = indvec[keep]
+  nsamples_kept = length(keep)
+
+  # Build the variant subset that will actually be read. Under "skip" mode
+  # we exclude multiallelic from the read AND from the resulting snpfile;
+  # under "first_alt" we keep them but route them through Read() instead of
+  # ReadIntList. Under "error" we'd have stopped above.
+  variant_subset = first:last
+  if(n_multi > 0 && multiallelic == "skip") {
+    multi_in_range = intersect(variant_subset, multi_idx)
+    if(verbose && length(multi_in_range) > 0) {
+      alert_info(paste0("Skipping ", length(multi_in_range),
+                        " multiallelic variant(s) (multiallelic=\"skip\")\n"))
+    }
+    variant_subset = setdiff(variant_subset, multi_idx)
+  }
+
+  if(verbose) {
+    alert_info(paste0(basename(pref), '.pgen has ', nindall, ' samples and ',
+                      nsnpall, ' variants',
+                      if(n_multi > 0) paste0(' (', n_multi, ' multiallelic)') else '',
+                      '\n'))
+    alert_info(paste0('Calculating allele frequencies from ', nsamples_kept,
+                      ' samples in ', length(upops), ' populations\n'))
+  }
+
+  # Open pgen handle. sample_subset = `keep` restricts subsequent reads to
+  # just the samples we care about, saving I/O and memory at the pgenlibr
+  # layer for the common case where pops= picks a small subset of a large
+  # cohort. NOTE: this pgen handle is local to this frame. Do not pass it
+  # to fork-based parallel workers — pgenlibr external pointers don't
+  # survive fork(). on.exit with after=FALSE prepends to the on-exit queue
+  # so resources close in inner-to-outer order even if more on.exit clauses
+  # get added in future revisions.
+  # pgenlibr::NewPvar handles both .pvar and .pvar.zst natively, so pass the
+  # resolved path through unchanged regardless of compression.
+  pvar_handle = pgenlibr::NewPvar(pvar_path)
+  on.exit(pgenlibr::ClosePvar(pvar_handle), add = TRUE, after = FALSE)
+  pgen = pgenlibr::NewPgen(paste0(pref, ".pgen"),
+                           pvar = pvar_handle,
+                           sample_subset = keep)
+  on.exit(pgenlibr::ClosePgen(pgen),       add = TRUE, after = FALSE)
+
+  # ---- ploidy probe (pseudohaploid detection) ----
+  # Mirrors the family default: ntest=1000 unless caller passed an integer
+  # adjust_pseudohaploid value. Probe = read first ntest variants in the
+  # range, infer per-sample ploidy from the set of observed genotypes.
+  # adjust_pseudohaploid = 0 (or FALSE) skips the probe entirely — without
+  # this guard, ntest=0 reads an empty probe matrix and apply() then
+  # assigns ploidy = 1 (haploid) to every sample, silently breaking the
+  # AFS for diploid input.
+  if(isTRUE(adjust_pseudohaploid) ||
+     (is.numeric(adjust_pseudohaploid) && adjust_pseudohaploid > 0)) {
+    ntest = if(is.numeric(adjust_pseudohaploid)) adjust_pseudohaploid else 1000
+    probe_subset = head(variant_subset, min(ntest, length(variant_subset)))
+    probe = pgenlibr::ReadIntList(pgen, probe_subset)   # nsamples_kept x ntest
+    # Per-sample inference: a sample that only ever shows {0, 2} (no 1
+    # heterozygote) is treated as haploid (ploidy=1); otherwise diploid.
+    # Identical inference rule to eigenstrat_to_afs / cpp_plink_ploidy.
+    ploidy_kept = apply(probe, 1, function(x) max(1, length(unique(na.omit(x))) - 1))
+  } else {
+    ploidy_kept = rep(2L, nsamples_kept)
+  }
+
+  # ---- block loop ----
+  # Same pattern as plink_to_afs: split variant_subset into numblocks chunks,
+  # accumulate (nvar x npop) afs and counts via list-rbind. This bounds
+  # peak memory to one block's worth of (nsamples_kept x block_nvar) doubles.
+  aflist = countlist = list()
+  snp_indices_kept = c()                      # positions into variant_subset
+  if(length(variant_subset) == 0) {
+    stop("pfile_to_afs: no variants in range [", first, ", ", last,
+         "]", if(multiallelic == "skip" && n_multi > 0) " after multiallelic skip" else "")
+  }
+  block_breaks = round(seq(1, length(variant_subset) + 1, length.out = numblocks + 1))
+
+  for(i in seq_len(numblocks)) {
+    s = block_breaks[i]
+    e = block_breaks[i + 1] - 1
+    if(s > e) next
+    if(verbose && numblocks > 1)
+      message(sprintf('Reading block %d of %d...', i, numblocks))
+
+    block_variant_idx = variant_subset[s:e]
+    geno = .pfile_read_block(pgen, block_variant_idx, multi_idx, multiallelic,
+                              nsamples_kept)
+    # geno is (nsamples_kept x nvar_block); pgenlibr's row=sample convention.
+    # Group rows (samples) by indvec_kept (pop number), summing along the
+    # variant columns. Gives (npops_present x nvar_block); transpose once
+    # at the end to get (nvar_block x npops_present), then reorder/pad to
+    # full upops width.
+    # ploidy divisor convention (matches eigenstrat_to_afs / cpp_plink_to_afs):
+    #   diploid (ploidy=2): genotype {0,1,2} ÷ (3-2)=1 → {0,1,2} ALT counts,
+    #     counts_block = 2 × n_diploid_samples, ratio is allele frequency.
+    #   haploid (ploidy=1): genotype {0,2}   ÷ (3-1)=2 → {0,1} ALT counts,
+    #     counts_block = 1 × n_haploid_samples, ratio is allele frequency.
+    counts_block = t(rowsum(ploidy_kept * (!is.na(geno) + 0), indvec_kept))
+    af_num       = t(rowsum(geno / (3 - ploidy_kept), indvec_kept, na.rm = TRUE))
+    af_block     = af_num / counts_block
+
+    # rowsum sorts by group label, so columns are in 1..length(upops) order
+    # but only pops that appear in indvec_kept are present.
+    present_pops = as.integer(colnames(counts_block))
+    full_counts = matrix(0,        nrow = nrow(counts_block), ncol = length(upops))
+    full_afs    = matrix(NA_real_, nrow = nrow(counts_block), ncol = length(upops))
+    full_counts[, present_pops] = counts_block
+    full_afs[,    present_pops] = af_block
+
+    if(poly_only) {
+      # Match the AFS-level filter used in discard_from_aftable: keep
+      # variants that are polymorphic *across populations* (any pair of
+      # population AFs differ), not just those whose row-mean isn't 0/1.
+      # rowMeans-based filtering keeps a SNP fixed REF in pop1 + fixed
+      # ALT in pop2 (mean = 0.5) by accident but drops one fixed REF in
+      # pop1 + missing in pop2 (mean = 0).
+      mask = as.logical(cpp_is_polymorphic(full_afs))
+      full_afs    = full_afs[mask, , drop = FALSE]
+      full_counts = full_counts[mask, , drop = FALSE]
+      snp_indices_kept = c(snp_indices_kept, (s:e)[mask])
+    } else {
+      snp_indices_kept = c(snp_indices_kept, s:e)
+    }
+    aflist[[i]]    = full_afs
+    countlist[[i]] = full_counts
+  }
+
+  afmatrix    = do.call(rbind, aflist)
+  countmatrix = do.call(rbind, countlist)
+  # 0/0 → NaN from the divide above; canonicalize to NA for downstream f-stat
+  # math, matching eigenstrat_to_afs's `afs[!is.finite(afs)] <- NA` line.
+  afmatrix[!is.finite(afmatrix)] = NA
+
+  snpfile = pvar[variant_subset[snp_indices_kept],
+                 c("SNP", "CHR", "cm", "POS", "A1", "A2")]
+  rownames(afmatrix) = rownames(countmatrix) = snpfile$SNP
+  colnames(afmatrix) = colnames(countmatrix) = upops
+
+  if(verbose) alert_success(paste0(nrow(afmatrix), ' SNPs read in total\n'))
+  list(afs = afmatrix, counts = countmatrix, snpfile = snpfile)
+}
+
+
 #' Read allele frequencies from `PLINK` files
 #'
 #' @export
@@ -510,8 +1091,8 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, progress = FALSE, col_types = 'ccddcc')
-  fam = read_table2(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
+  bim = read_table(bimfile, col_names = nam, progress = FALSE, col_types = 'ccddcc')
+  fam = read_table(famfile, col_names = FALSE, progress = FALSE, col_types = 'cccccc')
   nsnpall = nrow(bim)
   nindall = nrow(fam)
   first = max(0, first)
@@ -541,7 +1122,7 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   else ploidy = rep(2, nindall)
 
   for(i in seq_len(numblocks)) {
-    if(numblocks > 1) alert_info(paste0('Reading block ', i,' of ', numblocks,'...\r'))
+    if(numblocks > 1) .heartbeat("Reading block {i} of {numblocks}...")
     dat = cpp_plink_to_afs(normalizePath(bedfile), nsnpall, nindall, indvec-1,
                            first = firsts[i]-1, last = lasts[i], ploidy, FALSE, verbose && numblocks == 1)
     if(poly_only) {
@@ -555,6 +1136,7 @@ plink_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     aflist[[i]] = dat$afs
     countlist[[i]] = dat$counts
   }
+  if(numblocks > 1) .heartbeat(done = TRUE)
   bim %<>% slice(snp_indices)
 
   afmatrix = do.call(rbind, aflist)
@@ -623,6 +1205,181 @@ match_samples = function(haveinds, havepops, inds, pops) {
 }
 
 
+# Schema/behavior version baked into the cache id payload. Bump this constant
+# when extract_f2's hash-affecting logic changes (new filter arg, modified
+# block-boundary semantics, payload-shape edit) so existing caches invalidate.
+# Decoupled from `utils::packageVersion("admixtools")` so pure bug-fix patch
+# releases don't bust every cache in the wild.
+.f2_cache_id_schema = "admixtools-f2-cache-id-v1"
+
+
+#' Compute a stable cache identifier for an `extract_f2` run
+#'
+#' Returns a string of the form `"sha256:<hex>"` that uniquely identifies the
+#' inputs that determined the f2 blocks produced by [extract_f2()]. Two runs
+#' over byte-equivalent inputs (same indfile, same variants, same arguments,
+#' same schema version) produce byte-equal hashes; any change to any
+#' contributing input changes the hash.
+#'
+#' When [extract_f2()] is given an `outdir`, the cache id is also written as
+#' a single line to `<outdir>/.f2_cache_id`. Orchestrators can read this file
+#' to decide whether previously cached downstream artefacts (qpAdm / qpGraph
+#' results computed against these blocks) are still current, without having
+#' to hash hundreds of MB of `.rds` block files or rely on mtimes.
+#'
+#' Two input modes:
+#' * **Genotype prefix** (typical: invoked internally by [extract_f2()]):
+#'   recomputes the hash from the on-disk inputs and filter args. Requires
+#'   `snpfile_kept` (the post-filter SNP table) because variant filtering
+#'   isn't reproducible from the prefix alone.
+#' * **f2 directory** (typical: orchestrator probe of an existing cache):
+#'   reads the `.f2_cache_id` sidecar previously written by [extract_f2()].
+#'   Cheap; no genotype-file access. Most callers want this mode. If the
+#'   sidecar is absent (e.g. extract_f2 was killed after writing
+#'   `cache_metadata.json` but before the sidecar), the call falls back to
+#'   reading `cache_id` from `cache_metadata.json` in the same directory.
+#'
+#' The hash payload (when computing fresh) is:
+#' * **Sample set**: sorted list of IIDs that contributed to the f2 blocks,
+#'   resolved from the input `.fam` / `.ind` / `.psam` according to `inds`
+#'   and `pops`.
+#' * **Variant set**: sorted `(CHR, POS, A1, A2)` tuples of the SNPs that
+#'   survived all filtering (`auto_only`, `transitions`, `transversions`,
+#'   `keepsnps`, `maxmiss`, `minmaf`, `maxmaf`, `minac2`).
+#' * **Block boundaries**: per-block lengths produced by [get_block_lengths()]
+#'   with the supplied `blgsize`.
+#' * **Schema version**: a package-private constant
+#'   (`.f2_cache_id_schema`) that the maintainer bumps when extract_f2's
+#'   hash-affecting logic changes. Decoupled from `packageVersion()` so
+#'   pure bug-fix releases don't invalidate every cache on disk.
+#' * **Filter arguments**: the additional `extract_f2` arguments that affect
+#'   which SNPs are kept and how blocks are formed.
+#'
+#' @param pref Either a genotype prefix (same as passed to [extract_f2()],
+#'   any format [extract_f2()] accepts) or an existing f2-output directory
+#'   (the value passed to [extract_f2()] as `outdir`).
+#' @param format Genotype format hint when `pref` is a prefix. One of
+#'   `'plink'`, `'packedancestrymap'`, `'eigenstrat'`, `'pfile'`, or `NULL`
+#'   to detect from file existence at `pref`. Ignored when `pref` is a
+#'   directory.
+#' @param inds,pops Individual / population filters (same as passed to
+#'   [extract_f2()]). Ignored when `pref` is a directory.
+#' @param snpfile_kept A data.frame with at least `CHR`, `POS`, `A1`, `A2`
+#'   columns, representing the SNPs that survived filtering. Required when
+#'   computing fresh from a genotype prefix; ignored when `pref` is a
+#'   directory.
+#' @param blgsize Block size in Morgans (same as passed to [extract_f2()]).
+#'   Ignored when `pref` is a directory.
+#' @param extra_args Named list of additional `extract_f2` arguments whose
+#'   values affect output. Captured verbatim into the hash payload. **Values
+#'   must be primitives** (scalars, atomic vectors, or nested lists thereof):
+#'   non-primitives like environments, closures, or external pointers are
+#'   serialized via R's session-internal `serialize()`, which produces
+#'   session-dependent bytes and breaks the determinism guarantee. Ignored
+#'   when `pref` is a directory.
+#' @return A character scalar of the form `"sha256:<64 hex chars>"`.
+#' @seealso [extract_f2()]
+#' @export
+compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
+                               snpfile_kept = NULL, blgsize = 0.05, extra_args = list()) {
+
+  # Mode 1: pref is an f2 directory — read the sidecar emitted by extract_f2().
+  # `cache_metadata.json` is treated as the authoritative source: extract_f2
+  # writes it before `.f2_cache_id`, so a crash between the two writes leaves
+  # cache_metadata.json present and recoverable. `.f2_cache_id` is a fast-read
+  # shortcut; falling through to the JSON keeps mode-1 working when only the
+  # shortcut is absent.
+  if(is.character(pref) && length(pref) == 1 && dir.exists(pref)) {
+    sidecar = file.path(pref, '.f2_cache_id')
+    if(file.exists(sidecar)) {
+      id = readLines(sidecar, warn = FALSE)
+      id = id[nzchar(id)]
+      if(length(id) >= 1 && grepl('^sha256:[0-9a-f]{64}$', id[1])) return(id[1])
+    }
+    meta_path = file.path(pref, 'cache_metadata.json')
+    if(file.exists(meta_path)) {
+      # Surface parse errors as a warning before falling through to the
+      # "no valid cache_id" error: a present-but-malformed cache_metadata.json
+      # is a different debugging signal than a missing one.
+      meta = tryCatch(jsonlite::fromJSON(meta_path, simplifyVector = TRUE),
+                      error = function(e) {
+                        warning("cache_metadata.json present but unparseable: ",
+                                conditionMessage(e))
+                        NULL
+                      })
+      id = meta$cache_id
+      if(!is.null(id) && !is.na(id) && grepl('^sha256:[0-9a-f]{64}$', id)) return(id)
+    }
+    stop('f2 directory has no `.f2_cache_id` sidecar or `cache_metadata.json` ',
+         'with a valid cache_id (must be from an extract_f2 run that wrote ',
+         'one). To compute fresh, pass the genotype prefix and `snpfile_kept` ',
+         'instead of the f2 directory.')
+  }
+
+  # Mode 2: pref is a genotype prefix — compute fresh from inputs.
+  if(is.null(snpfile_kept))
+    stop("'snpfile_kept' is required when computing the cache id from a genotype prefix")
+
+  if(is.null(format)) {
+    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) format = 'plink'
+    else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
+      format = if(is_packed(paste0(pref, '.geno'))) 'packedancestrymap' else 'eigenstrat'
+    } else if(all(file.exists(paste0(pref, c('.pgen', '.psam')))) &&
+              !is.na(.resolve_pvar_path(pref))) {
+      # `.pvar` may be `.pvar.zst`; use the same resolver as the other PFILE
+      # entry points (pfile_to_afs, format_info) so a `.pvar.zst`-only PFILE
+      # is detected here too. Pre-fix this branch silently fell through to
+      # the catch-all stop().
+      format = 'pfile'
+    } else stop('Genotype files not found at prefix: ', pref)
+  }
+
+  # 1. Sample set: read indfile, apply the same matching extract_f2 used,
+  #    keep IIDs whose indvec > 0, sort.
+  if(format == 'plink') {
+    fam = readr::read_table(paste0(pref, '.fam'), col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+    haveinds = fam$X2; havepops = fam$X1
+  } else if(format == 'pfile') {
+    # Delegate to the same .read_psam helper that pfile_to_afs() uses, so the
+    # FID="0" sentinel for FID-less PSAMs (and any future PSAM-parsing tweaks)
+    # stay byte-identical with what extract_f2 actually consumed. Reading the
+    # .psam two different ways inside the same call shape would silently
+    # produce different cache ids for FID-less inputs.
+    psam = .read_psam(paste0(pref, '.psam'))
+    haveinds = psam$IID
+    havepops = psam$FID
+  } else {
+    indfile = readr::read_table(paste0(pref, '.ind'), col_names = FALSE, col_types = 'ccc', progress = FALSE)
+    haveinds = indfile$X1; havepops = indfile$X3
+  }
+  mp = match_samples(haveinds, havepops, inds, pops)
+  iids = sort(unique(haveinds[mp$indvec > 0]))
+
+  # 2. Variant fingerprint: sorted (CHR,POS,A1,A2) tuples of kept SNPs.
+  var_keys = sort(paste(snpfile_kept$CHR, snpfile_kept$POS, snpfile_kept$A1, snpfile_kept$A2, sep = '\t'))
+
+  # 3. Block boundaries: per-block lengths under this blgsize. Errors from
+  #    get_block_lengths (e.g. malformed snpfile_kept) propagate to the caller.
+  #    extract_f2's two call sites wrap this in tryCatch and emit a "could not
+  #    compute f2 cache id" warning instead; standalone callers see the real
+  #    error rather than a silently-bogus empty-blocks hash.
+  block_lengths = get_block_lengths(snpfile_kept, blgsize = blgsize, verbose = FALSE)
+
+  payload = list(
+    schema             = .f2_cache_id_schema,
+    format             = format,
+    n_iids             = length(iids),
+    iids_hash          = digest::digest(iids, algo = 'sha256', serialize = TRUE),
+    n_variants         = length(var_keys),
+    variants_hash      = digest::digest(var_keys, algo = 'sha256', serialize = TRUE),
+    n_blocks           = length(block_lengths),
+    blocks_hash        = digest::digest(list(blgsize = blgsize, lengths = block_lengths),
+                                        algo = 'sha256', serialize = TRUE),
+    blgsize            = blgsize,
+    args               = extra_args)
+  paste0('sha256:', digest::digest(payload, algo = 'sha256', serialize = TRUE))
+}
+
 
 #' Read genotype data from `PLINK` files
 #'
@@ -646,8 +1403,8 @@ read_plink = function(pref, inds = NULL, pops = NULL, verbose = FALSE) {
   famfile = paste0(pref, '.fam')
   bimfile = paste0(pref, '.bim')
   nam = c('CHR', 'SNP', 'cm', 'POS', 'A1', 'A2')
-  bim = read_table2(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
-  fam = read_table2(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
+  bim = read_table(bimfile, col_names = nam, col_types = 'ccddcc', progress = FALSE)
+  fam = read_table(famfile, col_names = FALSE, col_types = 'cccccc', progress = FALSE)
 
   if(!is.null(pops)) {
     if(!is.null(inds)) stop("'inds' and 'pops' cannot both be provided!")
@@ -723,7 +1480,7 @@ write_f2 = function(est_arr, count_arr, outdir, id = 'f2', overwrite = FALSE) {
 #' @param pops Populations for which f2 statistics should be read. Defaults to all populations,
 #' which may require a lot of memory.
 #' @param pops2 Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.
-#' @param afprod Return allele frequency products instead of f2 estimates
+#' @param type Type of statistic to read: `'f2'` (default), `'ap'` (allele frequency products), or `'fst'`.
 #' @param counts Return allele counts instead of f2 estimates
 #' @param remove_na Remove blocks with missing values
 #' @param verbose Print progress updates
@@ -758,21 +1515,48 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
     filter(!duplicated(paste(p1, p2)))
 
   col = if(counts) 2 else 1
+
+  # Resolve all on-disk paths first (one filesystem stat per pair to pick
+  # between the p1/p2 and p2/p1 layouts). This is fast even sequentially
+  # and lets the actual readRDS calls run in parallel.
+  resolve_path = function(i) {
+    fl1 = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
+    if(file.exists(fl1)) return(fl1)
+    fl2 = paste0(f2_dir, '/', popcomb$p2[i], '/', popcomb$p1[i], '_', type, '.rds')
+    if(file.exists(fl2)) return(fl2)
+    stop(paste0('File ', fl1, ' not found! You may have to recompute the f-statistics!'))
+  }
+  paths = vapply(seq_len(nrow(popcomb)), resolve_path, character(1))
+
+  # Read all RDS files. Under the active future plan (default sequential)
+  # this is the same loop body as before; with plan(multisession) it
+  # parallelizes across workers. Each readRDS is independent and the
+  # outputs are small (one column of per-block doubles), so the overhead
+  # of socket serialization is well below the I/O latency savings on
+  # network or cold-cache filesystems.
+  if(verbose) .heartbeat("Reading {type} data for {nrow(popcomb)} pairs...")
+  # seed = NULL asserts that readRDS doesn't use RNG -- suppresses furrr's
+  # defensive "UNRELIABLE VALUE" warning under plan(multisession), which it
+  # emits whenever the mapped function isn't statically proven RNG-free.
+  # .progress = verbose recovers the per-task heartbeat that the old
+  # per-iteration alert_info() line used to provide for large caches.
+  dat_list = furrr::future_map(paths, function(fl) readRDS(fl)[, col],
+                                .progress = verbose,
+                                .options = furrr::furrr_options(seed = NULL))
+
+  # Assign back to the 3D array. This part is fast and serial — it's
+  # just R array indexing, no I/O.
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
     pop2 = popcomb$pops2[i]
-    if(verbose) alert_info(paste0('Reading ', type,
-                                  ' data for pair ', i, ' out of ', nrow(popcomb),'...\r'))
-    fl = paste0(f2_dir, '/', popcomb$p1[i], '/', popcomb$p2[i], '_', type, '.rds')
-    if(!file.exists(fl)) fl = paste0(f2_dir, '/', popcomb$p2[i], '/', popcomb$p1[i], '_', type, '.rds')
-    if(!file.exists(fl)) stop(paste0('File ', fl, ' not found! You may have to recompute the f-statistics!'))
-    dat = readRDS(fl)[,col]
+    dat  = dat_list[[i]]
     f2_blocks[pop1, pop2, ] = dat
     if(popcomb$n[i] == 2) f2_blocks[pop2, pop1, ] = dat
     if(type == 'fst' && pop1 == pop2) f2_blocks[pop1, pop1, ] = 0
     #if(any(is.na(dat))) warning(paste0('missing values in ', pop1, ' - ', pop2, '!'))
   }
-  if(verbose) alert_info(paste0('\n'))
+  rm(dat_list)
+  if(verbose) .heartbeat(done = TRUE)
   if(remove_na || verbose) {
     keep = apply(f2_blocks, 3, function(x) sum(!is.finite(x)) == 0)
     if(!all(keep)) {
@@ -855,12 +1639,12 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
   numparts = length(starts)
   ends = c(lead(starts)[-numparts]-1, npops)
   for(i in seq_len(numparts)) {
-    if(verbose) cat(paste0('\rpart ', i, ' of ', numparts))
+    if(verbose) .heartbeat("part {i} of {numparts}")
     spl = mat[, starts[i]:ends[i],drop=F]
     fl = paste0(prefix, i, '.rds')
     if(overwrite || !file.exists(fl)) saveRDS(spl, file = fl)
   }
-  if(verbose) cat('\n')
+  if(verbose) .heartbeat(done = TRUE)
 }
 
 
@@ -879,6 +1663,10 @@ split_mat = function(mat, cols_per_chunk, prefix, overwrite = TRUE, verbose = TR
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param snpwt A vector of scaling factors applied to the f2-statistics for each SNP. The length has to match the number of SNPs.
 #' @param overwrite Overwrite existing files (default `FALSE`)
+#' @param type Type of statistic to compute: `'f2'` (default), `'ap'` (allele frequency products), or `'fst'`.
+#' @param poly_only Only use polymorphic SNPs (default `FALSE`).
+#' @param snpdat SNP metadata data frame; if `NULL`, loaded from `snpdat.tsv.gz` in `afdir`.
+#' @param apply_corr Apply bias correction to f2 estimates (default `TRUE`).
 #' @param verbose Print progress updates
 #' @seealso \code{\link{extract_f2}} Does the same thing in one step for smaller data.
 #' @examples
@@ -907,8 +1695,8 @@ afs_to_f2 = function(afdir, outdir, chunk1, chunk2, blgsize = 0.05, snpwt = NULL
 
   if(is.null(snpdat)) {
     fl = paste0(afdir, '/snpdat.tsv.gz')
-    nc = ncol(read_table2(fl, n_max = 0, col_types=cols()))
-    snpdat = read_table2(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
+    nc = ncol(read_table(fl, n_max = 0, col_types=cols()))
+    snpdat = read_table(fl, col_types = paste0('ccddcc', paste0(rep('?', nc-6), collapse='')), progress = FALSE)
   }
 
   am1 = readRDS(paste0(afdir, '/afs', chunk1, '.rds'))
@@ -966,12 +1754,12 @@ write_split_inddat = function(genodir, outdir, overwrite = FALSE, maxmem = 8000,
 
   if(verbose) alert_info(paste0('Writing individual data from ', length(files), ' chunks\n'))
   for(i in seq_len(nfiles)) {
-    if(verbose) alert_info(paste0('Chunk ', i, ' out of ', nfiles, '\r'))
+    if(verbose) .heartbeat("Chunk {i} of {nfiles}")
     xmat = 2*readRDS(files[i])
     xmat_to_inddat(xmat, block_lengths, outdir = outdir, overwrite = overwrite,
                    maxmem = maxmem, verbose = FALSE)
   }
-  if(verbose) alert_info(paste0('\n'))
+  if(verbose) .heartbeat(done = TRUE)
 }
 
 #' Compute count blocks and write them to disk
@@ -1097,7 +1885,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
     warning("Most `extract_f2` options will be ignored when using the `qpfstats` option!")
     if(is.null(pops)) {
       fi = format_info(pref)
-      pops = unique(read_table2(paste0(pref, fi$indend), col_names=F, col_types = fi$indtype)[[which(fi$indnam == 'pop')]])
+      pops = unique(read_table(paste0(pref, fi$indend), col_names=F, col_types = fi$indtype)[[which(fi$indnam == 'pop')]])
     }
     f2blocks = qpfstats(pref, pops, ...)
     if(is.null(outdir)) {
@@ -1110,6 +1898,57 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
       write_f2(f2blocks, counts, outdir, overwrite = overwrite, id = 'ap')
       saveRDS(block_lengths, paste0(outdir, '/block_lengths_f2.rds'))
       saveRDS(block_lengths, paste0(outdir, '/block_lengths_ap.rds'))
+
+      # Cache id for the qpfstats path. qpfstats handles SNP filtering / block
+      # partitioning internally; we reconstruct an approximate `snpfile_kept`
+      # from the prefix's snpfile and the `auto_only` arg so the cache id is
+      # deterministic from the same inputs the orchestrator can see. PFILE's
+      # .pvar is VCF-derived (#CHROM header + ## metadata lines), so the
+      # whitespace-table reader used for .bim / .snp won't parse it; route
+      # through the same .read_pvar helper that pfile_to_afs uses.
+      cache_id = tryCatch({
+        sf = if(format == 'pfile') {
+          pvar_path = .resolve_pvar_path(pref)
+          if(is.na(pvar_path))
+            stop("PFILE .pvar (or .pvar.zst) not found at prefix: ", pref)
+          .read_pvar(pvar_path)
+        } else {
+          fi = format_info(pref, format = format)
+          readr::read_table(paste0(pref, fi$snpend), col_names = fi$snpnam,
+                            col_types = paste(rep('c', length(fi$snpnam)), collapse=''),
+                            progress = FALSE)
+        }
+        if(isTRUE(auto_only)) sf = sf[suppressWarnings(as.integer(sf$CHR)) %in% 1:22, , drop = FALSE]
+        compute_f2_cache_id(pref = pref, format = format, inds = inds, pops = pops,
+                            snpfile_kept = sf, blgsize = blgsize,
+                            extra_args = list(qpfstats = TRUE, auto_only = auto_only,
+                                              adjust_pseudohaploid = adjust_pseudohaploid))
+      }, error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
+
+      # cache_metadata.json is the authoritative sidecar — write it first so a
+      # crash before the `.f2_cache_id` write leaves a recoverable outdir
+      # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
+      # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+      # leaves a truncated file at the final path.
+      meta = list(
+        schema_version        = 1L,
+        admixtools_version    = as.character(utils::packageVersion("admixtools")),
+        built_at              = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
+        pops                  = I(dimnames(f2blocks)[[1]]),
+        n_snps                = sum(block_lengths),
+        n_blocks              = length(block_lengths),
+        blgsize               = blgsize,
+        maxmiss               = maxmiss,
+        adjust_pseudohaploid  = adjust_pseudohaploid,
+        qpfstats              = TRUE,
+        cache_id              = if(!is.na(cache_id)) cache_id else NULL)
+      .write_atomic(
+        as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                      null = "null", pretty = FALSE)),
+        file.path(outdir, 'cache_metadata.json'))
+
+      if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
+
       return()
     }
   }
@@ -1134,6 +1973,60 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 
   if(is.null(outdir)) return(arrs)
 
+  # Stable cache identifier for orchestrators (see `?compute_f2_cache_id`).
+  cache_id = tryCatch(
+    compute_f2_cache_id(pref = pref, format = format, inds = inds, pops = pops,
+                        snpfile_kept = afdat$snpfile, blgsize = blgsize,
+                        extra_args = list(maxmiss = maxmiss, minmaf = minmaf, maxmaf = maxmaf,
+                                          minac2 = minac2, outpop = outpop, outpop_scale = outpop_scale,
+                                          transitions = transitions, transversions = transversions,
+                                          auto_only = auto_only, adjust_pseudohaploid = adjust_pseudohaploid,
+                                          afprod = afprod, fst = fst, poly_only = poly_only,
+                                          apply_corr = apply_corr, qpfstats = qpfstats)),
+    error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
+
+  # cache_metadata.json is the authoritative sidecar — write it first so a
+  # crash before the `.f2_cache_id` write leaves a recoverable outdir
+  # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
+  # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
+  # leaves a truncated file at the final path.
+  #
+  # `arrs$block_lengths_f2` is threaded out of afs_to_f2_blocks even when
+  # outdir is set, so we don't readRDS the block_lengths_f2.rds we just
+  # wrote. `n_snps` reports SNPs that actually contributed to f2 blocks
+  # (i.e. sum of block lengths), matching the qpfstats path's definition —
+  # this can be smaller than nrow(afdat$snpfile) when poly_only excludes
+  # non-polymorphic SNPs from f2.
+  block_lengths_f2 = arrs$block_lengths_f2
+  meta = list(
+    schema_version        = 1L,
+    admixtools_version    = as.character(utils::packageVersion("admixtools")),
+    built_at              = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS3Z", tz = "UTC"),
+    pops                  = I(colnames(afdat$afs)),
+    n_snps                = sum(block_lengths_f2),
+    n_blocks              = length(block_lengths_f2),
+    blgsize               = blgsize,
+    maxmiss               = maxmiss,
+    minmaf                = minmaf,
+    maxmaf                = maxmaf,
+    minac2                = minac2,
+    auto_only             = auto_only,
+    transitions           = transitions,
+    transversions         = transversions,
+    adjust_pseudohaploid  = adjust_pseudohaploid,
+    poly_only             = poly_only,
+    apply_corr            = apply_corr,
+    afprod                = afprod,
+    fst                   = fst,
+    qpfstats              = FALSE,
+    cache_id              = if(!is.na(cache_id)) cache_id else NULL)
+  .write_atomic(
+    as.character(jsonlite::toJSON(meta, auto_unbox = TRUE, na = "null",
+                                  null = "null", pretty = FALSE)),
+    file.path(outdir, 'cache_metadata.json'))
+
+  if(!is.na(cache_id)) .write_atomic(cache_id, file.path(outdir, '.f2_cache_id'))
+
   if(verbose) alert_info(paste0('Data written to ', outdir, '/\n'))
   invisible(afdat$snpfile)
 }
@@ -1151,6 +2044,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
 #' (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared
 #' to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly
 #' less than bias in regular f3-statistics introduced by large amounts of missing data.
+#' @param remove_na Remove blocks with missing values (default `TRUE`).
 #' @return A 3d array of f2-statistics (or scaled allele frequency products if `afprod = TRUE`)
 #' @seealso \code{\link{f2_from_precomp}} for reading previously stored f2-statistics into R, \code{\link{extract_f2}} for storing f2-statistics on disk
 f2_from_geno = function(pref, inds = NULL, pops = NULL, blgsize = 0.05, maxmem = 8000,
@@ -1218,6 +2112,7 @@ scale_ap_blocks = function(ap_blocks, from = NULL, to = NULL) {
 #' `extract_f2_large` does the same as \code{\link{extract_f2}}, but it requires less memory and is slower. `outdir` has to be set in `extract_f2_large`.
 #' @inheritParams extract_f2
 #' @param cols_per_chunk Number of populations per chunk. Lowering this number will lower the memory requirements when running
+#' @param snpblocks Optional named integer vector assigning each SNP to a block; if `NULL`, blocks are computed from `blgsize`.
 #' @details `extract_f2_large` requires less memory because it writes allele frequency data to disk, and doesn't store the allele frequency matrix for all populations and SNPs in memory. If you still run out of memory, reduce `cols_per_chunk`. This function is a wrapper around \code{\link{extract_afs}} and \code{\link{afs_to_f2}}, and is slower than \code{\link{extract_f2}}. It may be faster to call \code{\link{extract_afs}} and \code{\link{afs_to_f2}} directly, parallelizing over the different calls to \code{\link{afs_to_f2}}.
 #' @return SNP metadata (invisibly)
 #' @seealso \code{\link{extract_f2}}
@@ -1253,7 +2148,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
   consider running "extract_afs" and then paralellizing over "afs_to_f2".\n'))
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
-      if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
+      if(verbose) .heartbeat("Writing pair {i}-{j}...")
       afs_to_f2(outdir, outdir, chunk1 = i, chunk2 = j, blgsize = blgsize, snpdat = snpdat,
                 snpwt = snpwt, overwrite = overwrite, type = 'f2', poly_only = 'f2' %in% poly_only,
                 apply_corr = apply_corr)
@@ -1263,7 +2158,7 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
                         snpwt = snpwt, overwrite = overwrite, type = 'fst', poly_only = 'fst' %in% poly_only)
     }
   }
-  if(verbose) alert_info('\n')
+  if(verbose) .heartbeat(done = TRUE)
   if(verbose) alert_info(paste0('Deleting allele frequency files...\n'))
   unlink(paste0(outdir, c('/afs*.rds', '/counts*.rds')))
 }
@@ -1272,7 +2167,13 @@ extract_f2_large = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.
 anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adjust_pseudohaploid = TRUE, verbose = TRUE) {
 
   if(is.null(format)) {
-    if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
+    has_pvar = file.exists(paste0(pref, '.pvar')) ||
+               file.exists(paste0(pref, '.pvar.zst'))
+    if(has_pvar &&
+       all(file.exists(paste0(pref, c('.pgen', '.psam'))))) {
+      format = 'pfile'
+      geno_to_aftable = pfile_to_afs
+    } else if(all(file.exists(paste0(pref, c('.bed', '.bim', '.fam'))))) {
       format = 'plink'
       geno_to_aftable = plink_to_afs
     } else if(all(file.exists(paste0(pref, c('.geno', '.snp', '.ind'))))) {
@@ -1287,6 +2188,7 @@ anygeno_to_aftable = function(pref, inds = NULL, pops = NULL, format = NULL, adj
   }
   geno_to_aftable = switch(format,
                            'plink' = plink_to_afs,
+                           'pfile' = pfile_to_afs,
                            'packedancestrymap' = packedancestrymap_to_afs,
                            'eigenstrat' = eigenstrat_to_afs)
   if(is.null(geno_to_aftable)) stop('Invalid format!')
@@ -1380,7 +2282,7 @@ extract_counts_large = function(pref, outdir, inds = NULL, blgsize = 0.05, cols_
   # same as extract_counts, but split across chunks of individuals
   pref %<>% normalizePath(mustWork = FALSE)
   l = format_info(pref, format)
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
   if(!is.null(inds)) indfile %<>% filter(ind %in% inds)
 
   snpdat = extract_afs(pref, outdir, inds = indfile$ind, pops = indfile$ind, cols_per_chunk = cols_per_chunk, numparts = 100,
@@ -1398,11 +2300,11 @@ extract_counts_large = function(pref, outdir, inds = NULL, blgsize = 0.05, cols_
   consider running "extract_afs" (with each individual its own population) and then paralellizing over "afs_to_counts".\n'))
   for(i in 1:numchunks) {
     for(j in i:numchunks) {
-      if(verbose) alert_info(paste0('Writing pair ', i, ' - ', j, '...\r'))
+      if(verbose) .heartbeat("Writing pair {i}-{j}...")
       afs_to_counts(outdir, outdir, chunk1 = i, chunk2 = j, overwrite = overwrite)
     }
   }
-  if(verbose) alert_info('\n')
+  if(verbose) .heartbeat(done = TRUE)
   if(verbose) alert_info(paste0('Deleting allele frequency files...\n'))
   unlink(paste0(outdir, c('/afs*.rds', '/counts*.rds')))
 }
@@ -1516,8 +2418,8 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   l = format_info(pref, format)
 
   if(verbose) alert_info(paste0('Reading metadata...\n'))
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   nindall = nrow(indfile)
   nsnpall = nrow(snpfile)
 
@@ -1535,7 +2437,7 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
   else ploidy = rep(2, nindall)
 
   for(i in 1:numparts) {
-    if(verbose) alert_info(paste0('Reading part ', i, ' out of ', numparts, '...\r'))
+    if(verbose) .heartbeat("Reading part {i} of {numparts}...")
     # read data and compute allele frequencies
     afdat = l$cpp_geno_to_afs(paste0(pref, l$genoend), nsnpall, nindall, indvec, first = starts[i],
                                 last = ends[i], ploidy = ploidy, transpose = FALSE, verbose = FALSE)
@@ -1558,14 +2460,14 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     split_mat(afdat$afs, cols_per_chunk = cols_per_chunk, prefix = paste0(partdir,'/afs'), verbose = FALSE)
     split_mat(afdat$counts, cols_per_chunk = cols_per_chunk, prefix = paste0(partdir, '/counts'), verbose = FALSE)
   }
-  if(verbose) alert_info('\n')
+  if(verbose) .heartbeat(done = TRUE)
   snpparts %<>% bind_rows %>% mutate(CHR = as.character(CHR))
   if(verbose) alert_warning(paste0(nrow(snpparts), ' SNPs remain after filtering. ',
                                    sum(snpparts$poly),' are polymorphic.\n'))
 
   numchunks = length(list.files(partdir, 'afs.+rds'))
   for(j in seq_len(numchunks)) {
-    if(verbose) alert_info(paste0('Merging chunk ', j, ' out of ', numchunks, '...\r'))
+    if(verbose) .heartbeat("Merging chunk {j} of {numchunks}...")
     am = cm = list()
     for(i in seq_len(numparts)) {
       partdir = paste0(outdir, '/part', i, '/')
@@ -1575,8 +2477,8 @@ extract_afs = function(pref, outdir, inds = NULL, pops = NULL, cols_per_chunk = 
     saveRDS(do.call(rbind, am), file = paste0(outdir,'/afs', j, '.rds'))
     saveRDS(do.call(rbind, cm), file = paste0(outdir,'/counts', j, '.rds'))
   }
+  if(verbose) .heartbeat(done = TRUE)
   unlink(paste0(outdir, '/part', seq_len(numparts), '/'), recursive = TRUE)
-  if(verbose) alert_info('\n')
 
   write_tsv(snpparts, paste0(outdir, '/snpdat.tsv.gz'))
   invisible(snpparts)
@@ -1620,8 +2522,112 @@ format_info = function(pref, format = NULL) {
     l$cpp_geno_ploidy = cpp_plink_ploidy
     l$cpp_geno_to_afs = cpp_plink_to_afs
     l$cpp_read_geno = cpp_read_plink
+  } else if(all(file.exists(paste0(pref, c('.pgen', '.psam')))) &&
+            !is.na(.resolve_pvar_path(pref)) ||
+            isTRUE(format == 'pfile')) {
+    # PLINK 2 PFILE format. Unlike the other formats, PFILE has no
+    # cpp_read_geno equivalent -- block reads are delegated to the pgenlibr
+    # package at the R level (.make_block_reader handles the dispatch).
+    # The cpp_* fields are left unset for safety: callers that try to use
+    # them directly on a PFILE prefix will fail loudly rather than silently
+    # misbehave.
+    l$format = 'pfile'
+    l$is_pfile = TRUE
+    l$snpnam = c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')   # canonical AT2 shape
+    l$indnam = c('ind', 'pop')                            # synthesized from .psam IID/FID
+    l$snpend = '.pvar'                                    # or .pvar.zst; .resolve_pvar_path picks
+    l$indend = '.psam'
+    l$genoend = '.pgen'
   } else stop('Genotype files not found!')
   l
+}
+
+
+# Construct a per-call block-reader closure for f4blockdat_from_geno.
+#
+# Returns a list with two elements:
+#   reader(first, last) -> (nind_kept x (last - first)) integer matrix in
+#                          {0, 1, 2, NA}. first/last are 0-based / half-open
+#                          to match cpp_read_geno's existing API.
+#   finalizer()         -> releases any per-handle resources (no-op for the
+#                          BED-class formats; closes the pgen + pvar handles
+#                          for PFILE). Caller must run via on.exit.
+#
+# This is the seam where PFILE plugs into f4blockdat_from_geno's per-block
+# compute. The BED-class branch is a thin wrapper around the existing
+# cpp_read_geno call (no behavior change for those formats). The PFILE
+# branch opens a pgen handle with sample_subset = which(indvec > 0) so
+# subsequent ReadIntList calls return only the kept samples -- same
+# semantics as cpp_read_geno's internal indvec filtering, plus pgenlibr's
+# I/O+memory savings at open time.
+#
+# Process-safety: pgenlibr handles are process-local. They don't survive
+# socket-based future_map worker serialization (the external pointer
+# deserializes as a dead pointer on the worker), and forked workers
+# inherit the parent's handle as an extptr pointing at the same memory
+# region -- which is unsafe to use without re-opening because libpgenlib
+# state isn't generally fork-safe. The PFILE branch lazy-opens its pgen /
+# pvar handles inside reader() on first call, and re-opens if the current
+# process differs from the one that previously opened them (detected via
+# Sys.getpid() mismatch). Each future worker -- and the main process
+# under plan(sequential) -- gets its own pair of handles cached in a
+# per-process environment.
+#
+# Verified bit-identical output across plan(sequential), plan(multisession,
+# workers=4), and plan(multicore, workers=4) on phase5 BED + phase5 PFILE
+# (see dogfood/scripts/dogfood_pr106_multicore.R). Main-process handles
+# are released via finalizer(), worker handles are released when the
+# worker R session exits.
+.make_block_reader = function(l, pref, nsnpall, nindall, indvec) {
+  if(isTRUE(l$is_pfile)) {
+    if(!requireNamespace('pgenlibr', quietly = TRUE)) {
+      stop('PFILE inputs require the pgenlibr package: install.packages("pgenlibr")')
+    }
+    sample_subset = which(indvec > 0)
+    pvar_path = .resolve_pvar_path(pref)
+    pgen_path = paste0(pref, '.pgen')
+
+    # Per-process handle cache. Two scenarios trigger an open:
+    #   (a) First call in this process -- handles$pgen is R NULL.
+    #   (b) Closure was serialized to this process from another -- the
+    #       deserialized handles$pgen is an extptr but its address is
+    #       dead. Detect via Sys.getpid() mismatch.
+    handles = new.env(parent = emptyenv())
+
+    list(
+      reader = function(first, last) {
+        if(is.null(handles$pgen) || !identical(handles$pid, Sys.getpid())) {
+          handles$pvar = pgenlibr::NewPvar(pvar_path)
+          handles$pgen = pgenlibr::NewPgen(pgen_path, pvar = handles$pvar,
+                                           sample_subset = sample_subset)
+          handles$pid  = Sys.getpid()
+        }
+        # first..last is 0-based half-open in the existing API;
+        # pgenlibr variant indices are 1-based inclusive.
+        pgenlibr::ReadIntList(handles$pgen, (first + 1L):last)
+      },
+      finalizer = function() {
+        # Close in LIFO order: handle that depends on pvar first.
+        # Only closes handles owned by the current process; workers
+        # manage their own handles within their own R session lifetime.
+        if(!is.null(handles$pgen) && identical(handles$pid, Sys.getpid())) {
+          try(pgenlibr::ClosePgen(handles$pgen), silent = TRUE)
+          try(pgenlibr::ClosePvar(handles$pvar), silent = TRUE)
+          handles$pgen = NULL
+          handles$pvar = NULL
+        }
+      }
+    )
+  } else {
+    cpp_fn = l$cpp_read_geno
+    fl = paste0(pref, l$genoend)
+    list(
+      reader = function(first, last) {
+        cpp_fn(fl, nsnpall, nindall, indvec, first, last, TRUE, FALSE)
+      },
+      finalizer = function() invisible(NULL)
+    )
+  }
 }
 
 
@@ -1700,6 +2706,7 @@ f2_from_geno_indivs = function(pref, inds = NULL, pops = NULL, format = NULL, ma
 #' @param pops2 Optional second vector of populations. Useful if a f4 statistics of a few against many populations should be computed. `pops2` should not be specified in other cases, as most functions depend on f2-statistics for all population pairs in `pops`.
 #' @param afprod Return negative average allele frequency products instead of f2 estimates. This will result in more precise f4-statistics when the original data had large amounts of missingness, and should be used in that case for \code{\link{qpdstat}} and \code{\link{qpadm}}. It can also be used for outgroup f3-statistics with a fixed outgroup (for example for \code{\link{qpgraph}}); values will be shifted by a constant amount compared to regular f3-statistics. This shift affects the fit of a graph only by small amounts, possibly less than bias in regular f3-statistics introduced by large amounts of missing data.
 #' This option is currently ineffective when reading data extracted with \code{\link{extract_counts}}.
+#' @param fst Read FST statistics instead of f2 (default `FALSE`).
 #' @param return_array Return a 3d array (default). If false, a data frame will be returned.
 #' @param apply_corr Subtract the f2 correction factor. Setting this to `FALSE` can occasionally be useful
 #' @param remove_na Remove blocks with missing values
@@ -1913,7 +2920,7 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
   aa_list = nn_list = replicate(numsplits2, list())
 
   for(i in 1:ncol(cmb)) {
-    if(numsplits2 > 1 & verbose) alert_info(paste0('sample pair block ', i, ' out of ', ncol(cmb), '\r'))
+    if(numsplits2 > 1 & verbose) .heartbeat("sample pair block {i} of {ncol(cmb)}")
     c1 = cmb[1,i]
     c2 = cmb[2,i]
     s1 = starts[c1]:ends[c1]
@@ -1940,7 +2947,7 @@ xmat_to_pairdat = function(xmat, block_lengths, maxmem = 8000,
       nn_list[[c2]][[c1]] = aperm(nn_list[[c1]][[c2]], c(2,1,3))
     }
   }
-  if(numsplits2 > 1 & verbose) alert_info('\n')
+  if(numsplits2 > 1 & verbose) .heartbeat(done = TRUE)
 
   if(is.null(outdir)) {
     assemble_arrays = function(l)
@@ -2104,8 +3111,20 @@ is_plink_prefix = function(input) {
   filesexist
 }
 
+is_pfile_prefix = function(input) {
+  if(!is.character(input) || length(input) > 1) return(FALSE)
+  # PFILE inputs come in two .pvar flavors (plain and .zst-compressed).
+  # Either is acceptable; the rest of the pipeline picks the right one
+  # via .resolve_pvar_path. The .pgen and .psam are uncompressed.
+  has_pgen = file.exists(paste0(input, '.pgen'))
+  has_psam = file.exists(paste0(input, '.psam'))
+  has_pvar = file.exists(paste0(input, '.pvar')) ||
+             file.exists(paste0(input, '.pvar.zst'))
+  has_pgen && has_psam && has_pvar
+}
+
 is_geno_prefix = function(input) {
-  is_ancestrymap_prefix(input) || is_plink_prefix(input)
+  is_ancestrymap_prefix(input) || is_plink_prefix(input) || is_pfile_prefix(input)
 }
 
 is_precomp_dir = function(input) {
@@ -2134,7 +3153,7 @@ packedancestrymap_to_plink = function(inpref, outpref, inds = NULL, pops = NULL,
   if(system.file(package = 'genio') == '') stop('Please install the "genio" package!')
   inpref = normalizePath(inpref, mustWork = F)
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
+    inds = read_table(paste0(inpref, '.ind'), col_names = F, col_types = 'ccc') %>%
       filter(X3 %in% pops) %$% X1
   }
 
@@ -2168,7 +3187,7 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
   if(inpref == outpref && !overwrite)
     stop("If you really want to overwrite the input files, set 'overwrite = TRUE'")
   if(!is.null(pops)) {
-    inds = read_table2(paste0(inpref, '.fam'), col_names = F, col_types = 'cccccc') %>%
+    inds = read_table(paste0(inpref, '.fam'), col_names = F, col_types = 'cccccc') %>%
       filter(X1 %in% pops) %$% X2
   }
   dat = read_plink(inpref, inds, verbose = verbose)
@@ -2197,12 +3216,22 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 #' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1 (default `FALSE`).
 #' @param snpwt A vector of SNP weights
 #' @param keepsnps A vector of SNP IDs to keep
+#' @param cm_file Optional path to a TSV file with per-variant centimorgan positions
+#'   (columns: a SNP-identifier column and `cm`). Overrides cM values in `.pvar` when supplied.
 #' @param verbose Print progress updates
+#' @param return_matrices If `TRUE`, return a list with `numer`, `cnt`,
+#'   `denom`, and `block_lengths` matrices directly (the matrices the per-
+#'   block reducer writes into) instead of the long-format data frame. Used
+#'   by `qpfstats()` to skip the costly long-format expansion and immediate
+#'   collapse back to matrices. Default `FALSE` preserves the historical
+#'   return shape for all other callers.
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,
                                 block_lengths = NULL, f4mode = TRUE, allsnps = FALSE,
-                                poly_only = FALSE, snpwt = NULL, keepsnps = NULL, verbose = TRUE) {
+                                poly_only = FALSE, snpwt = NULL, keepsnps = NULL,
+                                cm_file = NULL, verbose = TRUE,
+                                return_matrices = FALSE) {
 
   stopifnot(!is.null(popcombs) || (!is.null(left) && !is.null(right)))
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
@@ -2238,10 +3267,40 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   pref = normalizePath(pref, mustWork = FALSE)
   l = format_info(pref)
 
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
-  cpp_read_geno = l$cpp_read_geno
-  fl = paste0(pref, l$genoend)
+  if(isTRUE(l$is_pfile)) {
+    # PFILE metadata path. .read_pvar / .read_psam (added by pfile_to_afs)
+    # return tibbles in the same shape the rest of this function expects.
+    # The pvar path resolution handles plaintext .pvar and Zstd .pvar.zst.
+    # cm grafting from cm_file mirrors pfile_to_afs's semantics: .pvar
+    # rarely carries cm, and downstream get_block_lengths(blgsize < 100)
+    # needs real cm -- same warning fires when neither source is available.
+    pvar_path = .resolve_pvar_path(pref)
+    if(is.na(pvar_path)) stop('PFILE .pvar (or .pvar.zst) not found at prefix: ', pref)
+    snpfile = .read_pvar(pvar_path)
+    if(!is.null(cm_file)) {
+      if(verbose) alert_info(paste0('Reading cm from ', cm_file, '...\n'))
+      snpfile$cm = .read_cm_file(cm_file, snpfile$SNP)
+      n_missing_cm = sum(is.na(snpfile$cm))
+      if(n_missing_cm > 0L && verbose) {
+        alert_warning(paste0(n_missing_cm, ' / ', nrow(snpfile),
+                             ' variants have NA cm after cm_file lookup\n'))
+      }
+    } else if(all(snpfile$cm == 0) && verbose) {
+      alert_warning(paste0(
+        'All variants have cm = 0. PLINK 2 .pvar does not carry cm in the ',
+        'standard format, and no cm_file was supplied. Block boundaries ',
+        'from blgsize < 100 will collapse to a single block. Pass ',
+        'cm_file = <path> with a TSV (variant_id/SNP/ID + cm columns), ',
+        'or use blgsize >= 100 (bp distance).\n'))
+    }
+    # Drop is_multi (.read_pvar's extra column) and reorder to AT2 canonical.
+    snpfile = snpfile[, c('SNP', 'CHR', 'cm', 'POS', 'A1', 'A2')]
+    psam = .read_psam(paste0(pref, '.psam'))
+    indfile = tibble::tibble(ind = psam$IID, pop = psam$FID)
+  } else {
+    indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+    snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  }
 
   nsnpall = nrow(snpfile)
   nindall = nrow(indfile)
@@ -2287,33 +3346,168 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     mutate(popind = map(pp, ~match(., pops))) %$% popind
   usesnps = matrix(0)
 
-  numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
-  for(i in 1:numblocks) {
-    if(verbose) alert_info(paste0('Computing ', nrow(pc),' f4-statistics for block ',
-                                  i, ' out of ', numblocks, '...\r'))
-    # replace following two lines with cpp_geno_to_afs?
-    gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]]]
+  # Format-dispatched block reader: closure returning a (nind_kept x nsnp_block)
+  # integer matrix in {0,1,2,NA}, plus a finalizer that releases any
+  # per-handle resources (no-op for BED-class formats; closes pgen + pvar
+  # handles for PFILE). The closure shape is identical across formats so
+  # process_block below is format-agnostic. PFILE handles are lazy-opened
+  # per process (main + each future_map worker under plan(multisession));
+  # see .make_block_reader for the per-process handle cache mechanics.
+  block_reader = .make_block_reader(l, pref, nsnpall, nindall, indvec)
+  on.exit(block_reader$finalizer(), add = TRUE, after = FALSE)
+
+  # Per-block chromosome assignment, used for the post-loop chromosome
+  # rollup. snpfile$CHR for any kept SNP in block i gives the chromosome
+  # -- blocks are partitioned per-chromosome by get_block_lengths(), so
+  # all kept SNPs in a block share a single CHR. The fill() above also
+  # propagates `block` to dropped SNPs, but we filter to keep=TRUE here
+  # so CHR comes from a real (autosomal/keepsnps) variant.
+  block_chr = vapply(seq_len(numblocks), function(i) {
+    snpfile$CHR[snpfile$block == i & snpfile$keep][1]
+  }, character(1))
+
+  # Hoist nrow(pc) into a scalar so process_block can capture it cheaply
+  # (and assert against it for shape safety -- see stopifnot below).
+  ncombs = nrow(pc)
+  process_start_time = Sys.time()
+
+  # Per-block worker. Each call reads its own SNP range and computes
+  # f4-statistics locally, so blocks are independent and can be
+  # parallelized through the active future::plan() (e.g.
+  # plan(multisession, workers = N) before calling this function).
+  # The default plan is sequential, so this preserves the original
+  # behavior for callers who don't set up a parallel plan.
+  process_block = function(i) {
+    # drop = FALSE: when snpind[[i]] selects a single column R would
+    # silently degrade the matrix to a vector, causing gmat_to_aftable
+    # to throw "Not a matrix" downstream. Triggered by sparse-SNP blocks
+    # (common at chromosome tails or with tight blgsize). The original
+    # extract_f2 path at L3516 has the same guard.
+    gmat = block_reader$reader(start[i], end[i])[, snpind[[i]], drop = FALSE]
     at = gmat_to_aftable(gmat, popvec)
+    block_usesnps = usesnps
     if(!allsnps) {
-      usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
+      block_usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
       if(poly_only) {
         #fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1)+0
         fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1 | !max(na.omit(x)) %in% c(0,1))+0
-        usesnps = (usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
+        block_usesnps = (block_usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
       }
     }
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
-    if(!is.null(snpwt)) {
+    if(is.null(snpwt)) {
+      # Streaming path: avoids the (npopcomb x nsnp) transient matrix.
+      # Equivalent to cpp_aftable_to_dstatnum(...) followed by
+      # rowMeans(num, na.rm=TRUE), but accumulates per-row sum/cnt in
+      # scalars so memory stays O(npopcomb) instead of O(npopcomb*nsnp).
+      # On dense million-popcomb runs the materialized variant is many GB
+      # per block (e.g. ~45 GB at 1.57M popcombs x 3608 SNPs) and trips
+      # R's allocator or the OOM killer; streaming peaks at ~12 MB.
+      rm = cpp_aftable_to_dstatnum_rowmeans(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      # arma::vec wraps to R as either a NumericVector or a 1-column
+      # matrix depending on the RcppArmadillo build; flatten with c() so
+      # res$numer is always a plain numeric vector for the worker-side
+      # length() assertion and the downstream indexed reducer.
+      res = list(numer = c(rm$means), cnt = c(rm$cnt))
+    } else {
+      # snpwt path needs the full per-SNP matrix to apply column scaling
+      # before the row reduction, so keep the materialized variant.
+      num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
       num$num = t(t(num$num) * snpwt[(start[i]+1):end[i]])
+      res = list(numer = unname(rowMeans(num$num, na.rm = TRUE)), cnt = c(num$cnt))
     }
-    numer[i,] = unname(rowMeans(num$num, na.rm = TRUE))
-    cnt[i,] = c(num$cnt)
     if(!f4mode) {
-      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
-      denom[i,] = unname(rowMeans(den, na.rm = TRUE))
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      res$denom = unname(rowMeans(den, na.rm = TRUE))
     }
+    # Defense in depth: worker-side shape assertion. If a future edit to
+    # process_block silently produces a wrong-length numer/cnt/denom,
+    # fail here (with the block index visible in the worker's traceback)
+    # rather than letting bad data flow into the indexed reducer below
+    # where the error message would just be "number of items to replace
+    # is not a multiple of replacement length".
+    stopifnot(length(res$numer) == ncombs,
+              length(res$cnt)   == ncombs,
+              f4mode || length(res$denom) == ncombs)
+    res
+  }
+
+  if(verbose) alert_info(paste0('Computing ', nrow(pc), ' f4-statistics across ',
+                                numblocks, ' blocks...\n'))
+  # seed = NULL asserts that process_block doesn't use RNG -- suppresses
+  # furrr's defensive "UNRELIABLE VALUE" warning under plan(multisession)
+  # and skips the L'Ecuyer parallel-stream setup overhead.
+  # .progress = verbose gives a per-block heartbeat through progressr's
+  # default handler, working consistently under any plan.
+  results = furrr::future_map(seq_len(numblocks), process_block,
+                              .progress = verbose,
+                              .options = furrr::furrr_options(seed = NULL))
+
+  # Pre-allocate output matrices and write into them by index. Restores
+  # the original sequential code's loud-error semantic: a wrong-length
+  # row triggers R's built-in "number of items to replace is not a
+  # multiple of replacement length" error with i directly traceable.
+  # Pairs with the worker-side stopifnot above for defense in depth.
+  numer = matrix(NA_real_, numblocks, ncombs)
+  cnt   = matrix(NA_real_, numblocks, ncombs)
+  denom = matrix(NA_real_, numblocks, ncombs)
+  for(i in seq_len(numblocks)) {
+    r = results[[i]]
+    if(is.null(r))
+      stop(sprintf("f4blockdat_from_geno: block %d returned NULL", i))
+    numer[i, ] = r$numer
+    cnt[i, ]   = r$cnt
+    if(!f4mode) denom[i, ] = r$denom
+  }
+
+  # Post-loop per-chromosome rollup. Under parallel plans, blocks may
+  # complete out of order, so per-chromosome wall-clock is no longer
+  # meaningful; the rollup is emitted from block_chr + block_lengths
+  # in chromosome-order after future_map returns, with variant and
+  # block counts only. Total elapsed time across the parallel pass is
+  # reported once at the end. Orchestrators that monitor extract_f2
+  # for a heartbeat still get one line per chromosome plus the final
+  # totals line.
+  if(verbose) {
+    total_sec = as.numeric(difftime(Sys.time(), process_start_time, units = 'secs'))
+    chr_summary = tibble(chr = block_chr, len = block_lengths) %>%
+      filter(!is.na(chr)) %>%
+      group_by(chr) %>%
+      summarize(variants = sum(len), blocks = n(), .groups = 'drop') %>%
+      # Sort numerically where the chromosome label parses as a number
+      # (1, 2, ..., 22) so chr10 doesn't appear before chr2 in the
+      # emitted rollup. Non-numeric labels (X, Y, MT) become NA via
+      # as.numeric() and dplyr's arrange puts NAs last; the second key
+      # (raw `chr`) breaks ties among them in stable string order.
+      arrange(suppressWarnings(as.numeric(chr)), chr)
+    for(j in seq_len(nrow(chr_summary))) {
+      message(sprintf('[extract_f2] chr%s: %d variants in %d blocks',
+                      chr_summary$chr[j], chr_summary$variants[j], chr_summary$blocks[j]))
+    }
+    mins = floor(total_sec / 60)
+    secs = total_sec - 60 * mins
+    message(sprintf('[extract_f2] done: %d variants across %d block(s) on %d chromosome(s) in %dm%05.2fs',
+                    sum(block_lengths), numblocks, nrow(chr_summary), mins, secs))
   }
   if(verbose) cat('\n')
+
+  if(return_matrices) {
+    # Skip the long-format expand_grid build below. At dense f4 scales
+    # (e.g. 1.5M popcombs * ~1300 blocks = 2 billion rows) expand_grid
+    # materializes a tibble that peaks at hundreds of GB and is a hard
+    # ceiling on the workload. Callers like qpfstats that consume the
+    # result as matrices anyway can request the underlying matrices
+    # directly via return_matrices = TRUE; this early-return fires
+    # BEFORE expand_grid so the long-format frame is never built.
+    return(list(
+      numer    = numer,
+      cnt      = cnt,
+      denom    = if(f4mode) NULL else denom,
+      popcombs = pc,
+      block_lengths = block_lengths,
+      f4mode   = f4mode,
+      hasmodels = hasmodels
+    ))
+  }
 
   out = pc %>%
     expand_grid(block = 1:numblocks) %>%
@@ -2340,6 +3534,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
 #' @param adjust_pseudohaploid Genotypes of pseudohaploid samples are usually coded as `0` or `2`, even though only one allele is observed. `adjust_pseudohaploid` ensures that the observed allele count increases only by `1` for each pseudohaploid sample. If `TRUE` (default), samples that don't have any genotypes coded as `1` among the first 1000 SNPs are automatically identified as pseudohaploid. This leads to slightly more accurate estimates of f-statistics. Setting this parameter to `FALSE` is equivalent to the ADMIXTOOLS `inbreed: NO` option. Setting `adjust_pseudohaploid` to an integer `n` will check the first `n` SNPs instead of the first 1000 SNPs.
 #' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. With `apply_corr = 2`, the bias correction term is calculated based on all 3 populations. This option is not generally recommended, and only exists to match how the f3-statistics are estimated in certain scenarios in the original qpGraph program.
 #' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of precomputed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`.
+#' @param poly_only Only use polymorphic SNPs (default `FALSE`).
 #' @param verbose Print progress updates
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
@@ -2370,8 +3565,8 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   pref = normalizePath(pref, mustWork = FALSE)
   l = format_info(pref)
 
-  indfile = read_table2(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
-  snpfile = read_table2(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
+  indfile = read_table(paste0(pref, l$indend), col_names = l$indnam, col_types = l$indtype, progress = FALSE)
+  snpfile = read_table(paste0(pref, l$snpend), col_names = l$snpnam, col_types = 'ccddcc', progress = FALSE)
   cpp_read_geno = l$cpp_read_geno
   fl = paste0(pref, l$genoend)
 
@@ -2423,8 +3618,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
 
   numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
   for(i in 1:numblocks) {
-    if(verbose) alert_info(paste0('Computing ', nrow(pc),' f3-statistics for block ',
-                                  i, ' out of ', numblocks, '...\r'))
+    if(verbose) .heartbeat("Computing {nrow(pc)} f3-statistics for block {i} of {numblocks}...")
     # replace following two lines with cpp_geno_to_afs?
     gmat = cpp_read_geno(fl, nsnpall, nindall, indvec, start[i], end[i], T, F)[,snpind[[i]],drop=F]
     ref = rowsum(gmat, popvec, na.rm = TRUE)
@@ -2476,7 +3670,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
     numer[i,] = unname(rowSums(num$num, na.rm = TRUE))
     cnt[i,] = c(num$cnt)
   }
-  if(verbose) cat('\n')
+  if(verbose) .heartbeat(done = TRUE)
   out = pc %>%
     expand_grid(block = 1:numblocks) %>%
     mutate(numer = c(numer/cnt), denom = c(denom/cnt), est = numer/denom, n = c(cnt))
@@ -2514,6 +3708,192 @@ construct_fstat_matrix = function(popcomb) {
 }
 
 
+#' Per-block weighted-least-squares regression with NaN-aware solve.
+#'
+#' Solves `beta_i = (X_v_i^T X_v_i + ridge*I)^-1 X_v_i^T ymat_v_i` per
+#' block, where the `_v_i` index excludes rows where `ymat[, i]` is non-
+#' finite (NaN, NA, or +/-Inf). `is.finite()` is the broad-net check —
+#' NaN is the realistic trigger (rowMeans of all-NA = 0/0), but NA and
+#' Inf would also poison the BLAS multiply and are correctly handled.
+#'
+#' The original `qpfstats` regression was a single batched matmul:
+#'   `lh = solve((t(x) %*% x) + ridge*I) %*% t(x)`
+#'   `b  = lh %*% ymat`
+#' which silently produces NaN-filled `b` whenever any cell of `ymat`
+#' is NaN — and `ymat` picks up NaN cells whenever some block has no
+#' valid SNPs for some popcomb (a common case on aDNA panels with
+#' missingness). IEEE 754 propagates NaN through BLAS DGEMM, poisoning
+#' every cell of `b`'s output column for that block.
+#'
+#' Two simplifications keep this fast:
+#'
+#' (a) Right-hand side: `t(x_v_i) %*% ymat_v_i = t(x) %*% yi_clean`
+#'     where `yi_clean = ymat[, i]` with NaN cells set to 0. Zeroed
+#'     cells contribute 0 to the dot product (mathematically identical
+#'     to dropping them).
+#'
+#' (b) System matrix: `A_i = A_shared - crossprod(X_S_i)`
+#'     where `A_shared = t(x) %*% x + ridge*I` (computed once) and
+#'     `X_S_i = x[NaN popcombs in block i, ]`. Since sum-over-valid =
+#'     sum-over-all minus sum-over-NaN, the per-block system matrix is
+#'     a cheap "downdate" of `A_shared`. Empirically stable to >90% NaN
+#'     (max abs diff vs direct per-block reference < 1e-16 even at 90%).
+#'
+#' Chunked structure: blocks are processed in groups of 64 with one
+#' DGEMM per group producing all RHS columns at once. This sits between
+#' pure-streaming (one matvec per block; reads x from DRAM nblocks
+#' times) and full-batched (one DGEMM over all blocks; duplicate of
+#' ymat busts L2 cache at typical scales). The chunk = 64 sweet spot
+#' keeps the per-chunk working set (~5 MB at npop = 20) under L2
+#' while amortizing matvec bandwidth. Empirical results vs streaming:
+#' 1.20x faster at npop = 10, 1.62x at npop = 20, 1.59x at npop = 30.
+#' At npop = 20 the chunked variant also beats full-batched DGEMM
+#' (1.20s vs 1.51s) because batched's larger working set busts L2.
+#'
+#' Memory: peak addition is O(npairs^2 + npopcomb * 64 + npairs *
+#' nblocks) -- independent of npopcomb in the dominant term. At npop =
+#' 20 / nblocks = 1300 that's ~8 MB, less than half the original
+#' code's ~19 MB peak (from `t(x) + lh`). At extreme npop >= 50 chunk
+#' = 64 stays light while the original's `npopcomb * npairs`
+#' allocations blow up to GBs.
+#'
+#' Per-block cost on the realistic dense f4 scale (npairs ~100, npopcomb
+#' ~5000-1.5M):
+#'   - Fast path (no NaN in block): two triangular solves against the
+#'     shared Cholesky.                                            ~1 ms
+#'   - Slow path (any NaN in block): downdate + generic solve.    ~10 ms
+#'
+#' When no block has NaN, this loop matches the original batched solve
+#' to machine precision (~1e-15 abs diff on synthetic 5000x50x100 input).
+#'
+#' All-NaN-block behavior: when every popcomb in a block is NaN, the
+#' downdate yields `A_v = ridge*I` and the RHS is 0, so `b[, i] = 0`.
+#' That is a strictly better outcome than the pre-fix NaN-poisoning
+#' (which corrupted EVERY block, not just the all-NaN one), but it does
+#' bias downstream `f2()$est` toward 0 for that block. A warning fires
+#' so callers can detect the pathological case. Dropping the block
+#' entirely would require plumbing a block-keep mask into the downstream
+#' jackknife — a study-by-study policy choice intentionally left to a
+#' separate change.
+#'
+#' @param x Numeric `npopcomb x npairs` design matrix from
+#'   `construct_fstat_matrix(popcomb)`.
+#' @param ymat Numeric `npopcomb x nblocks` per-block response matrix.
+#'   NaN cells indicate popcombs with no valid SNPs in that block.
+#' @param y Numeric length-`npopcomb` global response vector. NaN cells
+#'   indicate popcombs with no valid SNPs anywhere.
+#' @param ridge Tikhonov ridge added to the system matrix. Default
+#'   `1e-5` matches the original literal `0.00001` constant.
+#' @return List with elements `b` (npairs x nblocks) and `bglob`
+#'   (length npairs).
+#' @noRd
+qpfstats_regression = function(x, ymat, y, ridge = 0.00001) {
+  nblocks  = ncol(ymat)
+  npairs   = ncol(x)
+  npopcomb = nrow(ymat)
+
+  # Chunked per-block loop. Two extremes were measured first:
+  #
+  #   * Pure streaming (chunk = 1): one matvec per block. Minimal
+  #     memory but reads x once per block from DRAM. At typical npop
+  #     = 15-30 scales x is ~10 MB and the L2 footprint of repeated
+  #     reads kills throughput -- 1.4-1.6x slower than batched.
+  #
+  #   * Full batched (chunk = nblocks): one big DGEMM on a zeroed
+  #     duplicate of ymat. At typical scales the duplicated ymat
+  #     plus mask (~100 MB at npop = 20) busts L2 cache too, so it's
+  #     actually slower than the L2-friendly middle ground.
+  #
+  # Chunk = 64 is empirically optimal across npop 10-30: per-chunk
+  # working set (npopcomb * chunk * 12 bytes for ymat_chunk +
+  # nan_chunk slice) stays under L2 while DGEMM call overhead is
+  # amortized across 64 columns. At npop = 20 this is ~5 MB working
+  # set -- well under M1 / Intel server L2 sizes (16-32 MB) -- and
+  # 1300 / 64 = 21 reads of x from DRAM instead of 1300. Measured
+  # speedup vs streaming: 1.20x at npop = 10, 1.62x at npop = 20,
+  # 1.59x at npop = 30. Also strictly beats full-batched DGEMM at
+  # npop = 20 (1.20s vs 1.51s) because batched's larger working set
+  # busts L2.
+  #
+  # Peak memory addition: O(npairs^2 + npopcomb * chunk + npairs *
+  # nblocks). At npop = 20 / nblocks = 1300 / chunk = 64 that's ~8
+  # MB -- less than half the original code's peak (~19 MB from
+  # t(x) + lh) and within 5 MB of pure streaming. At extreme npop
+  # >= 50 the same chunk = 64 still wins on both axes vs the
+  # original because npairs^2 + npopcomb * 64 stays small while the
+  # original's npopcomb * npairs allocations blow up.
+  #
+  # `!is.finite()` catches NaN, NA, +/-Inf. NaN is the realistic case
+  # (rowMeans of an all-NA block produces 0/0); the broader net is
+  # defensive against future numer-path changes.
+
+  CHUNK_SIZE = 64L
+
+  A_shared = crossprod(x) + diag(npairs) * ridge   # npairs x npairs
+  L_shared = chol(A_shared)                         # upper triangular
+  L_shared_t = t(L_shared)                          # cache transpose once
+
+  b = matrix(0, npairs, nblocks)
+  all_nan_blocks = integer(0)
+
+  for(chunk_start in seq.int(1L, nblocks, by = CHUNK_SIZE)) {
+    chunk_end = min(chunk_start + CHUNK_SIZE - 1L, nblocks)
+    chunk_idx = chunk_start:chunk_end
+
+    # Chunked RHS: zero NaN cells in the chunk slice, then one DGEMM
+    # produces all chunk_size RHS columns. Mathematically identical
+    # to dropping NaN rows from each block's regression (zeroed
+    # cells contribute 0 to the dot product).
+    ymat_chunk = ymat[, chunk_idx, drop = FALSE]
+    nan_chunk  = !is.finite(ymat_chunk)
+    if(any(nan_chunk)) ymat_chunk[nan_chunk] = 0
+    rhs_chunk  = crossprod(x, ymat_chunk)            # npairs x chunk_size
+
+    for(j in seq_along(chunk_idx)) {
+      i     = chunk_idx[j]
+      nan_i = nan_chunk[, j]
+      k_i   = sum(nan_i)
+      if(k_i == 0L) {
+        # Fast path: shared Cholesky + two triangular solves.
+        b[, i] = backsolve(L_shared, forwardsolve(L_shared_t, rhs_chunk[, j]))
+      } else {
+        # Slow path: rebuild A_i via downdate, generic solve.
+        X_S    = x[nan_i, , drop = FALSE]
+        A_i    = A_shared - crossprod(X_S)
+        b[, i] = solve(A_i, rhs_chunk[, j])
+        if(k_i == npopcomb) all_nan_blocks = c(all_nan_blocks, i)
+      }
+    }
+  }
+
+  # All-NaN-block detection: warn but proceed. Downdate yielded
+  # A_v = ridge*I and RHS = 0, so the block emitted b[, i] = 0
+  # (documented behavior; see function header). Warning fires once
+  # after the loop with the full list of offending blocks.
+  if(length(all_nan_blocks) > 0) {
+    warning(sprintf(
+      "qpfstats: %d block(s) have no valid SNPs for any popcomb (b set to 0; biases downstream f2 estimate). Block indices: %s",
+      length(all_nan_blocks),
+      paste(all_nan_blocks, collapse = ",")))
+  }
+
+  # bglob: same NaN-aware treatment for the global pseudo-f2 vector.
+  # NaN in y means a popcomb has no valid blocks anywhere.
+  nan_mask_y = !is.finite(y)
+  bglob = if(any(nan_mask_y)) {
+    y_local             = y
+    y_local[nan_mask_y] = 0
+    X_S_y = x[nan_mask_y, , drop = FALSE]
+    A_y   = A_shared - crossprod(X_S_y)
+    drop(solve(A_y, crossprod(x, y_local)))
+  } else {
+    drop(backsolve(L_shared, forwardsolve(L_shared_t, crossprod(x, y))))
+  }
+
+  list(b = b, bglob = bglob)
+}
+
+
 #' Get smoothed f2-statistics
 #'
 #' This function returns an array of (pseudo-) f2-statistics which are computed by
@@ -2531,6 +3911,7 @@ construct_fstat_matrix = function(popcomb) {
 #' If `include_f3` is a positive integer, it specifies how many randomly chosen f3-statistics should be used.
 #' @param include_f4 Should f4-statistics be used to get smoothed f2-statistics?
 #' If `include_f4` is a positive integer, it specifies how many randomly chosen f4-statistics should be used.
+#' @param verbose Print progress updates (default `TRUE`).
 #' @return A 3d-array of smoothed f2-statistics
 #' @examples
 #' \dontrun{
@@ -2558,25 +3939,43 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
     if(is.numeric(include_f4)) pcf4 %<>% slice_sample(n = include_f4)
     popcomb %<>% bind_rows(pcf4)
   }
-  f4blockdat = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE)
-  f4pass1 = f4blockdat %>% f4blockdat_to_f4out(FALSE)
+
+  # Request matrices directly from f4blockdat_from_geno instead of the
+  # long-format frame. Two costs in the long-format path:
+  #
+  #  1) building it: expand_grid(popcomb, block = 1:numblocks) materializes
+  #     a tibble with npopcomb * nblocks rows. At dense f4 scales (e.g.
+  #     1.5M popcombs * ~1300 blocks = 2 billion rows) this peaks at
+  #     hundreds of GB and is a hard ceiling on the workload.
+  #
+  #  2) consuming it: pivot_wider() below would re-materialize a
+  #     (npopcomb x nblocks) matrix that is exactly t(numer) — the same
+  #     matrix f4blockdat_from_geno already had before it expanded to
+  #     long format. The matrix path avoids both round-trips.
+  f4 = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE, return_matrices = TRUE)
+  numer = f4$numer
+  cnt   = f4$cnt
+  bl    = f4$block_lengths
+  rm(f4)
 
   if(verbose) alert_info(paste0('Constructing matrix...\n'))
   x = construct_fstat_matrix(popcomb)
-  ymat = f4blockdat %>%
-    select(pop1:pop4, block, est) %>%
-    pivot_wider(id_cols=1:4, names_from = block, values_from = est) %>%
-    select(-1:-4) %>% as.matrix
-  y = f4pass1$est
-  #ymat = ymat/f4pass1$se
-  #x = x/f4pass1$se
+  # ymat in the long-format path is built by pivot_wider() into a
+  # (npopcomb x nblocks) matrix; that's exactly t(numer).
+  ymat = t(numer)
+  # y was previously f4pass1$est: the bias-corrected jackknife mean per
+  # popcomb computed by f4blockdat_to_f4out (which iterates the long
+  # format with a dplyr group_by; super-linear in number of groups).
+  # matrix_jackknife_est computes the same value column-by-column over
+  # the matrices.
+  y = matrix_jackknife_est(numer, cnt)
+
   if(verbose) alert_info(paste0('Running regression...\n'))
-  lh = solve((t(x) %*% x) + diag(ncol(x))*0.00001) %*% t(x)
-  b = lh %*% ymat
-  bglob = lh %*% y
+  reg = qpfstats_regression(x, ymat, y)
+  b = reg$b
+  bglob = reg$bglob
 
   nblocks = ncol(b)
-  bl = f4blockdat %>% slice(1:nblocks) %>% pull(length)
   f2blocks = array(0, c(npop, npop, nblocks), list(sp, sp, paste0('l', bl)))
   m = matrix(1:npop^2, npop, npop)
   m2 = matrix(1:npop^2, npop, npop, byrow = T)
@@ -2599,34 +3998,160 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
 #' @export
 #' @param graph Graph as igraph object or edge list (columns labelled 'from', 'to', 'weight')
 #' @param outfile Output file name
+#' @param fontsize Font size of edge and node labels
+#' @param color A boolean specifying if the plot will be in color or grey scale.
+#' @param hide_weights A boolean value specifying if the drift values on the edges will be hidden. The default is `FALSE`.
+#' @param size1 Maximum width of the rendered graph in inches (the first value of Graphviz's `size` attribute). The default is `7.5`.
+#' @param size2 Maximum height of the rendered graph in inches (the second value of Graphviz's `size` attribute). The default is `10`.
+#' @param title Title displayed above the graph. Defaults to the empty string.
+#' @param highlight_unidentifiable Highlight unidentifiable edges in red. Can be slow for large graphs.
+#' @param nodesep The minimum space between two adjacent nodes in the same rank, in inches. The default is `0.25`.
+#' @param ranksep Sets the rank separation, in inches. This is the minimum vertical distance between the bottom of the nodes in one rank and the tops of nodes in the next. The default is `0.5`.
+#' @param fix_names If `TRUE`, replaces the dots (.) and dashes (-) in population names with underscores. The default is `FALSE`.
+#' @param dot2pdf If `FALSE`, the function will terminate after writing the dot file. If `TRUE`, it will try to execute the `dot -Tpdf` comment to create pdf file.
 #' @examples
 #' \dontrun{
 #' results = qpgraph(example_f2_blocks, example_graph)
 #' write_dot(results$edges)
 #' }
 write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
-                     title = '', dot2pdf = FALSE) {
-  # writes qpgraph output to a dot format file
-
+                     title = '', dot2pdf = FALSE,
+                     fontsize = 14, color = TRUE, hide_weights = FALSE,
+                     highlight_unidentifiable = FALSE, nodesep = 0.25,
+                     ranksep = 0.5, fix_names = FALSE) {
+  if (isTRUE(fix_names)){
+    if('igraph' %in% class(graph)) {
+      graph %<>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
+        mutate_all(list(function(x) gsub("\\.", "_", x))) %>%
+        mutate_all(list(function(y) gsub("-", "_", y))) %>%
+        edges_to_igraph()
+    }
+    else{
+      graph %<>%
+        mutate_at(c("from", "to"), function(x) gsub("\\.", "_", x)) %>%
+        mutate_at(c("from", "to"), function(x) gsub("-", "_", x))
+    }
+  }
   if('igraph' %in% class(graph)) {
     edges = graph %>% as_edgelist %>% as_tibble(.name_repair = ~c('from', 'to')) %>%
       add_count(to) %>% mutate(type = ifelse(n == 1, 'edge', 'admix')) %>% select(-n)
-  } else edges = graph
+    ig = graph
+  } else{
+    edges = graph
+    ig = edges_to_igraph(graph)
+  }
   if(!'weight' %in% names(edges)) edges %<>% mutate(weight = 0)
+  if (isTRUE(hide_weights)){
+    edges %<>% mutate(weight = ifelse(type != "admix", " ", round(weight * 100)))
+  } else {
+    edges %<>% mutate(weight = ifelse(type != "admix", round(weight * 1000), round(weight * 100)))
+  }
 
   leaves = setdiff(edges$to, edges$from)
-  root = setdiff(edges$from, edges$to)
   internal = setdiff(c(edges$from, edges$to), c(leaves))
-  edges = mutate(edges, lab = ifelse(type == 'edge',
-                                     paste0(' [ label = "', round(weight * 1000), '" ];'),
-                                     paste0(' [ style=dotted, label = "', round(weight * 100), '%" ];')),
-                 from = str_replace_all(from, '[\\.-]', ''),
-                 to = str_replace_all(to, '[\\.-]', ''))
-  nodes = paste0(internal, ' [shape = point];', collapse = '\n')
+
+  if (isTRUE(color)) {
+    p = plot_graph(graph, fix=F)
+    pp = ggplot_build(p)
+    pdat = graph_to_plotdat(graph, fix=F)
+
+    # Identify layers by column presence — pp$data positional indexing silently
+    # misindexes if plot_graph or ggplot2 reorders layers.
+    edge_layer = NULL
+    text_layer = NULL
+    for (i in seq_along(pp$data)) {
+      d = pp$data[[i]]
+      if (is.null(text_layer) && all(c("label", "colour") %in% names(d))) text_layer = d
+      if (is.null(edge_layer) && all(c("y", "colour") %in% names(d)) && !"label" %in% names(d)) edge_layer = d
+    }
+    if (is.null(edge_layer) || is.null(text_layer)) {
+      stop("write_dot: could not identify expected layers in plot_graph's ggplot output. ",
+           "Likely means plot_graph or ggplot2 has changed. Workaround: call write_dot(..., color=FALSE).")
+    }
+
+    # Join is keyed on y; warn if any y carries multiple edge colors —
+    # the right_join below would duplicate edges with conflicting colors.
+    y_collisions = edge_layer %>%
+      select(y, colour) %>%
+      distinct() %>%
+      count(y) %>%
+      filter(n > 1)
+    if (nrow(y_collisions) > 0) {
+      warning("write_dot: ", nrow(y_collisions),
+              " y-coordinate(s) carry multiple ggplot colors; edges may be ",
+              "duplicated with conflicting colors in the dot output. ",
+              "Workaround: call write_dot(..., color=FALSE).")
+    }
+
+    cols = edge_layer %>%
+      arrange(desc(y)) %>%
+      select(y, colour) %>%
+      distinct() %>%
+      right_join(pdat$eg, by = "y") %>%
+      transmute(from=name, to, colour)
+
+    # Fall back to Black on join misses rather than emit literal "NA" to Graphviz.
+    na_count = sum(is.na(cols$colour))
+    if (na_count > 0) {
+      warning("write_dot: ", na_count, " edge(s) received no color from plot_graph; falling back to Black.")
+      cols$colour[is.na(cols$colour)] = "Black"
+    }
+
+    leaf_cols = text_layer %>% select(label, colour)
+  } else {
+    # color=FALSE skips both plot_graph and graph_to_plotdat entirely.
+    cols = edges %>% transmute(from, to, colour = "Black")
+    leaf_cols = tibble(label = leaves, colour = "Black")
+  }
+
+  if (isTRUE(highlight_unidentifiable)){
+    cols = unidentifiable_edges(ig) %>%
+      transmute(from, to, lab="uniden") %>%
+      right_join(cols, by=c("from", "to")) %>%
+      replace_na(list(lab = "iden")) %>%
+      mutate(colour2 = colour) %>%
+      mutate(colour = ifelse(lab == "uniden", "Red", colour)) %>%
+      select(-lab)
+  }
+
+  edges = edges %>%
+    left_join(cols, by=c("from", "to")) %>%
+    mutate(lab = ifelse(type != 'admix',
+                        paste0(' [ label = "', weight, '", color = "', colour, '", fontsize = "', fontsize, '" ];'),
+                        paste0(' [ style=dotted, label = "', weight, '%", color = "', colour, '", fontsize = "', fontsize, '" ];')),
+           from = str_replace_all(from, '[\\.-]', ''),
+           to = str_replace_all(to, '[\\.-]', ''))
+
+  if (isTRUE(highlight_unidentifiable)){
+    ints = cols %>%
+      transmute(from, colour = colour2)
+  } else{
+    ints = cols %>%
+      select(from, colour)
+  }
+
+  # Strip `.` and `-` from node identifiers to match the same stripping
+  # applied to edge endpoints earlier — otherwise the declarations don't
+  # match the edge references and Graphviz rejects the file.
+  int_nodes = ints %>%
+    distinct() %>%
+    mutate(from = str_replace_all(from, '[\\.-]', '')) %>%
+    transmute(lab = paste0(from, ' [shape = point, color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
+
+  term_nodes = leaf_cols %>%
+    mutate(label = str_replace_all(label, '[\\.-]', '')) %>%
+    transmute(lab = paste0(label, ' [color = "', colour, '", fontsize = "', fontsize, '" ];')) %>%
+    pull(lab) %>%
+    paste0(collapse="\n")
 
   out = paste0('digraph G {\nlabel = "',title,'";\nlabelloc=t;\nlabeljust=l;\n')
   out = paste0(out, 'size = "',size1,',',size2,'";\n')
-  out = paste0(out, nodes, '\n')
+  out = paste0(out, 'nodesep = "', nodesep, '";\n')
+  out = paste0(out, 'ranksep = "', ranksep, '";\n')
+  out = paste0(out, int_nodes, '\n')
+  out = paste0(out, term_nodes, '\n')
   out = paste0(out, paste(edges$from, ' -> ', edges$to, edges$lab, collapse = '\n'))
   out = paste0(out, '\n}')
 

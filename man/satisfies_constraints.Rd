@@ -27,11 +27,13 @@ observed to be significantly non-zero}
 \description{
 This function tests whether a graph satisfies a number of different types of constraints
 }
-\seealso{
-\code{\link{satisfies_numadmix}}, \code{\link{satisfies_zerof4}}, \code{\link{satisfies_eventorder}}
+\examples{
 \dontrun{
 # At least one admixture event for C, and none for D:
 constrain_cd = tibble(pop = c('C', 'D'), min = c(1, NA), max = c(NA, 0))
 satisfies_numadmix(random_admixturegraph(5, 2), constrain_cd)
 }
+}
+\seealso{
+\code{\link{satisfies_numadmix}}, \code{\link{satisfies_zerof4}}, \code{\link{satisfies_eventorder}}
 }

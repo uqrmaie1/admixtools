@@ -20,6 +20,63 @@ alert_warning = function(msg) cat(crayon::yellow('!', msg))
 alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
 
 
+# Per-iteration progress emit that adapts to its output context.
+#
+# Pre-PR-130, per-iteration progress was emitted with a leading or trailing
+# `\r` (carriage return) to stdout. That overwrote in-place in a terminal but
+# was invisible to orchestrators tailing stderr (`Rscript ... 2>log`).
+# PR #130 routed everything through `cli::cli_inform(c(i = ...))` to fix the
+# tailing case, but as a side-effect each emission became its own scrolling
+# line in interactive sessions — visually painful for loops with thousands of
+# iterations.
+#
+# `.heartbeat()` keeps both use cases working:
+#
+#   * **TTY** (`isatty(stderr())` returns TRUE — interactive R session): writes
+#     `\r<msg>\033[K` to stderr. The CR overwrites the previous line; the
+#     `\033[K` ANSI escape clears from the cursor to end-of-line, so a shorter
+#     follow-up message doesn't leave stale chars from the previous longer one.
+#     No newline — the next emit overwrites it. The loop owner is responsible
+#     for emitting `.heartbeat(done = TRUE)` after the last iteration to print
+#     a trailing newline and advance the cursor past the heartbeat line.
+#
+#   * **Non-TTY** (stderr is a file / pipe / redirect — orchestrator tailing,
+#     CI logs, batch jobs): emits one `cli::cli_inform(c(i = msg))` line per
+#     call. `cli` correctly strips ANSI in non-interactive contexts, so log
+#     consumers see plain UTF-8 with the ℹ bullet and a real `\n` per emit.
+#     `done = TRUE` is a no-op here (no cursor to advance — each line already
+#     ended with `\n`).
+#
+# `msg` supports glue-style `{var}` interpolation, evaluated in the caller's
+# frame via `cli::format_inline`. Same syntax as `cli::cli_inform` so the call
+# sites read the same way in both branches.
+#
+# Caller is expected to gate on `verbose`. The helper itself does not check
+# verbose so the call sites stay locally explicit about when they emit.
+#
+# `suppressMessages()` only silences the non-TTY branch (which routes through
+# the R condition system via `cli::cli_inform`). The TTY branch writes via
+# `cat(file = stderr())`, which is not a message condition. Interactive users
+# who want silence should pass `verbose = FALSE` — that gates the call site
+# unconditionally and works in both modes.
+# `.tty` is a test seam (leading dot — not part of the contract for production
+# callers, which always omit it and let `isatty(stderr())` decide). It exists so
+# tests/testthat/test-heartbeat.R can pin both branches deterministically without
+# OS-level PTY juggling.
+.heartbeat = function(msg = "", done = FALSE, .tty = isatty(stderr())) {
+  if(.tty) {
+    if(done) {
+      cat("\n", file = stderr())
+    } else if(nzchar(msg)) {
+      formatted = cli::format_inline(msg, .envir = parent.frame())
+      cat("\r", formatted, "\033[K", file = stderr(), sep = "")
+    }
+  } else if(!done && nzchar(msg)) {
+    cli::cli_inform(c(i = msg), .envir = parent.frame())
+  }
+}
+
+
 gg_color_hue = function(n, l=65, c=100) {
   hues = seq(15, 375, length=n+1)
   grDevices::hcl(h=hues, l=l, c=c)[1:n]
@@ -68,6 +125,12 @@ qpsolve = function(...) quadprog::solve.QP(...)$solution
 
 make_pseudohaploid = function(xmat) round(jitter(xmat/2))*2
 
+#' Create a named list from arguments
+#'
+#' Like `list()` but uses argument names as list names when names are not
+#' explicitly supplied.
+#' @param ... Objects to include in the list.
+#' @return A named list.
 #' @export
 namedList = function(...) {
   L <- list(...)
@@ -176,7 +239,7 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
     # ans = cpp_lbfgsb(parmat[i,], args[[1]], args[[2]], args[[3]], args[[4]], args[[5]], args[[6]], args[[8]])
     # cpp_lbfgsb is ~ 10% faster for large graphs (20 pops, 12 admixnodes), but very similar in speed for smaller ones.
     # only returns 'par' and 'value' at the moment
-    if(verbose) cat(paste0('\r', i, ' out of ', nset, '...'))
+    if(verbose) .heartbeat("{i} of {nset}...")
     tryCatch({
       ans = optim(par = parmat[i, ], fn = fn, gr = gr, lower = lower,
                   upper = upper, method = method, hessian = hessian,
@@ -184,7 +247,7 @@ multistart = function (parmat, fn, args, gr = NULL, lower = -Inf, upper = Inf, m
       ansret[i, ] = c(ans$par, ans$value, ans$counts[1], ans$counts[2], ans$convergence)
     }, error = function(e) {if(!str_detect(e$message, 'constraints are inconsistent')) stop(e)})
   }
-  if(verbose) cat('\n')
+  if(verbose) .heartbeat(done = TRUE)
   if(all(is.na(ansret[,1]))) stop("Optimization unsuccessful (constraints inconsistent). Try increasing 'diag'.")
   as_tibble(ansret, .name_repair = ~c(paste0('p', seq_len(npar)), 'value', 'fevals', 'gevals', 'convergence'))
 }

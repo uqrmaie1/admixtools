@@ -581,7 +581,7 @@ server = function(input, output, session) {
 
   observeEvent(input$popfile, {
 
-    inddat = read_table2(input$popfile$datapath, col_names = FALSE, col_types = cols())
+    inddat = read_table(input$popfile$datapath, col_names = FALSE, col_types = cols())
     if(ncol(inddat) == 3) colnames(inddat) = c('ind', 'sex', 'pop')
     else if(ncol(inddat) == 6) colnames(inddat) = c('pop', 'ind', 'p1', 'p2', 'sex', 'pheno')
     else shinyalert('Error', paste0('sample file has ',ncol(inddat),' columns!'))
@@ -646,7 +646,7 @@ server = function(input, output, session) {
       global$graph = parse_qpgraph_graphfile(gf) %>% graph_from_edgelist()
     } else {
       print('two column format')
-      global$graph = read_table2(gf, col_types = cols()) %>% select(1:2) %>%
+      global$graph = read_table(gf, col_types = cols()) %>% select(1:2) %>%
         as.matrix %>% graph_from_edgelist()
     }
     print('read graphfile done')

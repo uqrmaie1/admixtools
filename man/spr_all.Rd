@@ -8,6 +8,8 @@ spr_all(graph, fix_outgroup = TRUE)
 }
 \arguments{
 \item{graph}{An admixture graph}
+
+\item{fix_outgroup}{Prevent the outgroup from being regrafted (default \code{TRUE}).}
 }
 \value{
 A new admixture graph

@@ -22,13 +22,13 @@ which may require a lot of memory.}
 
 \item{pops2}{Specify this if you only want to read a subset of all population pairs. The resulting array will differ on 1st and 2nd dimension and will not work with all functions.}
 
+\item{type}{Type of statistic to read: \code{'f2'} (default), \code{'ap'} (allele frequency products), or \code{'fst'}.}
+
 \item{counts}{Return allele counts instead of f2 estimates}
 
 \item{remove_na}{Remove blocks with missing values}
 
 \item{verbose}{Print progress updates}
-
-\item{afprod}{Return allele frequency products instead of f2 estimates}
 }
 \value{
 A 3d array of block jackknife estimates

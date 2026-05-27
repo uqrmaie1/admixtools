@@ -6,6 +6,15 @@
 \usage{
 f2_from_msprime(..., blgsize = 0.05, cleanup = TRUE, verbose = TRUE)
 }
+\arguments{
+\item{...}{Arguments passed to \code{\link{msprime_sim}}.}
+
+\item{blgsize}{SNP block size in Morgan for computing f2-statistics (default 0.05).}
+
+\item{cleanup}{Delete temporary simulation files after reading (default \code{TRUE}).}
+
+\item{verbose}{Print progress updates.}
+}
 \description{
 This function generates an msprime simulation script, executes it in python,
 and turns the resulting genotype data into f2-statistics

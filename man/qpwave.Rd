@@ -15,6 +15,7 @@ qpwave(
   boot = FALSE,
   constrained = FALSE,
   cpp = TRUE,
+  singular_threshold = NA_real_,
   verbose = TRUE
 )
 }
@@ -46,6 +47,17 @@ equal to the number of SNP blocks.}
 \item{constrained}{Constrain admixture weights to be non-negative}
 
 \item{cpp}{Use C++ functions. Setting this to \code{FALSE} will be slower but can help with debugging.}
+
+\item{singular_threshold}{If not \code{NA} (the default), error out when the
+reciprocal condition number of the (fudged) f4 variance matrix is below
+this threshold. A common choice is \code{1e-12} -- below that the downstream
+\code{solve()} and the C++ weight optimization fall back to a pseudo-inverse,
+which makes the returned weight standard errors numerically tight in a
+way that doesn't reflect actual sampling uncertainty. The default
+(\code{NA}) preserves the historical behavior: silently fall through to the
+pseudo-inverse fallback. In either mode, the reciprocal condition
+number is reported as \code{f4_var_rcond} on the returned list so callers
+can gate downstream interpretations programmatically.}
 
 \item{verbose}{Print progress updates}
 }

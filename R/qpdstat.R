@@ -4,6 +4,45 @@ f2_f3 = function(f2_12, f2_13, f2_23) (f2_12 + f2_13 - f2_23) / 2
 f2_f4 = function(f2_14, f2_23, f2_13, f2_24) (f2_14 + f2_23 - f2_13 - f2_24) / 2
 
 
+# Per-pair jackknife (or bootstrap) statistics for f2() and fst().
+#
+# Replaces the dplyr expression
+#   out %<>% group_by(pop1, pop2) %>%
+#     summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
+#     mutate(sts = map(f2dat, ~statfun(., block_lengths)), ...)
+# which is mathematically right but scales super-linearly in the number
+# of groups: dplyr's data-mask re-evaluates the `f2_blocks[pop1, pop2, ]`
+# expression for each group via Rf_applyClosure, dominating wall time at
+# large pair counts. Production gdb traces on >~1000-pair runs show the
+# whole call stuck in Rf_eval recursion with all BLAS threads idle.
+#
+# The replacement is a direct base R loop over pairs calling the same
+# statfun on the same input. Bytewise-equivalent compute; orders of
+# magnitude less interpreter overhead. method = 'radix' makes the
+# pre-sort locale-independent so it matches dplyr's group_by() ordering
+# byte-for-byte even on non-ASCII pop labels (base::order() defaults to
+# LC_COLLATE, which can disagree with dplyr's radix sort).
+#
+# `statfun` is cpp_jack_vec_stats (jackknife) or cpp_boot_vec_stats
+# (bootstrap); both return a list with $est and $var. `out` must have
+# columns pop1, pop2 with values matching the first two dimnames of
+# `f2_blocks`. Returns a tibble with columns pop1, pop2, est, se.
+per_pair_jack_stats = function(out, f2_blocks, block_lengths, statfun) {
+  out = out[order(out$pop1, out$pop2, method = 'radix'), ]
+  n_pairs = nrow(out)
+  est_vec = numeric(n_pairs)
+  var_vec = numeric(n_pairs)
+  for(i in seq_len(n_pairs)) {
+    st = statfun(f2_blocks[out$pop1[i], out$pop2[i], ], block_lengths)
+    est_vec[i] = st$est
+    var_vec[i] = st$var
+  }
+  out$est = est_vec
+  out$se  = sqrt(var_vec)
+  tibble::as_tibble(out[, c('pop1', 'pop2', 'est', 'se')])
+}
+
+
 #' Estimate f2 statistics
 #'
 #' Computes f2 statistics from f2 blocks of the form \eqn{f2(A, B)}
@@ -57,13 +96,7 @@ f2 = function(data, pop1 = NULL, pop2 = NULL,
   #----------------- compute f2 -----------------
   if(verbose) alert_info('Computing f2-statistics\n')
 
-  out %<>% group_by(pop1, pop2) %>%
-    summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
-    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(pop1, pop2, est, se)
-
-  out
+  per_pair_jack_stats(out, f2_blocks, block_lengths, statfun)
 }
 
 #' Compute Fst
@@ -116,11 +149,7 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
   f2_blocks = do.call(get_f2, ell) %>% samplefun
   block_lengths = parse_number(dimnames(f2_blocks)[[3]])
 
-  out %>% group_by(pop1, pop2) %>%
-    summarize(f2dat = list(f2_blocks[pop1, pop2, ])) %>% ungroup %>%
-    mutate(sts = map(f2dat, ~statfun(., block_lengths)), est = map_dbl(sts, 'est'), var = map_dbl(sts, 'var')) %>%
-    mutate(se = sqrt(var), z = est/se, p = ztop(z)) %>%
-    select(pop1, pop2, est, se)
+  per_pair_jack_stats(out, f2_blocks, block_lengths, statfun)
 }
 
 
@@ -134,10 +163,9 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #' @export
 #' @inheritParams f2
 #' @param pop3 A vector of population labels
-#' @param apply_corr With `apply_corr = FALSE`, no bias correction is performed. With `apply_corr = TRUE` (the default), a bias correction term based on the heterozygosity in the first population is subtracted from the f3 estimate. The option is ineffective if the first argument is an array of pre-computed f2-statistics. In that case, the bias correction can be toggled by the `apply_corr` parameter in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}. The heterozygosity calculation used in `apply_corr = TRUE` requires at least two haploid samples or one diploid sample in the first population. Otherwise, `apply_corr = TRUE` will result in missing values.
-#' @param outgroupmode With `outgroupmode = FALSE`, estimates of f3 will be normalized by estimates of the heterozygosity of the target population. This is the default option if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, then no normalization can be performed, which corresponds to `outgroupmode = TRUE`. As with `apply_corr = TRUE`, the heterozygosity calculation used in `outgroupmode = FALSE` requires at least two pseudodiploid samples or one diploid sample in the first population. Otherwise, `outgroupmode = FALSE` will result in missing values.
-#' @param poly_only Only keep SNPs with mean allele frequency not equal to 0 or 1. Defaults to `FALSE`. Only effective if the first argument is the prefix of genotype data. If the first argument is an array of pre-computed f2-statistics, use the `poly_only` argument in \code{\link{extract_f2}} or \code{\link{f2_from_geno}}
-#' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise
+#' @param blgsize SNP block size in Morgan when computing from genotype data (default 0.05).
+#' @param block_lengths Optional vector of block lengths; if `NULL`, inferred from the data.
+#' @param ... Additional arguments passed to \code{\link{f3blockdat_from_geno}} if `data` is a genotype prefix, or to \code{\link{get_f2}} otherwise. Commonly passed arguments include `apply_corr`, `outgroupmode`, and `poly_only`.
 #' @details
 #' The default values of the parameters `apply_corr`, `outgroupmode`, `poly_only` depend on the first argument (`data`), and they can affect the estimated f3-statistics. When the `data` is the prefix of genotype data, the default parameters are generally the same as in the original qp3pop program. When `data` is an array of pre-computed f2-statistics, the parameters may be set while computing f2-statistics. If the first population is a single pseudodiploid sample, it is not possible to get unbiased estimates of f3. To get biased estimates for a single pseudodiploid sample from genotype data, set `outgroupmode = TRUE` and `apply_corr = FALSE`. Under this combination of parameters, `f3(A; B, C)` should also be identical to `f4(A, B; A, C)`, since f4-statistics generally do not require any bias correction.
 #' See `examples` for more information.
@@ -165,7 +193,8 @@ fst = function(data, pop1 = NULL, pop2 = NULL,
 #'
 #' # Below are three scenarios, and in each one `qp3pop()` and `qp3pop_wrapper()`
 #' # should give the same or very similar estimates. Note that to compute `f3(A; B, C)`,
-#' # `qp3pop_wrapper()`, and the original qp3pop program, expect populations to be in the order `B`, `C`, `A`.
+#' # `qp3pop_wrapper()`, and the original qp3pop program, expect populations
+#' # to be in the order `B`, `C`, `A`.
 #'
 #' prefix = '/path/to/geno/prefix'
 #' qp3popbin = '/path/to/AdmixTools/bin/qp3Pop'
@@ -356,7 +385,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
   #     indend = '.fam'
   #     popcol = 1
   #   }
-  #   pop1 = read_table2(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
+  #   pop1 = read_table(paste0(f2_data, indend), col_types = cols(), col_names = FALSE, progress = FALSE)[[popcol]]
   # }
   if(!is.null(pop2)) {
     ncomb = length(pop1) * length(pop2) * max(1, length(pop3)) * max(1, length(pop4))
@@ -367,11 +396,11 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
     out = expand_grid(pop1, pop2, pop3, pop4)
   } else if(is.null(pop1)) {
     if(is_precomp_dir(f2_data)) pop1 = list.dirs(f2_data, full.names=FALSE, recursive=FALSE)
-    else if(is_plink_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
-    else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table2(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
+    else if(is_plink_prefix(f2_data)) pop1 = unique(read_table(paste0(f2_data,'.fam'), col_names=F, col_types = cols())$X1)
+    else if(is_ancestrymap_prefix(f2_data)) pop1 = unique(read_table(paste0(f2_data,'.ind'), col_names=F, col_types = cols())$X3)
     else pop1 = dimnames(f2_data)[[1]]
   } else if(is.character(pop1)[1] && file.exists(pop1[1])) {
-    pop1 = read_table2(pop1, col_names = FALSE)
+    pop1 = read_table(pop1, col_names = FALSE)
     if(ncol(pop1) == 1) {
       pop1 = pop1[[1]]
     } else {
@@ -425,7 +454,14 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
 
 gmat_to_aftable = function(gmat, popvec) {
   # raw genotype matrix, not corrected for ploidy, nind x nsnp
-  rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+  # The math is:
+  #   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
+  # The C++ version does this in one pass over gmat, with one (npop x nsnp)
+  # allocation instead of the R version's two (nind x nsnp) temporaries
+  # (the !is.na cast and its rowsum). Per-block savings are modest in
+  # isolation but accumulate across the ~1300+ blocks in production
+  # f4blockdat_from_geno / qpdstat_geno runs.
+  cpp_gmat_to_aftable(gmat, as.integer(popvec))
 }
 
 

@@ -22,5 +22,7 @@ a plotly object
 Plot an admixture graph on a map
 }
 \examples{
+\dontrun{
 plot_graph_map(example_igraph, example_anno)
+}
 }

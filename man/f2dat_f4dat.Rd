@@ -8,6 +8,8 @@ f2dat_f4dat(f2dat, popcomb = NULL)
 }
 \arguments{
 \item{f2dat}{A data frame of f2-statistics with columns \code{pop1}, \code{pop2}, \code{f2}}
+
+\item{popcomb}{Optional data frame specifying which population quadruples to compute; if \code{NULL}, all quadruples are used.}
 }
 \value{
 A data frame with f4-statistics

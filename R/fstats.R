@@ -15,11 +15,15 @@
 #' @param maxmem split up allele frequency data into blocks, if memory requirements exceed `maxmem` MB.
 #' @param blgsize SNP block size in Morgan. Default is 0.05 (5 cM). If `blgsize` is 100 or greater, if will be interpreted as base pair distance rather than centimorgan distance.
 #' @param poly_only Exclude sites with identical allele frequencies in all populations. Can be different for f2-statistics, allele frequency products, and fst. Should be a character vector of length three, with some subset of `c("f2", "ap", "fst")`
-#' @param pop1 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
-#' @param pop2 `pops1` and `pops2` can be specified if only a subset of pairs should be computed.
+#' @param pops1 Populations for the first dimension; if `NULL` (default), all populations are used.
+#' @param pops2 Populations for the second dimension; if `NULL` (default), all populations are used.
 #' @param outpop If specified, f2-statistics will be weighted by heterozygosity in this population
 #' @param outdir Directory into which to write f2 data (if `NULL`, data is returned instead)
 #' @param overwrite Should existing files be overwritten? Only relevant if `outdir` is not `NULL`
+#' @param afprod Compute allele frequency products in addition to f2-statistics (default `TRUE`).
+#' @param fst Compute FST in addition to f2-statistics (default `TRUE`).
+#' @param apply_corr Apply bias correction to f2 estimates (default `TRUE`).
+#' @param n_cores Number of cores for parallel computation (default 1).
 #' @param verbose Print progress updates
 #' @details For each population pair, each of the \eqn{i = 1, \ldots, n} resutling values
 #' (\eqn{n} is around 700 in practice) is the mean \eqn{f2} estimate across all SNPs except the ones in block \eqn{i}.
@@ -108,7 +112,7 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
   }
   #for(i in 1:length(popvecs1)) {
   foreach::foreach(i=1:length(popvecs1)) %do% {
-    if(length(popvecs1) > 1 & verbose) cat(paste0('\rpop pair block ', i, ' out of ', length(popvecs1)))
+    if(length(popvecs1) > 1 & verbose) .heartbeat("pop pair block {i} of {length(popvecs1)}")
     s1 = popvecs1[[i]]
     s2 = popvecs2[[i]]
     am1 = afmat[, s1]
@@ -167,8 +171,17 @@ afs_to_f2_blocks = function(afdat, maxmem = 8000, blgsize = 0.05,
     }
     rm(counts, f2); gc()
   }
-  if(length(popvecs1) > 1 & verbose) cat('\n')
-  if(is.null(outdir)) namedList(f2_blocks, ap_blocks, fst_blocks)
+  if(length(popvecs1) > 1 & verbose) .heartbeat(done = TRUE)
+  # `block_lengths_f2` is always returned so callers (extract_f2's metadata
+  # writer) can size `n_blocks` / `n_snps` without re-reading
+  # block_lengths_f2.rds from disk. When outdir is NULL the rest of the in-
+  # memory arrays are also returned, matching the historical f2_from_geno
+  # contract that pulls `$f2_blocks` etc.
+  if(is.null(outdir)) {
+    namedList(f2_blocks, ap_blocks, fst_blocks, block_lengths_f2)
+  } else {
+    invisible(namedList(block_lengths_f2))
+  }
 }
 
 
@@ -455,7 +468,17 @@ get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = 
   if(!is.character(f2_data)) {
     f2_blocks = f2_data
   } else if(dir.exists(f2_data)) {
-    f2_blocks = f2_from_precomp(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose, ...)
+    # `get_f2`'s `argnam` validator unions formals across all three back-ends, so
+    # callers (e.g. qpadm) routinely pass args (auto_only, blgsize, poly_only,
+    # maxmiss, ...) that only `f2_from_geno` understands. Those args have no
+    # effect on a precomputed cache — block partitioning and SNP filtering
+    # already happened at `extract_f2`-time — so we drop them silently here.
+    # Without this, the qpadm-on-precomp path crashes with "unused arguments".
+    extra = list(...)
+    extra = extra[names(extra) %in% names(formals(f2_from_precomp))]
+    f2_blocks = do.call(f2_from_precomp,
+                        c(list(f2_data, pops = pops, pops2 = pops2, afprod = afprod, verbose = verbose),
+                          extra))
   } else {
     f2_blocks = f2_from_geno(f2_data, pops = union(pops, pops2), afprod = afprod, verbose = verbose, ...)
   }
@@ -644,6 +667,7 @@ sfs_to_f2 = function(sfs) {
 #'
 #' @export
 #' @param f2dat A data frame of f2-statistics with columns `pop1`, `pop2`, `f2`
+#' @param popcomb Optional data frame specifying which population quadruples to compute; if `NULL`, all quadruples are used.
 #' @return A data frame with f4-statistics
 f2dat_f4dat = function(f2dat, popcomb = NULL) {
 

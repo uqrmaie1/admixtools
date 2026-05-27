@@ -1,7 +1,7 @@
 ---
 title: "Standard errors"
 author: "Robert Maier"
-date: "2022-11-12"
+date: "2026-05-21"
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -60,7 +60,7 @@ $$\hat\sigma^2 = \frac{1}{n-1} \sum_{i=1}^n (\hat\theta - \hat\theta_{-i})^2$$
 
 
 
-## Blockedd jackknife and bootstrap
+## Blocked jackknife and bootstrap
 
 We can't actually use the approach described so far because SNPs do not drift independently of each other. While there are tens of millions of common SNPs in the human genome, the number of independent SNPs is closer to 50,000. If we don't account for that, the standard errors will be greatly underestimated, leading to many false positive results.
 
@@ -105,20 +105,53 @@ snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 
 hist(snpres$score, 100)
 ```
 
+1000 iterations on a single core would take a while. `qpgraph_resample_snps()` parallelizes across iterations under any active `future::plan()` (see [the parallelization vignette](parallel.html)) — typically `plan(multisession, workers = N)` reduces wall time roughly N-fold.
 
-<!-- ### Resampling individuals -->
 
-<!-- We can also test how robust a model is to changes in the individuals that make up a population. The `resample_inds` functions evaluate every model that results from excluding one individual, for each individual in populations with at least two individuals. -->
+### Testing whether two graphs fit significantly differently
 
-<!-- ```{r, eval = FALSE} -->
-<!-- pops = get_leafnames(example_igraph)[c(1:3, rep(4,4), 5:7)] -->
-<!-- indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops, graph = example_graph) -->
-<!-- ggplot(indres, aes(score, score)) + geom_text(aes(label = ind)) -->
-<!-- ``` -->
+The `qpgraph_resample_snps()` function above is for estimating uncertainty on a single graph's parameters. A related question is whether one graph fits significantly better than another. `qpgraph_resample_snps2()` is the companion function for that workflow — it evaluates a graph on a list of bootstrap-resampled training f2 sets paired with their corresponding held-out test sets. Its output feeds into `compare_fits()`, which tests whether the score difference between two graphs is significantly non-zero.
 
-<!-- For populations with many individuals, this can be used to compute jackknife standard errors for statistics of that population. -->
+```{r, eval = FALSE}
+# Build paired train/test bootstrap resamples
+resamples = boo_list(example_f2_blocks, nboot = 100)
 
-<!-- <br> -->
+# Evaluate two competing graphs on the same resampled f2 sets
+fit_A = qpgraph_resample_snps2(resamples$boo, graph = graph_A,
+                               f2_blocks_test = resamples$test)
+fit_B = qpgraph_resample_snps2(resamples$boo, graph = graph_B,
+                               f2_blocks_test = resamples$test)
+
+# Compare: is graph A significantly better than graph B?
+compare_fits(fit_A$score_test, fit_B$score_test)
+```
+
+See the [admixture graphs vignette](graphs.html) for the full bootstrap-based model-comparison workflow.
+
+
+### Resampling individuals
+
+We can also test how robust a model is to changes in the individuals that make up a population. `qpgraph_resample_inds()` evaluates the model with each individual left out in turn, for each individual in populations with at least two individuals. The input is a per-individual counts directory built by `extract_counts()` (rather than the per-population `f2_blocks` cache used by `qpgraph_resample_snps()`):
+
+```{r, eval = FALSE}
+# Run extract_counts() first to build a per-individual counts directory.
+extract_counts(genotype_data, my_counts_dir)
+
+# Define the population assignment per individual.
+inds = c("ind1", "ind2", "ind3", "ind4", "ind5", "ind6")
+pops = c("popA", "popA", "popB", "popB", "popB", "popC")
+
+indres = qpgraph_resample_inds(my_counts_dir, inds = inds, pops = pops,
+                               graph = example_graph)
+
+# Plot per-individual likelihood scores, ranked, grouped by population.
+ggplot(indres, aes(reorder(ind, score), score, color = pop)) +
+  geom_point() +
+  coord_flip() +
+  labs(x = "leave-one-out individual", y = "qpgraph score")
+```
+
+Outlier individuals — those whose removal substantially changes the score — flag samples worth investigating for contamination, mis-labelling, or low coverage. For populations with many individuals this can also be used to compute jackknife standard errors on derived statistics for that population.
 
 
 

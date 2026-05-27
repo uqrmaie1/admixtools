@@ -23,6 +23,14 @@ random_admixturegraph(
 \item{simple}{Should edges leading to admixture nodes consist of separate admix edges and normal edges}
 
 \item{outpop}{Outgroup population}
+
+\item{nonzero_f4}{Optional constraint: population pairs for which f4 must be non-zero.}
+
+\item{admix_constraints}{Optional constraint on admixture counts per population (see \code{\link{satisfies_constraints}}).}
+
+\item{event_order}{Optional constraint on the ordering of demographic events (see \code{\link{satisfies_constraints}}).}
+
+\item{ntry}{Maximum number of attempts to generate a graph satisfying all constraints (default 100).}
 }
 \description{
 This function randomly generates an admixture graph for a given set of leaf nodes

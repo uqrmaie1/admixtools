@@ -112,7 +112,9 @@ find_graphs_old(example_f2_blocks, numrep = 200, numgraphs = 100,
 # Making new mutation functions by modifying or combining existing ones:
 newfun1 = function(graph, ...) mutate_n(graph, 3, ...)
 newfun2 = function(graph, ...) flipadmix_random(spr_leaves(graph, ...), ...)
-find_graphs_old(f2_blocks, mutfuns = namedList(spr_leaves, newfun1, newfun2), mutprobs = c(0.2, 0.3, 0.5))
+find_graphs_old(f2_blocks,
+                mutfuns = namedList(spr_leaves, newfun1, newfun2),
+                mutprobs = c(0.2, 0.3, 0.5))
 }
 }
 \seealso{

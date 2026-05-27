@@ -2,10 +2,10 @@ Package: admixtools
 Type: Package
 Title: Inferring demographic history from genetic data
 Version: 2.0.10
-Authors@R: as.person(c(
-    "Robert Maier <robertmaier@gmx.net> [aut, cre]", 
-    "Nick Patterson <nickp@broadinstitute.org> [aut]"
-  ))
+Authors@R: c(
+    person("Robert", "Maier", email = "robertmaier@gmx.net", role = c("aut", "cre")),
+    person("Nick", "Patterson", email = "nickp@broadinstitute.org", role = "aut")
+  )
 Description: admixtools is a set of methods used to infer demographic history from genetic data using f-statistics.
   It was originally implemented as a command line program in C. This is a new implementation of the programs
   qpDstat, qpAdm, qpGraph, and contains several new features.
@@ -14,6 +14,7 @@ Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
+SystemRequirements: C++17
 URL: https://github.com/uqrmaie1/admixtools
 BugReports: https://github.com/uqrmaie1/admixtools/issues
 LinkingTo: Rcpp, RcppArmadillo
@@ -28,31 +29,37 @@ Imports:
     dplyr (>= 1.1.0),
     foreach,
     furrr,
-    future,
     ggplot2,
     grDevices,
     igraph,
+    jsonlite,
     lobstr,
     magrittr,
+    pgenlibr,
     quadprog,
     purrr,
     Rcpp,
-    RcppArmadillo,
     readr,
     rlang,
-    stats,
     stringi,
     stringr,
     tibble,
     tidyr  (>= 1.0.0),
     utils
 Suggests:
+    admixturegraph,
     DT,
+    future,
     genio,
+    ggforce,
     gridExtra,
     htmlwidgets,
     knitr,
+    m2r,
     plotly,
+    pracma,
+    pROC,
+    Rgraphviz,
     rmarkdown,
     shiny,
     shinyjs,
@@ -62,7 +69,10 @@ Suggests:
     shinythemes,
     shinyWidgets,
     shinydashboard,
-    tidyverse
-RoxygenNote: 7.2.3
+    testthat (>= 3.0.0),
+    tidyverse,
+    withr
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0
+Config/testthat/edition: 3

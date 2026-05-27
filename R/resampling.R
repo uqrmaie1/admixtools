@@ -373,6 +373,7 @@ est_to_loo_nafix = function(arr) {
 #' @export
 #' @param arr 3d array with blocked estimates, with blocks in the 3rd dimension.
 #' @param nboot Number of bootstrap iterations
+#' @param block_lengths Optional vector of block lengths; if `NULL`, parsed from the 3rd-dimension names of `arr`.
 #' @return A 3d array with bootstrap estimates. The first two dimensions are equal to those of `arr`.
 #'   The 3rd dimension is equal to `nboot`.
 #' @seealso \code{\link{est_to_loo}}
@@ -531,7 +532,6 @@ make_resample_inds_fun = function(qpfun) {
 #' Otherwise, block-bootstrap resampling will be used to compute standard errors. If `boot` is an integer, that number
 #' will specify the number of bootstrap resamplings. If `boot = TRUE`, the number of bootstrap resamplings will be
 #' equal to the number of SNP blocks.
-#' @param verbose print progress updates
 #' @param ... named arguments which are passed to the `qp` function.
 #' @return a nested data frame where each model is a row, and the columns are model parameters and model outputs
 #' @examples
@@ -601,6 +601,8 @@ qpgraph_resample_inds = make_resample_inds_fun(qpgraph)
 #' This function takes the output of \code{\link{qpgraph_resample_snps}} and creates a data frame with summaries of the estimated graph parameters. `weight` has the mean of all fits, while `low` and `high` have lower and upper quantiles.
 #' @export
 #' @param fits A nested data frame where each line is the output of `qpgraph()`
+#' @param q_low Lower quantile for the weight confidence interval (default 0.05).
+#' @param q_high Upper quantile for the weight confidence interval (default 0.95).
 #' @return A data frame summarizing the fits
 #' @seealso \code{\link{qpgraph_resample_snps}}
 summarize_fits = function(fits, q_low = 0.05, q_high = 0.95) {
@@ -627,4 +629,149 @@ snpdat_to_jackest = function(dat) {
     group_by(.col, .add = TRUE) %>% jack_dat_stats() %>% ungroup %>% suppressMessages()
 }
 
+
+# matrix_jackknife_est_full: matrix-vectorized equivalent of the per-popcomb
+# chain
+#
+#   f4blockdat %>% group_by(pop1, pop2, pop3, pop4) %>%
+#     est_to_loo_dat() %>% jack_dat_stats() %>% pull(est)
+#
+# Inputs:
+#   numer: nblocks x npopcomb matrix of per-block estimates (NA / NaN / Inf
+#          treated as missing)
+#   cnt:   nblocks x npopcomb matrix of per-block valid SNP counts
+# Returns:
+#   numeric vector of length npopcomb with the bias-corrected jackknife mean
+#   per popcomb. NA where the popcomb has no valid blocks.
+#
+# Math equivalence:
+#   est_to_loo_dat assigns
+#     rel_bl = n / sum(n)
+#     tot    = weighted.mean(est, n, na.rm=TRUE)
+#     loo    = (tot - est * rel_bl) / (1 - rel_bl)
+#   jack_dat_stats then computes (over finite-loo rows only)
+#     tot2 = weighted.mean(loo, 1 - n/sum(n), na.rm=TRUE)
+#     est  = mean(tot2 - loo, na.rm=TRUE) * n() + weighted.mean(loo, n, na.rm=TRUE)
+#
+# This function evaluates that across all popcombs simultaneously via column
+# operations on the input matrices. It is intended as a fast replacement for
+# the dplyr group_by chain when many popcombs are processed at once
+# (npopcomb in the millions on dense f4 runs); the dplyr path scales
+# super-linearly in the number of groups and dominates qpfstats wall time
+# at large pop sets.
+#
+# Used internally by matrix_jackknife_est (which adds chunking to bound
+# peak memory).
+matrix_jackknife_est_full = function(numer, cnt) {
+
+  # Step 1: est_to_loo_dat (vectorized across all popcombs)
+  valid = is.finite(numer)
+
+  # rel_bl = n / sum(n) over the FULL group (all blocks regardless of
+  # est validity). Matches dplyr's mutate(rel_bl = n/sum(n)) before
+  # the later filter(is.finite(loo)).
+  sum_n_all = colSums(cnt)
+  sum_n_all[sum_n_all == 0] = NA_real_
+  rel_bl = sweep(cnt, 2, sum_n_all, '/')
+
+  # tot = weighted.mean(est, n, na.rm=TRUE). Per base R weighted.mean,
+  # na.rm=TRUE drops weights corresponding to NA x; sum(w) is then over
+  # the post-filter weights, not over all w. So both numerator and
+  # denominator here sum over `valid` (= is.finite(numer)) rows only.
+  numer_safe  = numer; numer_safe[!valid]  = 0
+  cnt_for_tot = cnt;   cnt_for_tot[!valid] = 0
+  sum_w_for_tot = colSums(cnt_for_tot)
+  sum_w_for_tot[sum_w_for_tot == 0] = NA_real_
+  tot = colSums(numer_safe * cnt_for_tot) / sum_w_for_tot
+
+  # loo[i, j] = (tot[j] - est[i, j] * rel_bl[i, j]) / (1 - rel_bl[i, j])
+  # `numer_safe = 0` at !valid would let loo = tot/(1-rel_bl), a finite
+  # value; dplyr's `NA * rel_bl = NA` propagates instead. Mask afterwards.
+  loo = sweep(-numer_safe * rel_bl, 2, tot, '+') / (1 - rel_bl)
+  loo[!valid] = NA
+  loo[!is.finite(loo)] = NA  # 0/0 from rel_bl = 1 (single-block popcomb)
+
+  # Step 2: jack_dat_stats (est field; var/se/z/p not needed by qpfstats)
+  #
+  #   tot2 = weighted.mean(loo, 1-n/sum(n), na.rm=TRUE)
+  #
+  # Same weighted.mean na.rm semantic as above: filter rows where loo is
+  # NA, then sum both numerator and denominator over the remaining
+  # (finite-loo) rows.
+  #
+  #   filter(is.finite(loo)) %>%
+  #   mutate(est = mean(tot - loo, na.rm=TRUE) * n() +
+  #                weighted.mean(loo, n, na.rm=TRUE))
+  finite_loo = is.finite(loo)
+  loo_safe = loo; loo_safe[!finite_loo] = 0
+
+  omrb = 1 - rel_bl
+  omrb_for_w = omrb; omrb_for_w[!finite_loo] = 0
+  sum_omrb_w = colSums(omrb_for_w)
+  sum_omrb_w[sum_omrb_w == 0] = NA_real_
+  tot2 = colSums(loo_safe * omrb_for_w) / sum_omrb_w
+
+  n_finite = colSums(finite_loo + 0)
+  sum_loo  = colSums(loo_safe)
+  cnt_for_loo = cnt; cnt_for_loo[!finite_loo] = 0
+  sum_n_finite = colSums(cnt_for_loo)
+  sum_n_finite[sum_n_finite == 0] = NA_real_
+  weighted_loo_mean = colSums(loo_safe * cnt_for_loo) / sum_n_finite
+
+  # est = mean(tot2 - loo, na.rm=TRUE) * n_finite + weighted.mean(loo, n, na.rm=TRUE)
+  #     = (n_finite * tot2 - sum_loo)/n_finite * n_finite + weighted_loo_mean
+  #     = n_finite * tot2 - sum_loo + weighted_loo_mean
+  n_finite * tot2 - sum_loo + weighted_loo_mean
+}
+
+
+# .matrix_jackknife_chunk_size: pick a default popcomb-chunk size that keeps
+# transient intermediate matrices below `target_bytes_per_intermediate`.
+# matrix_jackknife_est_full holds ~10 such matrices simultaneously, so a
+# 5e8-byte target gives ~5 GB peak per chunk regardless of total npopcomb.
+.matrix_jackknife_chunk_size = function(nblocks, target_bytes_per_intermediate = 5e8) {
+  cs = as.integer(floor(target_bytes_per_intermediate / (nblocks * 8)))
+  max(1L, cs)
+}
+
+
+# matrix_jackknife_est: chunked wrapper over matrix_jackknife_est_full.
+#
+# At very large npopcomb (e.g. 1.5M+ on a dense 60-pop f4 set), the
+# intermediates inside matrix_jackknife_est_full (10x nblocks x npopcomb
+# doubles) can peak above 100 GB. Processing popcombs in chunks keeps the
+# peak bounded while remaining math-identical, since every column operation
+# in matrix_jackknife_est_full is column-independent.
+#
+# chunk_size:
+#   NULL (default) — auto-sized via .matrix_jackknife_chunk_size to ~5 GB
+#                    peak per chunk
+#   integer        — explicit chunk size; values >= ncol(numer) skip chunking
+#                    and call matrix_jackknife_est_full directly
+matrix_jackknife_est = function(numer, cnt, chunk_size = NULL) {
+  np = ncol(numer)
+  if (np == 0L) return(numeric(0))
+  nb = nrow(numer)
+  if (is.null(chunk_size)) chunk_size = .matrix_jackknife_chunk_size(nb)
+  chunk_size = min(as.integer(chunk_size), np)
+
+  # If everything fits in one chunk, skip the chunking machinery entirely.
+  if (chunk_size >= np) return(matrix_jackknife_est_full(numer, cnt))
+
+  out = numeric(np)
+  starts = seq.int(1L, np, by = chunk_size)
+  for (s in starts) {
+    e = min(s + chunk_size - 1L, np)
+    cols = s:e
+    out[cols] = matrix_jackknife_est_full(
+      numer[, cols, drop = FALSE],
+      cnt[,   cols, drop = FALSE]
+    )
+    # Free this chunk's intermediates before the next chunk allocates;
+    # without this hint, R's mark-sweep GC can defer collection past the
+    # next allocation peak.
+    if (length(starts) > 1L) gc(verbose = FALSE)
+  }
+  out
+}
 

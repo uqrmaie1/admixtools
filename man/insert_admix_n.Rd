@@ -9,11 +9,9 @@ insert_admix_n(graph, n = 1, fix_outgroup = TRUE)
 \arguments{
 \item{graph}{An admixture graph}
 
-\item{from}{List of nodes. New edges will originate above these nodes.}
+\item{n}{Number of admixture edges to insert (default 1).}
 
-\item{to}{List of nodes. New edges will end above these nodes.}
-
-\item{substitute}{Should another edge be inserted, if the one specified doesn't work?}
+\item{fix_outgroup}{Prevent insertion of edges that affect the root-to-outgroup edge (default \code{TRUE}).}
 }
 \value{
 Admixture graph with inserted edges

@@ -8,6 +8,8 @@ graph_minusone(graph, ntry = Inf)
 }
 \arguments{
 \item{graph}{Admixture graph in \code{igraph} format}
+
+\item{ntry}{Maximum number of admixture edges to sample; if \code{Inf} (default), samples up to 100.}
 }
 \value{
 A data frame with columns \code{from}, \code{to}, and \code{graph}

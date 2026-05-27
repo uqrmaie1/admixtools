@@ -7,6 +7,8 @@
 test_cladality(f2_data, left, right, fudge = 1e-04, boot = FALSE, cpp = TRUE)
 }
 \arguments{
+\item{f2_data}{Blocked f2-statistics (3d array), a directory path, or a genotype file prefix.}
+
 \item{left}{Left populations (sources)}
 
 \item{right}{Right populations (outgroups)}
