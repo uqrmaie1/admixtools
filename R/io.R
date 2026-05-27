@@ -1174,33 +1174,39 @@ match_samples = function(haveinds, havepops, inds, pops) {
   # returns list with two items:
   # integer indvec with population number (0 means do not use, same length as haveinds/havepops)
   # unique population labels, with position corresponding to indvec and first occurence in pops
-
-  if(!is.null(inds)) {
+  
+  ip_combo = NULL
+  have_ip_combo = NULL
+  if(!is.null(inds) && !is.null(pops)) {
+    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
+    ip_combo = paste(inds, pops, sep="\t")
+    have_ip_combo = paste(haveinds, havepops, sep="\t")
+    if(any(duplicated(ip_combo))) stop("Duplicated individuals!")
+    if(!all(ip_combo %in% have_ip_combo)) stop(paste0("Individuals missing in indfile:\n", paste(sub("\t", "-", setdiff(ip_combo, have_ip_combo)), collapse=', ')))
+  } else if(!is.null(inds)) {
     if(any(duplicated(inds))) stop("Individual IDs are duplicated!")
     if(!all(inds %in% haveinds)) stop(paste0("Individuals missing in indfile:\n", paste(setdiff(inds, haveinds), collapse=', ')))
   } else if(!is.null(pops)) {
     if(!all(pops %in% havepops)) stop(paste0("Populations missing in indfile:\n", paste(setdiff(pops, havepops), collapse=', ')))
   }
-
+  
   if(is.null(inds) && is.null(pops)) {
     pops = havepops
   } else if(!is.null(inds) && !is.null(pops)) {
-    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
-    haveinds[!haveinds %in% inds] = NA
+    haveinds[!have_ip_combo %in% ip_combo] = NA
     havepops = NA
-    havepops[!is.na(haveinds)] = pops[match(na.omit(haveinds), inds)]
+    havepops[!is.na(have_ip_combo)] = pops[match(na.omit(have_ip_combo), ip_combo)]
   } else if(is.null(inds) && !is.null(pops)) {
     havepops[!havepops %in% pops] = NA
   } else {
     havepops[!haveinds %in% inds] = NA
     pops = havepops
   }
-
+  
   upops = unique(na.omit(pops))
-
   indvec = as.numeric(factor(havepops, levels = upops))
   indvec[is.na(indvec)] = 0
-
+  
   namedList(indvec, upops)
 }
 
