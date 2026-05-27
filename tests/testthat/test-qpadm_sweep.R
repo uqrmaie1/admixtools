@@ -319,6 +319,16 @@ test_that("8b: multi-row sweep preserves per-row alignment with direct qpadm()",
   fp = function(d) sort(paste(d$target, d$source_set, d$right_set, sep = "|"))
   expect_identical(fp(actual_triples), fp(expected_triples))
 
+  # Cartesian-product ORDERING (round-5 hardening). The round-trip loop below
+  # checks "row i's inputs and row i's stored rcond are self-consistent",
+  # which a row-shuffle that consistently shuffles inputs AND outputs
+  # together would silently pass. This block pins the actual row order
+  # against the documented expand.grid order — base expand.grid cycles the
+  # first column fastest, so target varies inside source_set inside right_set.
+  expect_identical(res$target,     expected_triples$target)
+  expect_identical(res$source_set, expected_triples$source_set)
+  expect_identical(res$right_set,  expected_triples$right_set)
+
   for(i in seq_len(nrow(res))) {
     # res$left and res$right are list-columns that round-trip the sweep's
     # row-to-combo mapping. Driving direct qpadm() from those columns

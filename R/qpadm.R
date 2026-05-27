@@ -1086,9 +1086,13 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 
   # Single-pass kwarg validation + dispatch. Selects the fit-function up
   # front so qpadm-only kwargs (when full_results=TRUE) and qpadm_p-only
-  # kwargs (when FALSE) are correctly routed and validated.
-  fit_fun  = if(full_results) qpadm else qpadm_p
-  dispatch = .qpadm_multi_dispatch_dots(list(...), fit_fun)
+  # kwargs (when FALSE) are correctly routed and validated. The dispatch
+  # also validates that no reserved (qpadm_multi-internal) names appear in
+  # `...` and that no geno-only kwargs are supplied when `data` is not a
+  # genotype-file prefix (would otherwise be silently dropped).
+  fit_fun     = if(full_results) qpadm else qpadm_p
+  on_f2_path  = !is_geno_prefix(data)
+  dispatch    = .qpadm_multi_dispatch_dots(list(...), fit_fun, on_f2_path)
 
   if(is_geno_prefix(data)) {
     popcombs = qpadmmodels_to_popcombs(models)
@@ -1116,20 +1120,35 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 
   # Inner closure: only fit-fun formals are forwarded via dispatch$fit. The
   # tryCatch wrapper catches per-fit errors (e.g., singular_threshold trips
-  # raising stop() inside qpadm()) and rewraps them with the model label,
-  # so a sweep over many combos surfaces *which* combo failed rather than
-  # bubbling a context-less error from inside furrr.
+  # raising stop() inside qpadm()) and rewraps them with the model label
+  # via rlang::abort(parent = e), which preserves the original condition
+  # chain (class, call) so caller-side class-specific tryCatch handlers
+  # still fire. `data` slot is named explicitly (not positional) so that
+  # the names-strip cannot mistakenly displace it through do.call's
+  # positional-fill behavior.
   fit_call = function(.x, .label) {
-    base_args = list(NULL, NULL, NULL, target = TRUE, f4blocks = .x)
-    if(full_results) base_args = c(base_args, list(verbose = FALSE))
+    base_args = list(data = NULL, left = NULL, right = NULL,
+                     target = TRUE, f4blocks = .x)
+    if(full_results) base_args$verbose = FALSE
     tryCatch(
       do.call(fit_fun, c(base_args, dispatch$fit)),
-      error = function(e) stop("qpadm fit failed for model '", .label,
-                               "': ", conditionMessage(e), call. = FALSE))
+      error = function(e)
+        rlang::abort(paste0("qpadm fit failed for model '", .label, "': ",
+                            conditionMessage(e)),
+                     parent = e))
   }
 
-  out = furrr::future_map2(f4blocks, names(f4blocks) %||% as.character(seq_along(f4blocks)),
-                           fit_call, .progress = verbose,
+  # f4blocks always has names on the geno path (from split(.$model)) and
+  # never on the f2 path. Explicit length-aware check rather than %||%,
+  # which only triggers on strict NULL — `names()` of an unnamed list is
+  # NULL, but a future change that returns a names-attributed-but-empty
+  # `character(0)` would fall through %||% with character(0), producing a
+  # zero-length label vector that future_map2 silently accepts.
+  labels = names(f4blocks)
+  if(is.null(labels) || length(labels) != length(f4blocks))
+    labels = as.character(seq_along(f4blocks))
+  out = furrr::future_map2(f4blocks, labels, fit_call,
+                           .progress = verbose,
                            .options = furrr::furrr_options(seed = TRUE))
 
   if(!full_results) out = bind_cols(models, out %<>% bind_rows)
@@ -1137,46 +1156,90 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 }
 
 
+# Names that qpadm_multi consumes internally rather than via `...`.
+# Passing any of these via `...` is a user error (they collide with the
+# positional / named args qpadm_multi already supplies at do.call time —
+# the round-4 dispatch helper allowed routing them silently, which round-5
+# review surfaced as the source of confusing duplicate-name errors AND
+# silent positional NULL-displacement bugs):
+#
+#   data / pref / f2_data  : data argument across the 3 downstream callees
+#   left / right / target  : filled from `models`
+#   f4blocks / popcombs    : computed internally
+#   verbose                : qpadm_multi forces FALSE on the inner qpadm
+#
+# Each must be reachable through its proper argument (`data`, `models`, or
+# qpadm_multi's own formals) rather than through `...`.
+.QPADM_MULTI_RESERVED = c("data", "pref", "f2_data",
+                          "left", "right", "target",
+                          "f4blocks", "popcombs",
+                          "verbose")
+
+
 # Splits qpadm_multi's `...` into per-callee buckets and validates upfront.
 #
-# qpadm_multi forwards user kwargs to two different downstream callees with
-# disjoint and overlapping formal sets:
+# qpadm_multi forwards user kwargs to two downstream callees with disjoint
+# and overlapping formal sets:
 #
 #   * `f4blockdat_from_geno()`  (the geno-prefix preflight). 15 formals.
 #   * `fit_fun` (the inner per-fit call). Either `qpadm()` (18 formals) when
 #     `full_results=TRUE`, or `qpadm_p()` (12 formals) when FALSE.
 #
-# Both callees reject unrecognised names: f4blockdat_from_geno has no `...`,
-# so any unknown kwarg raises "unused argument"; qpadm() and qpadm_p()
-# validate their own `...` and raise "not used". Pre-fix the result was a
-# confusing low-level error pointed at whichever downstream first saw the
-# bad kwarg.
+# Three validation layers, each raising a single clear error at
+# qpadm_multi's entry point rather than allowing the bad kwarg to surface
+# as a cryptic downstream do.call error:
 #
-# This helper:
-#   1. Validates the user's named kwargs against the UNION of geno and fit
-#      formals. Unknown names raise a single clear error at qpadm_multi's
-#      entry point, naming the kwarg and the valid surface.
-#   2. Returns a list with two buckets (`$geno`, `$fit`), each holding only
-#      the kwargs whose names are formals of that callee. Each callsite
-#      uses `do.call(callee, c(positional_args, dispatch$bucket))`.
+#   1. Reserved names (see `.QPADM_MULTI_RESERVED`) are rejected — they
+#      would collide with the positional / named args qpadm_multi binds
+#      internally at do.call time.
+#   2. Unknown names (not in the union of non-reserved geno + fit formals)
+#      are rejected.
+#   3. Geno-only names (in geno_known but not fit_known) are rejected when
+#      `on_f2_path = TRUE` — they would otherwise be silently dropped
+#      because the f2-data path never calls f4blockdat_from_geno.
 #
-# Empty names (positional kwargs supplied via `...`) are ignored. R users
-# rarely pass positional via `...` through wrappers, and qpadm_multi has no
-# semantic for them anyway.
-.qpadm_multi_dispatch_dots = function(dots, fit_fun) {
-  geno_known = names(formals(f4blockdat_from_geno))
-  fit_known  = names(formals(fit_fun))
+# Returns a list with two buckets (`$geno`, `$fit`), each holding only the
+# kwargs whose names match that callee's non-reserved formals. Each
+# callsite uses `do.call(callee, c(positional_args, dispatch$bucket))`.
+#
+# Empty names (positional kwargs supplied via `...`) are ignored — qpadm_multi
+# has no semantic for them and the documented contract is named-kwargs-only.
+.qpadm_multi_dispatch_dots = function(dots, fit_fun, on_f2_path) {
+  geno_known = setdiff(names(formals(f4blockdat_from_geno)), .QPADM_MULTI_RESERVED)
+  fit_known  = setdiff(names(formals(fit_fun)),              .QPADM_MULTI_RESERVED)
   all_known  = union(geno_known, fit_known)
 
-  named   = if(is.null(names(dots))) rep("", length(dots)) else names(dots)
+  named = if(is.null(names(dots))) rep("", length(dots)) else names(dots)
+
+  # Layer 1: reserved names.
+  reserved_in_dots = intersect(named, .QPADM_MULTI_RESERVED)
+  if(length(reserved_in_dots) > 0)
+    stop("Reserved argument(s) to qpadm_multi(): '",
+         paste(reserved_in_dots, collapse = "', '"),
+         "'. These are filled internally from `data`, `models`, or qpadm_multi's ",
+         "own formals; pass them via the proper argument instead of via `...`.",
+         call. = FALSE)
+
+  # Layer 2: unknown names.
   unknown = setdiff(named[nzchar(named)], all_known)
   if(length(unknown) > 0)
     stop("Unknown argument(s) to qpadm_multi(): '",
          paste(unknown, collapse = "', '"),
-         "'.\nValid kwargs match the formals of f4blockdat_from_geno() ",
-         "(preflight) or the per-fit function (qpadm() when ",
+         "'. Valid kwargs match the non-reserved formals of f4blockdat_from_geno() ",
+         "(preflight, geno-path only) or the per-fit function (qpadm() when ",
          "full_results=TRUE, qpadm_p() when FALSE). See ?qpadm_multi.",
          call. = FALSE)
+
+  # Layer 3: geno-only on f2 path (silent-drop prevention).
+  if(isTRUE(on_f2_path)) {
+    geno_only      = setdiff(geno_known, fit_known)
+    geno_only_dots = intersect(named, geno_only)
+    if(length(geno_only_dots) > 0)
+      stop("Argument(s) '", paste(geno_only_dots, collapse = "', '"),
+           "' apply only when `data` is a genotype file prefix. ",
+           "On the f2-data path they would be silently ignored. ",
+           "Remove them or pass a genotype prefix.", call. = FALSE)
+  }
 
   list(geno = dots[named %in% geno_known],
        fit  = dots[named %in% fit_known])
@@ -1353,11 +1416,14 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 
   # Strip names that may have leaked through the wrapper chain. qpadm_multi
   # keeps names on f4blocks to label tryCatch errors with the failing combo,
-  # so vapply preserves them into the output tibble's columns. Strip them
-  # here so res$f4_var_rcond[1] is identical to a direct qpadm()'s scalar
+  # so vapply preserves them into the output tibble's atomic columns. Strip
+  # them here so res$<col>[1] is identical to a direct qpadm()'s scalar
   # under attribute-strict comparison (expect_identical / identical()).
-  for(col in c('f4rank', 'p', 'chisq', 'dof', 'feasible', 'f4_var_rcond'))
-    if(!is.null(names(out[[col]]))) names(out[[col]]) = NULL
+  # Programmatic loop over all atomic columns rather than a hardcoded list,
+  # so future-added vapply columns get the same treatment automatically.
+  for(col in names(out))
+    if(is.atomic(out[[col]]) && !is.null(names(out[[col]])))
+      names(out[[col]]) = NULL
 
   if(full_results) {
     # `unname(lapply(...))` strips the per-fit list names (same source as the
@@ -1386,16 +1452,22 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
   # the auto-bar without having to filter the f4_var_rcond column manually.
   # When full_results=FALSE the loadings list-column is absent — adapt the
   # alert text so it doesn't point users at a non-existent column.
+  #
+  # Routed through cli::cli_warn (stderr via the R condition system) rather
+  # than alert_warning (cat to stdout). Stdout-mixing would corrupt the
+  # captured data stream when callers redirect (Rscript ... > results.txt
+  # 2> progress.txt), and warnings semantically belong on stderr.
   if(verbose) {
     n_concerning = sum(!is.na(out$f4_var_rcond) & out$f4_var_rcond < .rcond_concern)
     if(n_concerning > 0) {
       loadings_hint = if(full_results)
-        " Inspect $f4_var_singular_loadings for offending right pops."
+        " Inspect {.code $f4_var_singular_loadings} for offending right pops."
       else
-        " Re-run with full_results = TRUE to see $f4_var_singular_loadings."
-      alert_warning(paste0(n_concerning, ' of ', nrow(out),
-                           ' sweep row(s) have f4_var_rcond < ', .rcond_concern,
-                           ' (near-singular f4_var).', loadings_hint, '\n'))
+        " Re-run with {.code full_results = TRUE} to see {.code $f4_var_singular_loadings}."
+      cli::cli_warn(c("!" = paste0("{n_concerning} of {nrow(out)} sweep row(s) ",
+                                   "have f4_var_rcond < {.rcond_concern} ",
+                                   "(near-singular f4_var)."),
+                      "i" = loadings_hint))
     }
   }
 
