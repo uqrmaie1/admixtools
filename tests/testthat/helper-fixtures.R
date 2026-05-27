@@ -119,6 +119,9 @@ make_minimal_graph_with_outgroup <- function() {
 # test-qpadm-singular-threshold.R; promoted here so test-qpadm_sweep.R can
 # exercise the same singular path without duplicating the helper.
 .clone_pop_in_f2_blocks = function(f2, src = "Mbuti.DG", dst = "Mbuti_clone") {
+  if(length(dim(f2)) != 3L)
+    stop("f2 must be a 3D array (n_pops x n_pops x n_blocks); got ndim = ",
+         length(dim(f2)))
   nam = dimnames(f2)[[1]]
   if(!(src %in% nam)) stop("source pop not in f2_blocks: ", src)
   if(dst %in% nam)    stop("destination pop already exists: ", dst)
