@@ -1,0 +1,107 @@
+########################################
+# legofit: estimate population history #
+#        version 3675373-dirty         #
+########################################
+#
+# Program was compiled: May 18 2026 12:10:55
+# Program was run: Wed May 27 06:23:39 2026
+#
+# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legofit -t 2 -d 1e-4 -S 1@100 -p 3 ../../testthat/fixtures/rha20.lgo rha20.opf
+# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-pr-delta/tests/external/work
+# Stage nOptItr nSimReps
+#     0       1      100
+# algorithm          : deterministic
+# ignoring probs <=  : 0.0001
+# Branch length floor: 0
+# DE strategy        : 2
+#    F               : 0.3
+#    CR              : 0.8
+#    tolerance       : 3e-06
+# nthreads           : 2
+# range of 2N params : [1, 1.79769e+308]
+# range of t params  : [0, 1.79769e+308]
+# lgo input file     : ../../testthat/fixtures/rha20.lgo
+# site pat input file: rha20.opf
+# free parameters    : 17
+# points in DE swarm : 51
+# Excluding singleton site patterns.
+# cost function      : KL
+Initial parameter values
+Fixed:
+      zero = 0
+       one = 1
+       TmN = 1
+     Txynd = 25920
+Free:
+    Txynds = 82008.2
+       Tnd = 25416.9
+       Tav = 16307
+       Txy = 774.856
+        Td = 3484.25
+        Ta = 5307.02
+        Tv = 2511.5
+    twoNav = 32746.1
+     twoNn = 6878.07
+    twoNnd = 1034.84
+    twoNxy = 57312.8
+  twoNxynd = 40659.5
+     twoNs = 40125.9
+        mN = 0.0192768
+        mS = 0.0190121
+      mSND = 0.0343425
+       mXY = 0.015536
+Constrained:
+      TmXY = 8540.93
+       TmS = 14450.6
+     TmSND = 25668.5
+legofit is finished
+DiffEv finished_iterations. cost=1.05353e-02 spread=inf
+Fitted parameter values
+Free:
+    Txynds = 82008.2
+       Tnd = 25416.9
+       Tav = 16307
+       Txy = 774.856
+        Td = 3484.25
+        Ta = 5307.02
+        Tv = 2511.5
+    twoNav = 32746.1
+     twoNn = 6878.07
+    twoNnd = 1034.84
+    twoNxy = 57312.8
+  twoNxynd = 40659.5
+     twoNs = 40125.9
+        mN = 0.0192768
+        mS = 0.0190121
+      mSND = 0.0343425
+       mXY = 0.015536
+Constrained:
+      TmXY = 8540.93
+       TmS = 14450.6
+     TmSND = 25668.5
+#       SitePat BranchLen
+            x:y 21625.2998052
+            x:v 260.8371050
+            x:a 262.6479119
+            x:d 2520.2074836
+            y:v 352.6219561
+            y:a 292.3072601
+            y:d 2409.9758858
+            v:a 27170.8300680
+            v:d 911.8974603
+            a:d 915.1464056
+          x:y:v 478.3758819
+          x:y:a 476.5650751
+          x:y:d 5759.5683203
+          x:v:a 2501.3545770
+          x:v:d 190.0714025
+          x:a:d 191.7025591
+          y:v:a 2942.9858921
+          y:v:d 193.4580855
+          y:a:d 190.2091402
+          v:a:d 15974.4687497
+        x:y:v:a 6845.7021491
+        x:y:v:d 522.8640144
+        x:y:a:d 521.2328578
+        x:v:a:d 5267.5545597
+        y:v:a:d 5550.4795808

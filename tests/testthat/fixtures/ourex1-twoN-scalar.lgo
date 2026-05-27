@@ -1,0 +1,23 @@
+## .lgo for T1.2 twoN scalar mode (shared=N convention)
+
+### Parameters
+time fixed T_z=0
+time fixed T_x=0
+time fixed T_y=0
+time free T_xyz=2
+time free T_xy=0.5
+twoN fixed shared=1000
+
+
+### Segments
+segment xyz t=T_xyz twoN=shared
+segment xy t=T_xy twoN=shared
+segment z t=T_z twoN=shared samples=1
+segment x t=T_x twoN=shared samples=1
+segment y t=T_y twoN=shared samples=1
+
+### Relationships
+derive xy from xyz
+derive z from xyz
+derive x from xy
+derive y from xy
