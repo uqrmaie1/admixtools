@@ -133,6 +133,13 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #'   pseudo-inverse fallback. In either mode, the reciprocal condition
 #'   number is reported as `f4_var_rcond` on the returned list so callers
 #'   can gate downstream interpretations programmatically.
+#'
+#'   Low-level RcppArmadillo `solve(): system is singular; attempting approx
+#'   solution` stderr lines are suppressed at compile time via
+#'   `ARMA_WARN_LEVEL 1`. Those lines flood stderr on batch fits at higher K
+#'   (admixtools' #20) and don't carry information not already exposed by
+#'   `f4_var_rcond` and the R-level near-singular warning. `f4_var_rcond` is
+#'   the canonical user-facing signal; the legacy stderr noise is not.
 #' @param verbose Print progress updates
 #' @param ... If `data` is the prefix of genotype files, additional arguments will be passed to \code{\link{f4blockdat_from_geno}}
 #' @return `qpadm` returns a list with up to four data frames describing the model fit, plus a numeric `f4_var_rcond` diagnostic:

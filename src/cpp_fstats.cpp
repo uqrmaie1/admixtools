@@ -1,5 +1,10 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
+// See src/cpp_qpadm.cpp for the rationale: ARMA_WARN_LEVEL 1 keeps errors,
+// drops the stderr "solve(): system is singular" / "attempting approx
+// solution" warnings that flood batch fstats pipelines on near-singular
+// covariance matrices.
+#define ARMA_WARN_LEVEL 1
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <vector>

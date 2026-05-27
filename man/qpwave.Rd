@@ -57,7 +57,13 @@ way that doesn't reflect actual sampling uncertainty. The default
 (\code{NA}) preserves the historical behavior: silently fall through to the
 pseudo-inverse fallback. In either mode, the reciprocal condition
 number is reported as \code{f4_var_rcond} on the returned list so callers
-can gate downstream interpretations programmatically.}
+can gate downstream interpretations programmatically.
+
+Low-level RcppArmadillo \verb{solve(): system is singular; attempting approx solution} stderr lines are suppressed at compile time via
+\verb{ARMA_WARN_LEVEL 1}. Those lines flood stderr on batch fits at higher K
+(admixtools' #20) and don't carry information not already exposed by
+\code{f4_var_rcond} and the R-level near-singular warning. \code{f4_var_rcond} is
+the canonical user-facing signal; the legacy stderr noise is not.}
 
 \item{verbose}{Print progress updates}
 }
