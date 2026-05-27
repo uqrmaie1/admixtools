@@ -1,5 +1,9 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
+// See src/cpp_qpadm.cpp for the rationale: solve()'s pseudo-inverse fallback
+// is the intended path on near-singular systems here too, and its success is
+// validated downstream. ARMA_WARN_LEVEL 1 keeps errors, drops warnings.
+#define ARMA_WARN_LEVEL 1
 #include <RcppArmadillo.h>
 
 #include <iostream>

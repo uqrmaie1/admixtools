@@ -57,7 +57,17 @@ way that doesn't reflect actual sampling uncertainty. The default
 (\code{NA}) preserves the historical behavior: silently fall through to the
 pseudo-inverse fallback. In either mode, the reciprocal condition
 number is reported as \code{f4_var_rcond} on the returned list so callers
-can gate downstream interpretations programmatically.}
+can gate downstream interpretations programmatically.
+
+Low-level RcppArmadillo \verb{solve(): system is singular; attempting approx solution} stderr lines are suppressed at compile time via
+\verb{ARMA_WARN_LEVEL 1}. Those lines previously flooded stderr on batch fits
+at higher K without carrying any information not already exposed by the
+R-side diagnostics. The canonical programmatic signal is \code{f4_var_rcond}
+(always populated, regardless of \code{verbose}); \code{qpadm_multi()} and
+\code{qpadm_sweep()} force \code{verbose = FALSE} internally, so the interactive
+\code{warning()} only fires for direct \code{qpadm()} calls at \code{verbose = TRUE}.
+Batch callers should inspect \code{f4_var_rcond} (and \code{f4_var_singular_loadings})
+on the returned object rather than rely on stderr / warning output.}
 
 \item{verbose}{Print progress updates}
 }

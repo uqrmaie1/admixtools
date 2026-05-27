@@ -1,6 +1,16 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
-#define ARMA_DONT_PRINT_ERRORS // disables near singular warning in 'solve'
+// Suppress Armadillo's stderr "solve(): system is singular; attempting approx
+// solution" warnings. The pseudo-inverse fallback is the intended path here
+// and its success is checked by post-solve diagnostics (qpadm reports
+// f4_var_rcond, which is the canonical user-facing signal for near-singular
+// f4 covariance matrices). Errors (level 0) are still emitted.
+//
+// ARMA_WARN_LEVEL replaced the legacy ARMA_DONT_PRINT_ERRORS macro in
+// Armadillo 10.x; older RcppArmadillo silently ignored the new name, and
+// recent versions silently ignore the old one, so the warnings have been
+// leaking through for users on modern toolchains.
+#define ARMA_WARN_LEVEL 1
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 using namespace arma;

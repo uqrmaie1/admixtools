@@ -1,5 +1,12 @@
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::depends(RcppArmadillo)]]
+// Defensive uniformity with cpp_qpadm.cpp / cpp_qpgraph.cpp: this TU contains
+// no arma::solve/inv/pinv/chol/svd calls today, but the macro is set here so
+// that any future helper added to this file (e.g. a covariance-matrix
+// regularization path) inherits the package-wide warning policy without an
+// easy-to-miss audit. ARMA_WARN_LEVEL 1 keeps errors, drops level-2 stderr
+// warnings. See src/cpp_qpadm.cpp for the full rationale.
+#define ARMA_WARN_LEVEL 1
 #include <RcppArmadillo.h>
 #include <cmath>
 #include <vector>
