@@ -772,6 +772,7 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
   params_rows <- list()
   derive_rows <- list()
   mix_rows    <- list()
+  seg_names_with_samples <- character(0)
 
   for (ln in lines) {
     tok <- strsplit(trimws(ln), "\\s+")[[1]]
@@ -817,9 +818,22 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
 
     } else if (tok[[1]] == "segment") {
       # segment <name> [t=<param>] twoN=<param> [samples=<int>]
-      # Parsed for syntactic validity only; the edge tibble is built from
-      # derive/mix statements below. Segment-level metadata (samples, twoN
-      # bindings) is not surfaced in the current return value.
+      # The edge tibble is built from derive/mix statements below;
+      # segment-level metadata is otherwise not surfaced. We capture only
+      # a positive `samples=` count to power the lossy-round-trip warning.
+      # Tolerant of whitespace around `=` and of keyword casing, matching
+      # the time/twoN/mixFrac parser above. `samples=0` is not a sample.
+      if (length(tok) > 2) {
+        rest <- paste(tok[-(1:2)], collapse = " ")
+        m <- regmatches(
+          rest,
+          regexec("(?:^|\\s)samples\\s*=\\s*([0-9]+)", rest,
+                  ignore.case = TRUE, perl = TRUE)
+        )[[1]]
+        if (length(m) == 2 && as.integer(m[[2]]) > 0) {
+          seg_names_with_samples <- c(seg_names_with_samples, tok[[2]])
+        }
+      }
       next
 
     } else if (tok[[1]] == "derive") {
@@ -856,6 +870,27 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
         class = "legofit_lgo_unsupported"
       )
     }
+  }
+
+  # Sampled internal nodes round-trip lossily: the edge tibble does not
+  # carry per-segment `samples` tags, so any sampled segment that is also
+  # a parent (via derive or mix) loses that information. Warn rather than
+  # silently drop.
+  derive_parents <- vapply(derive_rows, function(r) r$parent, character(1))
+  mix_parents <- c(
+    vapply(mix_rows, function(r) r$parent_high, character(1)),
+    vapply(mix_rows, function(r) r$parent_low,  character(1))
+  )
+  internal_sampled <- intersect(
+    seg_names_with_samples, c(derive_parents, mix_parents)
+  )
+  if (length(internal_sampled) > 0) {
+    rlang::warn(
+      c("LEGOFIT file has sampled internal nodes; sample tags will be lost in the admixtools edge tibble.",
+        "i" = paste("Affected nodes:", paste(internal_sampled, collapse = ", ")),
+        "i" = "admixtools' edge tibble does not yet model sampled internal nodes."),
+      class = "legofit_lossy_round_trip"
+    )
   }
 
   # Build params lookup: name -> value
@@ -1033,6 +1068,19 @@ graph_to_lgo <- function(graph,
   full_samples[leaves] <- as.integer(samples_vec[leaves])
 
   lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
+
+  is_sampled <- !is.na(full_samples) & full_samples > 0
+  n_sampled <- sum(is_sampled)
+  if (n_sampled < 2) {
+    sampled_names <- names(full_samples)[is_sampled]
+    rlang::warn(
+      c("Resulting .lgo has < 2 sampled segments; LEGOFIT cannot fit it (zero observable site patterns).",
+        "i" = sprintf("Sampled segments (%d): %s", n_sampled,
+                      if (length(sampled_names) > 0) paste(sampled_names, collapse = ", ") else "none"),
+        "i" = "Pass `samples = c(nodeA = 1, nodeB = 1, ...)` or use a graph with more leaves."),
+      class = "legofit_unfittable_lgo"
+    )
+  }
 
   if (validate) validate_via_roundtrip(lgo_text, edges)
   if (!is.null(file)) writeLines(lgo_text, file)
