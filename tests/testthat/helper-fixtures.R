@@ -220,3 +220,31 @@ make_multi_admix_graph <- function() {
     "B",    "m",   "admix",  0.30
   )
 }
+
+# Real-world LEGOFIT-fittable replacement for the unfittable make_minimal_graph
+# (which has only one leaf). 4-population out-of-Africa scenario with
+# archaic introgression into Europeans. All four leaves are sampled
+# populations, exercises a single admix event with the dest as a sampled leaf.
+#
+#         R
+#        / \
+#      out  anc
+#            / \
+#       arch_anc  hum_anc
+#         / \      / \
+#       arch  \  afr  \
+#              \      /
+#               eur  (admix: 0.03 from arch_anc + 0.97 from hum_anc)
+make_ooa_admix_graph <- function() {
+  tibble::tribble(
+    ~from,        ~to,         ~type,    ~weight,
+    "R",          "out",       "normal", 0.5,
+    "R",          "anc",       "normal", 0.1,
+    "anc",        "arch_anc",  "normal", 0.2,
+    "anc",        "hum_anc",   "normal", 0.3,
+    "arch_anc",   "arch",      "normal", 0.5,
+    "hum_anc",    "afr",       "normal", 0.4,
+    "arch_anc",   "eur",       "admix",  0.03,
+    "hum_anc",    "eur",       "admix",  0.97
+  )
+}

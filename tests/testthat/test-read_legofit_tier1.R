@@ -350,3 +350,48 @@ test_that("T1.3-boot: family classification correct for admix params", {
   expect_equal(result$family[result$parameter == "m_m"],       "mixFrac")
   expect_equal(result$family[result$parameter == "T_R"],       "time")
 })
+
+# ---------------------------------------------------------------------------
+# T1.1 — round trip a real-world OOA archaic introgression scenario.
+# Four sampled populations (out, arch, afr, eur) with one admix event
+# (archaic ancestry into eur). The replacement for PR gamma's minimal.lgo
+# (which has only one leaf and cannot be fit).
+# ---------------------------------------------------------------------------
+
+test_that("T1.1: round trip OOA admix through graph_to_lgo + real legofit + reader", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "ooa-admix.legofit"),
+    graph = make_ooa_admix_graph()
+  ))
+  # Edge tibble has 8 rows (graph has 8 edges)
+  expect_equal(nrow(result), 8L)
+  # Both admix edges to eur have admix_event_time populated
+  admix_edges <- result[result$type == "admix", ]
+  expect_equal(nrow(admix_edges), 2L)
+  expect_true(all(!is.na(admix_edges$admix_event_time)))
+  # Node times cover all 8 nodes
+  nt <- attr(result, "node_times")
+  expect_setequal(names(nt),
+                  c("R", "out", "anc", "arch_anc", "hum_anc", "arch", "afr", "eur"))
+})
+
+test_that("T1.1: OOA admix raw param table includes T_R, T_admix_eur, m_eur", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "ooa-admix.legofit"), graph = NULL
+  ))
+  expect_true(all(c("T_R", "T_anc", "T_arch_anc", "T_hum_anc",
+                    "T_admix_eur", "m_eur") %in% result$name))
+  expect_equal(result$family[result$name == "T_admix_eur"], "admix_time")
+  expect_equal(result$family[result$name == "m_eur"], "mixFrac")
+})
+
+test_that("T1.1: OOA admix admix proportions recovered roughly", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "ooa-admix.legofit"), graph = NULL
+  ))
+  m_eur <- result$value[result$name == "m_eur"]
+  # True value 0.03, fit recovers approximately (loose tolerance because
+  # of finite-sample noise in legosim-generated patterns and the small
+  # admix fraction making it hard to estimate precisely).
+  expect_true(m_eur > 0 && m_eur < 0.2)
+})

@@ -26,7 +26,7 @@ mkdir -p "$WORK"
 pass () { echo "  PASS $1"; }
 fail () { echo "  FAIL $1"; exit 1; }
 
-echo "==> T2.1: end to end round trip on ourex1 (no admix, 2 free params)"
+echo "==> T2.1a: end to end round trip on ourex1 (no admix, 2 free params)"
 
 cd "$WORK"
 # Use the bundled ex1.opf since it pairs with the ourex1 topology
@@ -34,8 +34,8 @@ cd "$WORK"
   "$FIXTURES/ourex1.lgo" "$LEGOFIT/../exmpl/ex1/ex1.opf" \
   > t21-ourex1.legofit 2>&1
 grep -q "DiffEv reached_goal" t21-ourex1.legofit \
-  || fail "T2.1: ourex1 did not converge"
-pass "T2.1: ourex1 fit converged"
+  || fail "T2.1a: ourex1 did not converge"
+pass "T2.1a: ourex1 fit converged"
 
 Rscript -e "
 pkgload::load_all('$REPO_ROOT', quiet = TRUE)
@@ -50,8 +50,53 @@ stopifnot(nrow(xy) > 0)
 stopifnot(abs(xy\$time[1] - 1.0) < 0.2)   # T_xy fitted close to true 1.0
 stopifnot(abs(xyz       - 2.0) < 0.2)     # T_xyz fitted close to true 2.0
 cat('ourex1 round trip ok: T_xy=', xy\$time[1], 'T_xyz=', xyz, '\n')
-" || fail "T2.1: ourex1 read back did not match ground truth"
-pass "T2.1: ourex1 reader recovered fitted times within tolerance"
+" || fail "T2.1a: ourex1 read back did not match ground truth"
+pass "T2.1a: ourex1 reader recovered fitted times within tolerance"
+
+echo
+echo "==> T2.1b: end to end round trip on ooa-admix (4 leaves, 1 admix, 5 free params)"
+echo "  Real-world OOA archaic introgression scenario. Replacement for the"
+echo "  PR gamma minimal.lgo fixture which cannot be fit (one-leaf graph)."
+
+cd "$WORK"
+# graph_to_lgo -> legosim -> legofit -> read_legofit_output round trip
+Rscript -e "
+pkgload::load_all('$REPO_ROOT', quiet = TRUE)
+g <- make_ooa_admix_graph()
+graph_to_lgo(g, file = '$WORK/t21b-ooa-admix.lgo',
+             time_handling = 'free', validate = FALSE)
+cat('graph_to_lgo wrote t21b-ooa-admix.lgo\n')
+" || fail "T2.1b: graph_to_lgo failed"
+pass "T2.1b: graph_to_lgo emitted .lgo from edge tibble"
+
+"$LEGOFIT/legosim" -i 5000 t21b-ooa-admix.lgo > t21b-ooa-admix.opf 2>&1
+[[ "$(grep -v '^#' t21b-ooa-admix.opf | grep -v '^$' | wc -l | tr -d ' ')" -ge "5" ]] \
+  || fail "T2.1b: legosim produced too few site patterns"
+pass "T2.1b: legosim produced site patterns from emitted .lgo"
+
+"$LEGOFIT/legofit" -t 2 -d 1e-3 t21b-ooa-admix.lgo t21b-ooa-admix.opf \
+  > t21b-ooa-admix.legofit 2>&1
+grep -q "DiffEv reached_goal" t21b-ooa-admix.legofit \
+  || fail "T2.1b: ooa-admix did not converge"
+pass "T2.1b: ooa-admix fit converged to reached_goal"
+
+Rscript -e "
+pkgload::load_all('$REPO_ROOT', quiet = TRUE)
+result <- suppressMessages(read_legofit_output(
+  '$WORK/t21b-ooa-admix.legofit', graph = make_ooa_admix_graph()
+))
+stopifnot(nrow(result) == 8L)
+admix <- result[result\$type == 'admix', ]
+stopifnot(nrow(admix) == 2L)
+stopifnot(all(!is.na(admix\$admix_event_time)))
+nt <- attr(result, 'node_times')
+stopifnot(setequal(names(nt),
+                   c('R','out','anc','arch_anc','hum_anc','arch','afr','eur')))
+cat('ooa-admix round trip ok:', nrow(result), 'edges,',
+    length(nt), 'node times,',
+    'admix proportion fitted to', round(admix\$weight[1], 3), '\n')
+" || fail "T2.1b: reader did not recover ooa-admix structure"
+pass "T2.1b: reader recovered 8-edge OOA admix structure from fitted output"
 
 echo
 echo "==> T2.2: end to end bootstrap pipeline (multi-admix, 10 reps)"

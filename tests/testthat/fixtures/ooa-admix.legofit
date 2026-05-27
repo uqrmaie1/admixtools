@@ -1,0 +1,63 @@
+########################################
+# legofit: estimate population history #
+#        version 3675373-dirty         #
+########################################
+#
+# Program was compiled: May 18 2026 12:10:55
+# Program was run: Wed May 27 07:50:27 2026
+#
+# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legofit -t 2 -d 1e-3 ../../testthat/fixtures/ooa-admix.lgo ooa-admix.opf
+# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-pr-delta/tests/external/work
+# Stage nOptItr nSimReps
+#     0    1000        1
+# algorithm          : deterministic
+# ignoring probs <=  : 0.001
+# Branch length floor: 0
+# DE strategy        : 2
+#    F               : 0.3
+#    CR              : 0.8
+#    tolerance       : 3e-06
+# nthreads           : 2
+# range of 2N params : [1, 1.79769e+308]
+# range of t params  : [0, 1.79769e+308]
+# lgo input file     : ../../testthat/fixtures/ooa-admix.lgo
+# site pat input file: ooa-admix.opf
+# free parameters    : 6
+# points in DE swarm : 60
+# Excluding singleton site patterns.
+# cost function      : KL
+Initial parameter values
+Fixed:
+     T_out = 0
+    T_arch = 0
+     T_afr = 0
+     T_eur = 0
+       one = 1
+Free:
+       T_R = 3
+     T_anc = 2
+  T_arch_anc = 1
+  T_hum_anc = 1
+  T_admix_eur = 1
+     m_eur = 0.03
+legofit is finished
+DiffEv reached_goal. cost=2.66245e-04 spread=2.80840e-06
+Fitted parameter values
+Free:
+       T_R = 3.51256
+     T_anc = 2.51587
+  T_arch_anc = 2.27483
+  T_hum_anc = 1.48689
+  T_admix_eur = 0.626297
+     m_eur = 0.0707379
+#       SitePat BranchLen
+       out:arch  0.0973202
+        out:afr  0.0257126
+        out:eur  0.0238485
+       arch:afr  0.1053773
+       arch:eur  0.1205636
+        afr:eur  0.9880999
+   out:arch:afr  0.0238485
+   out:arch:eur  0.0257126
+    out:afr:eur  0.0973202
+   arch:afr:eur  1.0143474
