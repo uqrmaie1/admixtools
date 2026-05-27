@@ -3319,7 +3319,6 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   ip = match_samples(indfile$ind, indfile$pop, NULL, pops)
   indvec = ip$indvec > 0
 
-
   popvec = match(indfile$pop, pops)
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
