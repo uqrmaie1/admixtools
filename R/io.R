@@ -3321,9 +3321,9 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
     stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  indfile %<>% filter(pop %in% pops)
   ip = match_samples(indfile$ind, indfile$pop, NULL, pops)
   indvec = ip$indvec > 0
+  indfile %<>% filter(pop %in% pops)
 
   popvec = match(indfile$pop, pops)
   p1 = match(pc$pop1, pops)
@@ -3584,11 +3584,10 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   if(!all(pops %in% indfile$pop))
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
-    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-
-  indfile %<>% filter(pop %in% pops)
+    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))  
   ip = match_samples(indfile$ind, indfile$pop, NULL, pops)
   indvec = ip$indvec > 0
+  indfile %<>% filter(pop %in% pops)
 
   popvec = match(indfile$pop, pops)
   p1 = match(pc$pop1, pops)
