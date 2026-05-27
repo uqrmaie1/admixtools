@@ -234,24 +234,49 @@ test_that("qpadm_multi preserves classed errors via rlang parent chain", {
   # custom) to simpleError. Round-5 uses rlang::abort(parent = e) which
   # keeps the original condition reachable via $parent, so a caller's
   # class-specific tryCatch can still dispatch.
+  #
+  # Round-6 hardening: the prior version of this test only asserted that
+  # `e$parent` was non-NULL — but furrr's own purrr_error_indexed wrapper
+  # ALREADY populates $parent, so the assertion passed even if the rewrap
+  # were downgraded to plain stop(). Now we inject a custom-class
+  # condition into the qpadm internal call path via `local_mocked_bindings`,
+  # and assert that the custom class survives the rewrap. If anyone
+  # downgrades the rewrap to plain stop() in the future, the custom class
+  # is lost and the test fails — which is the contract we want to pin.
   data(example_f2_blocks, package = "admixtools", envir = environment())
   ef = get("example_f2_blocks", envir = environment())
   models = tibble::tibble(
     left   = list(c("Mbuti.DG", "Russia_Ust_Ishim.DG")),
     right  = list(c("Chimp.REF", "Altai_Neanderthal.DG", "Vindija.DG")),
     target = "Switzerland_Bichon.SG")
-  caught_parent = NULL
+
+  # Mock the internal qpadm to raise a condition with a sentinel class.
+  # local_mocked_bindings is testthat 3.x; the package's testthat edition
+  # is 3 (Config/testthat/edition: 3 in DESCRIPTION), so this is in-scope.
+  testthat::local_mocked_bindings(
+    qpadm = function(...) rlang::abort("synthetic failure for parent-chain test",
+                                       class = c("my_custom_sentinel_class",
+                                                 "rlang_error", "error")),
+    .package = "admixtools")
+
+  caught_class_chain = character(0)
   tryCatch(
     suppressMessages(suppressWarnings(
-      qpadm_multi(ef, models, verbose = FALSE, singular_threshold = 1.0))),
+      qpadm_multi(ef, models, verbose = FALSE))),
     error = function(e) {
-      caught_parent <<- conditionCall(rlang::cnd_entrace(e)$parent) %||%
-                        rlang::cnd_message(e$parent)
+      # Walk the parent chain looking for the sentinel class. If
+      # rlang::abort(parent = e) was used, the sentinel is at e$parent
+      # (possibly nested under furrr's purrr_error_indexed wrapper).
+      walker = e
+      while(!is.null(walker)) {
+        caught_class_chain <<- union(caught_class_chain, class(walker))
+        walker = walker$parent
+      }
     })
-  # We don't pin the exact class (qpadm's internal stop() raises a plain
-  # simpleError at the time of writing), but we DO pin that `$parent`
-  # exists on the rewrapped error — proof the rewrap preserves the chain.
-  expect_false(is.null(caught_parent))
+  # The sentinel class must be reachable somewhere in the parent chain.
+  # If the rewrap is downgraded to plain stop(), the sentinel is lost
+  # and this assertion fails — the actual contract we care about.
+  expect_true("my_custom_sentinel_class" %in% caught_class_chain)
 })
 
 

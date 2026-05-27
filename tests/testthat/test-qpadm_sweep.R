@@ -405,6 +405,56 @@ test_that("8c: singular fixture preserves the loadings tibble through the sweep"
   expect_identical(res$f4_var_rcond[1], direct$f4_var_rcond)
 })
 
+
+test_that("8c.2: verbose=TRUE + singular row emits warning without crashing (round-6 regression)", {
+  # Round-5 added a sweep-level cli::cli_warn() that interpolated the
+  # auto-bar constant via `{.rcond_concern}`. cli >= 3.4 interprets any
+  # `{.foo}` inside cli_warn/cli_inform glue as a STYLE REFERENCE, not a
+  # variable substitution; so the call hard-aborted with "Invalid cli
+  # literal: ... starts with a dot." every time a sweep had at least one
+  # near-singular row AND the user passed verbose = TRUE.
+  #
+  # No prior test exercised verbose=TRUE on a singular fixture, so the
+  # bug was invisible to CI. Round-6 binds the value to a non-dot local
+  # before interpolation; this test pins the contract that verbose=TRUE
+  # on a singular fixture returns normally + raises a single warning.
+  f2_clone = .clone_pop_in_f2_blocks(.f2(), src = "Mbuti.DG", dst = "Mbuti_clone")
+  # Use the same disjoint-pops fixture as test 8c (Mbuti.DG and Mbuti_clone
+  # both in the RIGHT set, never in the source set). The clone-pair in the
+  # right creates the rank deficiency.
+  args = list(
+    data        = f2_clone,
+    targets     = "Switzerland_Bichon.SG",
+    source_sets = list(s1 = c("Russia_Ust_Ishim.DG", "Vindija.DG")),
+    right_sets  = list(r_singular = c("Chimp.REF", "Altai_Neanderthal.DG",
+                                      "Mbuti.DG", "Mbuti_clone")),
+    full_results = TRUE,
+    verbose     = TRUE,        # the path round-5 broke
+    fudge       = 1e-12)
+
+  # Custom handler: capture every warning, mute it (so the test doesn't
+  # spam stderr), and assert the captured set contains the near-singular
+  # alert. Cannot use .mute_qpadm_sweep_noise here because it muffles
+  # "near-singular" — which is the signal we want to verify.
+  warnings_seen = character(0)
+  res = withCallingHandlers(
+    suppressMessages(do.call(qpadm_sweep, args)),
+    warning = function(w) {
+      warnings_seen <<- c(warnings_seen, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+
+  # The call must complete (not abort with the cli "Invalid cli literal"
+  # error that round-5 introduced).
+  expect_s3_class(res, "tbl_df")
+  expect_equal(nrow(res), 1L)
+  # The near-singular sweep-summary warning surfaced exactly as designed.
+  expect_true(any(grepl("near-singular", warnings_seen, fixed = TRUE)),
+              info = paste("warnings seen:",
+                           paste(warnings_seen, collapse = " | ")))
+})
+
+
 test_that("8d: full_results = FALSE keeps f4_var_rcond (finite), drops loadings", {
   # Design choice pinned (and defensive all-NA guard): f4_var_rcond is a
   # scalar diagnostic comparable to p / chisq / dof — surfaced

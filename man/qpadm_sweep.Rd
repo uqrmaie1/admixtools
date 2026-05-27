@@ -47,7 +47,7 @@ always-on \code{f4_var_rcond} diagnostic).}
 is a genotype-file prefix, kwargs matching \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}}'s
 formals are routed to the preflight f4 computation. Kwargs matching the
 per-fit function's formals (\code{\link{qpadm}} when \code{full_results=TRUE},
-the internal \code{qpadm_p} when \code{FALSE}) are routed to each per-model fit.
+\code{\link[=qpadm_p]{qpadm_p()}} when \code{FALSE}) are routed to each per-model fit.
 Unrecognised names raise a single error at entry naming both surfaces.
 \code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal) is forwarded but be aware that
 if any model trips its threshold, \code{\link[=qpadm]{qpadm()}} raises an error, the entire

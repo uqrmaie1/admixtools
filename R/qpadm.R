@@ -1050,13 +1050,13 @@ qpadmmodels_to_popcombs = function(models) {
 #' }
 #' @param models A nested list (or data frame) with qpadm models. It should consist of two or three other named lists (or columns) containing `left`, `right`, (and `target`) populations.
 #' @param allsnps Use all SNPs with allele frequency estimates in every population of any given population quadruple. If `FALSE` (the default) only SNPs which are present in all populations in `popcombs` (or any given model in it) will be used. When there are populations with lots of (non-randomly) missing data, `allsnps = TRUE` can lead to false positive results. This option only has an effect if `data` is the prefix of a genotype file. If `data` are f2-statistics, the behavior will be determined by the options that were used in computing the f2-statistics.
-#' @param full_results Return the full qpadm output list for each model; if `FALSE`, return only summary statistics (default `TRUE`). Note: the lean (`FALSE`) path dispatches to an internal helper that omits `f4_var_rcond` and `f4_var_singular_loadings` from each per-fit result.
+#' @param full_results Return the full qpadm output list for each model; if `FALSE`, return only summary statistics (default `TRUE`). Note: the lean (`FALSE`) path dispatches to [qpadm_p()], which omits `f4_var_rcond` and `f4_var_singular_loadings` from each per-fit result.
 #' @param verbose Print progress updates
 #' @param ... Further arguments forwarded to downstream functions. When `data`
 #'   is a genotype-file prefix, kwargs matching [f4blockdat_from_geno()]'s
 #'   formals are routed to the preflight f4 computation. Kwargs matching the
 #'   per-fit function's formals (\code{\link{qpadm}} when `full_results=TRUE`,
-#'   the internal `qpadm_p` when `FALSE`) are routed to each per-model fit.
+#'   [qpadm_p()] when `FALSE`) are routed to each per-model fit.
 #'   Unrecognised names raise a single error at entry naming both surfaces.
 #'   `singular_threshold` (a [qpadm()] formal) is forwarded but be aware that
 #'   if any model trips its threshold, [qpadm()] raises an error, the entire
@@ -1460,12 +1460,20 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
   if(verbose) {
     n_concerning = sum(!is.na(out$f4_var_rcond) & out$f4_var_rcond < .rcond_concern)
     if(n_concerning > 0) {
+      # cli >= 3.4 interprets `{.foo}` inside cli_warn/cli_inform glue as a
+      # style reference (e.g., `{.code x}` styles `x` as code), so a dot-
+      # prefixed variable name like `.rcond_concern` errors with "Invalid
+      # cli literal: ... starts with a dot." Bind to a non-dot local before
+      # interpolating. The {.code $f4_var_singular_loadings} substitution is
+      # legitimate styling ({.code} is a real cli style).
+      rcond_concern_local = .rcond_concern
+      n_rows = nrow(out)
       loadings_hint = if(full_results)
         " Inspect {.code $f4_var_singular_loadings} for offending right pops."
       else
         " Re-run with {.code full_results = TRUE} to see {.code $f4_var_singular_loadings}."
-      cli::cli_warn(c("!" = paste0("{n_concerning} of {nrow(out)} sweep row(s) ",
-                                   "have f4_var_rcond < {.rcond_concern} ",
+      cli::cli_warn(c("!" = paste0("{n_concerning} of {n_rows} sweep row(s) ",
+                                   "have f4_var_rcond < {rcond_concern_local} ",
                                    "(near-singular f4_var)."),
                       "i" = loadings_hint))
     }
