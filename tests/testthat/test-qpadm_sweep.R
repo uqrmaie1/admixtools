@@ -2,21 +2,22 @@
 # (7 populations: Altai_Neanderthal.DG, Chimp.REF, Denisova.DG, Mbuti.DG,
 #  Russia_Ust_Ishim.DG, Switzerland_Bichon.SG, Vindija.DG).
 #
-# Future plan pin: qpadm_multi dispatches qpadm() to furrr::future_map. If a
-# developer's .Rprofile or the CI runner has set future::plan('multisession')
-# or 'multicore', the worker process's LAPACK rcond computation can return
-# bit-different doubles from the main process (BLAS thread count, FMA, OMP
-# variations). Round-2's expect_identical assertions on f4_var_rcond would
-# then flake. Pin to sequential for this file (withr unwinds on file exit).
-withr::local_options(future.plan = "sequential", .local_envir = parent.frame())
-# Belt-and-suspenders: also set the plan directly since some furrr versions
-# read the plan rather than the option lookup.
-local({
-  if(requireNamespace("future", quietly = TRUE)) {
-    prev_plan = future::plan("sequential")
-    withr::defer(future::plan(prev_plan), envir = parent.frame())
-  }
-})
+# Future plan pin (file-scoped): qpadm_multi dispatches qpadm() to
+# furrr::future_map. If a developer's .Rprofile or the CI runner has set
+# future::plan('multisession') or 'multicore', the worker process's LAPACK
+# rcond computation can return bit-different doubles from the main process
+# (BLAS thread count, FMA, OMP variations); the expect_identical assertions
+# on f4_var_rcond below would then flake.
+#
+# Setting the plan directly at file top is the simplest mechanism that
+# actually works. (Round-3 used withr::local_options with .local_envir =
+# parent.frame() inside a local() block — but parent.frame() inside local()
+# resolves to the local()'s own frame, which exits immediately, restoring
+# the prior plan before any test runs. Empirically: "After local block:
+# plan = multisession" if multisession was active before.) The plan
+# survives between this file's tests and subsequent test files in the same
+# test_dir() invocation, which is the testthat-recommended scope.
+if(requireNamespace("future", quietly = TRUE)) future::plan("sequential")
 
 # Pop-set design:  each (target, source_set, right_set) combo must have no
 # duplicate population names.  The fixtures below are pre-verified to work
@@ -425,6 +426,14 @@ test_that("8e: full_results = TRUE adds popdrop list-column", {
   expect_type(res$popdrop, "list")
   expect_false(is.null(res$popdrop[[1]]))
   expect_s3_class(res$popdrop[[1]], "tbl_df")
+  # Schema pin: popdrop's column names + types are the public surface that
+  # downstream callers reach into. Test 8c pins the analogous contract for
+  # f4_var_singular_loadings; same pattern here so a future qpadm refactor
+  # that renames or drops a column surfaces as a clear test failure here
+  # rather than only at downstream user code. Columns: `pat` (which pop was
+  # dropped), `wt` (resulting weight), `p`, `f4rank`, and `feasible`.
+  expect_true(all(c("pat", "wt", "p", "f4rank", "feasible") %in%
+                  names(res$popdrop[[1]])))
 
   # And it's dropped under full_results = FALSE alongside the other
   # gated list-columns.

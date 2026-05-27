@@ -43,7 +43,17 @@ always-on \code{f4_var_rcond} diagnostic).}
 
 \item{verbose}{Print progress updates}
 
-\item{...}{Further arguments passed to \code{\link{qpadm}}}
+\item{...}{Further arguments forwarded to downstream functions. When \code{data}
+is a genotype-file prefix, kwargs matching \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}}'s
+formals are routed to the preflight f4 computation. Kwargs matching the
+per-fit function's formals (\code{\link{qpadm}} when \code{full_results=TRUE},
+the internal \code{qpadm_p} when \code{FALSE}) are routed to each per-model fit.
+Unrecognised names raise a single error at entry naming both surfaces.
+\code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal) is forwarded but be aware that
+if any model trips its threshold, \code{\link[=qpadm]{qpadm()}} raises an error, the entire
+\code{qpadm_multi} call aborts via \code{furrr::future_map}, and no results are
+returned. For "mark and continue" semantics over a batch, omit
+\code{singular_threshold} and filter on \code{f4_var_rcond} after the call.}
 }
 \value{
 A tibble with one row per \verb{(target, source_set, right_set)} combination
@@ -73,23 +83,19 @@ if \code{\link[=qpadm]{qpadm()}}'s SVD inside the loadings computation fails on 
 pathological matrix. Useful for SVD-guided right-pop pruning.
 }
 
-Forwarding caveats for \code{...}:
-\itemize{
-\item When \code{data} is an f2 array or precompute directory, all qpadm
-formals (e.g. \code{fudge}, \code{fudge_twice}, \code{getcov}, \code{constrained}) are
-forwarded transparently through \code{\link[=qpadm_multi]{qpadm_multi()}} to \code{\link[=qpadm]{qpadm()}}.
-\item When \code{data} is a genotype-file prefix, qpadm-only kwargs in \code{...}
-are filtered against \code{f4blockdat_from_geno}'s formals before the
-preflight f4 computation, then forwarded to \code{\link[=qpadm]{qpadm()}} for the
-per-model fit. Unrecognised names are silently dropped at the
-preflight stage and surface only if \code{\link[=qpadm]{qpadm()}} also rejects them.
-\item \code{singular_threshold} (forwarded via \code{...}) does not produce a
-populated \code{f4_var_singular_loadings} cell in the sweep: \code{\link[=qpadm]{qpadm()}}
-raises an error when the threshold trips, which propagates through
-\code{furrr::future_map} and aborts the entire sweep. For "mark and
-continue" semantics across a sweep, omit \code{singular_threshold} and
-filter on \code{f4_var_rcond} after the sweep returns.
-}
+Kwargs in \code{...} are forwarded to \code{\link[=qpadm_multi]{qpadm_multi()}}, which validates them
+upfront against the union of formals for \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}} (the
+geno-path preflight) and \code{\link[=qpadm]{qpadm()}} (the per-fit call), then routes each
+to its respective downstream callee. Unrecognised names raise a single
+clear error at entry — see \code{\link[=qpadm_multi]{qpadm_multi()}}'s \code{...} docs for the full
+contract.
+
+\code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal, forwarded via \code{...}) does not
+produce a populated \code{f4_var_singular_loadings} cell in the sweep:
+\code{\link[=qpadm]{qpadm()}} raises an error when the threshold trips, propagates through
+\code{furrr::future_map}, and aborts the entire sweep. For "mark and continue"
+semantics, omit \code{singular_threshold} and filter on \code{f4_var_rcond} after
+the sweep returns.
 }
 \description{
 Patterson-style sweeps fit qpadm for every combination of
