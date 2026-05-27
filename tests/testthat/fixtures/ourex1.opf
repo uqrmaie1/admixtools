@@ -1,0 +1,22 @@
+#######################################
+# legosim: site pattern probabilities #
+#        version 3675373-dirty        #
+#######################################
+#
+# Program was compiled: May 18 2026 12:10:49
+# Program was run: Wed May 20 14:08:33 2026
+#
+# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legosim -1 -d 0 /tmp/ourex1.lgo
+# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-pr-gamma
+# input file                  : /tmp/ourex1.lgo
+# algorithm                   : deterministic
+# ignoring probs <=           : 0
+# including singleton site patterns.
+# Summed probability of ignored improbable events: 0.000000e+00
+#       SitePat            Prob
+              z    0.3900831040
+              x    0.1900831040
+              y    0.1900831040
+            z:x    0.0099168960
+            z:y    0.0099168960
+            x:y    0.2099168960

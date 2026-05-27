@@ -2,7 +2,7 @@
 % Please edit documentation in R/legofit.R
 \name{read_lgo}
 \alias{read_lgo}
-\title{Parse a LEGOFIT .lgo file (minimum-viable subset)}
+\title{Parse a LEGOFIT .lgo file}
 \usage{
 read_lgo(path = NULL, text = NULL, as = c("edges", "igraph"))
 }
@@ -12,18 +12,29 @@ read_lgo(path = NULL, text = NULL, as = c("edges", "igraph"))
 \item{text}{A character scalar (full file text) or character vector
 (one element per line).}
 
-\item{as}{Output format. Only \code{"edges"} (canonical edge tibble) is
-supported in this version; \code{"igraph"} errors with
-\code{legofit_lgo_unsupported} and arrives in Phase 2.}
+\item{as}{Output format: \code{"edges"} (default) returns a tibble with columns
+\code{from}, \code{to}, \code{type}, \code{weight}; \code{"igraph"} returns an igraph with \code{type}
+and \code{weight} edge attributes.  Both carry a \code{param_bounds} attribute
+(list keyed by param name, value \code{c(lo, hi)}) when bounded \code{free}
+declarations are present.}
 }
 \value{
-A tibble with columns \code{from}, \code{to}, \code{type}, \code{weight}.
+A tibble (or igraph) representing the graph topology.
 }
 \description{
-Parses the subset of LEGOFIT 1.87 \code{.lgo} grammar that
-\code{\link[=graph_to_lgo]{graph_to_lgo()}} emits. Full grammar coverage (line continuation,
-\code{constrained} expressions, bounded \code{free}) is deferred to Phase 2.
+Parses the LEGOFIT 1.87 \code{.lgo} grammar produced by \code{\link[=graph_to_lgo]{graph_to_lgo()}} and
+most third-party \code{.lgo} files. Supported grammar: line continuation
+(\code{+}, \code{-}, \code{*}, \code{/} trailing operators per parse.c:643-668), bounded
+\code{free} declarations (\verb{[lo, hi]} before name per parse.c:211-235),
+\code{constrained} arithmetic expressions (safe evaluator), and both \code{"edges"}
+and \code{"igraph"} return types.
 }
 \details{
+Ghost segments written by \code{\link[=graph_to_lgo]{graph_to_lgo()}} (named \verb{<dest>_<parent>}) are
+recognised by the narrow 3-condition rule (LLD §3.5) and collapsed back into
+admixtools admix edges. Third-party segments that happen to appear as mix
+parents but do NOT match the \verb{<dest>_<parent>} naming convention (e.g.,
+Rogers 2020 rha20.lgo's \code{d2}, \code{s2}) are preserved as real edges.
+
 Exactly one of \code{path} or \code{text} must be supplied.
 }

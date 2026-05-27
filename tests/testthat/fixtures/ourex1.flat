@@ -1,0 +1,9 @@
+# flatfile.py run at: 2026-05-20 14:08:56.773977
+# input files: ourex1.legofit ourex1_boot0.legofit ourex1_boot1.legofit ourex1_boot2.legofit ourex1_boot3.legofit ourex1_boot4.legofit 
+T_xy T_xyz 
+0.5 2 
+0.46 1.9 
+0.48 1.95 
+0.5 2 
+0.52 2.05 
+0.54 2.1 

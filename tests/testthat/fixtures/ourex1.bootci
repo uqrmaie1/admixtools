@@ -1,0 +1,6 @@
+# bootci.py run at: 2026-05-20 14:08:56.826543
+# input: /tmp/ourex1.flat
+# confidence: 0.950
+       par             est             low            high
+      T_xy      0.50000000      0.46250000      0.53750000
+     T_xyz      2.00000000      1.90625000      2.09375000

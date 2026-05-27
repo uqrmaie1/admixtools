@@ -108,7 +108,6 @@ make_minimal_graph_with_outgroup <- function() {
   )
 }
 
-
 # Singular-case fixture builder for qpadm rcond / loadings tests.
 #
 # Adds a clone of `src` to a 3d f2_blocks array as a new dimname `dst`.
@@ -192,4 +191,18 @@ make_test_nodes_graph <- function() {
     admix_event_time = NA_real_
   )
   edges
+}
+
+# 3-leaf no-admix topology used by Phase 2 read_legofit_output tests.
+# Matches the topology in tests/testthat/fixtures/ourex1.lgo (which was
+# generated via graph_to_lgo(make_ourex1_graph(), time_handling = "init",
+# validate = FALSE) on 2026-05-20).
+make_ourex1_graph <- function() {
+  tibble::tribble(
+    ~from,  ~to,   ~type,    ~weight,  ~time,
+    "xyz",  "xy",  "normal", NA_real_, 1.5,
+    "xyz",  "z",   "normal", NA_real_, 2,
+    "xy",   "x",   "normal", NA_real_, 0.5,
+    "xy",   "y",   "normal", NA_real_, 0.5
+  )
 }
