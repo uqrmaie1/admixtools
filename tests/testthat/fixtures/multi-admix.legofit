@@ -1,0 +1,53 @@
+########################################
+# legofit: estimate population history #
+#        version 3675373-dirty         #
+########################################
+#
+# Program was compiled: May 18 2026 12:10:55
+# Program was run: Wed May 27 06:51:34 2026
+#
+# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legofit -t 2 -d 1e-3 ../../testthat/fixtures/multi-admix.lgo multi-admix.opf
+# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-pr-delta/tests/external/work
+# Stage nOptItr nSimReps
+#     0    1000        1
+# algorithm          : deterministic
+# ignoring probs <=  : 0.001
+# Branch length floor: 0
+# DE strategy        : 2
+#    F               : 0.3
+#    CR              : 0.8
+#    tolerance       : 3e-06
+# nthreads           : 2
+# range of 2N params : [1, 1.79769e+308]
+# range of t params  : [0, 1.79769e+308]
+# lgo input file     : ../../testthat/fixtures/multi-admix.lgo
+# site pat input file: multi-admix.opf
+# free parameters    : 5
+# points in DE swarm : 50
+# Excluding singleton site patterns.
+# cost function      : KL
+Initial parameter values
+Fixed:
+       T_x = 0
+       T_y = 0
+       T_m = 0
+       one = 1
+Free:
+       T_R = 2
+       T_A = 0.5
+       T_B = 0.5
+  T_admix_m = 0.1
+       m_m = 0.3
+legofit is finished
+DiffEv reached_goal. cost=1.39575e-08 spread=2.37091e-06
+Fitted parameter values
+Free:
+       T_R = 2.22868
+       T_A = 0.712266
+       T_B = 0.688141
+  T_admix_m = 0.0573913
+       m_m = 0.289261
+#       SitePat BranchLen
+            x:y  0.0726612
+            x:m  1.1504380
+            y:m  0.5182793

@@ -206,3 +206,17 @@ make_ourex1_graph <- function() {
     "xy",   "y",   "normal", NA_real_, 0.5
   )
 }
+
+# Multi-leaf single-admix graph for T1.3. Three leaves (x, y, m),
+# one admix event (m from A and B). Matches fixtures/multi-admix.lgo.
+make_multi_admix_graph <- function() {
+  tibble::tribble(
+    ~from,  ~to,   ~type,    ~weight,
+    "R",    "A",   "normal", NA_real_,
+    "R",    "B",   "normal", NA_real_,
+    "A",    "x",   "normal", NA_real_,
+    "B",    "y",   "normal", NA_real_,
+    "A",    "m",   "admix",  0.70,
+    "B",    "m",   "admix",  0.30
+  )
+}

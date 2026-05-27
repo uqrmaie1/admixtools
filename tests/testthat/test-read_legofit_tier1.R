@@ -263,3 +263,90 @@ test_that("T1.6: rha20.legofit fires legofit_fit_incomplete inform", {
     class = "legofit_fit_incomplete"
   )
 })
+
+# ---------------------------------------------------------------------------
+# T1.3 — Multi admix .legofit parse. Three-leaf one-admix topology.
+# Fixture multi-admix.legofit generated via:
+#   legosim -i 5000 multi-admix.lgo > multi-admix.opf
+#   legofit -t 2 -d 1e-3 multi-admix.lgo multi-admix.opf > multi-admix.legofit
+# (deterministic threshold 1e-3, reached_goal in <30s).
+# ---------------------------------------------------------------------------
+
+test_that("T1.3: multi-admix.legofit parses with graph=NULL", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "multi-admix.legofit"), graph = NULL
+  ))
+  expect_s3_class(result, "tbl_df")
+  # Free fitted params: T_R, T_A, T_B, T_admix_m, m_m (5 params)
+  expect_true(all(c("T_R", "T_A", "T_B", "T_admix_m", "m_m") %in% result$name))
+  # Family classifications
+  expect_equal(result$family[result$name == "T_admix_m"], "admix_time")
+  expect_equal(result$family[result$name == "m_m"], "mixFrac")
+})
+
+test_that("T1.3: multi-admix.legofit with graph produces edge tibble with admix metadata", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "multi-admix.legofit"),
+    graph = make_multi_admix_graph()
+  ))
+  expect_true("admix_event_time" %in% names(result))
+  expect_true("admix_prop"       %in% names(result))
+  # Admix edges (A->m, B->m) should have admix_event_time populated
+  admix_edges <- result[result$type == "admix", ]
+  expect_true(nrow(admix_edges) == 2L)
+  expect_true(all(!is.na(admix_edges$admix_event_time)))
+  # Both admix edges share the same T_admix_m
+  expect_equal(length(unique(admix_edges$admix_event_time)), 1L)
+})
+
+test_that("T1.3: multi-admix.legofit emits no spurious mismatch", {
+  mismatch_fired <- FALSE
+  withCallingHandlers(
+    read_legofit_output(test_path("fixtures", "multi-admix.legofit"),
+                        graph = make_multi_admix_graph()),
+    legofit_param_mismatch = function(m) {
+      mismatch_fired <<- TRUE
+      tryInvokeRestart("muffleMessage")
+    }
+  )
+  expect_false(mismatch_fired)
+})
+
+test_that("T1.3: multi-admix node_times attribute covers all nodes", {
+  result <- suppressMessages(read_legofit_output(
+    test_path("fixtures", "multi-admix.legofit"),
+    graph = make_multi_admix_graph()
+  ))
+  nt <- attr(result, "node_times")
+  # All graph nodes (R, A, B, x, y, m) should have entries
+  expect_setequal(names(nt), c("R", "A", "B", "x", "y", "m"))
+})
+
+# ---------------------------------------------------------------------------
+# T1.3 bootstrap variant — read multi-admix.bootci.
+# Fixture produced via the T2.2 pipeline: 10 legosim replicates → 10
+# legofit fits → flatfile.py → bootci.py.
+# ---------------------------------------------------------------------------
+
+test_that("T1.3-boot: multi-admix.bootci reader produces 5-row CI tibble", {
+  result <- read_legofit_bootstrap(test_path("fixtures", "multi-admix.bootci"),
+                                    graph = make_multi_admix_graph())
+  expect_equal(nrow(result), 5L)
+  expect_equal(names(result),
+               c("parameter", "family", "point_estimate", "lo", "hi"))
+  expect_setequal(result$parameter, c("T_R", "T_A", "T_B", "T_admix_m", "m_m"))
+})
+
+test_that("T1.3-boot: multi-admix bootstrap CI bounds bracket point estimate", {
+  result <- read_legofit_bootstrap(test_path("fixtures", "multi-admix.bootci"),
+                                    graph = make_multi_admix_graph())
+  expect_true(all(result$lo <= result$point_estimate))
+  expect_true(all(result$hi >= result$point_estimate))
+})
+
+test_that("T1.3-boot: family classification correct for admix params", {
+  result <- read_legofit_bootstrap(test_path("fixtures", "multi-admix.bootci"))
+  expect_equal(result$family[result$parameter == "T_admix_m"], "admix_time")
+  expect_equal(result$family[result$parameter == "m_m"],       "mixFrac")
+  expect_equal(result$family[result$parameter == "T_R"],       "time")
+})

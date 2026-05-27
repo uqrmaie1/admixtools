@@ -54,13 +54,54 @@ cat('ourex1 round trip ok: T_xy=', xy\$time[1], 'T_xyz=', xyz, '\n')
 pass "T2.1: ourex1 reader recovered fitted times within tolerance"
 
 echo
-echo "==> T2.2: end to end bootstrap pipeline — DEFERRED"
-echo "  bootstrap requires tabpat/booma to generate replicate patterns,"
-echo "  then per-replicate legofit fits via a loop, then flatfile.py to combine,"
-echo "  then bootci.py. Set up that pipeline separately; the in-branch"
-echo "  test-read_legofit_bootstrap.R + T1.5 cover the reader against synthesized"
-echo "  bootci.py output and a real bootci file produced by perturbing the"
-echo "  ourex1 fit (committed as ourex1.bootci)."
+echo "==> T2.2: end to end bootstrap pipeline (multi-admix, 10 reps)"
+echo "  bootci.py's true workflow needs tabpat (or booma) for moving-block"
+echo "  bootstrap on genotype data. With only legosim-simulated patterns"
+echo "  available we fake the bootstrap by treating N independent legosim"
+echo "  replicates as bootstrap samples. This still validates the format"
+echo "  contract end to end: legofit fit, flatfile.py combine, bootci.py."
+
+cd "$WORK"
+N=10
+mkdir -p boot
+rm -f boot/rep_*.opf boot/rep_*.legofit
+for i in $(seq 1 $N); do
+  "$LEGOFIT/legosim" -i 1000 "$FIXTURES/multi-admix.lgo" > boot/rep_${i}.opf 2>&1
+done
+[[ "$(ls boot/rep_*.opf 2>/dev/null | wc -l)" -eq "$N" ]] \
+  || fail "T2.2: legosim failed to produce $N replicate patterns"
+pass "T2.2: $N legosim replicates produced"
+
+for i in $(seq 1 $N); do
+  "$LEGOFIT/legofit" -t 2 -d 1e-3 \
+    "$FIXTURES/multi-admix.lgo" boot/rep_${i}.opf > boot/rep_${i}.legofit 2>&1 &
+done
+wait
+converged="$(grep -l reached_goal boot/rep_*.legofit | wc -l | tr -d ' ')"
+[[ "$converged" -eq "$N" ]] || fail "T2.2: only $converged/$N reps reached_goal"
+pass "T2.2: all $N reps converged"
+
+python3 "$LEGOFIT/flatfile.py" boot/rep_1.legofit boot/rep_2.legofit boot/rep_3.legofit \
+  boot/rep_4.legofit boot/rep_5.legofit boot/rep_6.legofit boot/rep_7.legofit \
+  boot/rep_8.legofit boot/rep_9.legofit boot/rep_10.legofit > t22-multi-admix.flat \
+  || fail "T2.2: flatfile.py failed"
+pass "T2.2: flatfile.py combined fits"
+
+python3 "$LEGOFIT/bootci.py" t22-multi-admix.flat > t22-multi-admix.bootci \
+  || fail "T2.2: bootci.py failed"
+pass "T2.2: bootci.py produced CI table"
+
+Rscript -e "
+pkgload::load_all('$REPO_ROOT', quiet = TRUE)
+result <- read_legofit_bootstrap('$WORK/t22-multi-admix.bootci',
+                                  graph = make_multi_admix_graph())
+stopifnot(c('T_R','T_A','T_B','T_admix_m','m_m') %in% result\$parameter)
+stopifnot(c('parameter','family','point_estimate','lo','hi') %in% names(result))
+admix <- result[result\$parameter == 'T_admix_m', ]
+stopifnot(admix\$lo <= admix\$point_estimate && admix\$hi >= admix\$point_estimate)
+cat('multi-admix bootstrap ok: T_admix_m CI [', admix\$lo, ',', admix\$hi, ']\n')
+" || fail "T2.2: reader could not parse multi-admix bootci output"
+pass "T2.2: bootstrap reader recovered CIs with correct column shape"
 
 echo
 echo "==> T2.3: partial fit on rha20 (17 free params, finished_iterations)"

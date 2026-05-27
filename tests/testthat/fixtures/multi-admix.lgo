@@ -1,0 +1,33 @@
+## .lgo for T1.3 multi-leaf single-admix topology.
+## Three leaves (x, y, m) with one admix event (m = mix of A and B).
+## Designed to be both legosim-simulatable and legofit-fittable for round-trip tests.
+
+### Parameters
+time fixed T_x=0
+time fixed T_y=0
+time fixed T_m=0
+time free T_R=2
+time free T_A=0.5
+time free T_B=0.5
+time free T_admix_m=0.1
+mixFrac free m_m=0.3
+twoN fixed one=1
+
+### Segments
+segment R t=T_R twoN=one
+segment A t=T_A twoN=one
+segment B t=T_B twoN=one
+segment x t=T_x twoN=one samples=1
+segment y t=T_y twoN=one samples=1
+segment m t=T_m twoN=one samples=1
+segment m_A t=T_admix_m twoN=one
+segment m_B t=T_admix_m twoN=one
+
+### Relationships
+derive A from R
+derive B from R
+derive x from A
+derive y from B
+derive m_A from A
+derive m_B from B
+mix m from m_A + m_m * m_B
