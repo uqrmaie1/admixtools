@@ -174,15 +174,16 @@ Once a near-singular fit has been diagnosed, the hand-curation defense is the sa
 ```{r, eval = FALSE}
 fit = qpadm_with_pruning(
   data, left, right, target,
-  singular_threshold = 1e-12,   # convergence criterion (not a fail-loud gate)
-  min_right_pops = 4)
+  singular_threshold = 1e-12)   # convergence criterion (not a fail-loud gate)
 fit$converged          # TRUE if rcond cleared the threshold
 fit$pruning_trail      # tibble: iteration, dropped pop, loading, rcond
 fit$right_final        # the converged right set
 fit$reason             # "converged" / "floor" / "null_loadings" / ...
 ```
 
-The returned object is the final `qpadm()` fit (so `weights`, `f4`, `rankdrop`, `popdrop`, `f4_var_rcond`, and `f4_var_singular_loadings` are all present) with four pruner-specific slots appended. The `pruning_trail` is the load-bearing audit surface: a downstream batch tool can scan the trail across many calls and notice that a particular reference-panel pop is consistently being pruned, which is itself a signal that the panel needs review.
+`min_right_pops` sets the smallest right set the loop will accept before giving up. It defaults to the structural minimum for identification (`length(left)` plus one when a `target` is supplied), so you only need to set it when you want a more conservative floor.
+
+The returned object is the final `qpadm()` fit (so `f4`, `rankdrop`, `f4_var_rcond`, and `f4_var_singular_loadings` are present, along with `weights` and `popdrop` whenever a `target` is supplied) with four pruner-specific slots appended. The `pruning_trail` is the load-bearing audit surface: a downstream batch tool can scan the trail across many calls and notice that a particular reference-panel pop is consistently being pruned, which is itself a signal that the panel needs review.
 
 Two strategies are available via the `strategy` argument:
 

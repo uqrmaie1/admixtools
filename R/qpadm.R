@@ -1587,9 +1587,13 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
 #' @param verbose If `TRUE`, emits a `cli` info line per iteration naming
 #'   the dropped pop and rcond. Default `FALSE` (batch-friendly).
 #' @param ... Additional arguments forwarded to each inner [qpadm()] call.
-#' @return A list with the slots of the final [qpadm()] fit (so `weights`,
-#'   `f4`, `rankdrop`, `popdrop`, `f4_var_rcond`, `f4_var_singular_loadings`
-#'   are all present) plus four pruner-specific slots:
+#' @return A list with the slots of the final [qpadm()] fit (so `f4`,
+#'   `rankdrop`, `f4_var_rcond`, `f4_var_singular_loadings` are present, plus
+#'   `weights` and `popdrop` when `target` is non-`NULL`; on the qpwave-style
+#'   `target = NULL` path [qpadm()] omits `weights` and `popdrop`) plus four
+#'   pruner-specific slots. As a special case, when `reason = "inner_error"`
+#'   the qpadm slots are absent entirely (`fit` was `NULL`); only the four
+#'   pruner-specific slots below are returned. The four slots are:
 #' \itemize{
 #'   \item `pruning_trail`: tibble with one row per drop, columns `iteration`
 #'     (integer), `dropped` (character, the pop dropped), `loading` (double,
@@ -1671,7 +1675,10 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
   # >= length(left) + (!is.null(target)). We use this as the default floor.
   if(is.null(min_right_pops)) {
     min_right_pops = as.integer(length(left) + (!is.null(target)))
-    min_right_pops = max(min_right_pops, 1L)
+    # Never below 2: qpadm requires length(right) >= 2 to build f4_var at all
+    # (right[-1] must be non-empty), so a floor of 1 would let the loop drop to
+    # a 1-pop set that errors inside qpadm rather than tripping the floor guard.
+    min_right_pops = max(min_right_pops, 2L)
   } else {
     if(!is.numeric(min_right_pops) || length(min_right_pops) != 1 ||
        is.na(min_right_pops) || min_right_pops < 1)
@@ -1728,18 +1735,26 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
   fit       = NULL
 
   for(iter in seq_len(max_iterations)) {
-    # Wrap in tryCatch so an inner qpadm() error (e.g. a degenerate right set
-    # after a bad drop) returns a partial trail rather than losing all progress.
-    fit = tryCatch(fit_one(right_now), error = function(e) {
-      cli::cli_warn(
-        c("!" = paste0("[qpadm_with_pruning] inner qpadm() errored at iter ",
-                       iter, "; returning partial trail."),
-          "i" = conditionMessage(e)))
-      NULL
-    })
-    if(is.null(fit)) {
-      reason = "inner_error"
-      break
+    # Iteration 1: let an inner qpadm() error propagate. A failure on the
+    # initial right set means the caller's inputs are bad (misspelled pop, too
+    # few right pops, ...) and a loud error is far more useful than a shell
+    # return with reason = "inner_error" and no qpadm fields.
+    # Iteration 2+: a failure means a *drop* produced an unfittable set, so
+    # catch it, warn, and return the partial trail rather than losing progress.
+    if(iter == 1L) {
+      fit = fit_one(right_now)
+    } else {
+      fit = tryCatch(fit_one(right_now), error = function(e) {
+        cli::cli_warn(
+          c("!" = paste0("[qpadm_with_pruning] inner qpadm() errored at iter ",
+                         iter, "; returning partial trail."),
+            "i" = conditionMessage(e)))
+        NULL
+      })
+      if(is.null(fit)) {
+        reason = "inner_error"
+        break
+      }
     }
 
     # Success?
@@ -1842,10 +1857,38 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
     right_now = setdiff(right_now, pop_to_drop)
   }
 
-  # If we fell off the end of the loop without setting reason, the iter cap
-  # was reached. Should be unreachable given the default max_iterations
-  # formula, but defensive.
-  if(is.na(reason)) reason = "iter_cap"
+  # If we fell off the end of the loop without setting reason, the iteration
+  # cap was reached. Unreachable with the default max_iterations (the floor
+  # fires on the last allowed iteration), but reachable when the caller passes
+  # an explicit max_iterations smaller than that default.
+  #
+  # The loop commits its drop at the *end* of each iteration body and only
+  # fits at the *top*, so on a cap exit the last drop was applied to right_now
+  # but never fitted: `fit` lags `right_final` by one drop. Re-fit on the final
+  # right_now to re-synchronise, backfill the last trail row's rcond_after, and
+  # reclassify as converged if that final drop happened to clear the threshold.
+  if(is.na(reason)) {
+    final_fit = tryCatch(fit_one(right_now), error = function(e) {
+      cli::cli_warn(
+        c("!" = paste0("[qpadm_with_pruning] reconciliation fit on the final ",
+                       "right set errored after the iteration cap."),
+          "i" = conditionMessage(e)))
+      NULL
+    })
+    if(is.null(final_fit)) {
+      # The final drop produced an unfittable set. Report inner_error; the
+      # returned object carries no qpadm fields (see @return).
+      fit = NULL
+      reason = "inner_error"
+    } else {
+      fit = final_fit
+      if(length(trail_rows) > 0)
+        trail_rows[[length(trail_rows)]]$rcond_after = fit$f4_var_rcond
+      reason = if(isTRUE(is.finite(fit$f4_var_rcond)) &&
+                  fit$f4_var_rcond >= singular_threshold)
+        "converged" else "iter_cap"
+    }
+  }
 
   # ---- assemble trail tibble ----
   if(length(trail_rows) == 0) {

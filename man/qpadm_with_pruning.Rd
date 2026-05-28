@@ -70,9 +70,13 @@ the dropped pop and rcond. Default \code{FALSE} (batch-friendly).}
 \item{...}{Additional arguments forwarded to each inner \code{\link[=qpadm]{qpadm()}} call.}
 }
 \value{
-A list with the slots of the final \code{\link[=qpadm]{qpadm()}} fit (so \code{weights},
-\code{f4}, \code{rankdrop}, \code{popdrop}, \code{f4_var_rcond}, \code{f4_var_singular_loadings}
-are all present) plus four pruner-specific slots:
+A list with the slots of the final \code{\link[=qpadm]{qpadm()}} fit (so \code{f4},
+\code{rankdrop}, \code{f4_var_rcond}, \code{f4_var_singular_loadings} are present, plus
+\code{weights} and \code{popdrop} when \code{target} is non-\code{NULL}; on the qpwave-style
+\code{target = NULL} path \code{\link[=qpadm]{qpadm()}} omits \code{weights} and \code{popdrop}) plus four
+pruner-specific slots. As a special case, when \code{reason = "inner_error"}
+the qpadm slots are absent entirely (\code{fit} was \code{NULL}); only the four
+pruner-specific slots below are returned. The four slots are:
 \itemize{
 \item \code{pruning_trail}: tibble with one row per drop, columns \code{iteration}
 (integer), \code{dropped} (character, the pop dropped), \code{loading} (double,

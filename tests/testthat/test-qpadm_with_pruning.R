@@ -125,6 +125,51 @@ test_that("hitting min_right_pops before convergence reports floor", {
 })
 
 
+# ---- (d2) iter_cap re-fit synchronises fit with right_final ---------------
+
+test_that("iter_cap re-fits so fit corresponds to right_final", {
+  # Two clone pairs need two drops to converge. Capping max_iterations at 1
+  # forces the loop to exhaust its budget after a single drop. The post-loop
+  # reconciliation must re-fit on the final (still-singular) right set so the
+  # returned fit corresponds to right_final, not the pre-drop set.
+  a = .singular_args(n_clones = 2)
+  fit = .mute(qpadm_with_pruning(
+    a$data, left = a$left, right = a$right, target = a$target,
+    fudge = 1e-12, singular_threshold = 1e-10, max_iterations = 1))
+
+  expect_false(fit$converged)
+  expect_identical(fit$reason, "iter_cap")
+  expect_equal(nrow(fit$pruning_trail), 1L)
+  expect_equal(length(fit$right_final), length(a$right) - 1L)
+  # The returned fit must equal a direct qpadm() on right_final (the desync
+  # this re-fit fixes: without it, fit would be the pre-drop 6-pop fit).
+  direct = .mute(qpadm(a$data, left = a$left, right = fit$right_final,
+                       target = a$target, fudge = 1e-12, verbose = FALSE))
+  expect_equal(fit$f4_var_rcond, direct$f4_var_rcond, tolerance = 1e-8)
+  # The last trail row's rcond_after was backfilled to the re-fit's rcond.
+  expect_true(is.finite(fit$pruning_trail$rcond_after[1]))
+  expect_equal(fit$pruning_trail$rcond_after[1], fit$f4_var_rcond,
+               tolerance = 1e-8)
+})
+
+
+test_that("iter_cap reclassifies to converged when the final drop clears", {
+  # One clone pair converges after one drop. Capping at max_iterations = 1
+  # stops the loop right after that drop; the reconciliation re-fit on the
+  # cleared 4-pop set must detect convergence and report it honestly rather
+  # than mislabelling a good fit as iter_cap.
+  a = .singular_args(n_clones = 1)
+  fit = .mute(qpadm_with_pruning(
+    a$data, left = a$left, right = a$right, target = a$target,
+    fudge = 1e-12, singular_threshold = 1e-10, max_iterations = 1))
+
+  expect_true(fit$converged)
+  expect_identical(fit$reason, "converged")
+  expect_equal(length(fit$right_final), length(a$right) - 1L)
+  expect_true(fit$f4_var_rcond >= 1e-10)
+})
+
+
 # ---- (e) pruner-direct equivalence ----------------------------------------
 
 test_that("converged fit equals direct qpadm() with right_final", {
@@ -192,8 +237,11 @@ test_that("lookahead picks the candidate with best post-drop rcond", {
   expect_true(pl$converged)
   # The dropped pop's rcond_after must equal the converged fit's rcond
   # (lookahead committed the BEST candidate, then re-ran from there).
+  # Tolerance 1e-8 (matching test (e)): the probe and committed fits are two
+  # independent rcond() calls on the same matrix, bit-identical on one platform
+  # but not guaranteed so across BLAS/CPU variants.
   expect_equal(pl$pruning_trail$rcond_after[1], pl$f4_var_rcond,
-               tolerance = 1e-12)
+               tolerance = 1e-8)
 })
 
 
