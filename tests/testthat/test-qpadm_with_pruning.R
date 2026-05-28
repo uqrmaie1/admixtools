@@ -278,6 +278,31 @@ test_that("validates singular_threshold + right + min_right_pops", {
                "min_right_pops")
 })
 
+test_that("validates target shape and rejects non-integer / oversized counts", {
+  a = .well_conditioned_args()
+  # target must be NULL or a single non-NA name.
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right, target = NA),
+               "target")
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right,
+                                  target = c("Denisova.DG", "Mbuti.DG")),
+               "target")
+  # Non-integer counts are rejected rather than silently truncated.
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right, a$target,
+                                  min_right_pops = 3.7),
+               "whole number")
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right, a$target,
+                                  max_iterations = 2.5),
+               "whole number")
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right, a$target,
+                                  strategy = "lookahead", lookahead_top_j = 1.5),
+               "whole number")
+  # A count above the integer range is rejected, not coerced to NA (which would
+  # otherwise trip a cryptic `if(NA)` downstream).
+  expect_error(qpadm_with_pruning(a$data, a$left, a$right, a$target,
+                                  min_right_pops = 2^31),
+               "whole number no larger than")
+})
+
 test_that("verbose + singular_threshold bind to formals, not `...`", {
   # Both `verbose` and `singular_threshold` are formals of qpadm_with_pruning;
   # R's argument matching binds them to the formals before `...` collection,

@@ -1646,6 +1646,21 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
   strategy = match.arg(strategy)
 
   # ---- argument validation ----
+  # Validate a positive whole-number scalar, returning it as an integer. The
+  # whole-number test uses round() rather than as.integer() so a value above
+  # .Machine$integer.max is rejected with a clear message instead of being
+  # coerced to NA (which would later trip a cryptic `if(NA)`).
+  .as_count = function(x, nm) {
+    if(!is.numeric(x) || length(x) != 1 || is.na(x) || x < 1)
+      stop("'", nm, "' must be a single positive integer.")
+    if(x != round(x) || x > .Machine$integer.max)
+      stop("'", nm, "' must be a whole number no larger than ",
+           .Machine$integer.max, "; got ", x, ".")
+    as.integer(x)
+  }
+
+  if(!is.null(target) && (length(target) != 1 || is.na(target)))
+    stop("'target' must be NULL (qpwave-style) or a single non-NA population name.")
   if(!is.numeric(singular_threshold) || length(singular_threshold) != 1 ||
      is.na(singular_threshold) || singular_threshold <= 0)
     stop("'singular_threshold' must be a single positive numeric. ",
@@ -1680,13 +1695,7 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
     # a 1-pop set that errors inside qpadm rather than tripping the floor guard.
     min_right_pops = max(min_right_pops, 2L)
   } else {
-    if(!is.numeric(min_right_pops) || length(min_right_pops) != 1 ||
-       is.na(min_right_pops) || min_right_pops < 1)
-      stop("'min_right_pops' must be a single positive integer.")
-    # Catch non-integer values (e.g. 3.7) that as.integer() would silently truncate.
-    if(min_right_pops != as.integer(min_right_pops))
-      stop("'min_right_pops' must be a whole number; ", min_right_pops, " is not.")
-    min_right_pops = as.integer(min_right_pops)
+    min_right_pops = .as_count(min_right_pops, "min_right_pops")
   }
 
   if(!is.character(right) || length(right) < min_right_pops)
@@ -1696,21 +1705,10 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
   if(is.null(max_iterations)) {
     max_iterations = length(right) - min_right_pops + 1L
   } else {
-    if(!is.numeric(max_iterations) || length(max_iterations) != 1 ||
-       is.na(max_iterations) || max_iterations < 1)
-      stop("'max_iterations' must be a single positive integer or NULL.")
-    if(max_iterations != as.integer(max_iterations))
-      stop("'max_iterations' must be a whole number; ", max_iterations, " is not.")
-    max_iterations = as.integer(max_iterations)
+    max_iterations = .as_count(max_iterations, "max_iterations")
   }
-  if(strategy == "lookahead") {
-    if(!is.numeric(lookahead_top_j) || length(lookahead_top_j) != 1 ||
-       is.na(lookahead_top_j) || lookahead_top_j < 1)
-      stop("'lookahead_top_j' must be a single positive integer.")
-    if(lookahead_top_j != as.integer(lookahead_top_j))
-      stop("'lookahead_top_j' must be a whole number; ", lookahead_top_j, " is not.")
-    lookahead_top_j = as.integer(lookahead_top_j)
-  }
+  if(strategy == "lookahead")
+    lookahead_top_j = .as_count(lookahead_top_j, "lookahead_top_j")
 
   # ---- single-shot qpadm wrapper -------------------------------------
   # Each inner call runs with verbose = FALSE (the loop's cli output owns
@@ -1799,9 +1797,13 @@ qpadm_with_pruning = function(data, left, right, target = NULL,
       cand_loadings = abs(ordered$loading[seq_len(n_cand)])
       cand_rconds = vapply(candidates, function(p) {
         cand_right = setdiff(right_now, p)
-        # suppressWarnings: probe fits on a near-singular candidate may emit
-        # qpadm's near-singular R-level warning; these are expected during
-        # lookahead scoring and would flood the user's console.
+        # suppressWarnings: these are throwaway probe fits used only for their
+        # rcond. fit_one() forces verbose = FALSE (so qpadm's verbose-gated
+        # near-singular warning never fires here), but qpadm can still emit
+        # ungated warnings -- e.g. "Discarding block(s) due to missing values"
+        # -- which would repeat lookahead_top_j times per iteration. The
+        # committed fit (unsuppressed) surfaces any such warning once, so it is
+        # safe to silence them on the probes.
         cand_fit = tryCatch(
           suppressWarnings(fit_one(cand_right)),
           error = function(e) NULL)
