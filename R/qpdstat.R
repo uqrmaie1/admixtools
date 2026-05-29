@@ -452,7 +452,7 @@ fstat_get_popcombs = function(f2_data = NULL, pop1 = NULL, pop2 = NULL, pop3 = N
 
 
 
-gmat_to_aftable = function(gmat, popvec) {
+gmat_to_aftable = function(gmat, popvec, nthreads = 1L) {
   # raw genotype matrix, not corrected for ploidy, nind x nsnp
   # The math is:
   #   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
@@ -461,7 +461,9 @@ gmat_to_aftable = function(gmat, popvec) {
   # (the !is.na cast and its rowsum). Per-block savings are modest in
   # isolation but accumulate across the ~1300+ blocks in production
   # f4blockdat_from_geno / qpdstat_geno runs.
-  cpp_gmat_to_aftable(gmat, as.integer(popvec))
+  # nthreads is the OpenMP budget for the kernel, resolved by the caller in
+  # the main process (default 1 = serial for any other caller).
+  cpp_gmat_to_aftable(gmat, as.integer(popvec), nthreads)
 }
 
 

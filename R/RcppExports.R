@@ -5,16 +5,16 @@ cpp_aftable_to_dstatnum_old <- function(aftable, p1, p2, p3, p4) {
     .Call('_admixtools_cpp_aftable_to_dstatnum_old', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4)
 }
 
-cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only) {
-    .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
+cpp_aftable_to_dstatnum <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads = 1L) {
+    .Call('_admixtools_cpp_aftable_to_dstatnum', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads)
 }
 
-cpp_aftable_to_dstatnum_rowmeans <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only) {
-    .Call('_admixtools_cpp_aftable_to_dstatnum_rowmeans', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
+cpp_aftable_to_dstatnum_rowmeans <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads = 1L) {
+    .Call('_admixtools_cpp_aftable_to_dstatnum_rowmeans', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads)
 }
 
-cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only) {
-    .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only)
+cpp_aftable_to_dstatden <- function(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads = 1L) {
+    .Call('_admixtools_cpp_aftable_to_dstatden', PACKAGE = 'admixtools', aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads)
 }
 
 cpp_outer_array_mul <- function(m1, m2) {
@@ -37,8 +37,8 @@ row_prods <- function(x) {
     .Call('_admixtools_row_prods', PACKAGE = 'admixtools', x)
 }
 
-cpp_gmat_to_aftable <- function(gmat, popvec) {
-    .Call('_admixtools_cpp_gmat_to_aftable', PACKAGE = 'admixtools', gmat, popvec)
+cpp_gmat_to_aftable <- function(gmat, popvec, nthreads = 1L) {
+    .Call('_admixtools_cpp_gmat_to_aftable', PACKAGE = 'admixtools', gmat, popvec, nthreads)
 }
 
 cpp_opt_A <- function(B, xvec, qinv, nr, fudge) {

@@ -3200,6 +3200,23 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 }
 
 
+# Resolve the per-task OpenMP thread budget for the parallel f-stat kernels
+# (cpp_aftable_to_dstat* and cpp_gmat_to_aftable). Call this in the main
+# process -- where parallelly::availableCores() sees the true machine /
+# cgroup / scheduler core count -- and pass the result down into the kernels.
+# `n_concurrent` is how many of these tasks run at once: pass
+# future::nbrOfWorkers() when the caller dispatches blocks through furrr (so
+# block-level and in-block parallelism together stay at or below the core
+# count), or leave it at 1 for a serial block loop. Inside a future worker
+# availableCores() already returns 1, so the budget collapses to 1 there
+# regardless. Centralizing the rule here keeps the two call sites
+# (f4blockdat_from_geno, f3blockdat_from_geno) from drifting.
+omp_thread_budget = function(n_concurrent = 1L) {
+  if(!is.finite(n_concurrent) || n_concurrent < 1) n_concurrent = 1L
+  max(1L, as.integer(parallelly::availableCores()) %/% as.integer(n_concurrent))
+}
+
+
 #' f4 from genotype data
 #'
 #' Compute per-block f4-statistics directly from genotype data
@@ -3368,6 +3385,15 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   ncombs = nrow(pc)
   process_start_time = Sys.time()
 
+  # OpenMP thread budget for the parallel f-stat kernels, resolved HERE in the
+  # main process and passed explicitly into the kernels. Blocks are dispatched
+  # through furrr, so pass the worker count: the budget is availableCores()
+  # split across the future workers, keeping block-level (furrr) and in-block
+  # (OpenMP) parallelism together at or below the core count under every plan
+  # (sequential -> 1 worker, all cores to OpenMP; multisession/multicore with
+  # W workers -> availableCores()/W threads per worker). See omp_thread_budget.
+  omp_threads = omp_thread_budget(future::nbrOfWorkers())
+
   # Per-block worker. Each call reads its own SNP range and computes
   # f4-statistics locally, so blocks are independent and can be
   # parallelized through the active future::plan() (e.g.
@@ -3381,11 +3407,15 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     # (common at chromosome tails or with tight blgsize). The original
     # extract_f2 path at L3516 has the same guard.
     gmat = block_reader$reader(start[i], end[i])[, snpind[[i]], drop = FALSE]
-    at = gmat_to_aftable(gmat, popvec)
+    at = gmat_to_aftable(gmat, popvec, nthreads = omp_threads)
     block_usesnps = usesnps
     if(!allsnps) {
       block_usesnps = popind %>% map(~(colSums(!is.finite(at[.,,drop=FALSE])) == 0)+0) %>% do.call(rbind, .)
       if(poly_only) {
+        # Polymorphism filter for the !allsnps path (per population group). A
+        # sibling filter for the allsnps path lives in C++ (poly_only_keep in
+        # src/cpp_fstats.cpp); the two encode the same intent on different
+        # paths, so keep them in sync if the polymorphism definition changes.
         #fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1)+0
         fn = function(mat) apply(mat, 2, function(x) length(unique(na.omit(x))) > 1 | !max(na.omit(x)) %in% c(0,1))+0
         block_usesnps = (block_usesnps & (popind %>% map(~fn(at[.,,drop=FALSE])) %>% do.call(rbind, .)))+0
@@ -3399,7 +3429,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
       # On dense million-popcomb runs the materialized variant is many GB
       # per block (e.g. ~45 GB at 1.57M popcombs x 3608 SNPs) and trips
       # R's allocator or the OOM killer; streaming peaks at ~12 MB.
-      rm = cpp_aftable_to_dstatnum_rowmeans(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      rm = cpp_aftable_to_dstatnum_rowmeans(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
       # arma::vec wraps to R as either a NumericVector or a 1-column
       # matrix depending on the RcppArmadillo build; flatten with c() so
       # res$numer is always a plain numeric vector for the worker-side
@@ -3408,12 +3438,12 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     } else {
       # snpwt path needs the full per-SNP matrix to apply column scaling
       # before the row reduction, so keep the materialized variant.
-      num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
       num$num = t(t(num$num) * snpwt[(start[i]+1):end[i]])
       res = list(numer = unname(rowMeans(num$num, na.rm = TRUE)), cnt = c(num$cnt))
     }
     if(!f4mode) {
-      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only)
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
       res$denom = unname(rowMeans(den, na.rm = TRUE))
     }
     # Defense in depth: worker-side shape assertion. If a future edit to
@@ -3610,6 +3640,11 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   usesnps = matrix(0)
 
   numer = denom = cnt = matrix(NA, numblocks, nrow(pc))
+  # OpenMP thread budget for cpp_aftable_to_dstatnum below. This block loop is
+  # serial (no future dispatch), so n_concurrent stays at its default of 1 and
+  # OpenMP gets all available cores. If this loop is ever parallelized with
+  # future_map, pass future::nbrOfWorkers() here too, as the f4 path does.
+  omp_threads = omp_thread_budget()
   for(i in 1:numblocks) {
     if(verbose) .heartbeat("Computing {nrow(pc)} f3-statistics for block {i} of {numblocks}...")
     # replace following two lines with cpp_geno_to_afs?
@@ -3629,7 +3664,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
         usesnps = usesnps & usesnps2
       }
     }
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only)
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only, omp_threads)
     if(apply_corr || !outgroupmode) {
       gmatinv = 2-gmat
       gmatplo = gmat

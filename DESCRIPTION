@@ -29,6 +29,7 @@ Imports:
     dplyr (>= 1.1.0),
     foreach,
     furrr,
+    future,
     ggplot2,
     grDevices,
     igraph (>= 2.1.0),
@@ -50,7 +51,6 @@ Imports:
 Suggests:
     admixturegraph,
     DT,
-    future,
     genio,
     ggforce,
     gridExtra,
