@@ -14,6 +14,6 @@ Named numeric vector keyed by node name.
 }
 \description{
 Backward-compatibility shim for callers that used the legacy
-\code{attr(result, "node_times")} attribute set by \code{read_legofit_output}
-before epsilon.3. Resolves to \code{nodes$time} from the new nodes tibble.
+\code{attr(result, "node_times")} attribute set by \code{read_legofit_output}.
+Resolves to \code{nodes$time} from the new nodes tibble.
 }

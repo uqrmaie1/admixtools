@@ -1,5 +1,5 @@
 # Canonical 5-node, 1-admixture graph for unit tests.
-# See LLD §9.1 for the topology diagram.
+# Topology is defined by the edge list below.
 make_minimal_graph <- function() {
   tibble::tribble(
     ~from, ~to,  ~type,   ~weight,
@@ -138,7 +138,7 @@ make_minimal_graph_with_outgroup <- function() {
   out
 }
 
-# Shared fixture for nodes-tibble tests (epsilon.1).
+# Shared fixture for nodes-tibble tests.
 # 5-node OOA-style topology: out + (anc -> v, modern -> afr, eur).
 # anc is internal-sampled (has incident children but is also in the nodes
 # tibble with samples set); out, v, afr, eur are leaf-sampled.

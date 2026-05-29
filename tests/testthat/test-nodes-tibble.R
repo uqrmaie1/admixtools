@@ -1,4 +1,4 @@
-# Tests for the nodes-tibble attribute API (epsilon.1, LLD §2)
+# Tests for the nodes-tibble attribute API
 
 test_that("graph_nodes returns empty 7-column tibble when no attr", {
   edges <- tibble::tibble(from = "A", to = "B",
@@ -132,7 +132,7 @@ test_that("prune_nodes_attr preserves in-set rows", {
 test_that("refresh_edge_times rebuilds edges$time from nodes$time", {
   g <- make_test_nodes_graph()
   g <- set_node_attrs(g, c("v", "afr", "eur"), time = c(1.5, 0.0, 0.0))
-  # set_node_attrs already calls refresh_edge_times; verify edge view
+  # set_node_attrs writes the denormalized edge view itself; verify it
   expect_equal(g$time[g$to == "v"],   1.5)
   expect_equal(g$time[g$to == "afr"], 0.0)
   expect_equal(g$time[g$to == "eur"], 0.0)
@@ -283,7 +283,7 @@ test_that("coerce_to_edge_tibble preserves edge_attr extraction (regression)", {
   # PR delta behavior: edge attrs weight, type, time still extracted
   ig <- igraph::graph_from_edgelist(matrix(c("R","A"), ncol = 2))
   igraph::E(ig)$weight <- 0.5
-  igraph::V(ig)$name <- c("R", "A")  # required for epsilon.1
+  igraph::V(ig)$name <- c("R", "A")  # vertex names are required
   edges <- coerce_to_edge_tibble(ig)
   expect_equal(edges$weight, 0.5)
 })
@@ -403,10 +403,10 @@ test_that("validate_edge_tibble(strict=TRUE) errors when nodes$time set but edge
     class = "admixtools_invalid_graph")
 })
 
-# --- regression tests for round-3 review findings -------------------------
+# --- regression tests for time-consistency edge cases ---------------------
 
 test_that("validate_edge_tibble(strict=TRUE) errors when nodes$admix_event_time set but edges$admix_event_time absent", {
-  # Finding 1 regression: admix_event_time block must mirror the time block
+  # admix_event_time block must mirror the time block
   # and abort when the edge column is missing.
   # Use type="normal" so the admix-pair invariant check does not fire first.
   edges <- tibble::tibble(from = "R", to = "A", type = "normal", weight = NA_real_)
@@ -421,7 +421,7 @@ test_that("validate_edge_tibble(strict=TRUE) errors when nodes$admix_event_time 
 })
 
 test_that("set_node_attrs time=NA_real_ clears the edge time entry", {
-  # Finding 2 regression: targeted write must propagate NA explicitly,
+  # targeted write must propagate NA explicitly,
   # not skip it the way refresh_edge_times (full-rebuild) would.
   g <- tibble::tibble(from = "R", to = "A", type = "normal", weight = NA_real_)
   g <- set_node_attrs(g, "A", time = 1.5)
@@ -431,7 +431,7 @@ test_that("set_node_attrs time=NA_real_ clears the edge time entry", {
 })
 
 test_that("coerce_to_edge_tibble preserves V(ig)$time when E(ig)$time is all-NA", {
-  # Finding 3 regression: skip guard must check any(!is.na(edges[[col]]));
+  # skip guard must check any(!is.na(edges[[col]]));
   # an all-NA edge column must NOT suppress extraction of vertex-level times.
   ig <- igraph::graph_from_edgelist(matrix(c("R", "A"), ncol = 2))
   igraph::E(ig)$time <- NA_real_     # edge attr exists but is all-NA
@@ -442,7 +442,7 @@ test_that("coerce_to_edge_tibble preserves V(ig)$time when E(ig)$time is all-NA"
   expect_equal(nt$time[nt$name == "A"], 0.0,  tolerance = 1e-12)
 })
 
-# --- finding #1: strict mode must flag a present-but-NA edge value ---------
+# --- strict mode must flag a present-but-NA edge value --------------------
 # A node carrying a time requires its incoming edge to carry that value in
 # the denormalized edges$time view. An all-NA edge column is NOT "consistent";
 # the old predicate (which required !is.na(x$time)) silently passed it.

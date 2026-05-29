@@ -14,7 +14,6 @@ The graph with stale nodes rows removed.
 }
 \description{
 Called once per emitted candidate by find_graphs and topology-
-mutating helpers in epsilon.3. Per-call cost O(N) where N is
-nrow(nodes_tbl).
+mutating helpers. Per-call cost O(N) where N is nrow(nodes_tbl).
 }
 \keyword{internal}

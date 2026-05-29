@@ -13,9 +13,17 @@ refresh_edge_times(graph)
 The graph with edges$time and edges$admix_event_time refreshed.
 }
 \description{
-Per the §1.2 invariants in the LLD. Rebuilds both edges$time (from
-nodes$time) and edges$admix_event_time (from nodes$admix_event_time).
-Called by set_node_attrs after a time update; users who mutate nodes
-columns directly should call this before reading the edge views.
+Rebuilds edges$time (from nodes$time) and edges$admix_event_time
+(from nodes$admix_event_time) for every edge whose destination node
+appears in the nodes tibble. Edges whose destination is not recorded
+in the nodes tibble are left unchanged. Columns are only created
+when at least one node has a non-NA value.
+}
+\details{
+This is a full rebuild over every tracked node. \code{set_node_attrs} does
+not call it; that function performs its own targeted edge-time write so
+it can also clear an edge entry when a node time is set to NA. Call
+\code{refresh_edge_times} after mutating the nodes-tibble columns directly,
+before reading the edge views.
 }
 \keyword{internal}

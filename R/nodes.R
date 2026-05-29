@@ -1,4 +1,4 @@
-# admixtools typed condition classes (epsilon.1) -----------------------
+# admixtools typed condition classes ----------------------------------
 # This file establishes the typed error / warning classes used by the
 # sampled-internal-nodes feature. Error classes are not "registered"
 # anywhere; they are conventions on the `class =` argument to
@@ -9,7 +9,7 @@
 #   admixtools_invalid_graph
 #       strict-validation failure: orphan rows, duplicate name,
 #       malformed nodes tibble, time-invariant break.
-#   admixtools_pop_missing_in_f2_cache (RESERVED — thrown in epsilon.3)
+#   admixtools_pop_missing_in_f2_cache (reserved; not yet thrown)
 #       qpgraph entry: sampled population absent from f2 cache.
 #
 # Warnings (rlang::warn):
@@ -21,9 +21,9 @@
 #       non-strict prune of nodes-tibble rows without edges.
 #   admixtools_dropping_node_attrs
 #       as_edge_tibble discards a non-empty nodes tibble.
-#   admixtools_samples_arg_overridden (RESERVED — thrown in epsilon.2)
+#   admixtools_samples_arg_overridden (reserved; not yet thrown)
 #       graph_to_lgo samples= conflicts with nodes attr.
-#   admixtools_twoN_arg_overridden (RESERVED — thrown in epsilon.2)
+#   admixtools_twoN_arg_overridden (reserved; not yet thrown)
 #       graph_to_lgo twoN= conflicts with nodes attr.
 # ---------------------------------------------------------------------
 
@@ -207,8 +207,12 @@ get_sampled_nodes <- function(graph) {
 #' appears in the nodes tibble. Edges whose destination is not recorded
 #' in the nodes tibble are left unchanged. Columns are only created
 #' when at least one node has a non-NA value.
-#' Called by set_node_attrs after a time update; users who mutate nodes
-#' columns directly should call this before reading the edge views.
+#'
+#' This is a full rebuild over every tracked node. `set_node_attrs` does
+#' not call it; that function performs its own targeted edge-time write so
+#' it can also clear an edge entry when a node time is set to NA. Call
+#' `refresh_edge_times` after mutating the nodes-tibble columns directly,
+#' before reading the edge views.
 #'
 #' @param graph An edge tibble.
 #' @return The graph with edges$time and edges$admix_event_time refreshed.
@@ -240,8 +244,7 @@ refresh_edge_times <- function(graph) {
 #' Drop nodes-tibble rows whose name has no incident edge.
 #'
 #' Called once per emitted candidate by find_graphs and topology-
-#' mutating helpers in epsilon.3. Per-call cost O(N) where N is
-#' nrow(nodes_tbl).
+#' mutating helpers. Per-call cost O(N) where N is nrow(nodes_tbl).
 #'
 #' @param graph An edge tibble.
 #' @return The graph with stale nodes rows removed.
@@ -283,8 +286,8 @@ as_edge_tibble <- function(graph) {
 #' Get fitted times as a named numeric vector.
 #'
 #' Backward-compatibility shim for callers that used the legacy
-#' `attr(result, "node_times")` attribute set by `read_legofit_output`
-#' before epsilon.3. Resolves to `nodes$time` from the new nodes tibble.
+#' `attr(result, "node_times")` attribute set by `read_legofit_output`.
+#' Resolves to `nodes$time` from the new nodes tibble.
 #'
 #' @param graph An edge tibble.
 #' @return Named numeric vector keyed by node name.

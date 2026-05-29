@@ -58,7 +58,7 @@ coerce_to_edge_tibble <- function(x) {
         edges[[attr]] <- val
       }
     }
-    # epsilon.1: extract vertex attributes into the nodes tibble.
+    # Extract vertex attributes into the nodes tibble.
     # Vertex names are required; absent vertex names are an error.
     if (is.null(igraph::V(x)$name))
       rlang::abort(
@@ -85,8 +85,16 @@ coerce_to_edge_tibble <- function(x) {
           any(!is.na(edges[[col]]))) next
       if (!is.null(va[[col]])) nt[[col]] <- va[[col]]
     }
-    # Enforce canonical integer type for samples regardless of igraph storage.
-    if (!is.integer(nt$samples)) nt$samples <- as.integer(nt$samples)
+    # Enforce the canonical schema types regardless of how igraph stored each
+    # vertex attribute (e.g. an integer-valued `time` attr must not flip the
+    # column from double to integer). `samples` is integer, the numeric columns
+    # are double, and the *_param columns are character.
+    nt$samples          <- as.integer(nt$samples)
+    nt$twoN             <- as.double(nt$twoN)
+    nt$time             <- as.double(nt$time)
+    nt$admix_event_time <- as.double(nt$admix_event_time)
+    nt$twoN_param       <- as.character(nt$twoN_param)
+    nt$time_param       <- as.character(nt$time_param)
     # If R attr("nodes") is ALSO present, warn and prefer vertex_attr
     r_attr_nodes <- attr(x, "nodes")
     if (!is.null(r_attr_nodes))
@@ -210,7 +218,7 @@ validate_edge_tibble <- function(x, strict = FALSE) {
       class = "legofit_invalid_input"
     )
   }
-  # epsilon.1: strict-mode checks against the nodes attribute
+  # strict-mode checks against the nodes attribute
   nt <- attr(x, "nodes")
   if (!is.null(nt) && nrow(nt) > 0) {
     canonical <- unique(c(x$from, x$to))
@@ -1109,7 +1117,7 @@ validate_via_roundtrip <- function(lgo_text, edges) {
               dplyr::mutate(type = norm_type(type)) %>%
               dplyr::arrange(from, to)
   # This is a topology check (from/to/type only). `edges` may carry a nodes
-  # attribute (epsilon.1), which dplyr verbs propagate onto `expected` but not
+  # attribute, which dplyr verbs propagate onto `expected` but not
   # onto `got` (parsed from text); compare values only so that extraneous
   # attribute does not register as a spurious topology mismatch.
   if (!isTRUE(all.equal(expected, got, check.attributes = FALSE))) {
@@ -1132,7 +1140,10 @@ validate_via_roundtrip <- function(lgo_text, edges) {
 #' @param file Output file path. If `NULL` (default), returns the `.lgo` text
 #'   invisibly without writing.
 #' @param samples Samples per leaf. A scalar (applied to all leaves) or a named
-#'   integer vector (per-leaf overrides). Default `1`.
+#'   integer vector (per-leaf overrides). Default `1`. A `samples` value carried
+#'   in the graph's nodes tibble (see [set_node_attrs()]) takes precedence over
+#'   this argument for any node it names, and also lets internal (non-leaf) nodes
+#'   be declared sampled.
 #' @param dates_terminal Starting time value for terminal (leaf) nodes. Default
 #'   `0`.
 #' @param outpop Name of an outgroup leaf to strip from the graph before export.
