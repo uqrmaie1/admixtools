@@ -215,7 +215,7 @@ test_that("T1.6: custom drift_to_time function scales output times", {
 
   scale <- 1000
   expect_warning(
-    txt_scaled <- graph_to_lgo(
+    graph_to_lgo(
       g,
       time_handling = "init",
       drift_to_time = function(d, s) d * scale,
