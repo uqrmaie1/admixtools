@@ -55,7 +55,7 @@ test_that("assemble_lgo produces the canonical .lgo for minimal_graph", {
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], expected)
 })
 
-test_that("compute_times fix_admix: LLD §13 exact values", {
+test_that("compute_times fix_admix gives expected exact values", {
   g <- make_minimal_graph()
   result <- compute_times(g, "fix_admix", default_drift_to_time, 0)
   expect_equal(result$value[["R"]], 0.07, tolerance = 1e-9)
@@ -74,7 +74,7 @@ test_that("compute_times fix_admix: LLD §13 exact values", {
 })
 
 test_that("compute_times init: errors when default drift_to_time gives inconsistent admix times", {
-  # Per LLD §13: with default drift_to_time (identity) on minimal_graph,
+  # With default drift_to_time (identity) on minimal_graph,
   # the two admix branch lengths (0.60, 0.40) propagate to inconsistent
   # root times via the two paths. This is expected behavior.
   g <- make_minimal_graph()
@@ -203,7 +203,7 @@ test_that("resolve_twoN_decls errors on unknown node names", {
   )
 })
 
-test_that("generate_param_names matches HLD §3.7 convention", {
+test_that("generate_param_names matches the parameter naming convention", {
   g <- make_minimal_graph()
   p <- generate_param_names(g)
   expect_equal(p$time["R"],    c(R = "T_R"))

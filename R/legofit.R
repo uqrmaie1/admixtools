@@ -58,6 +58,51 @@ coerce_to_edge_tibble <- function(x) {
         edges[[attr]] <- val
       }
     }
+    # Extract vertex attributes into the nodes tibble.
+    # Vertex names are required; absent vertex names are an error.
+    if (is.null(igraph::V(x)$name))
+      rlang::abort(
+        "igraph vertices have no `name` attribute; cannot build nodes tibble.",
+        class = "admixtools_invalid_graph")
+    va <- igraph::vertex_attr(x)
+    schema_cols <- c("samples", "twoN_param", "twoN",
+                     "time_param", "time", "admix_event_time")
+    nt <- tibble::tibble(
+      name             = va$name,
+      samples          = NA_integer_,
+      twoN_param       = NA_character_,
+      twoN             = NA_real_,
+      time_param       = NA_character_,
+      time             = NA_real_,
+      admix_event_time = NA_real_
+    )
+    for (col in schema_cols) {
+      # Skip vertex-level time/admix_event_time when the same column was already
+      # extracted from edge attributes above — they carry different semantics
+      # (branch lengths vs absolute times) and would cause false-positive errors
+      # from validate_edge_tibble(strict=TRUE).
+      if ((col == "time" || col == "admix_event_time") && col %in% names(edges) &&
+          any(!is.na(edges[[col]]))) next
+      if (!is.null(va[[col]])) nt[[col]] <- va[[col]]
+    }
+    # Enforce the canonical schema types regardless of how igraph stored each
+    # vertex attribute (e.g. an integer-valued `time` attr must not flip the
+    # column from double to integer). `samples` is integer, the numeric columns
+    # are double, and the *_param columns are character.
+    nt$samples          <- as.integer(nt$samples)
+    nt$twoN             <- as.double(nt$twoN)
+    nt$time             <- as.double(nt$time)
+    nt$admix_event_time <- as.double(nt$admix_event_time)
+    nt$twoN_param       <- as.character(nt$twoN_param)
+    nt$time_param       <- as.character(nt$time_param)
+    # If R attr("nodes") is ALSO present, warn and prefer vertex_attr
+    r_attr_nodes <- attr(x, "nodes")
+    if (!is.null(r_attr_nodes))
+      rlang::warn(
+        "igraph input carries both vertex attrs and an R `nodes` attribute; using vertex attrs.",
+        class = "admixtools_ambiguous_nodes_metadata")
+    # Attach to the edges tibble we built earlier in this branch
+    attr(edges, "nodes") <- nt
   } else if (is.data.frame(x)) {
     edges <- tibble::as_tibble(x)
   } else {
@@ -83,8 +128,50 @@ coerce_to_edge_tibble <- function(x) {
   edges
 }
 
+# Tolerance for the denormalized time-consistency check below. Intentionally
+# tighter than topology_walk_bottom_up's 1e-6: this compares an exact
+# denormalized copy of nodes$<col>, not an accumulated branch-length sum, so
+# any drift beyond floating-point rounding is a genuine inconsistency.
+TIME_CONSISTENCY_TOL <- 1e-10
+
+# Verify that the denormalized edge view of a per-node time column agrees with
+# the nodes tibble. `col` is "time" or "admix_event_time". A node carrying a
+# non-NA value in nt[[col]] requires every incoming edge (rows of x whose
+# `to` is that node) to carry the same value in x[[col]]; both a wrong value
+# and a missing (NA) edge value are inconsistencies. The freshly-coerced
+# igraph case (vertex time set, edge time all-NA) is the motivating example.
+# Aborts with `admixtools_invalid_graph` on any violation, else returns
+# invisibly.
 #' @keywords internal
-validate_edge_tibble <- function(x) {
+check_denormalized_time <- function(x, nt, col, tol = TIME_CONSISTENCY_TOL) {
+  if (!col %in% names(nt) || all(is.na(nt[[col]]))) return(invisible(NULL))
+  if (!col %in% names(x))
+    rlang::abort(
+      sprintf("nodes$%s is set but edges$%s column is absent; call refresh_edge_times().",
+              col, col),
+      class = "admixtools_invalid_graph")
+  expected <- setNames(nt[[col]], nt$name)[x$to]
+  edge_val <- x[[col]]
+  # Construct `mismatch` so it is pure logical (never NA) for any NA, NaN, or
+  # +/-Inf input: `!is.na(expected)` gates out untracked nodes (FALSE & NA =
+  # FALSE in R), and the both-finite split avoids Inf - Inf = NaN poisoning
+  # `any()`. Finite values must agree within `tol`; non-finite values must be
+  # identical (so Inf == Inf is consistent, Inf vs 5 is not).
+  both_finite <- is.finite(expected) & is.finite(edge_val)
+  matches <- (both_finite & abs(edge_val - expected) <= tol) |
+             (!both_finite & !is.na(expected) & !is.na(edge_val) &
+              expected == edge_val)
+  mismatch <- !is.na(expected) & !matches
+  if (any(mismatch))
+    rlang::abort(
+      sprintf("edges$%s disagrees with nodes$%s; call refresh_edge_times().",
+              col, col),
+      class = "admixtools_invalid_graph")
+  invisible(NULL)
+}
+
+#' @keywords internal
+validate_edge_tibble <- function(x, strict = FALSE) {
   required <- c("from", "to", "type", "weight")
   missing_cols <- setdiff(required, names(x))
   if (length(missing_cols) > 0) {
@@ -130,6 +217,43 @@ validate_edge_tibble <- function(x) {
         "i" = "Each admixture event needs exactly 2 incoming admix edges."),
       class = "legofit_invalid_input"
     )
+  }
+  # strict-mode checks against the nodes attribute
+  nt <- attr(x, "nodes")
+  if (!is.null(nt) && nrow(nt) > 0) {
+    canonical <- unique(c(x$from, x$to))
+    orphans <- setdiff(nt$name, canonical)
+    if (length(orphans) > 0) {
+      msg <- sprintf(
+        "Nodes-tibble rows reference nodes not in the graph: %s",
+        paste(orphans, collapse = ", "))
+      if (strict) {
+        rlang::abort(msg, class = "admixtools_invalid_graph")
+      } else {
+        rlang::warn(msg, class = "admixtools_orphan_nodes_pruned")
+        attr(x, "nodes") <- nt[!nt$name %in% orphans, ]
+        nt <- attr(x, "nodes")
+      }
+    }
+    if (anyDuplicated(nt$name)) {
+      msg <- sprintf(
+        "Duplicate node names in nodes tibble: %s",
+        paste(nt$name[duplicated(nt$name)], collapse = ", "))
+      if (strict) {
+        rlang::abort(msg, class = "admixtools_invalid_graph")
+      } else {
+        rlang::warn(msg, class = "admixtools_duplicate_node_name")
+        attr(x, "nodes") <- nt[!duplicated(nt$name, fromLast = TRUE), ]
+      }
+    }
+    # Strict mode: verify the denormalized edge views agree with the nodes
+    # tibble. Production callers (graph_to_lgo and the two graph-alignment
+    # paths) use strict = FALSE, where edges$time is a branch length rather
+    # than a denormalized absolute node time and must not be checked here.
+    if (strict) {
+      check_denormalized_time(x, nt, "time")
+      check_denormalized_time(x, nt, "admix_event_time")
+    }
   }
   invisible(x)
 }
@@ -992,7 +1116,11 @@ validate_via_roundtrip <- function(lgo_text, edges) {
   got      <- parsed %>% dplyr::select(from, to, type) %>%
               dplyr::mutate(type = norm_type(type)) %>%
               dplyr::arrange(from, to)
-  if (!isTRUE(all.equal(expected, got))) {
+  # This is a topology check (from/to/type only). `edges` may carry a nodes
+  # attribute, which dplyr verbs propagate onto `expected` but not
+  # onto `got` (parsed from text); compare values only so that extraneous
+  # attribute does not register as a spurious topology mismatch.
+  if (!isTRUE(all.equal(expected, got, check.attributes = FALSE))) {
     rlang::abort(
       c("graph_to_lgo's output round-trips to a different topology.",
         "i" = "Likely a bug in parameter naming or .lgo assembly."),
@@ -1053,7 +1181,7 @@ graph_to_lgo <- function(graph,
   time_handling <- match.arg(time_handling)
 
   edges <- coerce_to_edge_tibble(graph)
-  validate_edge_tibble(edges)
+  edges <- validate_edge_tibble(edges)
 
   if (!is.null(outpop)) edges <- strip_outgroup(edges, outpop)
 

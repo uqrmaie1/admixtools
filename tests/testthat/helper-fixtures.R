@@ -1,5 +1,5 @@
 # Canonical 5-node, 1-admixture graph for unit tests.
-# See LLD §9.1 for the topology diagram.
+# Topology is defined by the edge list below.
 make_minimal_graph <- function() {
   tibble::tribble(
     ~from, ~to,  ~type,   ~weight,
@@ -136,4 +136,27 @@ make_minimal_graph_with_outgroup <- function() {
   out[n+1,   1:n, ] = f2[src_idx, 1:n, ]
   out[n+1,   n+1, ] = 0
   out
+}
+
+# Shared fixture for nodes-tibble tests.
+# 5-node OOA-style topology: out + (anc -> v, modern -> afr, eur).
+# anc is internal-sampled (has incident children but is also in the nodes
+# tibble with samples set); out, v, afr, eur are leaf-sampled.
+make_test_nodes_graph <- function() {
+  edges <- tibble::tibble(
+    from = c("R", "R", "anc", "anc", "modern", "modern"),
+    to   = c("out", "anc", "v", "modern", "afr", "eur"),
+    type = "normal",
+    weight = NA_real_
+  )
+  attr(edges, "nodes") <- tibble::tibble(
+    name             = c("out", "v", "afr", "eur", "anc"),
+    samples          = c(1L, 1L, 1L, 1L, 1L),
+    twoN_param       = NA_character_,
+    twoN             = NA_real_,
+    time_param       = NA_character_,
+    time             = NA_real_,
+    admix_event_time = NA_real_
+  )
+  edges
 }
