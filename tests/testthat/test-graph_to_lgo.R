@@ -211,19 +211,3 @@ test_that("generate_param_names matches the parameter naming convention", {
   expect_equal(p$mixFrac["M"], c(M = "m_M"))
   expect_setequal(names(p$mixFrac), "M")  # only admix destinations
 })
-
-test_that("graph_to_lgo emits samples= for internal-sampled node from nodes tibble", {
-  # The nodes tibble may carry samples for internal nodes (e.g. ancient samples).
-  # graph_to_lgo must emit a samples= declaration for those nodes. Inline tree
-  # with consistent (ultrametric) branch lengths so compute_times resolves, and
-  # P is internal. Self contained so this test depends on no shared fixture.
-  g <- tibble::tibble(
-    from   = c("R", "R", "P", "P"),
-    to     = c("O", "P", "A", "B"),
-    type   = "normal",
-    weight = c(0.2, 0.1, 0.1, 0.1)
-  )
-  g <- set_node_attrs(g, "P", samples = 2L)
-  lgo <- graph_to_lgo(g, validate = FALSE)
-  expect_true(grepl("samples=2", lgo))
-})

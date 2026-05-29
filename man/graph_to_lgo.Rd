@@ -24,10 +24,7 @@ igraph with \code{type} and \code{weight} edge attributes.}
 invisibly without writing.}
 
 \item{samples}{Samples per leaf. A scalar (applied to all leaves) or a named
-integer vector (per-leaf overrides). Default \code{1}. A \code{samples} value carried
-in the graph's nodes tibble (see \code{\link[=set_node_attrs]{set_node_attrs()}}) takes precedence over
-this argument for any node it names, and also lets internal (non-leaf) nodes
-be declared sampled.}
+integer vector (per-leaf overrides). Default \code{1}.}
 
 \item{dates_terminal}{Starting time value for terminal (leaf) nodes. Default
 \code{0}.}

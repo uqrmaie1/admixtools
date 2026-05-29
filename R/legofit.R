@@ -1140,10 +1140,7 @@ validate_via_roundtrip <- function(lgo_text, edges) {
 #' @param file Output file path. If `NULL` (default), returns the `.lgo` text
 #'   invisibly without writing.
 #' @param samples Samples per leaf. A scalar (applied to all leaves) or a named
-#'   integer vector (per-leaf overrides). Default `1`. A `samples` value carried
-#'   in the graph's nodes tibble (see [set_node_attrs()]) takes precedence over
-#'   this argument for any node it names, and also lets internal (non-leaf) nodes
-#'   be declared sampled.
+#'   integer vector (per-leaf overrides). Default `1`.
 #' @param dates_terminal Starting time value for terminal (leaf) nodes. Default
 #'   `0`.
 #' @param outpop Name of an outgroup leaf to strip from the graph before export.
@@ -1197,15 +1194,6 @@ graph_to_lgo <- function(graph,
   samples_vec  <- resolve_scalar_or_named(samples, leaves, default = NA_integer_)
   full_samples <- setNames(rep(NA_integer_, length(all_nodes)), all_nodes)
   full_samples[leaves] <- as.integer(samples_vec[leaves])
-  # Overlay nodes$samples for any node (including internal) that carries a
-  # non-NA sample count in the nodes tibble.  Nodes not in all_nodes (e.g.
-  # orphan rows left by strip_outgroup) are silently ignored via %in% filter.
-  nt_g <- graph_nodes(edges)
-  if (nrow(nt_g) > 0) {
-    ns_idx <- !is.na(nt_g$samples) & nt_g$name %in% all_nodes
-    if (any(ns_idx))
-      full_samples[nt_g$name[ns_idx]] <- nt_g$samples[ns_idx]
-  }
 
   lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
 
