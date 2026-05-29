@@ -8,7 +8,7 @@ test_that("graph_to_lgo errors when samples named-vector has unknown leaf names"
 
 test_that("graph_to_lgo igraph input produces byte-identical output to golden", {
   ig      <- make_minimal_igraph()
-  txt     <- graph_to_lgo(ig)
+  expect_warning(txt <- graph_to_lgo(ig), class = "legofit_unfittable_lgo")
   golden  <- readLines(testthat::test_path("fixtures", "minimal.lgo"))
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], golden)
 })

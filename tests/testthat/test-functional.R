@@ -157,28 +157,33 @@ test_that("T1.1: qpgraph(example_igraph) round-trips via time_handling='free'", 
 test_that("T1.2: time_handling='init' produces minimal-init.lgo verbatim", {
   g <- make_minimal_graph()
   g$time <- c(0.05, 0.05, 0, 0, 0.02)  # admix edges zeroed for consistency
-  txt <- graph_to_lgo(g, time_handling = "init", validate = FALSE)
+  expect_warning(txt <- graph_to_lgo(g, time_handling = "init", validate = FALSE),
+                 class = "legofit_unfittable_lgo")
   expected <- readLines(testthat::test_path("fixtures", "minimal-init.lgo"))
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], expected)
 })
 
 test_that("T1.2: time_handling='free' produces minimal-free.lgo verbatim", {
-  txt <- graph_to_lgo(make_minimal_graph(), time_handling = "free",
-                       validate = FALSE)
+  expect_warning(
+    txt <- graph_to_lgo(make_minimal_graph(), time_handling = "free", validate = FALSE),
+    class = "legofit_unfittable_lgo"
+  )
   expected <- readLines(testthat::test_path("fixtures", "minimal-free.lgo"))
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], expected)
 })
 
 # T1.3 ------------------------------------------------------------------
 test_that("T1.3: twoN=scalar produces minimal-twoN-scalar.lgo verbatim", {
-  txt <- graph_to_lgo(make_minimal_graph(), twoN = 1000, validate = FALSE)
+  expect_warning(txt <- graph_to_lgo(make_minimal_graph(), twoN = 1000, validate = FALSE),
+                 class = "legofit_unfittable_lgo")
   expected <- readLines(testthat::test_path("fixtures", "minimal-twoN-scalar.lgo"))
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], expected)
 })
 
 test_that("T1.3: twoN=named-vector produces minimal-twoN-named.lgo verbatim", {
   twoN_named <- c(R = 10000, A = 5000, B = 5000, M = 5000, X = 1000)
-  txt <- graph_to_lgo(make_minimal_graph(), twoN = twoN_named, validate = FALSE)
+  expect_warning(txt <- graph_to_lgo(make_minimal_graph(), twoN = twoN_named, validate = FALSE),
+                 class = "legofit_unfittable_lgo")
   expected <- readLines(testthat::test_path("fixtures", "minimal-twoN-named.lgo"))
   expect_equal(strsplit(txt, "\n", fixed = TRUE)[[1]], expected)
 })
@@ -186,7 +191,8 @@ test_that("T1.3: twoN=named-vector produces minimal-twoN-named.lgo verbatim", {
 # T1.5 ------------------------------------------------------------------
 test_that("T1.5: outpop is fully stripped from the output", {
   g <- make_minimal_graph_with_outgroup()
-  txt <- graph_to_lgo(g, outpop = "Outgroup", validate = TRUE)
+  expect_warning(txt <- graph_to_lgo(g, outpop = "Outgroup", validate = TRUE),
+                 class = "legofit_unfittable_lgo")
 
   # No segment, derive, or mix should reference Outgroup
   expect_false(grepl("Outgroup", txt))
@@ -208,11 +214,14 @@ test_that("T1.6: custom drift_to_time function scales output times", {
   g$time <- c(0.05, 0.05, 0, 0, 0.02)  # admix edges zeroed
 
   scale <- 1000
-  txt_scaled <- graph_to_lgo(
-    g,
-    time_handling = "init",
-    drift_to_time = function(d, s) d * scale,
-    validate = FALSE
+  expect_warning(
+    txt_scaled <- graph_to_lgo(
+      g,
+      time_handling = "init",
+      drift_to_time = function(d, s) d * scale,
+      validate = FALSE
+    ),
+    class = "legofit_unfittable_lgo"
   )
 
   # Note: when `time` column is present and non-NA, compute_times uses
@@ -229,11 +238,14 @@ test_that("T1.6: custom drift_to_time function scales output times", {
     "A",   "B", "normal", 0.03,
     "B",   "C", "normal", 0.02
   )
-  txt_tree <- graph_to_lgo(
-    tree,
-    time_handling = "init",
-    drift_to_time = function(d, s) d * scale,
-    validate = FALSE
+  expect_warning(
+    txt_tree <- graph_to_lgo(
+      tree,
+      time_handling = "init",
+      drift_to_time = function(d, s) d * scale,
+      validate = FALSE
+    ),
+    class = "legofit_unfittable_lgo"
   )
   # Tree: C=0, B=0.02*1000=20, A=20+0.03*1000=50, R=50+0.05*1000=100
   expect_match(txt_tree, "T_R=100")
@@ -255,10 +267,13 @@ test_that("T1.6: drift_to_time receives correct segment_vec argument", {
     if (length(s) != length(d)) stop("length mismatch")
     d
   }
-  expect_no_error(
-    graph_to_lgo(tree, time_handling = "init",
-                 drift_to_time = picky_drift_to_time,
-                 validate = FALSE)
+  expect_warning(
+    expect_no_error(
+      graph_to_lgo(tree, time_handling = "init",
+                   drift_to_time = picky_drift_to_time,
+                   validate = FALSE)
+    ),
+    class = "legofit_unfittable_lgo"
   )
 })
 
@@ -278,13 +293,16 @@ test_that("T1.7: read_lgo handles a 100-node graph in under 500ms", {
 # T1.8 ------------------------------------------------------------------
 test_that("T1.8: graph_to_lgo output is deterministic across runs", {
   g <- make_minimal_graph()
-  outputs <- replicate(10, graph_to_lgo(g))
+  # minimal graph is unfittable (one leaf), so each call warns; we test
+  # determinism here, not the warning, so suppress the expected noise
+  outputs <- suppressWarnings(replicate(10, graph_to_lgo(g)))
   expect_length(unique(outputs), 1)
 })
 
 test_that("T1.8: graph_to_lgo output is deterministic for igraph input", {
   ig <- make_minimal_igraph()
-  outputs <- replicate(10, graph_to_lgo(ig))
+  # same expected warning as the determinism test for edge tibble input
+  outputs <- suppressWarnings(replicate(10, graph_to_lgo(ig)))
   expect_length(unique(outputs), 1)
 })
 
@@ -295,7 +313,12 @@ test_that("T1.8: graph_to_lgo output is deterministic for igraph input", {
 # around `=`, multi-line param declarations, and `time constrained`
 # arithmetic expressions evaluated safely against earlier params.
 test_that("T2.3: read_lgo parses rha20.lgo (constrained expressions evaluated)", {
-  result <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
+  # rha20.lgo samples internal nodes (v, a), so read_lgo warns about a
+  # lossy round trip; that is expected for this fixture
+  expect_warning(
+    result <- read_lgo(path = test_path("fixtures", "rha20.lgo")),
+    class = "legofit_lossy_round_trip"
+  )
   expect_s3_class(result, "tbl_df")
   expect_setequal(names(result), c("from", "to", "type", "weight"))
   # rha20 collapses to: 5 normal edges + 8 admix edges = 13 total
