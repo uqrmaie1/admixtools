@@ -31,7 +31,7 @@ Imports:
     furrr,
     ggplot2,
     grDevices,
-    igraph,
+    igraph (>= 2.1.0),
     jsonlite,
     lobstr,
     magrittr,
