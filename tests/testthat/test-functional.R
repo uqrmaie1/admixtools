@@ -75,6 +75,9 @@ test_that("T1.4: multi-admixture graph round-trips (rha20 / Rogers et al. 2020)"
 
   # Round-trip topology preservation
   parsed <- read_lgo(text = txt)
+  # read_lgo attaches a nodes tibble; the topology check compares
+  # from/to/type only, so drop it before the tibble comparison.
+  attr(parsed, "nodes") <- NULL
   expect_equal(nrow(parsed), nrow(g))
   g_topo <- g %>% dplyr::select(from, to, type) %>% dplyr::arrange(from, to)
   p_topo <- parsed %>% dplyr::select(from, to, type) %>% dplyr::arrange(from, to)
@@ -312,25 +315,27 @@ test_that("T1.8: graph_to_lgo output is deterministic for igraph input", {
 # parser handles constructs beyond what graph_to_lgo emits: whitespace
 # around `=`, multi-line param declarations, and `time constrained`
 # arithmetic expressions evaluated safely against earlier params.
-test_that("T2.3: read_lgo parses rha20.lgo (constrained expressions evaluated)", {
-  # rha20.lgo samples internal nodes (v, a), so read_lgo warns about a
-  # lossy round trip; that is expected for this fixture
-  expect_warning(
-    result <- read_lgo(path = test_path("fixtures", "rha20.lgo")),
-    class = "legofit_lossy_round_trip"
-  )
+#
+# The narrow ghost-detection rule (3-condition AND) is used instead of the
+# old greedy rule. rha20's intermediate segments (d2, s2, a2, y2, nd2, etc.)
+# do NOT match the <dest>_<parent> naming convention used by our writer, so
+# they are preserved as real edges. Result: 13 derive edges + 8 admix edges
+# = 21 total (not 13).
+test_that("T2.3: read_lgo on rha20.lgo preserves intermediate segments (narrow ghost detection)", {
+  result <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   expect_s3_class(result, "tbl_df")
   expect_setequal(names(result), c("from", "to", "type", "weight"))
-  # rha20 collapses to: 5 normal edges + 8 admix edges = 13 total
-  # (the parser treats segments-named-in-mix as ghosts and resolves them
-  # to their derive-from real parents, simplifying the LEGOFIT
-  # intermediate-segment structure into admixtools-style admix edges)
-  expect_equal(nrow(result), 13)
+  # 13 derive statements (all preserved under narrow rule)
+  # + 4 mix statements (each yields 2 admix edges = 8 admix edges)
+  # = 21 total edges
+  expect_equal(nrow(result), 21)
   expect_setequal(unique(result$type), c("normal", "admix"))
-  # Mixfracs from rha20's published values
+  # 8 admix edges from the 4 mix statements
   admix <- result[result$type == "admix", ]
-  expect_equal(sum(admix$type == "admix"), 8)
-  # The 4 high-weight admix edges sum to ~ 4 (each ~0.97-0.98)
+  expect_equal(nrow(admix), 8)
+  # Intermediate segment d2 is preserved (not collapsed to its real parent nd)
+  expect_true("d2" %in% c(result$from, result$to))
+  # Mixfracs from rha20's published values appear on admix edges
   highs <- admix$weight[admix$weight > 0.5]
   expect_length(highs, 4)
   expect_true(all(highs > 0.95))

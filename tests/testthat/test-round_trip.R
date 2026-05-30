@@ -13,6 +13,9 @@ test_that("assemble_lgo -> read_lgo preserves topology", {
   txt <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
 
   parsed <- read_lgo(text = txt, as = "edges")
+  # read_lgo attaches a nodes tibble; the topology check compares
+  # from/to/type only, so drop it before the tibble comparison.
+  attr(parsed, "nodes") <- NULL
 
   g_topology <- g %>% dplyr::select(from, to, type) %>%
     dplyr::arrange(from, to)

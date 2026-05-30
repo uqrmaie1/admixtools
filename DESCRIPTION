@@ -43,7 +43,7 @@ Imports:
     rlang,
     stringi,
     stringr,
-    tibble,
+    tibble (>= 3.1.0),
     tidyr  (>= 1.0.0),
     utils
 Suggests:

@@ -644,6 +644,10 @@ format_time_declarations <- function(time_param_names, times,
                         free_str,
                         time_param_names[ordered],
                         times$value[ordered])
+  # Captured source params (round-trip) may be shared across nodes; emit one
+  # declaration per distinct param name. No-op for generated `T_<node>` names,
+  # which are unique per node.
+  node_lines <- node_lines[!duplicated(time_param_names[ordered])]
 
   # Per-admix-event time declarations (T_admix_<M>). Always free — the
   # admix event time is what LEGOFIT optimizes.
@@ -672,6 +676,11 @@ format_segment_declarations <- function(nodes, time_param_names,
                                         twoN_param_per_node, samples_vec) {
   # Every segment carries an explicit `t=<param>`. (Ghost segments for
   # admix events are emitted separately by format_ghost_segments.)
+  # The t= and twoN= tokens come from time_param_names / twoN_param_per_node.
+  # graph_to_lgo overrides those maps (and the matching declarations) with the
+  # source-file tokens when round tripping a graph that carries a nodes tibble,
+  # so segments and the Parameters block always reference the same declared
+  # names.
   lines <- vapply(nodes, function(n) {
     parts <- paste0("segment ", n, " t=", time_param_names[n],
                     " twoN=", twoN_param_per_node[n])
@@ -896,7 +905,7 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
   params_rows <- list()
   derive_rows <- list()
   mix_rows    <- list()
-  seg_names_with_samples <- character(0)
+  segments_meta <- list()   # name -> list(samples, twoN_param, time_param)
 
   for (ln in lines) {
     tok <- strsplit(trimws(ln), "\\s+")[[1]]
@@ -937,26 +946,35 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
         suppressWarnings(as.numeric(rhs))
       }
       params_rows[[length(params_rows) + 1]] <- list(
-        name = p_name, value = p_val
+        name = p_name, value = p_val, type = tok[[2]]
       )
 
     } else if (tok[[1]] == "segment") {
       # segment <name> [t=<param>] twoN=<param> [samples=<int>]
-      # The edge tibble is built from derive/mix statements below;
-      # segment-level metadata is otherwise not surfaced. We capture only
-      # a positive `samples=` count to power the lossy-round-trip warning.
+      # Capture per-segment metadata (samples, twoN token, t token) into
+      # segments_meta so it can be attached as the graph's nodes tibble.
       # Tolerant of whitespace around `=` and of keyword casing, matching
       # the time/twoN/mixFrac parser above. `samples=0` is not a sample.
+      seg_name <- tok[[2]]
       if (length(tok) > 2) {
         rest <- paste(tok[-(1:2)], collapse = " ")
-        m <- regmatches(
-          rest,
-          regexec("(?:^|\\s)samples\\s*=\\s*([0-9]+)", rest,
-                  ignore.case = TRUE, perl = TRUE)
-        )[[1]]
-        if (length(m) == 2 && as.integer(m[[2]]) > 0) {
-          seg_names_with_samples <- c(seg_names_with_samples, tok[[2]])
+        meta <- list()
+        m_s <- regmatches(rest, regexec(
+          "(?:^|\\s)samples\\s*=\\s*([0-9]+)", rest,
+          ignore.case = TRUE, perl = TRUE))[[1]]
+        if (length(m_s) == 2) {
+          n <- as.integer(m_s[[2]])
+          if (!is.na(n) && n > 0) meta$samples <- n
         }
+        m_tn <- regmatches(rest, regexec(
+          "(?:^|\\s)twoN\\s*=\\s*([^\\s]+)", rest,
+          ignore.case = TRUE, perl = TRUE))[[1]]
+        if (length(m_tn) == 2) meta$twoN_param <- m_tn[[2]]
+        m_t <- regmatches(rest, regexec(
+          "(?:^|\\s)t\\s*=\\s*([^\\s]+)", rest,
+          ignore.case = TRUE, perl = TRUE))[[1]]
+        if (length(m_t) == 2) meta$time_param <- m_t[[2]]
+        if (length(meta) > 0) segments_meta[[seg_name]] <- meta
       }
       next
 
@@ -996,27 +1014,6 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
     }
   }
 
-  # Sampled internal nodes round-trip lossily: the edge tibble does not
-  # carry per-segment `samples` tags, so any sampled segment that is also
-  # a parent (via derive or mix) loses that information. Warn rather than
-  # silently drop.
-  derive_parents <- vapply(derive_rows, function(r) r$parent, character(1))
-  mix_parents <- c(
-    vapply(mix_rows, function(r) r$parent_high, character(1)),
-    vapply(mix_rows, function(r) r$parent_low,  character(1))
-  )
-  internal_sampled <- intersect(
-    seg_names_with_samples, c(derive_parents, mix_parents)
-  )
-  if (length(internal_sampled) > 0) {
-    rlang::warn(
-      c("LEGOFIT file has sampled internal nodes; sample tags will be lost in the admixtools edge tibble.",
-        "i" = paste("Affected nodes:", paste(internal_sampled, collapse = ", ")),
-        "i" = "admixtools' edge tibble does not yet model sampled internal nodes."),
-      class = "legofit_lossy_round_trip"
-    )
-  }
-
   # Build params lookup: name -> value
   param_val <- if (length(params_rows) > 0) {
     setNames(
@@ -1027,16 +1024,54 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
     numeric(0)
   }
 
-  # Identify "ghost segments" — segments named in mix statements that are
-  # NOT real populations but synthetic admix-event anchors written by our
-  # writer. A name is a ghost iff it appears as the high or low parent in
-  # a mix statement. We resolve each ghost back to its real parent via
-  # the corresponding `derive <ghost> from <real>` statement.
-  ghost_names <- character(0)
-  for (mr in mix_rows) {
-    ghost_names <- c(ghost_names, mr$parent_high, mr$parent_low)
+  # name -> declaration kind ("fixed"/"free"/"constrained"). Lets the writer
+  # re-emit a captured param with its original fixed/free type when round
+  # tripping; `constrained` is emitted as free at its evaluated value.
+  param_type <- if (length(params_rows) > 0) {
+    setNames(
+      vapply(params_rows, function(r) r$type, character(1)),
+      vapply(params_rows, function(r) r$name, character(1))
+    )
+  } else {
+    character(0)
   }
-  ghost_names <- unique(ghost_names)
+
+  # Narrow ghost detection: a segment is a ghost iff
+  # (a) name matches <dest>_<parent> for some admix dest in this file,
+  # (b) it appears as the child of `derive <ghost> from <real>`, AND
+  # (c) it appears as a mix parent.
+  # The old greedy rule treated ANY mix parent as a ghost, which
+  # collapsed real third-party intermediate segments (rha20.lgo's d2,
+  # s, n, a2, nd2, y2). The narrow rule preserves them while still
+  # recognising our own writer's <dest>_<parent> ghosts.
+  admix_dests_seen <- unique(vapply(mix_rows, `[[`, character(1), "child"))
+  derive_children  <- if (length(derive_rows) > 0) {
+    vapply(derive_rows, `[[`, character(1), "child")
+  } else character(0)
+
+  ghost_names <- character(0)
+  if (length(admix_dests_seen) > 0) {
+    for (mr in mix_rows) {
+      for (cand in c(mr$parent_high, mr$parent_low)) {
+        # Condition (a): cand is "<dest>_<suffix>" for some admix dest in
+        # this file, with a non-empty suffix. Tested by fixed-string prefix
+        # match (not a regex) so node names containing regex metacharacters
+        # (e.g. `+`, `[`, `(`) are matched literally and cannot corrupt or
+        # crash the parse.
+        matches_a <- any(vapply(admix_dests_seen, function(d) {
+          prefix <- paste0(d, "_")
+          startsWith(cand, prefix) && nchar(cand) > nchar(prefix)
+        }, logical(1)))
+        if (!matches_a) next
+        # Condition (b): cand is a derive child (real parent in derive)
+        i <- which(derive_children == cand)
+        if (length(i) != 1) next
+        # Condition (c): inherent — cand appeared as a mix parent here
+        ghost_names <- c(ghost_names, cand)
+      }
+    }
+    ghost_names <- unique(ghost_names)
+  }
 
   ghost_to_real <- list()
   real_derive_rows <- list()
@@ -1088,7 +1123,54 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
   }
 
   result <- do.call(rbind, lapply(edge_rows, as.data.frame, stringsAsFactors = FALSE))
-  tibble::as_tibble(result)
+  result <- tibble::as_tibble(result)
+
+  # Attach per-segment metadata as the graph's nodes tibble. Exclude
+  # synthetic ghosts and any segment not present as a real node in the
+  # final edge tibble.
+  if (length(segments_meta) > 0) {
+    real_nodes <- unique(c(result$from, result$to))
+    keep <- setdiff(intersect(names(segments_meta), real_nodes), ghost_names)
+    if (length(keep) > 0) {
+      nt <- tibble::tibble(
+        name = keep,
+        samples = vapply(keep, function(n) {
+          v <- segments_meta[[n]]$samples
+          if (is.null(v)) NA_integer_ else as.integer(v)
+        }, integer(1), USE.NAMES = FALSE),
+        twoN_param = vapply(keep, function(n) {
+          v <- segments_meta[[n]]$twoN_param
+          if (is.null(v)) NA_character_ else v
+        }, character(1), USE.NAMES = FALSE),
+        twoN = vapply(keep, function(n) {
+          tp <- segments_meta[[n]]$twoN_param
+          if (is.null(tp)) return(NA_real_)
+          if (tp %in% names(param_val)) return(unname(param_val[[tp]]))
+          lit <- suppressWarnings(as.numeric(tp))   # inline literal twoN=10000
+          if (!is.na(lit)) lit else NA_real_
+        }, numeric(1), USE.NAMES = FALSE),
+        time_param = vapply(keep, function(n) {
+          v <- segments_meta[[n]]$time_param
+          if (is.null(v)) NA_character_ else v
+        }, character(1), USE.NAMES = FALSE),
+        time = vapply(keep, function(n) {
+          tp <- segments_meta[[n]]$time_param
+          if (is.null(tp)) return(NA_real_)
+          if (tp %in% names(param_val)) return(unname(param_val[[tp]]))
+          lit <- suppressWarnings(as.numeric(tp))   # inline literal t=0.5
+          if (!is.na(lit)) lit else NA_real_
+        }, numeric(1), USE.NAMES = FALSE),
+        admix_event_time = NA_real_
+      )
+      # Carry the param fixed/free/constrained map on the nodes tibble itself,
+      # so it travels with `nodes` and is dropped wherever `nodes` is dropped
+      # (e.g. topology comparisons that null attr(.,"nodes")). graph_to_lgo
+      # reads it back to re-emit captured params with their original type.
+      attr(nt, "lgo_param_types") <- param_type
+      attr(result, "nodes") <- nt
+    }
+  }
+  result
 }
 
 #' @keywords internal
@@ -1179,6 +1261,7 @@ graph_to_lgo <- function(graph,
                          validate = TRUE) {
 
   time_handling <- match.arg(time_handling)
+  samples_supplied <- !missing(samples)   # only warn on an explicit samples= override
 
   edges <- coerce_to_edge_tibble(graph)
   edges <- validate_edge_tibble(edges)
@@ -1194,6 +1277,92 @@ graph_to_lgo <- function(graph,
   samples_vec  <- resolve_scalar_or_named(samples, leaves, default = NA_integer_)
   full_samples <- setNames(rep(NA_integer_, length(all_nodes)), all_nodes)
   full_samples[leaves] <- as.integer(samples_vec[leaves])
+
+  # Merge per-node samples from the nodes tibble (precedence: nodes
+  # tibble wins over the leaves-only default). Internal sampled nodes
+  # (e.g. a Neanderthal ancestral to moderns) thus get emitted and are
+  # counted by the unfittable check below.
+  nodes_tbl <- attr(edges, "nodes")
+  if (!is.null(nodes_tbl) && nrow(nodes_tbl) > 0) {
+    ns <- nodes_tbl$samples
+    have <- !is.na(ns) & nodes_tbl$name %in% all_nodes
+    if (any(have)) {
+      # Warn only when an explicit samples= disagrees with the nodes tibble; the
+      # samples= default (1) must not trip this on a plain graph_to_lgo() round
+      # trip of a graph whose captured leaf samples differ from 1.
+      arg_conflict <- intersect(nodes_tbl$name[have], names(full_samples))
+      arg_conflict <- arg_conflict[
+        !is.na(full_samples[arg_conflict]) &
+        full_samples[arg_conflict] != ns[match(arg_conflict, nodes_tbl$name)]]
+      if (samples_supplied && length(arg_conflict) > 0)
+        rlang::warn(
+          c("`samples=` argument conflicts with the nodes tibble; using the nodes tibble.",
+            "i" = paste("Nodes:", paste(arg_conflict, collapse = ", "))),
+          class = "admixtools_samples_arg_overridden")
+      full_samples[nodes_tbl$name[have]] <- as.integer(ns[have])
+    }
+  }
+
+  # Round-trip fidelity: when the graph carries a nodes tibble with captured
+  # source params, re-emit those param names, values, and fixed/free types so
+  # the .lgo references real, declared parameters (valid LEGOFIT) instead of
+  # regenerated names. We override the per-node name maps and declarations the
+  # formatters consume; segments and the Parameters block then stay in sync. A
+  # constrained-time param is emitted as `free` at its evaluated value (the
+  # constraint expression is not reproduced). An explicit `twoN=` still wins,
+  # so twoN is only rewritten when the caller left it NULL.
+  if (!is.null(nodes_tbl) && nrow(nodes_tbl) > 0) {
+    ptypes <- attr(nodes_tbl, "lgo_param_types")
+    is_free <- function(pname) {
+      ty <- if (!is.null(ptypes) && !is.na(pname) && pname %in% names(ptypes))
+              ptypes[[pname]] else "free"
+      !identical(ty, "fixed")   # fixed stays fixed; free/constrained -> free
+    }
+    in_graph <- nodes_tbl$name %in% all_nodes
+
+    has_t <- in_graph & !is.na(nodes_tbl$time_param) & !is.na(nodes_tbl$time)
+    if (any(has_t)) {
+      tn <- nodes_tbl$name[has_t]
+      params$time[tn] <- nodes_tbl$time_param[has_t]
+      times$value[tn] <- nodes_tbl$time[has_t]
+      times$free[tn]  <- vapply(nodes_tbl$time_param[has_t], is_free,
+                                logical(1), USE.NAMES = FALSE)
+    }
+
+    has_n <- in_graph & !is.na(nodes_tbl$twoN_param) & !is.na(nodes_tbl$twoN)
+    if (is.null(twoN) && any(has_n)) {
+      twoN_decls$per_segment[nodes_tbl$name[has_n]] <- nodes_tbl$twoN_param[has_n]
+      cap <- list()
+      for (i in which(has_n))
+        cap[[nodes_tbl$twoN_param[i]]] <-
+          list(value = nodes_tbl$twoN[i], free = is_free(nodes_tbl$twoN_param[i]))
+      # One declaration per distinct referenced twoN param. Captured params use
+      # their value+type; any segment still on the generated default uses the
+      # `one`=1 (fixed) convention from resolve_twoN_decls(NULL).
+      refs <- unique(twoN_decls$per_segment)
+      twoN_decls$declarations <- paste(vapply(refs, function(p) {
+        info <- if (!is.null(cap[[p]])) cap[[p]] else list(value = 1, free = FALSE)
+        sprintf("twoN %s %s=%g", if (isTRUE(info$free)) "free" else "fixed",
+                p, info$value)
+      }, character(1), USE.NAMES = FALSE), collapse = "\n")
+    } else if (!is.null(twoN) && any(has_n)) {
+      # An explicit `twoN=` wins (it defaults to NULL, so a non-NULL value is a
+      # deliberate override of the captured effective sizes). Warn where it
+      # differs from a captured value so the discard of source sizes is visible.
+      # Dispatch scalar-vs-named by length to match resolve_twoN_decls(), which
+      # treats ANY length-1 numeric as a scalar (a length-1 named vector is not
+      # a per-node map there); keying such a vector by name would yield NA.
+      cn      <- nodes_tbl$name[has_n]
+      cap_val <- nodes_tbl$twoN[has_n]
+      arg_val <- if (length(twoN) == 1) rep(twoN[[1]], length(cn)) else twoN[cn]
+      differ  <- abs(arg_val - cap_val) > 1e-6 * pmax(1, abs(cap_val))
+      if (isTRUE(any(differ)))
+        rlang::warn(
+          c("`twoN=` argument overrides captured twoN values from the nodes tibble.",
+            "i" = paste("Nodes:", paste(cn[differ], collapse = ", "))),
+          class = "admixtools_nodes_twoN_overridden")
+    }
+  }
 
   lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
 

@@ -21,10 +21,10 @@
 #       non-strict prune of nodes-tibble rows without edges.
 #   admixtools_dropping_node_attrs
 #       as_edge_tibble discards a non-empty nodes tibble.
-#   admixtools_samples_arg_overridden (reserved; not yet thrown)
-#       graph_to_lgo samples= conflicts with nodes attr.
-#   admixtools_twoN_arg_overridden (reserved; not yet thrown)
-#       graph_to_lgo twoN= conflicts with nodes attr.
+#   admixtools_samples_arg_overridden
+#       graph_to_lgo samples= conflicts with nodes attr (nodes attr wins).
+#   admixtools_nodes_twoN_overridden
+#       graph_to_lgo twoN= overrides a captured nodes-attr twoN (arg wins).
 # ---------------------------------------------------------------------
 
 #' Return the nodes attribute of an edge tibble.
