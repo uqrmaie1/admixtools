@@ -388,6 +388,9 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
       finreps = apply(f4_lo, 3, function(x) sum(!is.finite(x)) == 0)
       # A jackknife covariance needs at least 2 surviving blocks; cov() of a
       # single leave-one-out replicate is NA (R backend) or 0/NaN (cpp), silently.
+      # This is intentionally stricter than jack_pairarr_stats (which only stops
+      # at 0 surviving blocks) because a single-block weight covariance is
+      # silently degenerate; the f4_var path's looser guard is left as-is.
       if(sum(finreps) < 2) stop("Fewer than 2 non-missing blocks; cannot compute weight standard errors.")
       se = sqrt(diag(get_weights_covariance(f4_lo[,,finreps, drop = FALSE], qinv,
                                             block_lengths[finreps], fudge = fudge, boot = boot,

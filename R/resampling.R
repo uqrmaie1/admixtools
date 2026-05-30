@@ -106,7 +106,8 @@ jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   # (vctrs treats it as a vector of rows), so use base-R indexing. xtau holds
   # centered pseudo-deviations, so 0 means "no contribution" and the
   # tcrossprod(!is.na(xtau)) denominator counts the present pairs (a pairwise-
-  # complete covariance).
+  # complete covariance). This assumes each pair of rows shares at least one
+  # present block; a pair with no overlap gives 0/0 = NaN, as before this fix.
   xtau0 = xtau; xtau0[is.na(xtau0)] = 0
   var = tcrossprod(xtau0)/tcrossprod(!is.na(xtau))
 
@@ -129,6 +130,8 @@ jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
   #est = weighted_row_means(loo_mat, 1-1/h, na.rm=na.rm)
   #xtau = (est - loo_mat) * sqrt(rep(h, each = nrow(loo_mat))-1)
   # Zero missing deviations element-wise; replace_na() no-ops on a matrix.
+  # Pairwise-complete covariance: a row pair with no shared present block gives
+  # 0/0 = NaN (unchanged by this fix).
   xtau0 = xtau; xtau0[is.na(xtau0)] = 0
   var = tcrossprod(xtau0) / tcrossprod(!is.na(xtau))
 
