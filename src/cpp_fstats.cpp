@@ -24,6 +24,34 @@
 using namespace Rcpp;
 using namespace arma;
 
+// OpenMP + fork() hazard mitigation. libgomp's thread pool, once created in a
+// process, is inherited across fork() but its worker threads are not, so a
+// forked child that enters an OpenMP region deadlocks on pool locks held by
+// threads that no longer exist in the child. This bites a caller who runs an
+// f-stat under plan(sequential) -- which executes these kernels in the main
+// process and creates the pool -- and then switches to plan(multicore), which
+// forks. Draining the pool in a pthread_atfork prepare handler makes every
+// fork start clean; the next parallel region in parent or child rebuilds it.
+// No effect on plan(sequential) or plan(multisession) (whose workers are fresh
+// spawned processes, not forks), or when OpenMP is unavailable. Uses
+// omp_pause_resource_all (present in gcc libgomp >= 9 and LLVM libomp >= 9, or
+// any runtime advertising OpenMP 5.0; gcc defaults _OPENMP to 4.5 even though
+// the function is there, so the guard keys on compiler version). On older
+// runtimes the handler is omitted and callers should prefer plan(multisession)
+// over plan(multicore).
+#if defined(_OPENMP) && \
+    (_OPENMP >= 201811 || (defined(__clang__) && __clang_major__ >= 9) || \
+     (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9))
+#include <pthread.h>
+static void admixtools_omp_drain_pool_before_fork() {
+  omp_pause_resource_all(omp_pause_hard);
+}
+static const int admixtools_omp_atfork_registered = []() {
+  pthread_atfork(admixtools_omp_drain_pool_before_fork, nullptr, nullptr);
+  return 0;
+}();
+#endif
+
 // The OpenMP team size is no longer resolved here. The caller passes an
 // explicit `nthreads` (see the kernels below), resolved once on the R side
 // in the main process where parallelly::availableCores() sees the true

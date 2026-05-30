@@ -3242,6 +3242,11 @@ omp_thread_budget = function(n_concurrent = 1L) {
 #'   by `qpfstats()` to skip the costly long-format expansion and immediate
 #'   collapse back to matrices. Default `FALSE` preserves the historical
 #'   return shape for all other callers.
+#' @note These per-block kernels use OpenMP internally. The package makes
+#'   `future::plan(multicore)` safe to use even after an in-process f-stat call
+#'   by resetting the OpenMP thread pool across `fork()`; on OpenMP runtimes
+#'   older than 5.0 (which lack the reset primitive) prefer
+#'   `future::plan(multisession)`, whose workers are separate processes.
 #' @return A data frame with per-block f4-statistics for each population quadruple.
 f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL, auto_only = TRUE,
                                 blgsize = 0.05,

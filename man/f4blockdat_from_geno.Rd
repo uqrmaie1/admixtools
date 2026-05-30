@@ -65,3 +65,10 @@ A data frame with per-block f4-statistics for each population quadruple.
 \description{
 Compute per-block f4-statistics directly from genotype data
 }
+\note{
+These per-block kernels use OpenMP internally. The package makes
+\code{future::plan(multicore)} safe to use even after an in-process f-stat call
+by resetting the OpenMP thread pool across \code{fork()}; on OpenMP runtimes
+older than 5.0 (which lack the reset primitive) prefer
+\code{future::plan(multisession)}, whose workers are separate processes.
+}
