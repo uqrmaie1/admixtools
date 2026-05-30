@@ -381,7 +381,19 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
                            qpsolve = qpsolve)$weights %>% c
     if(getcov) {
       if(verbose) alert_info('Computing standard errors...\n')
-      se = sqrt(diag(get_weights_covariance(f4_lo, qinv, block_lengths, fudge = fudge, boot = boot,
+      # Compute weight SEs over the leave-one-out replicates with no missing
+      # values, the same surviving block set jack_pairarr_stats uses for f4_var.
+      # Neither weight-covariance backend (R or cpp) tolerates NA; on the common
+      # remove_na path f4_lo is already complete, so this is a no-op there.
+      finreps = apply(f4_lo, 3, function(x) sum(!is.finite(x)) == 0)
+      # A jackknife covariance needs at least 2 surviving blocks; cov() of a
+      # single leave-one-out replicate is NA (R backend) or 0/NaN (cpp), silently.
+      # This is intentionally stricter than jack_pairarr_stats (which only stops
+      # at 0 surviving blocks) because a single-block weight covariance is
+      # silently degenerate; the f4_var path's looser guard is left as-is.
+      if(sum(finreps) < 2) stop("Fewer than 2 non-missing blocks; cannot compute weight standard errors.")
+      se = sqrt(diag(get_weights_covariance(f4_lo[,,finreps, drop = FALSE], qinv,
+                                            block_lengths[finreps], fudge = fudge, boot = boot,
                                             constrained = constrained, qpsolve = qpsolve)))
     } else se = NA
     out$weights = tibble(target, left = left[-1], weight, se) %>% mutate(z = weight/se)
