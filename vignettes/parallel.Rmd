@@ -13,38 +13,65 @@ vignette: >
 ---
 
 
-*ADMIXTOOLS 2* uses the [`future`](https://github.com/HenrikBengtsson/future) / [`furrr`](https://github.com/DavisVaughan/furrr) framework. The default plan is sequential, so functions behave like single-core code unless you opt in. Opt-in is one line:
+*ADMIXTOOLS 2* parallelizes on two levels that work together, and on a single machine you usually do not have to manage either one. The f-statistic kernels already use all of your cores, so for one `qpadm` or one `extract_f2` you can simply call the function. Reach for a `future` plan when you have many independent units of work, a sweep of models or a batch of resamples, or when you want to spread work across the nodes of a cluster.
+
+The two levels are these.
+
+The f-statistic kernels, the inner loops that turn genotypes into allele frequencies and allele frequencies into f2, f3, and f4 statistics, are parallelized in C++ with OpenMP. This is on by default and uses all available cores even when you have set up no parallelism in R. OpenMP is an optional build dependency, so if the package was compiled without it these kernels run on a single core and everything still works.
+
+The coarse-grained outer work, namely SNP blocks, sweeps of many models, and bootstrap resamples, is parallelized in R with the [`future`](https://github.com/HenrikBengtsson/future) / [`furrr`](https://github.com/DavisVaughan/furrr) framework. The default plan is sequential, so this outer layer stays in a single process until you opt in with one line.
 
 ```{r, eval = FALSE}
 library(future)
 plan(multisession, workers = 4)
 ```
 
-Switch back with `plan(sequential)`. The same `plan()` call applies to every `admixtools` function that supports parallelism — there are no per-function flags to toggle.
+Switch back with `plan(sequential)`. The same `plan()` call applies to every `admixtools` function that supports the outer layer, and there are no per-function flags to toggle.
+
+The two layers share one machine without fighting over it. Under `plan(multisession, workers = 4)` on a 16-core machine each worker is handed 4 kernel threads, so the total stays at 16. The budget is `availableCores()` divided by the number of workers, computed once in the main process and passed down, so the block layer and the OpenMP layer never multiply out into oversubscription.
 
 
 ## What's parallelized
 
-Core data-extraction and model-fitting workflows:
+These functions parallelize their outer work through `future`, grouped by what that outer work is.
 
-* **`extract_f2`** and **`f4blockdat_from_geno`** parallelize across SNP blocks. This is the highest-impact case: a 15-pop / 5565-popcomb / 713-block run takes about 200 s sequentially and 75 s under `plan(multisession, workers = 4)`.
-* **`qpadm`**, **`qp3pop`**, **`qp4ratio`**, and **`qpfstats`** call `f4blockdat_from_geno` when the input is a genotype-file prefix, so they benefit transparently.
-* **`qpadm_multi`** and **`qpadm_sweep`** parallelize across models on top of that — each model's f4 computation also parallelizes per block, so two layers compose. On a clean compute budget you usually want only one layer parallel (set workers to match cores, and let either the per-block or per-model layer absorb them).
-* **`read_f2`** parallelizes the per-pair `.rds` reads when loading a precomputed f2 cache. Useful on slow disks or NFS where I/O latency dominates.
+**Across SNP blocks**
+
+* **`extract_f2`** and **`f4blockdat_from_geno`** spread their SNP blocks across `future` workers. The per-block f-statistic work inside them is already threaded by OpenMP, so on one machine `plan(sequential)` is not idle, it is running the kernels on every core. The block layer adds throughput mainly when you have spare cores beyond what a single block's kernel can keep busy, or when you spread blocks across nodes.
+* **`qpadm`**, **`qp3pop`**, **`qp4ratio`**, and **`qpfstats`** call `f4blockdat_from_geno` when the input is a genotype-file prefix, so they inherit the block layer transparently.
+
+**Across models**
+
+* **`qpadm_multi`** and **`qpadm_sweep`** evaluate many models in parallel. With a genotype-file prefix the shared f4 computation runs once at the top level, correctly budgeted, and the per-model fits reuse it, so the per-model layer and the kernel layer do not stack into oversubscription. You no longer have to hand-tune which layer gets the cores.
+
+**Across resamples**
+
 * **`qpgraph_resample_snps`** and **`qpgraph_resample_snps2`** parallelize across resamples.
 * **`find_graphs_old`** parallelizes its independent repeats (with `parallel = TRUE`, the default).
 
+**Across cache reads**
+
+* **`read_f2`** parallelizes the per-pair `.rds` reads when loading a precomputed f2 cache. Useful on slow disks or NFS where I/O latency dominates.
+
 Not parallelized:
 
-* **`find_graphs`** (the newer fitter — fast enough single-threaded that parallel overhead would dominate; if you want N independent runs in parallel, wrap it yourself in `furrr::future_map(1:N, ~find_graphs(...))`).
+* **`find_graphs`** (the newer fitter, fast enough single-threaded that parallel overhead would dominate; if you want N independent runs in parallel, wrap it yourself in `furrr::future_map(1:N, ~find_graphs(...))`).
 * **`qpgraph`** itself (single-graph fit).
 
 
-## multisession vs multicore
+## Choosing a future plan
 
-`multisession` (workers = R subprocesses, communicating via sockets) is the default-portable choice. It works on all platforms including Windows.
+This is the old `multisession` versus `multicore` question, with one change. Because the OpenMP kernels already use every core under `plan(sequential)`, adding a `future` plan no longer multiplies throughput on a single f-statistic computation the way it did when the kernels were serial. A dense f4 computation over 8 populations (about 1,680 population quadruples) on a 32-core machine landed like this.
 
-`multicore` (workers = forked processes, sharing memory copy-on-write) is faster on Linux: a 15-pop qpadm run sees 1.9× speedup vs sequential under `plan(multicore, workers = 4)` and only 1.1× under `plan(multisession, workers = 4)` because forking skips the worker-startup and data-marshalling cost. On macOS it works at the command line but fails inside RStudio. On Windows it's unsupported.
+| Plan | Wall time | Relative to `plan(sequential)` |
+|------|-----------|--------------------------------|
+| `plan(sequential)` | ~17 s | baseline, kernels use all 32 cores |
+| `plan(multisession, workers = 4)` | ~25 s | 0.7x, worker startup and data copying cost more than they save |
+| `plan(multicore, workers = 4)` | ~14 s | 1.2x |
+
+So the plan you pick now matters most for memory and for work that has many independent units, not for speeding up a single computation.
+
+`multisession` runs its workers as separate R processes talking over sockets. It is the portable default and works everywhere, including Windows. `multicore` runs its workers as forked processes that share memory copy-on-write, which skips the startup and copying cost and is a little faster on Linux, but it is unavailable on Windows and unsafe inside RStudio. Forking is safe alongside the OpenMP kernels because the thread pool is drained across the fork, so each forked worker starts single-threaded and builds its own pool.
 
 If you're on Linux and not in RStudio:
 
@@ -59,6 +86,13 @@ plan(multisession, workers = 4)
 ```
 
 
+## Controlling how many cores are used
+
+The kernels size their thread team from `parallelly::availableCores()` divided by the number of `future` workers. To use fewer cores, lower what `availableCores()` reports, for example with `options(mc.cores = 8)` or the environment variables described in `?parallelly::availableCores`, or run under a plan with more workers, which divides the budget further.
+
+`OMP_NUM_THREADS` has no effect here. The kernels set their team size with an explicit `num_threads` clause, which OpenMP gives precedence over the environment variable, so `availableCores()` is the lever, not `OMP_NUM_THREADS`.
+
+
 ## Parallelization on a compute cluster
 
 Sometimes it makes more sense to parallelize across compute nodes rather than across cores. This can be done either in the traditional way of writing an R script and submitting it many times in parallel as separate jobs, or interactively from within R again using the `furrr` / `future` framework. The interactive route is more complicated to set up than parallelization across cores.
@@ -68,14 +102,17 @@ On a cluster using the *Slurm* job scheduler, the following command will set up 
 ```{r, eval = FALSE}
 library(future.batchtools)
 plan(tweak(batchtools_slurm, workers = 50,
-           resources = list(ncpus = 1, memory = 1024,
+           resources = list(ncpus = 1, memory = 1024,  # 1024 MB per job
                             walltime = 10 * 60 * 60, partition = 'short')))
 ```
 
-It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`. This requires the [`future.batchtools`](https://github.com/HenrikBengtsson/future.batchtools) R package and a batchtools template file in the working directory — see [this example template](https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
+It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`. This requires the [`future.batchtools`](https://github.com/HenrikBengtsson/future.batchtools) R package and a batchtools template file in the working directory, see [this example template](https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
+
+One detail matters if you request more than one CPU per job. The kernel's thread budget is worked out in the submitting session from its own `availableCores()`, not from each job's `ncpus`. With the `ncpus = 1` example above the kernel correctly runs single-threaded in every job, but requesting `ncpus = 4` will not by itself make the kernel use four threads. The scaling here comes from spreading the 50 jobs across nodes, not from threading within a job.
 
 
 ## When parallelization doesn't help
 
-* **Tiny workloads** — for a 5-pop / 10-popcomb / 100-block `extract_f2`, the sequential version finishes in under a second. The worker-spawn overhead of `multisession` can make parallel slower than serial on tiny inputs.
-* **Memory-constrained machines** — `multisession` workers each hold their own copy of the input data after R serializes-and-sends it. For a 100 GB f2 cache and 8 workers, you'd need ~100 GB × 8 of headroom. Use `multicore` (copy-on-write) on Linux, fewer workers, or stay sequential.
+* **A single f-statistic computation on one machine.** The kernels already use all your cores under `plan(sequential)`, so wrapping one `qpadm` or one `extract_f2` in a `future` plan usually adds overhead without adding speed. Reach for the `future` layer when you have many independent units, such as a sweep of models or many resamples, or when you are spreading work across nodes.
+* **Tiny workloads.** For a 5-pop / 10-popcomb / 100-block `extract_f2`, the sequential version finishes in under a second. The worker-spawn overhead of `multisession` can make parallel slower than serial on tiny inputs.
+* **Memory-constrained machines.** `multisession` workers each hold their own copy of the input data after R serializes-and-sends it. For a 100 GB f2 cache and 8 workers, you'd need ~100 GB × 8 of headroom. Use `multicore` (copy-on-write) on Linux, fewer workers, or stay sequential.
