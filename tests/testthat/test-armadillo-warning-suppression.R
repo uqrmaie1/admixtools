@@ -101,6 +101,17 @@ test_that("near-singular fit still surfaces the R-level diagnostic", {
   ld = res$f4_var_singular_loadings
   expect_s3_class(ld, "data.frame")
   expect_named(ld, c("right", "loading"), ignore.order = TRUE)
+  # The RIGHT clone pair carry the degenerate direction (loading ~ sqrt(1/2)
+  # each). Crucially, the innocent right pop must load ~0 even though this
+  # fixture ALSO has a LEFT-side clone (Ushim_clone1): the attribution is
+  # right-only and must not bleed a left singularity into right pops. The
+  # projector-based loadings are basis-invariant, so these exact values hold on
+  # every LAPACK/BLAS backend (the earlier single-singular-vector form returned
+  # backend-dependent values here and ranked the innocent pop into the top two).
+  load_of = function(p) ld$loading[match(p, ld$right)]
+  expect_equal(load_of("Mbuti.DG"),             sqrt(0.5), tolerance = 1e-4)
+  expect_equal(load_of("Mbuti_clone"),          sqrt(0.5), tolerance = 1e-4)
+  expect_equal(load_of("Altai_Neanderthal.DG"), 0,         tolerance = 1e-4)
   top2 = ld$right[order(abs(ld$loading), decreasing = TRUE)][1:2]
   expect_setequal(top2, c("Mbuti.DG", "Mbuti_clone"))
 })

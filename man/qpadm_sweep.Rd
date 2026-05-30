@@ -79,8 +79,8 @@ Cells are tibbles identifying which right population is
 loading-heaviest on the singular direction; populated when the
 auto-bar fires (\code{f4_var_rcond < 1e-8}). Cells are \code{NULL} when the
 auto-bar does not fire (the common clean-data case) and also \code{NULL}
-if \code{\link[=qpadm]{qpadm()}}'s SVD inside the loadings computation fails on a
-pathological matrix. Useful for SVD-guided right-pop pruning.
+if \code{\link[=qpadm]{qpadm()}}'s eigendecomposition inside the loadings computation
+fails on a pathological matrix. Useful for loading-guided right-pop pruning.
 }
 
 Kwargs in \code{...} are forwarded to \code{\link[=qpadm_multi]{qpadm_multi()}}, which validates them
