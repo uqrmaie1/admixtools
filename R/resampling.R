@@ -102,7 +102,13 @@ jack_mat_stats = function(loo_mat, block_lengths, tot = NULL, na.rm = TRUE) {
   h = rep(n/block_lengths, each = nrow(loo_mat))
   taumat = h*totmat - (h-1)*loo_mat
   xtau = (taumat - estmat) / sqrt(h-1)
-  var = tcrossprod(replace_na(xtau, 0))/tcrossprod(!is.na(xtau))
+  # Zero missing deviations element-wise. tidyr::replace_na() no-ops on a matrix
+  # (vctrs treats it as a vector of rows), so use base-R indexing. xtau holds
+  # centered pseudo-deviations, so 0 means "no contribution" and the
+  # tcrossprod(!is.na(xtau)) denominator counts the present pairs (a pairwise-
+  # complete covariance).
+  xtau0 = xtau; xtau0[is.na(xtau0)] = 0
+  var = tcrossprod(xtau0)/tcrossprod(!is.na(xtau))
 
   namedList(est, var)
 }
@@ -122,7 +128,9 @@ jack_mat_stats2 = function(loo_mat, block_lengths, na.rm = TRUE) {
   xtau = (est - loo_mat) * sqrt(h-1)
   #est = weighted_row_means(loo_mat, 1-1/h, na.rm=na.rm)
   #xtau = (est - loo_mat) * sqrt(rep(h, each = nrow(loo_mat))-1)
-  var = tcrossprod(replace_na(xtau, 0)) / tcrossprod(!is.na(xtau))
+  # Zero missing deviations element-wise; replace_na() no-ops on a matrix.
+  xtau0 = xtau; xtau0[is.na(xtau0)] = 0
+  var = tcrossprod(xtau0) / tcrossprod(!is.na(xtau))
 
   namedList(est, var)
 }
@@ -355,15 +363,18 @@ loo_to_est = function(arr, block_lengths = NULL) {
 est_to_loo_nafix = function(arr) {
   # turns block estimates into leave-one-block-out estimates
   # assumes blocks are along 3rd dimension
-
-  block_lengths = parse_number(dimnames(arr)[[3]])
-  tot = apply(arr, 1:2, weighted.mean, block_lengths, na.rm=T)
-  rel_bl = rep(block_lengths/sum(block_lengths), each = length(tot))
-  if(any(is.na(arr))) warning(paste0('Replacing ', sum(is.na(arr)), ' NAs with 0!'))
-  arr %<>% replace_na(0)
-  out = (replicate(dim(arr)[3], tot) - arr*rel_bl) / (1-rel_bl)
-  dimnames(out) = dimnames(arr)
-  out
+  #
+  # Missing block entries are EXCLUDED, not replaced with 0. A missing block
+  # carries no information for that statistic, so its leave-one-out slice is
+  # left NA and downstream jackknife code (jack_pairarr_stats, and the weight
+  # covariance via the surviving-slice filter in qpadm) drops it. Substituting 0
+  # would impute a real f4 value of zero, biasing the estimate toward 0 by the
+  # missing fraction and inflating the variance. est_to_loo already does the
+  # correct NA-aware (present-block) reweighting; on data with no missing blocks
+  # this is identical to a plain leave-one-out.
+  if(any(is.na(arr)))
+    warning(paste0(sum(is.na(arr)), ' missing block entries excluded from leave-one-out estimates.'))
+  est_to_loo(arr)
 }
 
 #' Turn per-block estimates into bootstrap estimates
