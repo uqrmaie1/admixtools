@@ -1,7 +1,7 @@
 # Round trip of per-segment nodes metadata through .lgo (read side)
 
 test_that("read_lgo captures samples on rha20 sampled nodes", {
-  res <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  res <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   nt <- graph_nodes(res)
   # v, a, d are sampled in rha20 and survive the narrow-rule round trip
   expect_equal(nt$samples[nt$name == "v"], 1L)
@@ -10,7 +10,7 @@ test_that("read_lgo captures samples on rha20 sampled nodes", {
 })
 
 test_that("read_lgo captures twoN_param and resolves twoN value", {
-  res <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  res <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   nt <- graph_nodes(res)
   # rha20 uses named twoN params (twoNn, one). Whatever v uses, the token
   # is captured and the numeric resolves from the param block.
@@ -20,7 +20,7 @@ test_that("read_lgo captures twoN_param and resolves twoN value", {
 })
 
 test_that("read_lgo captures time_param for non-conforming t= token", {
-  res <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  res <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   nt <- graph_nodes(res)
   # rha20 names times Tv, Ta, etc. (not T_<node>); the token round trips.
   expect_false(is.na(nt$time_param[nt$name == "v"]))
@@ -76,6 +76,20 @@ test_that("graph_to_lgo samples= arg conflict warns, nodes tibble wins", {
     class = "admixtools_samples_arg_overridden")
   seg_anc <- grep("^segment anc ", strsplit(txt, "\n", fixed = TRUE)[[1]], value = TRUE)
   expect_match(seg_anc, "samples=1")   # not 99
+})
+
+test_that("graph_to_lgo warns on samples override only when samples= is supplied", {
+  g <- make_test_nodes_graph()
+  g <- set_node_attrs(g, "eur", samples = 3L)   # a leaf captured above the samples=1 default
+  # Default call: samples= not supplied, so the nodes tibble wins silently
+  # (the samples=1 default must not be read as an explicit override).
+  expect_no_warning(
+    graph_to_lgo(g, time_handling = "free", validate = FALSE),
+    class = "admixtools_samples_arg_overridden")
+  # An explicit samples= that disagrees still warns, even at the default value.
+  expect_warning(
+    graph_to_lgo(g, samples = 1L, time_handling = "free", validate = FALSE),
+    class = "admixtools_samples_arg_overridden")
 })
 
 test_that("graph_to_lgo twoN= arg overriding captured twoN warns; arg wins", {
@@ -141,7 +155,7 @@ test_that("minimal graph (no nodes tibble) writes unchanged", {
 # convention). The write uses time_handling = "free" because a read_lgo
 # result carries no edge drift for the consistency time walk.
 test_that("rha20 read->write->read is a topology + samples fixed point", {
-  r1 <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  r1 <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   r2 <- suppressWarnings(read_lgo(
     text = graph_to_lgo(r1, time_handling = "free", validate = FALSE)))
   topo <- function(e) { x <- e[order(e$from, e$to), c("from", "to", "type")]
@@ -157,7 +171,7 @@ test_that("rha20 captured graph passes graph_to_lgo's validate=TRUE self-check",
   # graph_to_lgo's <dest>_<parent> ghost naming stay consistent on a captured,
   # admix-bearing nodes-tibble graph (rha20 has 4 mix events). The other write
   # tests use validate = FALSE, so this is the lock on that combination.
-  r1 <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  r1 <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   expect_no_error(
     suppressWarnings(graph_to_lgo(r1, time_handling = "free", validate = TRUE)))
 })
@@ -184,7 +198,7 @@ lgo_undeclared_params <- function(txt) {
 }
 
 test_that("graph_to_lgo emits no undefined parameters (rha20 round trip)", {
-  r1  <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  r1  <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   txt <- graph_to_lgo(r1, time_handling = "free", validate = FALSE)
   expect_equal(lgo_undeclared_params(txt), character(0))
 })
@@ -196,7 +210,7 @@ test_that("graph_to_lgo emits no undefined parameters (fresh nodes graph)", {
 })
 
 test_that("round trip re-emits the real twoN value, not a regenerated 1", {
-  r1 <- suppressWarnings(read_lgo(path = test_path("fixtures", "rha20.lgo")))
+  r1 <- read_lgo(path = test_path("fixtures", "rha20.lgo"))
   nt <- graph_nodes(r1)
   vp <- nt$twoN_param[nt$name == "v"]; vv <- nt$twoN[nt$name == "v"]
   lines <- strsplit(graph_to_lgo(r1, time_handling = "free", validate = FALSE),

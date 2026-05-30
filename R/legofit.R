@@ -1261,6 +1261,7 @@ graph_to_lgo <- function(graph,
                          validate = TRUE) {
 
   time_handling <- match.arg(time_handling)
+  samples_supplied <- !missing(samples)   # only warn on an explicit samples= override
 
   edges <- coerce_to_edge_tibble(graph)
   edges <- validate_edge_tibble(edges)
@@ -1286,12 +1287,14 @@ graph_to_lgo <- function(graph,
     ns <- nodes_tbl$samples
     have <- !is.na(ns) & nodes_tbl$name %in% all_nodes
     if (any(have)) {
-      # Warn if the samples= argument disagrees with the nodes tibble.
+      # Warn only when an explicit samples= disagrees with the nodes tibble; the
+      # samples= default (1) must not trip this on a plain graph_to_lgo() round
+      # trip of a graph whose captured leaf samples differ from 1.
       arg_conflict <- intersect(nodes_tbl$name[have], names(full_samples))
       arg_conflict <- arg_conflict[
         !is.na(full_samples[arg_conflict]) &
         full_samples[arg_conflict] != ns[match(arg_conflict, nodes_tbl$name)]]
-      if (length(arg_conflict) > 0)
+      if (samples_supplied && length(arg_conflict) > 0)
         rlang::warn(
           c("`samples=` argument conflicts with the nodes tibble; using the nodes tibble.",
             "i" = paste("Nodes:", paste(arg_conflict, collapse = ", "))),
