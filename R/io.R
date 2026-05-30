@@ -4169,8 +4169,10 @@ geno_to_treemix = function(pref, outfile = paste0(pref, '.txt.gz'), pops = NULL,
   }
   cnt = rowSums(afs$counts > 0)
   nomiss = cnt == ncol(afs$counts)
-  m1 = replace_na(afs$counts * afs$afs, 0)[nomiss,]
-  m2 = replace_na(afs$counts * (1-afs$afs), 0)[nomiss,]
+  # On a matrix, tidyr::replace_na() dispatches by row via vctrs and zeroes only rows
+  # that are entirely NA, so a partly NA row that passes `nomiss` keeps its NA. Zero elementwise.
+  m1 = afs$counts * afs$afs;     m1[is.na(m1)] = 0; m1 = m1[nomiss,]
+  m2 = afs$counts * (1-afs$afs); m2[is.na(m2)] = 0; m2 = m2[nomiss,]
 
   if(verbose) alert_info('Writing data in treemix format...\n')
   paste0(m1, ',', m2) %>% matrix(nrow(m1)) %>% as_tibble(.name_repair = ~colnames(m1)) %>%
