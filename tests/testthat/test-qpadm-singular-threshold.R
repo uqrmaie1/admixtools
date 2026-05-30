@@ -161,6 +161,41 @@ test_that("near-singular loadings survive NA blocks in the resampled estimates",
   expect_setequal(top2, c("Mbuti.DG", "Mbuti_clone"))
 })
 
+# ── right-side NEAR-sister (not an exact clone) ─────────────────────────────
+
+test_that("a right-side near-sister is attributed to the pair with unequal loadings", {
+  # Mbuti_sis is a 90/10 blend of Mbuti.DG and Russia_Ust_Ishim.DG, so it shares
+  # most of Mbuti.DG's block-to-block drift -- enough to keep f4_var near-singular
+  # and trip the auto-bar -- but is NOT identical to it. This is the realistic
+  # near-sister the diagnostic is meant to catch, as opposed to the exact clones
+  # in the tests above. Two things must hold and do not for the old single-vector
+  # form: (1) the pair, not the innocent right pop, carries the loading, and
+  # (2) the two loadings are now UNEQUAL (the subspace projector resolves the
+  # asymmetry a single smallest singular vector flattens). The blend is
+  # deterministic, so these values are exact and identical on every BLAS backend.
+  s = .example_setup()
+  f2 = .blend_pop_in_f2_blocks(s$f2, src = "Mbuti.DG", other = "Russia_Ust_Ishim.DG",
+                               dst = "Mbuti_sis", d = 0.1)
+  right = c("Chimp.REF", "Mbuti.DG", "Mbuti_sis", "Russia_Ust_Ishim.DG",
+            "Switzerland_Bichon.SG")
+  res = suppressMessages(suppressWarnings(
+    qpadm(f2, left = s$left, right = right, target = s$target,
+          fudge = 1e-12, verbose = FALSE)
+  ))
+  expect_lt(res$f4_var_rcond, 1e-8)            # still trips the auto-bar
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")
+  load_of = function(p) ld$loading[match(p, ld$right)]
+  top2 = ld$right[order(ld$loading, decreasing = TRUE)][1:2]
+  expect_setequal(top2, c("Mbuti.DG", "Mbuti_sis"))
+  expect_gt(load_of("Mbuti.DG"),  0.5)
+  expect_gt(load_of("Mbuti_sis"), 0.5)
+  expect_equal(load_of("Switzerland_Bichon.SG"), 0, tolerance = 1e-4)
+  # near-sister, not clone: the pair load UNEQUALLY (a clone pair would tie at
+  # sqrt(1/2)); the gap is what the single-eigenvector form could not represent.
+  expect_gt(abs(load_of("Mbuti.DG") - load_of("Mbuti_sis")), 1e-2)
+})
+
 # ── fail-loud case (singular_threshold set above the post-fudge rcond) ─────
 
 test_that("singular_threshold converts the warning into a fail-loud error with the loadings table", {

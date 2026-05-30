@@ -316,6 +316,12 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
       nr = length(right) - 1
       rsig = matrix(aperm(f4_lo, c(2, 1, 3)), nrow = nr)      # right x (left*block)
       rsig = rsig[, colSums(is.na(rsig)) == 0, drop = FALSE]  # complete (left,block) cols only
+      # If NA dropped every (left, block) column there is no signal left to
+      # decompose. Bail to the NULL fallback rather than eigen() an all-zero
+      # Gram, whose "null space" is the whole space and would report a spurious
+      # loading of 1 for every right pop. (Defensive: qpadm's upstream
+      # missingness checks normally reject data this sparse first.)
+      if(ncol(rsig) == 0) stop("no complete (left, block) columns for loadings")
       ev = eigen(tcrossprod(rsig), symmetric = TRUE)          # right-pop Gram
       null_sel = ev$values <= ev$values[1] * rcond_concern    # near-null eigenspace
       v_null = ev$vectors[, null_sel, drop = FALSE]
