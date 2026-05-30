@@ -348,8 +348,15 @@ xmats_to_pairarrs = function(xmat1, xmat2) {
   ploidy2 = attr(xmat2, 'ploidy')
   n1 = (!is.na(xmat1)) * rep(ploidy1, each = nr)
   n2 = (!is.na(xmat2)) * rep(ploidy2, each = nr)
-  xmat1 %<>% replace_na(0)
-  xmat2 %<>% replace_na(0)
+  # Zero missing allele values element-wise so a missing genotype contributes 0
+  # to the allele product aa, matching n1/n2 contributing 0 to the count product
+  # nn. replace_na() is a no-op on a matrix whose NA cells do not fill an entire
+  # row (vctrs detects missingness by row); a leaked NA then drops out of aa's
+  # block mean (na.rm) but not nn's, silently biasing f-stats for pairs with
+  # missing data. No effect at the default maxmiss = 0, where SNPs with any
+  # missing population are dropped upstream so xmat has no NA here.
+  xmat1[is.na(xmat1)] = 0
+  xmat2[is.na(xmat2)] = 0
   aa = prodarray(xmat1, xmat2)
   nn = prodarray(n1, n2)
   dimnames(aa)[1:2] = dimnames(nn)[1:2] = list(colnames(xmat1), colnames(xmat2))
