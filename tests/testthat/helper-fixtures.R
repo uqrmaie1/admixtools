@@ -138,6 +138,39 @@ make_minimal_graph_with_outgroup <- function() {
   out
 }
 
+# Near-sister (NOT exact clone) fixture builder for the loadings tests.
+#
+# Like .clone_pop_in_f2_blocks, but `dst` is a per-block blend of `src` and
+# `other`: dst = (1 - d) * src + d * other. At d = 0 this is an exact clone of
+# src; a small d keeps dst collinear enough with src (in the same block-to-block
+# sense that drives f4_var near-singular, so the loadings gate still fires) while
+# making the two non-identical. The projector then reports UNEQUAL loadings on
+# the pair -- the realistic near-sister case that a single smallest singular
+# vector cannot resolve. Deterministic (no RNG), so the loadings are exact and
+# reproducible across BLAS backends.
+.blend_pop_in_f2_blocks = function(f2, src = "Mbuti.DG", other = "Russia_Ust_Ishim.DG",
+                                   dst = "Mbuti_sis", d = 0.1) {
+  if(length(dim(f2)) != 3L)
+    stop("f2 must be a 3D array (n_pops x n_pops x n_blocks); got ndim = ",
+         length(dim(f2)))
+  nam = dimnames(f2)[[1]]
+  for(p in c(src, other)) if(!(p %in% nam)) stop("pop not in f2_blocks: ", p)
+  if(dst %in% nam) stop("destination pop already exists: ", dst)
+  n   = length(nam)
+  nb  = dim(f2)[3]
+  new_nam = c(nam, dst)
+  out = array(NA_real_, dim = c(n + 1, n + 1, nb),
+              dimnames = list(new_nam, new_nam, dimnames(f2)[[3]]))
+  out[1:n, 1:n, ] = f2
+  si = match(src, nam)
+  oi = match(other, nam)
+  blend = (1 - d) * f2[1:n, si, ] + d * f2[1:n, oi, ]   # (n x nb), per block
+  out[1:n,   n+1, ] = blend
+  out[n+1,   1:n, ] = blend
+  out[n+1,   n+1, ] = 0
+  out
+}
+
 # Shared fixture for nodes-tibble tests.
 # 5-node OOA-style topology: out + (anc -> v, modern -> afr, eur).
 # anc is internal-sampled (has incident children but is also in the nodes

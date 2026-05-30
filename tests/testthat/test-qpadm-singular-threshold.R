@@ -1,4 +1,4 @@
-# Tests for the rcond + SVD-based collinearity diagnostic on qpadm()
+# Tests for the rcond + collinearity diagnostic on qpadm()
 # (closes pipeline issue #8). The diagnostic surfaces two fields on the
 # qpadm return list:
 #
@@ -6,7 +6,8 @@
 #                              of the (fudged) f4 variance matrix.
 #   f4_var_singular_loadings -- populated only when f4_var_rcond < 1e-8;
 #                              tibble with one row per right pop ranked by
-#                              L2 loading on the smallest singular vector.
+#                              leverage on the near-null eigenspace of the
+#                              right-pop Gram (basis-invariant projector).
 #
 # Plus a new singular_threshold = NA_real_ argument that, when set,
 # converts the silent pseudo-inverse fallback into a fail-loud error.
@@ -83,6 +84,116 @@ test_that("clone-pair with tiny fudge triggers the loadings table and a warning 
   clone_loadings = res$f4_var_singular_loadings$loading[
     res$f4_var_singular_loadings$right %in% c("Mbuti.DG", "Mbuti_clone")]
   expect_equal(clone_loadings, c(sqrt(0.5), sqrt(0.5)), tolerance = 1e-4)
+})
+
+# ── >1-dimensional degenerate null space (two right clone pairs) ─────────────
+
+test_that("two right clone pairs each load sqrt(1/2) via the subspace projector", {
+  # Two independent right clone pairs make the right-pop Gram's near-null
+  # space 2-dimensional. The earlier single-eigenvector attribution would read
+  # an ARBITRARY vector inside that 2-d space, so the per-pop split varied by
+  # LAPACK/BLAS backend; the projector onto the whole near-null subspace is
+  # unique, so all four clones carry an identical sqrt(1/2) loading on every
+  # backend and the lone non-clone right pop carries ~0.
+  s = .example_setup()
+  f2 = .clone_pop_in_f2_blocks(s$f2, "Mbuti.DG",            "Mbuti_clone")
+  f2 = .clone_pop_in_f2_blocks(f2,   "Russia_Ust_Ishim.DG", "Ushim_clone")
+  right = c("Chimp.REF", "Mbuti.DG", "Mbuti_clone",
+            "Russia_Ust_Ishim.DG", "Ushim_clone", "Switzerland_Bichon.SG")
+  res = suppressMessages(suppressWarnings(
+    qpadm(f2, left = s$left, right = right, target = s$target,
+          fudge = 1e-12, verbose = FALSE)
+  ))
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")
+  load_of = function(p) ld$loading[match(p, ld$right)]
+  for(p in c("Mbuti.DG", "Mbuti_clone", "Russia_Ust_Ishim.DG", "Ushim_clone"))
+    expect_equal(load_of(p), sqrt(0.5), tolerance = 1e-4)
+  expect_equal(load_of("Switzerland_Bichon.SG"), 0, tolerance = 1e-4)
+})
+
+# ── singularity that lives purely on the LEFT (sources) ─────────────────────
+
+test_that("a purely left-side singularity yields all-zero right loadings (no fabricated offender)", {
+  # Clone a LEFT (source) pop. f4_var is driven near-singular by the left
+  # collinearity, so the diagnostic still triggers, but the right pops are
+  # mutually independent. The right-only attribution must NOT invent a right
+  # offender: every loading is ~0, signalling "the problem is on the left".
+  s = .example_setup()
+  f2 = .clone_pop_in_f2_blocks(s$f2, "Altai_Neanderthal.DG", "Altai_clone")
+  left = c("Altai_Neanderthal.DG", "Altai_clone", "Vindija.DG")
+  res = suppressMessages(suppressWarnings(
+    qpadm(f2, left = left, right = s$right, target = s$target,
+          fudge = 1e-12, verbose = FALSE)
+  ))
+  expect_lt(res$f4_var_rcond, 1e-8)            # the singularity still trips the bar
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")
+  expect_equal(ld$loading, rep(0, nrow(ld)), tolerance = 1e-4)
+})
+
+# ── missing (NA) blocks must not silently drop the loadings table ───────────
+
+test_that("near-singular loadings survive NA blocks in the resampled estimates", {
+  # f4_lo retains NA on the f2 / caller-supplied-f4blocks path (est_to_loo_nafix's
+  # array replace_na is a no-op), while f4_var stays finite (jackknife na.rm).
+  # The loadings must still compute (complete-case over the (left, block)
+  # columns) rather than error out to a silent NULL -- the diagnostic is needed
+  # most exactly when data is messy AND near-singular. Regression for the
+  # earlier form that fed the NA-bearing tensor straight into eigen().
+  s = .example_setup()
+  f2 = .clone_pop_in_f2_blocks(s$f2, "Mbuti.DG", "Mbuti_clone")
+  left  = c("Denisova.DG", "Altai_Neanderthal.DG", "Vindija.DG")  # left[1] = f4 anchor
+  right = c("Chimp.REF", "Mbuti.DG", "Mbuti_clone", "Russia_Ust_Ishim.DG")
+  f4b = admixtools:::f2blocks_to_f4blocks(f2, left, right)[left[-1], right[-1], , drop = FALSE]
+  # knock out one (left, block) cell for BOTH clones (a block with no SNPs for
+  # that pop pair): the column drops out and the clone collinearity survives.
+  f4b["Vindija.DG", "Mbuti.DG",    3] = NA
+  f4b["Vindija.DG", "Mbuti_clone", 3] = NA
+  res = suppressMessages(suppressWarnings(
+    qpadm(f4blocks = f4b, data = NULL, left = NULL, right = NULL,
+          target = NULL, fudge = 1e-12, verbose = FALSE)
+  ))
+  expect_lt(res$f4_var_rcond, 1e-8)
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")            # NOT NULL despite the NA block
+  top2 = ld$right[order(ld$loading, decreasing = TRUE)][1:2]
+  expect_setequal(top2, c("Mbuti.DG", "Mbuti_clone"))
+})
+
+# ── right-side NEAR-sister (not an exact clone) ─────────────────────────────
+
+test_that("a right-side near-sister is attributed to the pair with unequal loadings", {
+  # Mbuti_sis is a 90/10 blend of Mbuti.DG and Russia_Ust_Ishim.DG, so it shares
+  # most of Mbuti.DG's block-to-block drift -- enough to keep f4_var near-singular
+  # and trip the auto-bar -- but is NOT identical to it. This is the realistic
+  # near-sister the diagnostic is meant to catch, as opposed to the exact clones
+  # in the tests above. Two things must hold and do not for the old single-vector
+  # form: (1) the pair, not the innocent right pop, carries the loading, and
+  # (2) the two loadings are now UNEQUAL (the subspace projector resolves the
+  # asymmetry a single smallest singular vector flattens). The blend is
+  # deterministic, so these values are exact and identical on every BLAS backend.
+  s = .example_setup()
+  f2 = .blend_pop_in_f2_blocks(s$f2, src = "Mbuti.DG", other = "Russia_Ust_Ishim.DG",
+                               dst = "Mbuti_sis", d = 0.1)
+  right = c("Chimp.REF", "Mbuti.DG", "Mbuti_sis", "Russia_Ust_Ishim.DG",
+            "Switzerland_Bichon.SG")
+  res = suppressMessages(suppressWarnings(
+    qpadm(f2, left = s$left, right = right, target = s$target,
+          fudge = 1e-12, verbose = FALSE)
+  ))
+  expect_lt(res$f4_var_rcond, 1e-8)            # still trips the auto-bar
+  ld = res$f4_var_singular_loadings
+  expect_s3_class(ld, "data.frame")
+  load_of = function(p) ld$loading[match(p, ld$right)]
+  top2 = ld$right[order(ld$loading, decreasing = TRUE)][1:2]
+  expect_setequal(top2, c("Mbuti.DG", "Mbuti_sis"))
+  expect_gt(load_of("Mbuti.DG"),  0.5)
+  expect_gt(load_of("Mbuti_sis"), 0.5)
+  expect_equal(load_of("Switzerland_Bichon.SG"), 0, tolerance = 1e-4)
+  # near-sister, not clone: the pair load UNEQUALLY (a clone pair would tie at
+  # sqrt(1/2)); the gap is what the single-eigenvector form could not represent.
+  expect_gt(abs(load_of("Mbuti.DG") - load_of("Mbuti_sis")), 1e-2)
 })
 
 # ── fail-loud case (singular_threshold set above the post-fudge rcond) ─────

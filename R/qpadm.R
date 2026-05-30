@@ -149,7 +149,7 @@ qpadm_weights = function(xmat, qinv, rnk, fudge = 0.0001, iterations = 20,
 #' @return `qpadm` returns a list with up to four data frames describing the model fit, plus a numeric `f4_var_rcond` diagnostic:
 #' \enumerate{
 #' \item `f4_var_rcond`: Reciprocal condition number of the (fudged) f4 variance matrix that was inverted to compute weights and standard errors. Values near machine epsilon (~`1e-15`) indicate that the right populations are linearly dependent (e.g., a right pop is a sister to one of the sources), and the returned weight SEs may be artificially tight as a result of the pseudo-inverse fallback. See `singular_threshold` for opt-in error gating.
-#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population, sorted by L2 loading on the smallest right-singular vector of `f4_var`. Right pops at the top of this list are the most likely offenders -- typically a sister-clade pair (two pops with similar high loadings) or a lone right pop too close to a source. `NULL` otherwise.
+#' \item `f4_var_singular_loadings`: When `f4_var_rcond` is concerningly low (< `1e-8`), a tibble with one row per right population (excluding the reference pop `right[1]`), sorted by each right pop's leverage on the collinear (near-singular) subspace. The leverage isolates right-side collinearity (it is derived from the right pops' own resampled f4 estimates, so a left-side singularity does not inflate it) and is the L2 norm of that right pop's rows of the orthogonal projector onto the degenerate subspace (the square root of the projector's diagonal), which is basis-invariant and therefore reproducible across linear-algebra (LAPACK/BLAS) backends. Right pops at the top of this list are the most likely offenders -- typically a sister-clade pair among the right set (two pops with similar high loadings); loadings that are all near zero indicate the near-singularity originates on the left (the sources) rather than among the right populations. `NULL` otherwise.
 #' \item `weights`: A data frame with estimated admixture proportions where each row is a left population.
 #' \item `f4`: A data frame with estimated and fitted f4-statistics
 #' \item `rankdrop`: A data frame describing model fits with different ranks, including *p*-values for the overall fit
@@ -279,16 +279,14 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   # uncertainty (issue #8).
   f4_var_rcond = tryCatch(rcond(f4_var), error = function(e) NA_real_)
 
-  # If rcond is concerningly low, compute the SVD-based attribution: the
-  # smallest right-singular vector tells us which (left, right) f4 directions
-  # are in the degenerate subspace. Reshape to a (R-1, L-1) matrix (f4_var's
-  # vec ordering puts right-pop fast, left-pop slow -- see f4blocks_to_f4stats
-  # in this file and arr3d_to_mat in utility.R) and take row norms to get
-  # per-right-pop loadings on the degenerate direction. Two right pops with
-  # large opposing loadings = sister-like pair; one with a dominant loading
-  # alone = the lone offender.
+  # If rcond is concerningly low, attribute the singularity to RIGHT pops
+  # (see the loadings block below). Two right pops with large equal loadings =
+  # sister-like / clone pair among the right set; loadings all ~0 means the
+  # near-singularity comes from the LEFT (the sources), not the right pops. The
+  # attribution is right-only (a left-side singularity does not leak in) and
+  # basis-invariant (identical across LAPACK/BLAS backends).
   rcond_concern = .rcond_concern  # see definition at top of file
-  # Trigger SVD attribution whenever either condition holds:
+  # Trigger the right-pop loadings attribution whenever either condition holds:
   #   (a) the auto-concern bar is hit (always-on diagnostic at very low rcond), or
   #   (b) the caller asked for fail-loud gating and the threshold actually trips
   #       (so the error message can include the attribution).
@@ -298,10 +296,36 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
   f4_var_singular_loadings = NULL
   if(trigger_loadings) {
     f4_var_singular_loadings = tryCatch({
-      svd_res = svd(f4_var)
-      v_min = svd_res$v[, ncol(svd_res$v)]                # smallest-sigma right singular vector
-      v_mat = matrix(v_min, nrow = length(right) - 1)     # rows = right[-1], cols = left[-1]
-      right_norms = sqrt(rowSums(v_mat^2))
+      # Attribute the near-singularity to RIGHT pops only, isolated from any
+      # LEFT-side collinearity, and deterministically across linear-algebra
+      # backends. Measure linear dependence among the right pops' own resampled
+      # f4 estimates (f4_lo, the per-block leave-one-out / bootstrap estimates
+      # that f4_var itself is built from) via the right-pop Gram, rather than
+      # reading it off f4_var's null space: f4_var couples left and right, so a
+      # sister/clone pair on the LEFT would otherwise inflate every right pop's
+      # loading. Select the near-null eigenspace of the Gram and report, per
+      # right pop, the L2 norm of its rows of the orthogonal projector onto that
+      # subspace (the square root of the projector diagonal). The projector onto
+      # a SUBSPACE is basis-invariant, so the loadings are identical on every
+      # LAPACK/BLAS backend -- unlike a single smallest eigenvector, which is an
+      # arbitrary basis vector when the null space is degenerate (a clone or
+      # sister pair gives a >1-dim null space). The bar is on eigenvalues
+      # (squared singular values) because rcond is a singular-value ratio of
+      # f4_var. When nothing qualifies (no right-side collinearity) every
+      # loading is 0; we do not fabricate an offender.
+      nr = length(right) - 1
+      rsig = matrix(aperm(f4_lo, c(2, 1, 3)), nrow = nr)      # right x (left*block)
+      rsig = rsig[, colSums(is.na(rsig)) == 0, drop = FALSE]  # complete (left,block) cols only
+      # If NA dropped every (left, block) column there is no signal left to
+      # decompose. Bail to the NULL fallback rather than eigen() an all-zero
+      # Gram, whose "null space" is the whole space and would report a spurious
+      # loading of 1 for every right pop. (Defensive: qpadm's upstream
+      # missingness checks normally reject data this sparse first.)
+      if(ncol(rsig) == 0) stop("no complete (left, block) columns for loadings")
+      ev = eigen(tcrossprod(rsig), symmetric = TRUE)          # right-pop Gram
+      null_sel = ev$values <= ev$values[1] * rcond_concern    # near-null eigenspace
+      v_null = ev$vectors[, null_sel, drop = FALSE]
+      right_norms = sqrt(rowSums(v_null^2))                   # sqrt of projector diagonal
       tibble::tibble(right = right[-1], loading = right_norms) %>%
         dplyr::arrange(dplyr::desc(loading))
     }, error = function(e) NULL)
@@ -1309,8 +1333,9 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #'       loading-heaviest on the singular direction; populated when the
 #'       auto-bar fires (`f4_var_rcond < 1e-8`). Cells are `NULL` when the
 #'       auto-bar does not fire (the common clean-data case) and also `NULL`
-#'       if [qpadm()]'s SVD inside the loadings computation fails on a
-#'       pathological matrix. Useful for SVD-guided right-pop pruning.
+#'       if [qpadm()]'s eigendecomposition inside the loadings computation
+#'       fails on a pathological matrix. Useful for loading-guided right-pop
+#'       pruning.
 #'   }
 #'
 #' Kwargs in `...` are forwarded to [qpadm_multi()], which validates them
@@ -1451,8 +1476,8 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
     # f4_var_singular_loadings is a tibble (or NULL) — gated on full_results
     # because of variable per-row payload. Each cell can be NULL for two
     # reasons: the rcond gate did not fire (the common case on clean data),
-    # OR the gate fired but svd() inside qpadm errored on a pathological
-    # f4_var matrix (qpadm wraps the SVD in tryCatch with NULL fallback).
+    # OR the gate fired but the eigendecomposition inside qpadm errored on a
+    # pathological matrix (qpadm wraps it in tryCatch with NULL fallback).
     out$f4_var_singular_loadings = unname(lapply(fits, `[[`, 'f4_var_singular_loadings'))
   }
 
