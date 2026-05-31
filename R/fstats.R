@@ -494,7 +494,11 @@ get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = 
   blockpops = union(dimnames(f2_blocks)[[1]], dimnames(f2_blocks)[[2]])
   allpops = union(pops, pops2)
   if(!all(allpops %in% blockpops)) {
-    stop(paste0('Requested, but not in f2_data: ', paste(setdiff(allpops, blockpops), collapse = ', ')))
+    rlang::abort(
+      c(sprintf("Requested populations not in f2 data: %s",
+                paste(setdiff(allpops, blockpops), collapse = ", ")),
+        "i" = "Add them with extract_f2() or f2_from_geno() before fitting."),
+      class = "admixtools_pop_missing_in_f2_cache")
   }
   f2_blocks = f2_blocks[pops, pops2, , drop = FALSE]
   f2_blocks

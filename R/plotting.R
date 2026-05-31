@@ -249,6 +249,12 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
 
 graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE, pos = NULL) {
 
+  # Keep the data-frame form so the sampled set (which adds sampled internal
+  # nodes to the leaves) can be derived after the igraph conversion drops the
+  # nodes attr. get_internal_sampled works on the edge tibble directly, so no
+  # extra igraph is built here. NULL for igraph/matrix input.
+  .graph_df = if (is.data.frame(graph)) graph else NULL
+
   if(class(graph)[1] == 'igraph') {
     graph = graph
     edges = graph %>% igraph::as_edgelist() %>% as_tibble(.name_repair = ~c('V1', 'V2'))
@@ -259,6 +265,10 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE, pos = NULL) {
     graph = igraph::graph_from_edgelist(as.matrix(graph)[,1:2])
   }
   leaves = get_leafnames(graph)
+  # Style nodes as sampled (leaf glyph) vs unsampled. With a nodes attr the
+  # sampled set adds sampled internal nodes to the leaves; otherwise it is just
+  # `leaves`, so leaf-only graphs render byte-identically to before.
+  sampled_set = if (!is.null(.graph_df)) union(leaves, get_internal_sampled(.graph_df)) else leaves
   #edges = as_tibble(edges, .name_repair = ~c('V1', 'V2'))
   admixnodes = unique(edges[[2]][edges[[2]] %in% names(which(table(edges[[2]]) > 1))])
 
@@ -284,11 +294,11 @@ graph_to_plotdat = function(graph, fix = NULL, fix_down = TRUE, pos = NULL) {
   }
   eg %<>% left_join(edges %>% transmute(name=V1, to=V2, label), by=c('name', 'to'))
   if(any(str_detect(eg$name, ' \\(100\\)'))) {
-    internal = eg %>% filter(!to %in% leaves) %>%
+    internal = eg %>% filter(!to %in% sampled_set) %>%
       rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend) %>%
       mutate(name = str_replace_all(name, '.+\\(|\\)', ''))
   } else internal = NULL
-  nodes = eg %>% filter(to %in% leaves) %>%
+  nodes = eg %>% filter(to %in% sampled_set) %>%
       rename(x=xend, y=yend, xend=x, yend=y) %>% transmute(name = to, x, y, xend, yend)
   namedList(eg, nodes, internal)
 }

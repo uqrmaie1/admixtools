@@ -9,8 +9,12 @@
 #   admixtools_invalid_graph
 #       strict-validation failure: orphan rows, duplicate name,
 #       malformed nodes tibble, time-invariant break.
-#   admixtools_pop_missing_in_f2_cache (reserved; not yet thrown)
-#       qpgraph entry: sampled population absent from f2 cache.
+#   admixtools_internal_samples_need_tips
+#       qpgraph entry: a node marked `samples` sits at an internal
+#       (ancestral) position, so it cannot be fit as a tip in place.
+#       Names both remedies (add_sampled_tips, or clear the flag).
+#   admixtools_pop_missing_in_f2_cache
+#       requested population absent from the f2 data / cache.
 #
 # Warnings (rlang::warn):
 #   admixtools_duplicate_node_name
@@ -175,29 +179,96 @@ set_node_attrs <- function(graph, name,
   graph
 }
 
-#' Return the union of topological leaves and internal-sampled nodes.
+#' Names of `samples`-marked nodes that sit at an internal (non-leaf) position.
 #'
-#' Used by qpgraph and other consumers that need the full set of
-#' populations with genotype data, regardless of whether they sit at
-#' the topology's leaves. Orphan rows (nodes-tibble rows whose name has
-#' no incident edge) are silently ignored.
+#' The single predicate behind `add_sampled_tips` and the `qpgraph`
+#' sampled-internal guard, so the two never disagree about which nodes
+#' are sampled internals. A node qualifies when
+#' its nodes-tibble `samples` value is a positive count (both `NA` and `0`
+#' mean "not sampled", the `read_lgo` convention), it has an incident edge
+#' (orphan nodes-tibble rows are ignored), and it is not already a
+#' topological leaf. Leaves are taken by name as `setdiff(to, from)`, so
+#' this runs on the raw edge tibble with no igraph conversion.
 #'
-#' @param graph An edge tibble or igraph object.
-#' @return Character vector of node names (sampled populations).
+#' @param graph An edge tibble (data.frame). Non-data.frame input, or a
+#'   graph whose nodes tibble lacks a `samples` column, yields an empty
+#'   vector.
+#' @return Character vector of node names (possibly empty).
 #' @keywords internal
-get_sampled_nodes <- function(graph) {
-  if (inherits(graph, "igraph")) {
-    ig <- graph
-  } else {
-    ig <- edges_to_igraph(graph)
-  }
-  leaves <- get_leafnames(ig)
-  if (!is.data.frame(graph)) return(leaves)
+get_internal_sampled <- function(graph) {
+  if (!is.data.frame(graph)) return(character(0))
   nt <- graph_nodes(graph)
+  if (nrow(nt) == 0 || !"samples" %in% names(nt)) return(character(0))
   canonical <- unique(c(graph$from, graph$to))
-  in_set <- nt$name %in% canonical
-  internal_sampled <- nt$name[in_set & !is.na(nt$samples)]
-  union(leaves, internal_sampled)
+  leaves    <- setdiff(graph$to, graph$from)
+  sampled   <- !is.na(nt$samples) & nt$samples > 0
+  nt$name[sampled & nt$name %in% canonical & !(nt$name %in% leaves)]
+}
+
+
+#' Materialise sampled internal nodes as leaf tips.
+#'
+#' qpgraph models every fitted population as a graph tip. A population
+#' marked `samples` in the nodes tibble that sits at an internal
+#' (ancestral) position cannot be fit directly: forcing it into the
+#' population set collapses the edge to its descendants to ~0 and the
+#' score blows up by orders of magnitude. This transform rewrites each
+#' sampled internal node `X` into a new unlabelled ancestor `X<suffix>`
+#' (inheriting X's parents and children) plus `X` as a leaf tip off that
+#' ancestor, the standard tip/sibling representation. After the
+#' transform `X` is a topological leaf, so the existing leaf-based
+#' fitting path uses it with no further change. A sampled internal node
+#' that is itself an admixture node (in-degree 2) keeps both parent edges
+#' on the new ancestor, so the admixture is preserved.
+#'
+#' @param graph An edge tibble carrying a `nodes` attribute (e.g. from
+#'   `read_lgo`). Graphs with no sampled internal nodes are returned
+#'   unchanged.
+#' @param suffix Suffix for the new ancestor node names (default `"_anc"`).
+#' @return An edge tibble in tip/sibling form, fittable by `qpgraph`. Every
+#'   edge column of the input is carried through; the new ancestor->tip
+#'   edges take `NA` for fitted quantities (e.g. `weight`, `time`) and the
+#'   input's non-admix `type` literal. The input's `nodes` attribute is
+#'   dropped, because it is keyed to the old structure and the
+#'   formerly-internal sampled nodes are now leaves.
+#' @seealso \code{\link{set_node_attrs}}
+#' @export
+add_sampled_tips <- function(graph, suffix = "_anc") {
+  if (!is.data.frame(graph))
+    rlang::abort(
+      "`graph` must be an edge tibble (data.frame).",
+      class = "admixtools_invalid_graph")
+  internal_sampled <- get_internal_sampled(graph)
+  if (length(internal_sampled) == 0) return(graph)
+
+  # Reject up front if any new ancestor name already exists, before mutating.
+  ancs  <- paste0(internal_sampled, suffix)
+  clash <- ancs[ancs %in% unique(c(graph$from, graph$to))]
+  if (length(clash) > 0)
+    rlang::abort(
+      sprintf("Ancestor name(s) already in graph: %s; pass a different `suffix`.",
+              paste(unique(clash), collapse = ", ")),
+      class = "admixtools_invalid_graph")
+
+  # Carry every edge column through (so `time`, `label`, etc. survive); the
+  # topology changed, so the old nodes attribute is dropped.
+  e <- graph
+  attr(e, "nodes") <- NULL
+  for (i in seq_along(internal_sampled)) {
+    x <- internal_sampled[i]; anc <- ancs[i]
+    e$from[e$from == x] <- anc          # X's children now descend from X_anc
+    e$to[e$to == x]     <- anc          # X's parents now point to X_anc (both, if admixed)
+  }
+  # New ancestor->tip rows in one bind_rows; bind_rows fills the remaining
+  # edge columns (weight, time, ...) with type-correct NAs.
+  newrows <- tibble::tibble(from = ancs, to = internal_sampled)
+  if ("type" %in% names(e)) {
+    # New tip edges are non-admix; match the input's literal ("normal" from
+    # read_lgo / random_sim, "edge" from the qpgraph graphfile convention).
+    nonadmix <- graph$type[!is.na(graph$type) & graph$type != "admix"]
+    newrows$type <- if (length(nonadmix)) nonadmix[[1]] else "normal"
+  }
+  dplyr::bind_rows(e, newrows)
 }
 
 #' Refresh the denormalized edge time views from the nodes tibble.

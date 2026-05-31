@@ -240,6 +240,25 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     get_pairindex = cpp_get_pairindex
   }
 
+  # A population marked `samples` at an internal (ancestral) position cannot
+  # be fit as-is: qpgraph models every fitted population as a tip, so a
+  # sampled ancestor forces a degenerate near-zero edge to its descendants.
+  # Two legitimate intents (fit the ancestor, or fit leaves only) make
+  # auto-mutating wrong either way, so refuse and name both remedies. Checked
+  # off `edges` here, while it still carries the nodes attribute. The shared
+  # get_internal_sampled() ignores orphan rows and samples=0 (it returns
+  # character(0) for graphs with no nodes attribute, so this is a no-op then).
+  .bad <- get_internal_sampled(edges)
+  if (length(.bad) > 0)
+    rlang::abort(
+      c(sprintf("Graph marks internal node(s) as sampled: %s",
+                paste(.bad, collapse = ", ")),
+        "x" = "qpgraph fits populations as tips, so these can't be fit in place.",
+        "i" = "To fit them:        g <- add_sampled_tips(g)   then re-run.",
+        "i" = sprintf("To fit leaves only: set_node_attrs(g, c(%s), samples = NA)",
+                      paste(sprintf('"%s"', .bad), collapse = ", "))),
+      class = "admixtools_internal_samples_need_tips")
+
   if(class(graph)[1] != 'igraph') graph = graph_from_edgelist(as.matrix(edges[,1:2]))
   nedges = length(E(graph))
   admixnodes = which(degree(graph, mode='in') == 2)
