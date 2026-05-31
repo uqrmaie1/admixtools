@@ -1174,39 +1174,33 @@ match_samples = function(haveinds, havepops, inds, pops) {
   # returns list with two items:
   # integer indvec with population number (0 means do not use, same length as haveinds/havepops)
   # unique population labels, with position corresponding to indvec and first occurence in pops
-  
-  ip_combo = NULL
-  have_ip_combo = NULL
-  if(!is.null(inds) && !is.null(pops)) {
-    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
-    ip_combo = paste(inds, pops, sep="\t")
-    have_ip_combo = paste(haveinds, havepops, sep="\t")
-    if(any(duplicated(ip_combo))) stop("Duplicated individuals!")
-    if(!all(ip_combo %in% have_ip_combo)) stop(paste0("Individuals missing in indfile:\n", paste(sub("\t", "-", setdiff(ip_combo, have_ip_combo)), collapse=', ')))
-  } else if(!is.null(inds)) {
+
+  if(!is.null(inds)) {
     if(any(duplicated(inds))) stop("Individual IDs are duplicated!")
     if(!all(inds %in% haveinds)) stop(paste0("Individuals missing in indfile:\n", paste(setdiff(inds, haveinds), collapse=', ')))
   } else if(!is.null(pops)) {
     if(!all(pops %in% havepops)) stop(paste0("Populations missing in indfile:\n", paste(setdiff(pops, havepops), collapse=', ')))
   }
-  
+
   if(is.null(inds) && is.null(pops)) {
     pops = havepops
   } else if(!is.null(inds) && !is.null(pops)) {
-    haveinds[!have_ip_combo %in% ip_combo] = NA
+    if(length(inds) != length(pops)) stop("'inds' and 'pops' should have the same length!")
+    haveinds[!haveinds %in% inds] = NA
     havepops = NA
-    havepops[!is.na(have_ip_combo)] = pops[match(na.omit(have_ip_combo), ip_combo)]
+    havepops[!is.na(haveinds)] = pops[match(na.omit(haveinds), inds)]
   } else if(is.null(inds) && !is.null(pops)) {
     havepops[!havepops %in% pops] = NA
   } else {
     havepops[!haveinds %in% inds] = NA
     pops = havepops
   }
-  
+
   upops = unique(na.omit(pops))
+
   indvec = as.numeric(factor(havepops, levels = upops))
   indvec[is.na(indvec)] = 0
-  
+
   namedList(indvec, upops)
 }
 
@@ -3321,8 +3315,9 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
     stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  ip = match_samples(indfile$ind, indfile$pop, NULL, pops)
-  indvec = ip$indvec > 0
+  if(any(table(indfile[,c("ind", "pop")])) > 1)
+	stop("Duplicate individual-population pairs in .ind file")
+  indvec = !is.na(factor(indfile$pop, levels = unique(na.omit(pops))))  # only include samples which are in pops
   indfile %<>% filter(pop %in% pops)
 
   popvec = match(indfile$pop, pops)
@@ -3584,9 +3579,10 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
   if(!all(pops %in% indfile$pop))
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
-    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))  
-  ip = match_samples(indfile$ind, indfile$pop, NULL, pops)
-  indvec = ip$indvec > 0
+    stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
+  if(any(table(indfile[,c("ind", "pop")])) > 1)
+	stop("Duplicate individual-population pairs in .ind file")
+  indvec = !is.na(factor(indfile$pop, levels = unique(na.omit(pops))))  # only include samples which are in pops
   indfile %<>% filter(pop %in% pops)
 
   popvec = match(indfile$pop, pops)
