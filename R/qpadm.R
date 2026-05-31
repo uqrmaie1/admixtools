@@ -243,8 +243,7 @@ qpadm = function(data, left, right, target, f4blocks = NULL,
     } else {
       if(isTRUE(args$allsnps)) stop('"allsnps = TRUE" is only effective when reading data from genotype files!')
       if(verbose) alert_info('Computing f4 stats...\n')
-      f2_blocks = get_f2(data, pops = c(left, right), auto_only = auto_only, blgsize = blgsize,
-                         poly_only = poly_only, afprod = TRUE, verbose = verbose)
+      f2_blocks = get_f2(data, pops = c(left, right), afprod = TRUE, verbose = verbose)
       f4blocks = f2blocks_to_f4blocks(f2_blocks, left, right)
     }
     f4blocks = f4blocks[left[-1], right[-1],,drop=FALSE]

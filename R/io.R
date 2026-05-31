@@ -3315,13 +3315,11 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
     stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  if(any(duplicated(indfile$ind)))
-    stop('Duplicate individual IDs are not allowed!')
-
-  allinds = indfile$ind
-  allpops = indfile$pop
+  if(any(duplicated(indfile[,c("ind", "pop")])))
+	stop("Duplicate individual-population pairs in .ind file")
+  indvec = !is.na(factor(indfile$pop, levels = unique(na.omit(pops))))  # only include samples which are in pops
   indfile %<>% filter(pop %in% pops)
-  indvec = (allinds %in% indfile$ind)+0
+
   popvec = match(indfile$pop, pops)
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
@@ -3582,13 +3580,11 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
     stop(paste0('Populations missing from indfile: ', paste0(setdiff(pops, indfile$pop), collapse = ', ')))
   if(!is.null(block_lengths) && sum(block_lengths) != nsnpaut)
     stop(paste0('block_lengths should sum to ', nsnpaut,' (the number of autosomal SNPs)'))
-  if(any(duplicated(indfile$ind)))
-    stop('Duplicate individual IDs are not allowed!')
-
-  allinds = indfile$ind
-  allpops = indfile$pop
+  if(any(duplicated(indfile[,c("ind", "pop")])))
+	stop("Duplicate individual-population pairs in .ind file")
+  indvec = !is.na(factor(indfile$pop, levels = unique(na.omit(pops))))  # only include samples which are in pops
   indfile %<>% filter(pop %in% pops)
-  indvec = (allinds %in% indfile$ind)+0
+
   popvec = match(indfile$pop, pops)
   p1 = match(pc$pop1, pops)
   p2 = match(pc$pop2, pops)
