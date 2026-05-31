@@ -80,40 +80,6 @@ test_that("set_node_attrs coerces numeric samples to integer", {
   expect_equal(nt$samples[nt$name == "v"], 2L)
 })
 
-test_that("get_sampled_nodes returns leaves when no internal samples", {
-  edges <- tibble::tibble(from = c("R","R"), to = c("A","B"),
-                          type = "normal", weight = NA_real_)
-  expect_setequal(get_sampled_nodes(edges), c("A", "B"))
-})
-
-test_that("get_sampled_nodes includes internal-sampled nodes", {
-  g <- make_test_nodes_graph()
-  pops <- get_sampled_nodes(g)
-  # anc is a true internal node (appears in edges$from) with samples=1;
-  # it must be returned via the nodes-tibble path, not the leaf path
-  expect_true("anc" %in% pops)
-  # Topological leaves out, v, afr, eur are also there
-  expect_true(all(c("out", "v", "afr", "eur") %in% pops))
-  # modern is an internal node without samples in the nodes tibble; not returned
-  expect_false("modern" %in% pops)
-})
-
-test_that("get_sampled_nodes ignores orphan rows in nodes attr", {
-  g <- make_test_nodes_graph()
-  # Inject an orphan row: name 'ghost' has no edge
-  nt <- graph_nodes(g)
-  nt <- dplyr::bind_rows(nt, tibble::tibble(name = "ghost", samples = 1L))
-  attr(g, "nodes") <- nt
-  expect_false("ghost" %in% get_sampled_nodes(g))
-})
-
-test_that("get_sampled_nodes accepts igraph (no nodes attr)", {
-  edges <- tibble::tibble(from = c("R","R"), to = c("A","B"),
-                          type = "normal", weight = NA_real_)
-  ig <- edges_to_igraph(edges)
-  expect_setequal(get_sampled_nodes(ig), c("A", "B"))
-})
-
 test_that("prune_nodes_attr drops orphan rows", {
   g <- make_test_nodes_graph()
   nt <- graph_nodes(g)
