@@ -1,5 +1,4 @@
-# Tier 1 functional tests. See:
-# /Volumes/Bioinformation/Claude/cs-wiki/projects/at2-legofit-integration-pr-gamma-test-plan.md
+# Tier 1 functional tests for the graph_to_lgo writer.
 #
 # Unlike test-graph_to_lgo.R (which exercises individual helpers on the
 # minimal 5-node fixture), this file runs the integrated pipeline on

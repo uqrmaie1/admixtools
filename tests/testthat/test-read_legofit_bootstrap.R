@@ -1,4 +1,4 @@
-# Tests for read_legofit_bootstrap() Phase C (LLD §4, §7.2 cases 10-13a)
+# Tests for read_legofit_bootstrap() Phase C
 
 bootci_path  <- function() test_path("fixtures", "ourex1.bootci")
 ourex1_graph <- function() make_ourex1_graph()
@@ -57,7 +57,7 @@ test_that("parse_bootci_output: malformed header aborts legofit_invalid_input", 
 })
 
 # ---------------------------------------------------------------------------
-# read_legofit_bootstrap — end-to-end (LLD §7.2 cases 10-13a)
+# read_legofit_bootstrap — end-to-end
 # ---------------------------------------------------------------------------
 
 # Case 10: smoke
@@ -163,4 +163,38 @@ test_that("Rv5: read_legofit_bootstrap with graph passes without column-name err
   result <- read_legofit_bootstrap(bootci_path(), graph = ourex1_graph())
   expect_true("parameter" %in% names(result))
   expect_false("name" %in% names(result))
+})
+
+# ---------------------------------------------------------------------------
+# Master plan Tier 0 gap closure (the malformed-header abort already exists at
+# "parse_bootci_output: malformed header aborts"; these add the other two)
+# ---------------------------------------------------------------------------
+
+# U-R17a: a file with no non-comment line has no column header at all.
+test_that("U-R17a: parse_bootci_output aborts when every line is a comment", {
+  expect_error(
+    parse_bootci_output(c("# bootci.py run at: 2026-05-20", "# confidence: 0.950")),
+    class = "legofit_invalid_input"
+  )
+})
+
+# U-R17b: a data row whose token count does not match the header (4 or 5) is a
+# structural error, distinct from a bad header.
+test_that("U-R17b: parse_bootci_output aborts on a data row with the wrong column count", {
+  bad <- c(
+    "# confidence: 0.950",
+    "       par             est             low            high",
+    "      T_xy      0.50000000      0.46250000"   # 3 tokens, expected 4
+  )
+  expect_error(
+    parse_bootci_output(bad),
+    class = "legofit_invalid_input"
+  )
+})
+
+# U-R19 (bootstrap half): re-reading the same bootci file is idempotent.
+test_that("U-R19: read_legofit_bootstrap is idempotent on re-read", {
+  b1 <- read_legofit_bootstrap(bootci_path(), graph = ourex1_graph())
+  b2 <- read_legofit_bootstrap(bootci_path(), graph = ourex1_graph())
+  expect_identical(b1, b2)
 })

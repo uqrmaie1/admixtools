@@ -246,7 +246,7 @@ test_that("coerce_to_edge_tibble errors on igraph with no vertex names", {
 })
 
 test_that("coerce_to_edge_tibble preserves edge_attr extraction (regression)", {
-  # PR delta behavior: edge attrs weight, type, time still extracted
+  # the read direction behavior: edge attrs weight, type, time still extracted
   ig <- igraph::graph_from_edgelist(matrix(c("R","A"), ncol = 2))
   igraph::E(ig)$weight <- 0.5
   igraph::V(ig)$name <- c("R", "A")  # vertex names are required

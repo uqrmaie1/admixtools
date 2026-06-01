@@ -1,4 +1,4 @@
-# Tests for classify_legofit_param() (Step 4 / LLD §3.4)
+# Tests for classify_legofit_param() (Step 4)
 # and the write-time admix_<X> collision guard in generate_param_names.
 
 # ---------------------------------------------------------------------------

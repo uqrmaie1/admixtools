@@ -1,4 +1,4 @@
-# Tests for read_legofit_output() Phase B (LLD §3, §7.2 cases 1-9)
+# Tests for read_legofit_output() Phase B
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -96,7 +96,7 @@ test_that("inform_convergence_status: legofit_fit_incomplete on finished_iterati
 })
 
 # ---------------------------------------------------------------------------
-# read_legofit_output — end-to-end (LLD §7.2 cases 1-9)
+# read_legofit_output — end-to-end
 # ---------------------------------------------------------------------------
 
 # Case 1: smoke — parses without error
@@ -327,4 +327,143 @@ derive B from A
   err <- tryCatch(read_lgo(text = lgo), error = function(e) e)
   expect_s3_class(err, "legofit_lgo_unsupported")
   expect_match(conditionMessage(err), "T_B", fixed = TRUE)
+})
+
+# ---------------------------------------------------------------------------
+# Master plan Tier 0 gap closure
+# ---------------------------------------------------------------------------
+
+# U-R8: surface_mismatches truncates a long missing/extra list to the first 5
+# with a trailing "..." marker. A graph with many nodes absent from the file
+# produces > 5 missing params, exercising the truncation branch.
+test_that("U-R8: param mismatch message truncates a long missing list with a trailing marker", {
+  big_graph <- tibble::tribble(
+    ~from, ~to,  ~type,    ~weight,
+    "R",   "n1", "normal", NA_real_,
+    "R",   "n2", "normal", NA_real_,
+    "n1",  "n3", "normal", NA_real_,
+    "n1",  "n4", "normal", NA_real_,
+    "n2",  "n5", "normal", NA_real_,
+    "n2",  "n6", "normal", NA_real_,
+    "n3",  "n7", "normal", NA_real_
+  )
+  tmp <- tempfile(fileext = ".legofit")
+  writeLines(c(
+    "Initial parameter values",
+    "Fixed:",
+    "       one = 1",
+    "Free:",
+    "     T_n1 = 1",
+    "DiffEv reached_goal. cost=1e-10 spread=1e-7",
+    "Fitted parameter values",
+    "Free:",
+    "     T_n1 = 1"
+  ), tmp)
+  on.exit(unlink(tmp))
+  msg <- NULL
+  withCallingHandlers(
+    read_legofit_output(tmp, graph = big_graph),
+    legofit_param_mismatch = function(c) {
+      msg <<- conditionMessage(c); invokeRestart("muffleMessage")
+    }
+  )
+  expect_false(is.null(msg))
+  expect_match(msg, "...", fixed = TRUE)   # truncation marker for > 5 entries
+})
+
+# U-R10: a file carrying BOTH the coalescent-unit sentinel `one` and the scalar
+# sentinel `shared` mixes mutually exclusive twoN modes. surface_mismatches
+# Rule 1 is a hard abort on this, distinct from the soft mismatch inform.
+test_that("U-R10: file with both one and shared (mixed twoN modes) aborts legofit_invalid_input", {
+  tmp <- tempfile(fileext = ".legofit")
+  writeLines(c(
+    "Initial parameter values",
+    "Fixed:",
+    "       one = 1",
+    "       shared = 1000",
+    "Free:",
+    "     T_xyz = 2",
+    "      T_xy = 0.5",
+    "DiffEv reached_goal. cost=1e-10 spread=1e-7",
+    "Fitted parameter values",
+    "Free:",
+    "     T_xyz = 2",
+    "      T_xy = 0.5"
+  ), tmp)
+  on.exit(unlink(tmp))
+  expect_error(
+    read_legofit_output(tmp, graph = ourex1_graph()),
+    class = "legofit_invalid_input"
+  )
+})
+
+# U-R14: a file with a valid Fitted block but no DiffEv summary line leaves the
+# convergence status NA, which fires legofit_fit_status_unknown. The inform is
+# path-keyed (frequency once), so the two call paths use separate temp files.
+test_that("U-R14: legofit_fit_status_unknown fires when no DiffEv line is present", {
+  base <- c(
+    "Initial parameter values",
+    "Fixed:",
+    "       one = 1",
+    "Free:",
+    "     T_xyz = 2",
+    "      T_xy = 0.5",
+    "Fitted parameter values",
+    "Free:",
+    "     T_xyz = 2",
+    "      T_xy = 0.5"
+  )
+  tmp1 <- tempfile(fileext = ".legofit"); writeLines(base, tmp1)
+  tmp2 <- tempfile(fileext = ".legofit"); writeLines(base, tmp2)
+  on.exit(unlink(c(tmp1, tmp2)))
+  expect_message(
+    read_legofit_output(tmp1, graph = NULL),
+    class = "legofit_fit_status_unknown"
+  )
+  expect_message(
+    read_legofit_output(tmp2, graph = ourex1_graph()),
+    class = "legofit_fit_status_unknown"
+  )
+})
+
+# U-R15: parse_param_lines informs (not aborts) on a row with no `=`, and still
+# returns the parseable rows. Reachable only by direct call, since
+# extract_param_section pre-filters to lines containing `=`.
+test_that("U-R15: parse_param_lines informs on a line with no '=' and keeps valid rows", {
+  expect_message(
+    res <- parse_param_lines(c("     T_x = 1", "     junk_without_equals")),
+    class = "legofit_invalid_input"
+  )
+  expect_equal(res$name,  "T_x")
+  expect_equal(res$value, 1)
+})
+
+# U-R19: reading the same file twice gives an identical tibble and identical
+# attributes, in both the graph and graph=NULL paths.
+test_that("U-R19: read_legofit_output is idempotent on re-read", {
+  r1 <- suppressMessages(read_legofit_output(ourex1_path(), graph = ourex1_graph()))
+  r2 <- suppressMessages(read_legofit_output(ourex1_path(), graph = ourex1_graph()))
+  expect_identical(r1, r2)
+  n1 <- suppressMessages(read_legofit_output(ourex1_path(), graph = NULL))
+  n2 <- suppressMessages(read_legofit_output(ourex1_path(), graph = NULL))
+  expect_identical(n1, n2)
+})
+
+# U-R4: passing the graph as an igraph yields the same fitted result as passing
+# the equivalent edge tibble. The fitted columns and node_times must match. The
+# igraph result additionally carries a `nodes` attribute extracted from its
+# vertices (coerce_to_edge_tibble), which a bare edge tibble has no source for;
+# that is expected, so the data content is compared with ignore_attr.
+test_that("U-R4: igraph graph argument yields the same result as the edge tibble", {
+  g_tbl <- make_ourex1_graph()
+  g_ig  <- igraph::graph_from_edgelist(as.matrix(g_tbl[, c("from", "to")]))
+  igraph::edge_attr(g_ig, "type")   <- g_tbl$type
+  igraph::edge_attr(g_ig, "weight") <- g_tbl$weight
+  igraph::edge_attr(g_ig, "time")   <- g_tbl$time
+  r_tbl <- suppressMessages(read_legofit_output(ourex1_path(), graph = g_tbl))
+  r_ig  <- suppressMessages(read_legofit_output(ourex1_path(), graph = g_ig))
+  expect_equal(r_ig[c("from", "to", "type", "time")],
+               r_tbl[c("from", "to", "type", "time")],
+               ignore_attr = TRUE)
+  expect_equal(attr(r_ig, "node_times"), attr(r_tbl, "node_times"))
 })

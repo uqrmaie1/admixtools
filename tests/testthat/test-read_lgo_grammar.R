@@ -1,13 +1,13 @@
 # Tests for Phase 2 read_lgo grammar additions:
-#   Step 1: line continuation (LLD §5.1)
-#   Step 2: bounded `free` declarations (LLD §5.2)
-#   Step 3: as = "igraph" return type (LLD §5.3)
+#   Step 1: line continuation
+#   Step 2: bounded `free` declarations
+#   Step 3: as = "igraph" return type
 
 # ---------------------------------------------------------------------------
 # Step 1 — line continuation (tests 14, 15, 18)
 # ---------------------------------------------------------------------------
 
-test_that("T14: multi-line constrained expression evaluates correctly (LLD §5.1)", {
+test_that("T14: multi-line constrained expression evaluates correctly", {
   lgo <- "
 time fixed Ta=2
 time fixed Tb=3
@@ -105,7 +105,7 @@ test_that("T18: EOF mid-continuation aborts with legofit_lgo_unsupported", {
 # Step 2 — bounded free declarations (tests 16, 17, 19)
 # ---------------------------------------------------------------------------
 
-test_that("T16: bounded free captures bounds before name (LLD §5.2, parse.c:211-235)", {
+test_that("T16: bounded free captures bounds before name", {
   lgo <- "
 time free [0.1, 1.0] T_R = 0.5
 twoN fixed one=1
@@ -257,4 +257,46 @@ segment A t=T_A twoN=one samples=1
 "
   result <- read_lgo(text = lgo, as = "igraph")
   expect_true(igraph::is_igraph(result))
+})
+
+# ---------------------------------------------------------------------------
+# Master plan Tier 0 gap closure
+# ---------------------------------------------------------------------------
+
+# U-G4: bounds present but non-numeric. PARAM_RE matches the bracket, so the
+# numeric coercion of lo/hi is what must reject it (parse.c:211-235 requires
+# numeric bounds). Distinct from T17 (bounds on a non-free declaration).
+test_that("U-G4: non-numeric bounds on free declaration abort legofit_lgo_unsupported", {
+  lgo <- "
+time free [a, b] T_R = 0.5
+twoN fixed one = 1
+segment R t=T_R twoN=one
+"
+  expect_error(
+    read_lgo(text = lgo),
+    class = "legofit_lgo_unsupported"
+  )
+})
+
+# U-G5: the generic `param` keyword (parse.c:693) is a fourth declaration type
+# beyond time/twoN/mixFrac. The pre-PR parser could not handle it and would
+# abort as an unsupported construct; PARAM_RE now accepts it. The declared
+# param is inert (not referenced by a segment) so the edge tibble is unaffected.
+test_that("U-G5: generic `param` declaration parses and edges still build", {
+  lgo <- "
+param free pmix = 0.5
+time fixed T_x = 0
+time fixed T_y = 0
+time free  T_R = 2
+twoN fixed one = 1
+segment R t=T_R twoN=one
+segment x t=T_x twoN=one samples=1
+segment y t=T_y twoN=one samples=1
+derive x from R
+derive y from R
+"
+  result <- read_lgo(text = lgo)
+  expect_s3_class(result, "tbl_df")
+  expect_equal(nrow(result), 2L)
+  expect_setequal(c(result$from, result$to), c("R", "x", "y"))
 })

@@ -1,5 +1,5 @@
 # Tier 1 functional tests for read_legofit_output / read_legofit_bootstrap
-# Per at2-legofit-integration-pr-delta-test-plan.md.
+# Exercises the read direction against the real LEGOFIT binary.
 #
 # Each test exercises the reader on realistic inputs beyond the single
 # ourex1 fixture used by unit tests. Fixtures live in tests/testthat/fixtures/.
@@ -354,7 +354,7 @@ test_that("T1.3-boot: family classification correct for admix params", {
 # ---------------------------------------------------------------------------
 # T1.1 — round trip a real-world OOA archaic introgression scenario.
 # Four sampled populations (out, arch, afr, eur) with one admix event
-# (archaic ancestry into eur). The replacement for PR gamma's minimal.lgo
+# (archaic ancestry into eur). The replacement for the write direction's minimal.lgo
 # (which has only one leaf and cannot be fit).
 # ---------------------------------------------------------------------------
 
