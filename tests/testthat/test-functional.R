@@ -1,5 +1,4 @@
-# Tier 1 functional tests. See:
-# /Volumes/Bioinformation/Claude/cs-wiki/projects/at2-legofit-integration-pr-gamma-test-plan.md
+# Tier 1 functional tests for the graph_to_lgo writer.
 #
 # Unlike test-graph_to_lgo.R (which exercises individual helpers on the
 # minimal 5-node fixture), this file runs the integrated pipeline on
@@ -291,6 +290,20 @@ test_that("T1.7: read_lgo handles a 100-node graph in under 500ms", {
   txt <- graph_to_lgo(big$edges, time_handling = "free", validate = FALSE)
   t <- system.time(read_lgo(text = txt))[["elapsed"]]
   expect_lt(t, 0.5)
+})
+
+# PF-4 ------------------------------------------------------------------
+test_that("PF-4: graph_to_lgo on a 100-node graph stays bounded (format_* at scale)", {
+  skip_on_cran()
+  # The documented performance bound is only on read_lgo; the format_* writer
+  # helpers were never profiled at scale. Time the writer on the same large graph.
+  set.seed(123)
+  big <- random_sim(nadmix = 3, nleaf = 50)
+  expect_gte(length(unique(c(big$edges$from, big$edges$to))), 50)
+  t <- system.time(
+    graph_to_lgo(big$edges, time_handling = "free", validate = FALSE)
+  )[["elapsed"]]
+  expect_lt(t, 1.0)
 })
 
 # T1.8 ------------------------------------------------------------------

@@ -13,6 +13,7 @@ graph_to_lgo(
   twoN = NULL,
   time_handling = c("fix_admix", "init", "free"),
   drift_to_time = default_drift_to_time,
+  fix_times = FALSE,
   validate = TRUE
 )
 }
@@ -56,6 +57,20 @@ rather than time-walk consistency).
 Default \code{\link[=default_drift_to_time]{default_drift_to_time()}} (identity). Ignored when
 \code{time_handling = "free"} or when an explicit \code{time} column is present.}
 
+\item{fix_times}{Logical (default \code{FALSE}). When \code{TRUE}, internal-node times
+are emitted as \verb{time fixed} at their computed absolute values rather than
+\verb{time free}. Use this with a free \code{twoN} (a named \verb{twoN=} vector) when you
+need to recover \strong{absolute} effective population sizes: with both times and
+\code{twoN} free, site-pattern data fit only the \code{Δt/twoN} ratios, so the absolute
+scale is unidentified (the same degeneracy \code{read_legofit_output()} flags as
+\code{scale_degenerate}). Fixing the times removes that degeneracy. With
+\code{"fix_admix"} or \code{"init"} the fixed values are the real absolute times, so
+the recovered \code{twoN} is absolute. With \code{"free"} (the only mode that exports
+additively-inconsistent graphs, e.g. most admixture topologies) the fixed
+values are topological-depth placeholders: still consistent and still enough
+to make \code{twoN} identifiable in a self-consistent fit, but not biologically
+calibrated absolute times.}
+
 \item{validate}{If \code{TRUE} (default), round-trips the output through
 \code{\link[=read_lgo]{read_lgo()}} to confirm topology is preserved.}
 }
@@ -65,4 +80,15 @@ The \code{.lgo} text, invisibly.
 \description{
 Converts an admixtools admixture graph (as an edge tibble or igraph) into
 a LEGOFIT-compatible \code{.lgo} file.
+}
+\examples{
+# A 3-leaf no-admixture graph with explicit node times.
+g <- tibble::tribble(
+  ~from,  ~to,  ~type,    ~weight,  ~time,
+  "xyz",  "xy", "normal", NA_real_, 1.5,
+  "xyz",  "z",  "normal", NA_real_, 2,
+  "xy",   "x",  "normal", NA_real_, 0.5,
+  "xy",   "y",  "normal", NA_real_, 0.5
+)
+cat(graph_to_lgo(g, time_handling = "init"))
 }
