@@ -31,10 +31,24 @@ and \code{"igraph"} return types.
 }
 \details{
 Ghost segments written by \code{\link[=graph_to_lgo]{graph_to_lgo()}} (named \verb{<dest>_<parent>}) are
-recognised by the narrow 3-condition rule (LLD §3.5) and collapsed back into
+recognised by the narrow 3-condition rule and collapsed back into
 admixtools admix edges. Third-party segments that happen to appear as mix
 parents but do NOT match the \verb{<dest>_<parent>} naming convention (e.g.,
 Rogers 2020 rha20.lgo's \code{d2}, \code{s2}) are preserved as real edges.
 
 Exactly one of \code{path} or \code{text} must be supplied.
+}
+\examples{
+lgo <- "
+time fixed T_x = 0
+time fixed T_y = 0
+time free  T_R = 2
+twoN fixed one = 1
+segment R t=T_R twoN=one
+segment x t=T_x twoN=one samples=1
+segment y t=T_y twoN=one samples=1
+derive x from R
+derive y from R
+"
+read_lgo(text = lgo)
 }

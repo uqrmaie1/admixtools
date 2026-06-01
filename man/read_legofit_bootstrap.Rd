@@ -27,7 +27,19 @@ the real-data fit value.
 }
 \details{
 The confidence level used by \code{bootci.py} is stored in a comment line in the
-file (e.g., \verb{# confidence: 0.950}). PR delta does not expose a \code{level}
+file (e.g., \verb{# confidence: 0.950}). This reader does not expose a \code{level}
 argument; the bounds in the file are returned as-is. To change the level,
 re-run \code{bootci.py} with the desired \code{--confidence} flag.
+}
+\examples{
+# Construct a minimal `bootci.py` output and read it back.
+tmp <- tempfile(fileext = ".bootci")
+writeLines(c(
+  "# bootci.py run",
+  "# confidence: 0.950",
+  "       par             est             low            high",
+  "      T_R      2.00000000      1.90000000      2.10000000"
+), tmp)
+read_legofit_bootstrap(tmp)
+unlink(tmp)
 }

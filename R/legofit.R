@@ -1,6 +1,7 @@
 # dplyr verbs reference column names as bare symbols; declare them here so
 # R CMD check does not warn about "no visible binding for global variable".
-utils::globalVariables(c("from", "to", "type", "weight", "n"))
+utils::globalVariables(c("from", "to", "type", "weight", "n",
+                         "family", "parameter", "point_estimate"))
 
 #' Default drift-to-time conversion (identity)
 #'
@@ -925,7 +926,7 @@ safe_eval_arith <- function(expr, env) {
 #' and `"igraph"` return types.
 #'
 #' Ghost segments written by [graph_to_lgo()] (named `<dest>_<parent>`) are
-#' recognised by the narrow 3-condition rule (LLD §3.5) and collapsed back into
+#' recognised by the narrow 3-condition rule and collapsed back into
 #' admixtools admix edges. Third-party segments that happen to appear as mix
 #' parents but do NOT match the `<dest>_<parent>` naming convention (e.g.,
 #' Rogers 2020 rha20.lgo's `d2`, `s2`) are preserved as real edges.
@@ -941,6 +942,19 @@ safe_eval_arith <- function(expr, env) {
 #'   (list keyed by param name, value `c(lo, hi)`) when bounded `free`
 #'   declarations are present.
 #' @return A tibble (or igraph) representing the graph topology.
+#' @examples
+#' lgo <- "
+#' time fixed T_x = 0
+#' time fixed T_y = 0
+#' time free  T_R = 2
+#' twoN fixed one = 1
+#' segment R t=T_R twoN=one
+#' segment x t=T_x twoN=one samples=1
+#' segment y t=T_y twoN=one samples=1
+#' derive x from R
+#' derive y from R
+#' "
+#' read_lgo(text = lgo)
 #' @export
 read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
   as <- match.arg(as)
@@ -1004,7 +1018,7 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
       p_name    <- parts[[6]]   # parameter name
       rhs       <- parts[[7]]   # value or constrained expression
 
-      # Bounds validation (LLD §5.2): brackets only valid on `free`.
+      # Bounds validation: brackets only valid on `free`.
       has_bounds <- nzchar(lo_str)
       if (has_bounds) {
         if (p_subtype != "free") {
@@ -1554,7 +1568,7 @@ graph_to_lgo <- function(graph,
 
 # Extract a named parameter block from LEGOFIT stdout.
 # Returns list(fixed = character(0), free = character(0)) always.
-# Per LLD §3.3: walks lines looking for `header`, then captures Fixed:/Free:
+# Walks lines looking for `header`, then captures Fixed:/Free:
 # subsections until a blank line, a `#` comment, or a letter-at-col-1.
 #' @keywords internal
 extract_param_section <- function(lines, header) {
@@ -1566,7 +1580,7 @@ extract_param_section <- function(lines, header) {
 
   fixed_lines <- character(0)
   free_lines  <- character(0)
-  current     <- "free"   # default bucket (per LLD §3.3 edge case note)
+  current     <- "free"   # default bucket
 
   for (i in seq_len(max(0L, length(lines) - hdr_idx)) + hdr_idx) {
     ln <- lines[[i]]
@@ -1592,7 +1606,7 @@ extract_param_section <- function(lines, header) {
 }
 
 # Parse `name = value` lines into a tibble.
-# Robust to whitespace around `=`. Per LLD §3.3a.
+# Robust to whitespace around `=`.
 #' @keywords internal
 parse_param_lines <- function(lines) {
   if (length(lines) == 0) return(tibble::tibble(name = character(), value = numeric()))
@@ -1621,7 +1635,7 @@ parse_param_lines <- function(lines) {
 }
 
 # Extract DiffEv convergence status line from legofit output.
-# Per LLD §3.8.  Returns list(status, cost, spread) with NAs if not found.
+# Returns list(status, cost, spread) with NAs if not found.
 #' @keywords internal
 extract_convergence_status <- function(lines) {
   re <- paste0(
@@ -1640,7 +1654,7 @@ extract_convergence_status <- function(lines) {
   )
 }
 
-# Emit convergence-aware informs.  Per LLD §3.8.
+# Emit convergence-aware informs.
 # `path` is incorporated into .frequency_id so each file gets an independent
 # once-per-session dedup key; without it a multi-file workflow would suppress
 # all but the first convergence warn.
@@ -1675,7 +1689,7 @@ inform_convergence_status <- function(convergence, path = NULL) {
 # ---------------------------------------------------------------------------
 
 # Drop ghost-segment params from the param table.
-# Per LLD §3.5: ghost segments produce T_<ghost_name> params only if LEGOFIT
+# Ghost segments produce T_<ghost_name> params only if LEGOFIT
 # bleeds segment naming into the param namespace — which standard LEGOFIT does
 # NOT do (ghost segments reference T_admix_<dest>, not their own T_<ghost>).
 # This function is therefore a no-op in practice; retained for future-proofing.
@@ -1684,7 +1698,7 @@ drop_ghost_params <- function(params, edges) {
   params  # no-op: LEGOFIT does not emit ghost-segment-named params
 }
 
-# Pivot fitted params onto the edge tibble.  Per LLD §3.6.
+# Pivot fitted params onto the edge tibble.
 # Attaches time, admix_event_time, twoN, admix_prop, admix_event columns.
 # Root and internal nodes with no incoming edge get their fitted times
 # in attr(result, "node_times").
@@ -1751,8 +1765,8 @@ pivot_params_to_edges <- function(params, edges) {
   tibble::as_tibble(edges)
 }
 
-# Compute and emit structural-mismatch inform per LLD §3.7.
-# Rule chain applied in strict order (order matters — see LLD).
+# Compute and emit structural-mismatch inform.
+# Rule chain applied in strict order (order matters).
 #
 # `sentinel_names`: character vector of sentinel param names ("one", "shared")
 #   extracted from the Initial/Fixed block. Passed separately so that
@@ -1846,6 +1860,105 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
   invisible(NULL)
 }
 
+# Structural parameter-identifiability classification.
+#
+# Returns a tibble (parameter, family, identifiability, reason). Classes:
+#   "fixed"            non-free parameter; an input, not an estimate.
+#   "structural_none"  data CANNOT constrain it (value is arbitrary): admix-event
+#                      times, whose segment subtends a single lineage and so
+#                      admits no coalescence, meaning its duration cannot move
+#                      any site-pattern frequency.
+#   "scale_degenerate" identified only up to a global scale: a model with BOTH
+#                      free times and free twoN fits only the Delta_t/twoN ratios,
+#                      not absolute values. Fires only in named-twoN mode; with
+#                      fixed `one`/`shared` twoN it does not.
+#   "weak_identified" / "weak_unconstrained"
+#                      a deep tree split time whose coalescent depth puts it in
+#                      the downward-biased regime (see the deep-split tier below).
+#   "identifiable"     the data constrain it (mixFrac, shallow tree split times).
+#
+# IMPORTANT: this is structural, derived from topology, fitted depths, and the
+# model's free/fixed declarations, never from bootstrap CI width: in the failing
+# regime the CI is narrow around a biased estimate, so CI width is not evidence
+# of identifiability.
+#' @keywords internal
+classify_identifiability <- function(params, edges = NULL, node_times = NULL) {
+  n <- nrow(params)
+  if (n == 0) {
+    return(tibble::tibble(parameter = character(), family = character(),
+                          identifiability = character(), reason = character()))
+  }
+  free <- if (!is.null(params$free)) params$free else rep(TRUE, n)
+  fam  <- params$family
+
+  # Global scale degeneracy: at least one free time AND one free twoN.
+  has_free_time <- any(free & fam == "time")
+  has_free_twoN <- any(free & fam == "twoN")
+  scale_degenerate <- has_free_time && has_free_twoN
+
+  cls <- character(n); rsn <- character(n)
+  for (i in seq_len(n)) {
+    if (!isTRUE(free[i])) {
+      cls[i] <- "fixed"
+      rsn[i] <- "fixed parameter (an input, not an estimate)"
+    } else if (fam[i] == "admix_time") {
+      cls[i] <- "structural_none"
+      rsn[i] <- "admix-event time: single-lineage segment admits no coalescence; fitted value is arbitrary"
+    } else if (scale_degenerate && fam[i] %in% c("time", "twoN")) {
+      cls[i] <- "scale_degenerate"
+      rsn[i] <- "absolute scale unidentified: model has free times and free twoN; only Delta_t/twoN ratios are fitted"
+    } else {
+      cls[i] <- "identifiable"
+      rsn[i] <- "data-constrained"
+    }
+  }
+
+  # Deep-split weak-identification tier. A tree split time is recovered with a
+  # downward bias that grows with its coalescent depth D = t/twoN, and the onset
+  # depth depends on tree shape: a split with a directly attached sampled leaf
+  # child holds far better than one whose children are all internal clades (the
+  # leaf child is the causal discriminator, not a proxy for global balance). This
+  # tier only runs on the graph path (needs topology + fitted depths), and only
+  # downgrades parameters the structural tier left "identifiable".
+  if (!is.null(edges) && !is.null(node_times)) {
+    pv     <- stats::setNames(params$value, params$name)
+    leaves <- setdiff(edges$to, edges$from)
+    nleaf  <- length(leaves)
+    twoN_of <- function(node) {
+      nm <- paste0("twoN_", node)
+      if (nm %in% names(pv)) return(pv[[nm]])
+      if ("shared" %in% names(pv)) return(pv[["shared"]])
+      1                                    # `one` (coalescent units) or default
+    }
+    for (i in seq_len(n)) {
+      if (cls[i] != "identifiable" || fam[i] != "time") next
+      node <- sub("^T_", "", params$name[i])
+      t    <- if (node %in% names(node_times)) node_times[[node]] else NA_real_
+      tn   <- twoN_of(node)
+      if (!is.finite(t) || !is.finite(tn) || tn <= 0) next
+      D    <- t / tn
+      has_leaf <- any(edges$to[edges$from == node] %in% leaves)
+      thr  <- if (has_leaf) c(well = 5, weak = 9) else c(well = 4, weak = 6)
+      big  <- if (nleaf >= 8)
+        " (>=8 leaves: thresholds are mildly optimistic, treat as a lower bound on bias)" else ""
+      if (D > thr[["weak"]]) {
+        cls[i] <- "weak_unconstrained"
+        rsn[i] <- sprintf(
+          "deep split (coalescent depth %.1f, %s leaf child): recovery effectively unconstrained, biased low%s",
+          D, if (has_leaf) "has" else "no", big)
+      } else if (D > thr[["well"]]) {
+        cls[i] <- "weak_identified"
+        rsn[i] <- sprintf(
+          "deep split (coalescent depth %.1f, %s leaf child): weakly identified, estimate biased low; treat as a lower bound%s",
+          D, if (has_leaf) "has" else "no", big)
+      }
+    }
+  }
+
+  tibble::tibble(parameter = params$name, family = fam,
+                 identifiability = cls, reason = rsn)
+}
+
 # ---------------------------------------------------------------------------
 # Step 7 public function: read_legofit_output
 # ---------------------------------------------------------------------------
@@ -1856,6 +1969,17 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
 #' fitted parameter values attached as additional columns. When `graph` is
 #' supplied, parameters are mapped to edges by segment name; when `NULL`, a
 #' raw parameter tibble is returned.
+#'
+#' @section Parameter naming convention:
+#' Family classification (the `family` column, and the edge mapping when `graph`
+#' is supplied) keys off the `[graph_to_lgo()]` naming convention: `T_<node>`
+#' (split time), `T_admix_<dest>` (admix-event time), `twoN_<seg>` (population
+#' size), `m_<dest>` (mixFrac), plus the `one`/`shared` twoN sentinels. A
+#' `.legofit` produced from a hand-written `.lgo` with arbitrary parameter names
+#' (e.g. `Tnd`, `Tmnd`) parses correctly but every parameter classifies as
+#' `"unknown"` and cannot be mapped onto graph edges. To read a third-party fit
+#' into an edge tibble, export the matching topology with [graph_to_lgo()] so the
+#' names follow the convention.
 #'
 #' @param path Path to a `.legofit` file (legofit stdout, UTF-8).
 #' @param graph An edge tibble, igraph, or `NULL`. When supplied, parameter
@@ -1890,11 +2014,43 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
 #'   \item{`fit_convergence`}{List with `status`, `cost`, `spread` from the
 #'     DiffEv summary line. `status` is `"reached_goal"` (converged),
 #'     `"finished_iterations"` (hit iteration cap), or `NA` (unknown).}
+#'   \item{`identifiability`}{Per-parameter tibble (`parameter`, `family`,
+#'     `identifiability`, `reason`) flagging which fitted values the site-pattern
+#'     data can actually constrain. Classes: `"identifiable"` (data-constrained,
+#'     e.g. mixFracs and shallow split times); `"structural_none"` (the value is
+#'     arbitrary, e.g. admix-event times, whose single-lineage segment admits no
+#'     coalescence); `"scale_degenerate"` (identified only up to a global scale,
+#'     when a model has both free times and free `twoN` so only `Δt/twoN` ratios
+#'     are fitted); `"weak_identified"` and `"weak_unconstrained"` (a deep tree
+#'     split time whose coalescent depth `t/twoN` puts it in the downward-biased
+#'     regime, with a looser onset depth when the split has a directly attached
+#'     sampled leaf child, so treat these as lower bounds); and `"fixed"` (an
+#'     input, not an estimate). This is a
+#'     **structural** judgement from topology, fitted depths, and the model's
+#'     declarations; it is
+#'     never inferred from bootstrap CI width, because a non-identifiable
+#'     parameter can carry a narrow CI around a badly biased estimate.}
 #' }
 #'
 #' @return A tibble (with `node_times` and `fit_convergence` attributes) when
 #'   `graph` is supplied; a raw parameter tibble (with `fit_convergence`) when
 #'   `graph = NULL`.
+#' @examples
+#' # Construct a minimal `.legofit` output and read it back.
+#' tmp <- tempfile(fileext = ".legofit")
+#' writeLines(c(
+#'   "Initial parameter values",
+#'   "Fixed:",
+#'   "       one = 1",
+#'   "Free:",
+#'   "     T_R = 2",
+#'   "DiffEv reached_goal. cost=1e-10 spread=1e-7",
+#'   "Fitted parameter values",
+#'   "Free:",
+#'   "     T_R = 2"
+#' ), tmp)
+#' read_legofit_output(tmp)
+#' unlink(tmp)
 #' @export
 read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
 
@@ -1943,7 +2099,7 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
     edges <- coerce_to_edge_tibble(graph)
     validate_edge_tibble(edges)
 
-    # Read-time T_admix collision check (LLD §3.4)
+    # Read-time T_admix collision check
     admix_dests  <- unique(edges$to[edges$type == "admix"])
     all_nodes    <- unique(c(edges$from, edges$to))
     for (pname in params$name[params$family == "admix_time"]) {
@@ -1974,6 +2130,7 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
       params[order(params$family, params$name), c("name", "value", "family")]
     )
     attr(result, "fit_convergence") <- convergence
+    attr(result, "identifiability") <- classify_identifiability(params)
     inform_convergence_status(convergence, path = path)
     return(result)
   }
@@ -1985,8 +2142,13 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
   surface_mismatches(params, edges, include_fixed = include_fixed,
                      path = path, sentinel_names = sentinel_names_from_file)
 
-  # 9. Attach convergence metadata and fire incomplete-fit inform
+  # 9. Attach convergence + identifiability metadata and fire incomplete-fit inform
+  # On the graph path, pass topology + fitted depths so the deep-split tier
+  # (F-1b) can flag weakly-identified tree split times, not just the structural
+  # cases the params-only classification covers.
   attr(result, "fit_convergence") <- convergence
+  attr(result, "identifiability") <-
+    classify_identifiability(params, edges, attr(result, "node_times"))
   inform_convergence_status(convergence, path = path)
 
   result
@@ -2000,7 +2162,7 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
 # Step 8 helper: parse_bootci_output
 # ---------------------------------------------------------------------------
 
-# Parse bootci.py output table format.  Per LLD §4.4.
+# Parse bootci.py output table format.
 # Verified format (2026-05-20):
 #   # bootci.py run at: ...
 #   # input: ...
@@ -2095,7 +2257,7 @@ parse_bootci_output <- function(lines) {
 #' the real-data fit value.
 #'
 #' The confidence level used by `bootci.py` is stored in a comment line in the
-#' file (e.g., `# confidence: 0.950`). PR delta does not expose a `level`
+#' file (e.g., `# confidence: 0.950`). This reader does not expose a `level`
 #' argument; the bounds in the file are returned as-is. To change the level,
 #' re-run `bootci.py` with the desired `--confidence` flag.
 #'
@@ -2108,6 +2270,17 @@ parse_bootci_output <- function(lines) {
 #'   `lo`, `hi`. If `bootci.py -l <label>` was used, an additional `lbl`
 #'   column appears. The confidence level is embedded in the file as a comment
 #'   (not returned as a column).
+#' @examples
+#' # Construct a minimal `bootci.py` output and read it back.
+#' tmp <- tempfile(fileext = ".bootci")
+#' writeLines(c(
+#'   "# bootci.py run",
+#'   "# confidence: 0.950",
+#'   "       par             est             low            high",
+#'   "      T_R      2.00000000      1.90000000      2.10000000"
+#' ), tmp)
+#' read_legofit_bootstrap(tmp)
+#' unlink(tmp)
 #' @export
 read_legofit_bootstrap <- function(path, graph = NULL) {
   lines <- readLines(path, encoding = "UTF-8")
@@ -2128,7 +2301,7 @@ read_legofit_bootstrap <- function(path, graph = NULL) {
     cis <- dplyr::rename(cis, parameter = name)
   }
 
-  # 3. Rename columns to public names per LLD §4.5, then classify, then
+  # 3. Rename columns to public names, then classify, then
   # reorder so final column order matches @return docs: parameter, family,
   # point_estimate, lo, hi [, lbl].
   cis <- dplyr::rename(cis, point_estimate = est, lo = low, hi = high)
