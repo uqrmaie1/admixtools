@@ -84,6 +84,42 @@ test_that("compute_times init: errors when default drift_to_time gives inconsist
   )
 })
 
+test_that("F-2: additive-inconsistency abort points to free/init alternatives", {
+  g <- make_minimal_graph()
+  expect_error(
+    compute_times(g, "init", default_drift_to_time, 0),
+    regexp = "free|init", class = "legofit_invalid_input"
+  )
+})
+
+test_that("F-4: fix_times emits `time fixed` for internal nodes (recovers absolute twoN)", {
+  expect_warning(
+    txt <- graph_to_lgo(make_minimal_graph(), time_handling = "free",
+                        fix_times = TRUE, validate = FALSE),
+    class = "legofit_unfittable_lgo")
+  expect_match(txt, "time fixed T_R")      # internal tree-node time is fixed
+  expect_false(grepl("time free", txt))    # no free time remains
+  expect_type(read_lgo(text = txt), "list")  # still parses
+})
+
+test_that("F-4: fix_times works with free mode on an admix graph", {
+  # free is the only mode that exports additively-inconsistent admix graphs;
+  # fix_times must still pin every time (including the admix-event time) so the
+  # absolute scale is identifiable rather than degenerate against free twoN.
+  txt <- graph_to_lgo(make_rogers2020_graph(), time_handling = "free",
+                      fix_times = TRUE, validate = FALSE)
+  expect_match(txt, "time fixed")
+  expect_false(grepl("time free", txt))
+})
+
+test_that("F-4: fix_times defaults FALSE (internal times stay free)", {
+  expect_warning(
+    txt <- graph_to_lgo(make_minimal_graph(), time_handling = "free",
+                        validate = FALSE),
+    class = "legofit_unfittable_lgo")
+  expect_match(txt, "time free T_R")
+})
+
 test_that("compute_times errors when graph has no leaves", {
   # Cycle: every node appears as both `from` and `to`
   cyclic <- tibble::tribble(
@@ -210,4 +246,20 @@ test_that("generate_param_names matches the parameter naming convention", {
   expect_equal(p$twoN["A"],    c(A = "twoN_A"))
   expect_equal(p$mixFrac["M"], c(M = "m_M"))
   expect_setequal(names(p$mixFrac), "M")  # only admix destinations
+})
+
+# ---------------------------------------------------------------------------
+# Additional coverage for the write contract and fix_times
+# ---------------------------------------------------------------------------
+
+# U-W12: graph_to_lgo(file=) writes exactly the text it returns when file=NULL.
+# The minimal graph emits the unfittable warning (one leaf); that is orthogonal
+# to the write contract, so it is suppressed here.
+test_that("U-W12: graph_to_lgo(file=) writes content equal to the file=NULL text return", {
+  g   <- make_minimal_graph()
+  txt <- suppressWarnings(graph_to_lgo(g))
+  tmp <- tempfile(fileext = ".lgo")
+  on.exit(unlink(tmp))
+  suppressWarnings(graph_to_lgo(g, file = tmp))
+  expect_identical(readLines(tmp), strsplit(txt, "\n", fixed = TRUE)[[1]])
 })

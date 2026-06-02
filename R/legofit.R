@@ -464,7 +464,8 @@ topology_walk_bottom_up <- function(edges, branch_lengths, leaf_times,
             c(sprintf("Inconsistent branch lengths at node `%s`.", u),
               "x" = sprintf("Computed t=%g via one path and t=%g via edge %s->%s.",
                             node_time[u], proposed, u, v),
-              "i" = "Input drifts imply inconsistent absolute times."),
+              "i" = "Input drifts imply inconsistent absolute times. This is common: random and real qpgraph drifts are rarely additively consistent across paths.",
+              "i" = "Use `time_handling = \"free\"` (depth-seeded free times; the LEGOFIT optimizer fits them, but the input absolute times are not preserved), or `time_handling = \"init\"` with an explicit `time` column to supply consistent times yourself."),
             class = "legofit_invalid_input"
           )
         }
@@ -539,7 +540,7 @@ compute_node_depths <- function(edges) {
 
 #' @keywords internal
 compute_times <- function(edges, time_handling, drift_to_time,
-                          dates_terminal) {
+                          dates_terminal, fix_times = FALSE) {
   required_cols <- c("from", "to", "type", "weight")
   if (!is.data.frame(edges) || !all(required_cols %in% names(edges))) {
     rlang::abort(
@@ -582,9 +583,11 @@ compute_times <- function(edges, time_handling, drift_to_time,
     non_leaf <- setdiff(all_nodes, leaves)
     depths   <- compute_node_depths(edges)
     init_t   <- setNames(as.numeric(depths[non_leaf]), non_leaf)
+    free_vec <- setNames(!(all_nodes %in% leaves), all_nodes)
+    if (isTRUE(fix_times)) free_vec[] <- FALSE   # fix_times: pin internal times
     return(list(
       value = c(terminal_t, init_t)[all_nodes],
-      free  = setNames(!(all_nodes %in% leaves), all_nodes),
+      free  = free_vec,
       omit  = character(0)
     ))
   }
@@ -607,10 +610,11 @@ compute_times <- function(edges, time_handling, drift_to_time,
   # like any other node — they aren't omitted from time declarations.
   # The LEGOFIT param-sharing constraint is handled by the ghost
   # segments anchoring at T_admix_<dest> instead.
-  free <- switch(time_handling,
-    "fix_admix" = setNames(!(all_nodes %in% leaves), all_nodes),
-    "init"      = setNames(!(all_nodes %in% leaves), all_nodes)
-  )
+  free <- setNames(!(all_nodes %in% leaves), all_nodes)
+  # fix_times: emit internal node times as `time fixed` at their computed
+  # absolute values, so a model with free `twoN` is no longer degenerate up to a
+  # global scale and absolute twoN becomes recoverable.
+  if (isTRUE(fix_times)) free[] <- FALSE
 
   list(value = node_time[all_nodes], free = free, omit = character(0))
 }
@@ -632,7 +636,8 @@ admix_parent_pairs <- function(edges) {
 
 format_time_declarations <- function(time_param_names, times,
                                      admix_time_param_names = NULL,
-                                     admix_pairs = NULL) {
+                                     admix_pairs = NULL,
+                                     fix_times = FALSE) {
   # Per-node time declarations (every node gets one — admix dests are no
   # longer omitted; ghost segments handle the param-sharing constraint).
   keep <- names(time_param_names)
@@ -649,11 +654,16 @@ format_time_declarations <- function(time_param_names, times,
   # which are unique per node.
   node_lines <- node_lines[!duplicated(time_param_names[ordered])]
 
-  # Per-admix-event time declarations (T_admix_<M>). Always free — the
-  # admix event time is what LEGOFIT optimizes.
+  # Per-admix-event time declarations (T_admix_<M>). Free by default (the admix
+  # event time is what LEGOFIT optimizes), but fixed under `fix_times`: leaving it
+  # free while twoN is free reintroduces the scale degeneracy and wrecks absolute
+  # twoN recovery. The admix-event time is structurally non-identifiable either
+  # way (its segment carries a single lineage, so no coalescence), so pinning it
+  # is safe.
   admix_lines <- character(0)
   if (!is.null(admix_pairs) && nrow(admix_pairs) > 0) {
-    admix_lines <- sprintf("time free %s=%g",
+    admix_lines <- sprintf("time %s %s=%g",
+                           if (isTRUE(fix_times)) "fixed" else "free",
                            admix_time_param_names[admix_pairs$to],
                            times$value[admix_pairs$high])
   }
@@ -750,7 +760,8 @@ format_mix_statements <- function(edges_admix, mixfrac_param_names) {
 }
 
 #' @keywords internal
-assemble_lgo <- function(edges, params, times, twoN_decls, samples_vec) {
+assemble_lgo <- function(edges, params, times, twoN_decls, samples_vec,
+                         fix_times = FALSE) {
   all_nodes   <- unique(c(edges$from, edges$to))
   admix_pairs <- admix_parent_pairs(edges)
 
@@ -774,7 +785,8 @@ assemble_lgo <- function(edges, params, times, twoN_decls, samples_vec) {
   }
 
   time_decls   <- format_time_declarations(params$time, times,
-                                           params$admix_time, admix_pairs)
+                                           params$admix_time, admix_pairs,
+                                           fix_times = fix_times)
   mfrac_decls  <- format_mixfrac_declarations(params$mixFrac, edges)
   seg_decls    <- format_segment_declarations(all_nodes, params$time,
                                               twoN_decls$per_segment,
@@ -1246,9 +1258,32 @@ validate_via_roundtrip <- function(lgo_text, edges) {
 #' @param drift_to_time Function converting per-edge drift to branch length.
 #'   Default [default_drift_to_time()] (identity). Ignored when
 #'   `time_handling = "free"` or when an explicit `time` column is present.
+#' @param fix_times Logical (default `FALSE`). When `TRUE`, internal-node times
+#'   are emitted as `time fixed` at their computed absolute values rather than
+#'   `time free`. Use this with a free `twoN` (a named `twoN=` vector) when you
+#'   need to recover **absolute** effective population sizes: with both times and
+#'   `twoN` free, site-pattern data fit only the `Δt/twoN` ratios, so the absolute
+#'   scale is unidentified (the data constrain the ratios but not the overall
+#'   scale). Fixing the times removes that degeneracy. With
+#'   `"fix_admix"` or `"init"` the fixed values are the real absolute times, so
+#'   the recovered `twoN` is absolute. With `"free"` (the only mode that exports
+#'   additively-inconsistent graphs, e.g. most admixture topologies) the fixed
+#'   values are topological-depth placeholders: still consistent and still enough
+#'   to make `twoN` identifiable in a self-consistent fit, but not biologically
+#'   calibrated absolute times.
 #' @param validate If `TRUE` (default), round-trips the output through
 #'   [read_lgo()] to confirm topology is preserved.
 #' @return The `.lgo` text, invisibly.
+#' @examples
+#' # A 3-leaf no-admixture graph with explicit node times.
+#' g <- tibble::tribble(
+#'   ~from,  ~to,  ~type,    ~weight,  ~time,
+#'   "xyz",  "xy", "normal", NA_real_, 1.5,
+#'   "xyz",  "z",  "normal", NA_real_, 2,
+#'   "xy",   "x",  "normal", NA_real_, 0.5,
+#'   "xy",   "y",  "normal", NA_real_, 0.5
+#' )
+#' cat(graph_to_lgo(g, time_handling = "init"))
 #' @export
 graph_to_lgo <- function(graph,
                          file = NULL,
@@ -1258,6 +1293,7 @@ graph_to_lgo <- function(graph,
                          twoN = NULL,
                          time_handling = c("fix_admix", "init", "free"),
                          drift_to_time = default_drift_to_time,
+                         fix_times = FALSE,
                          validate = TRUE) {
 
   time_handling <- match.arg(time_handling)
@@ -1269,7 +1305,8 @@ graph_to_lgo <- function(graph,
   if (!is.null(outpop)) edges <- strip_outgroup(edges, outpop)
 
   params <- generate_param_names(edges)
-  times  <- compute_times(edges, time_handling, drift_to_time, dates_terminal)
+  times  <- compute_times(edges, time_handling, drift_to_time, dates_terminal,
+                          fix_times = fix_times)
   twoN_decls <- resolve_twoN_decls(edges, twoN)
 
   leaves       <- setdiff(edges$to, edges$from)
@@ -1364,7 +1401,8 @@ graph_to_lgo <- function(graph,
     }
   }
 
-  lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples)
+  lgo_text <- assemble_lgo(edges, params, times, twoN_decls, full_samples,
+                           fix_times = fix_times)
 
   is_sampled <- !is.na(full_samples) & full_samples > 0
   n_sampled <- sum(is_sampled)
