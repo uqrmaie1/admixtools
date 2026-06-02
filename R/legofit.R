@@ -1914,16 +1914,43 @@ classify_identifiability <- function(params, edges = NULL, node_times = NULL) {
   }
 
   # Deep-split weak-identification tier. A tree split time is recovered with a
-  # downward bias that grows with its coalescent depth D = t/twoN, and the onset
-  # depth depends on tree shape: a split with a directly attached sampled leaf
-  # child holds far better than one whose children are all internal clades (the
-  # leaf child is the causal discriminator, not a proxy for global balance). This
-  # tier only runs on the graph path (needs topology + fitted depths), and only
-  # downgrades parameters the structural tier left "identifiable".
+  # downward bias that grows with its coalescent depth D = t/twoN. Past a few
+  # coalescent units, coalescence within the branch saturates and the split time
+  # stops moving the site-pattern spectrum (the single-lineage segment handled by
+  # `structural_none` above is the limiting case). The onset depth depends on
+  # tree shape: a split with a directly attached sampled leaf child is anchored
+  # by that leaf's coalescences and holds far better than one whose children are
+  # all internal clades. This tier only runs on the graph path (needs topology +
+  # fitted depths), and only downgrades parameters the structural tier left
+  # "identifiable".
+  #
+  # Threshold provenance. The cutoffs below are calibrated from coalescent
+  # simulation, not assumed: independent ground-truth datasets simulated with
+  # msprime across a depth x tree-shape x leaf-count grid, fit with `legofit -1`
+  # (singletons on, which carry the deep-branch-length signal), comparing fitted
+  # against true split times. A matched-pair experiment (same leaves and depth,
+  # the focal node's leaf child toggled on/off) confirmed the leaf child is the
+  # causal discriminator, not a proxy for global tree balance. Mean signed
+  # relative error of the focal split, by depth D:
+  #   no leaf child:   ~ -6% (D=5), -19% (D=6), -42% (D=8)  => well<=4, weak<=6
+  #   has a leaf child:~ -2% (D=5),  -3% (D=6),  -4% (D=8)  => well<=5, weak<=9
+  # These are an advisory: every flagged estimate is biased downward, so treat it
+  # as a lower bound, and never infer good identification from a narrow bootstrap
+  # CI (the failing regime is biased low WITH a narrow CI). Method reference:
+  # Rogers (2019) "Legofit: estimating population history from genetic data",
+  # BMC Bioinformatics 20:526.
+  #
+  # Large-tree margin. At >= 8 leaves the focal split degrades earlier than the
+  # 4-7 leaf grid implies (even the leaf-child variant), and the exact large-tree
+  # knees are not yet pinned, so both cutoffs are tightened by one coalescent unit
+  # as a conservative margin. This changes the CLASS (a borderline deep split
+  # becomes weak_unconstrained), not merely the reason text, so a genuinely
+  # unconstrained split on a large tree is not reported as weak_identified.
   if (!is.null(edges) && !is.null(node_times)) {
     pv     <- stats::setNames(params$value, params$name)
     leaves <- setdiff(edges$to, edges$from)
     nleaf  <- length(leaves)
+    margin <- if (nleaf >= 8) 1 else 0     # conservative large-tree tightening
     twoN_of <- function(node) {
       nm <- paste0("twoN_", node)
       if (nm %in% names(pv)) return(pv[[nm]])
@@ -1938,15 +1965,16 @@ classify_identifiability <- function(params, edges = NULL, node_times = NULL) {
       if (!is.finite(t) || !is.finite(tn) || tn <= 0) next
       D    <- t / tn
       has_leaf <- any(edges$to[edges$from == node] %in% leaves)
-      thr  <- if (has_leaf) c(well = 5, weak = 9) else c(well = 4, weak = 6)
-      big  <- if (nleaf >= 8)
-        " (>=8 leaves: thresholds are mildly optimistic, treat as a lower bound on bias)" else ""
-      if (D > thr[["weak"]]) {
+      base <- if (has_leaf) c(well = 5, weak = 9) else c(well = 4, weak = 6)
+      well <- base[["well"]] - margin
+      weak <- base[["weak"]] - margin
+      big  <- if (margin > 0) "; >=8-leaf conservative margin applied" else ""
+      if (D > weak) {
         cls[i] <- "weak_unconstrained"
         rsn[i] <- sprintf(
           "deep split (coalescent depth %.1f, %s leaf child): recovery effectively unconstrained, biased low%s",
           D, if (has_leaf) "has" else "no", big)
-      } else if (D > thr[["well"]]) {
+      } else if (D > well) {
         cls[i] <- "weak_identified"
         rsn[i] <- sprintf(
           "deep split (coalescent depth %.1f, %s leaf child): weakly identified, estimate biased low; treat as a lower bound%s",
