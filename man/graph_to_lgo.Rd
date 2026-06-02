@@ -62,8 +62,8 @@ are emitted as \verb{time fixed} at their computed absolute values rather than
 \verb{time free}. Use this with a free \code{twoN} (a named \verb{twoN=} vector) when you
 need to recover \strong{absolute} effective population sizes: with both times and
 \code{twoN} free, site-pattern data fit only the \code{Δt/twoN} ratios, so the absolute
-scale is unidentified (the same degeneracy \code{read_legofit_output()} flags as
-\code{scale_degenerate}). Fixing the times removes that degeneracy. With
+scale is unidentified (the data constrain the ratios but not the overall
+scale). Fixing the times removes that degeneracy. With
 \code{"fix_admix"} or \code{"init"} the fixed values are the real absolute times, so
 the recovered \code{twoN} is absolute. With \code{"free"} (the only mode that exports
 additively-inconsistent graphs, e.g. most admixture topologies) the fixed

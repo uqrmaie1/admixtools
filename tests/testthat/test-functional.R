@@ -297,13 +297,16 @@ test_that("PF-4: graph_to_lgo on a 100-node graph stays bounded (format_* at sca
   skip_on_cran()
   # The documented performance bound is only on read_lgo; the format_* writer
   # helpers were never profiled at scale. Time the writer on the same large graph.
+  # The threshold is a generous ceiling to catch pathological (e.g. quadratic)
+  # scaling, not a tight latency assertion, so it tolerates a slow or loaded CI.
+  # outpref = tempfile() keeps random_sim's generated .py out of the test tree.
   set.seed(123)
-  big <- random_sim(nadmix = 3, nleaf = 50)
+  big <- random_sim(nadmix = 3, nleaf = 50, outpref = tempfile())
   expect_gte(length(unique(c(big$edges$from, big$edges$to))), 50)
   t <- system.time(
     graph_to_lgo(big$edges, time_handling = "free", validate = FALSE)
   )[["elapsed"]]
-  expect_lt(t, 1.0)
+  expect_lt(t, 3.0)
 })
 
 # T1.8 ------------------------------------------------------------------

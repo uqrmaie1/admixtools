@@ -249,7 +249,7 @@ test_that("generate_param_names matches the parameter naming convention", {
 })
 
 # ---------------------------------------------------------------------------
-# Master plan Tier 0 gap closure
+# Additional coverage for the write contract and fix_times
 # ---------------------------------------------------------------------------
 
 # U-W12: graph_to_lgo(file=) writes exactly the text it returns when file=NULL.

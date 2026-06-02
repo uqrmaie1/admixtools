@@ -1263,8 +1263,8 @@ validate_via_roundtrip <- function(lgo_text, edges) {
 #'   `time free`. Use this with a free `twoN` (a named `twoN=` vector) when you
 #'   need to recover **absolute** effective population sizes: with both times and
 #'   `twoN` free, site-pattern data fit only the `Δt/twoN` ratios, so the absolute
-#'   scale is unidentified (the same degeneracy `read_legofit_output()` flags as
-#'   `scale_degenerate`). Fixing the times removes that degeneracy. With
+#'   scale is unidentified (the data constrain the ratios but not the overall
+#'   scale). Fixing the times removes that degeneracy. With
 #'   `"fix_admix"` or `"init"` the fixed values are the real absolute times, so
 #'   the recovered `twoN` is absolute. With `"free"` (the only mode that exports
 #'   additively-inconsistent graphs, e.g. most admixture topologies) the fixed
