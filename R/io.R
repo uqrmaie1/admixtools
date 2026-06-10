@@ -3434,7 +3434,10 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
       # On dense million-popcomb runs the materialized variant is many GB
       # per block (e.g. ~45 GB at 1.57M popcombs x 3608 SNPs) and trips
       # R's allocator or the OOM killer; streaming peaks at ~12 MB.
-      rm = cpp_aftable_to_dstatnum_rowmeans(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
+      # validate = (i == 1L): the validated inputs are block-invariant, so the
+      # kernel's index scan runs once on block 1; later blocks skip it (the cheap
+      # bounds guards still run every call). See validate_dstat_inputs.
+      rm = cpp_aftable_to_dstatnum_rowmeans(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads, i == 1L)
       # arma::vec wraps to R as either a NumericVector or a 1-column
       # matrix depending on the RcppArmadillo build; flatten with c() so
       # res$numer is always a plain numeric vector for the worker-side
@@ -3443,12 +3446,12 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
     } else {
       # snpwt path needs the full per-SNP matrix to apply column scaling
       # before the row reduction, so keep the materialized variant.
-      num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
+      num = cpp_aftable_to_dstatnum(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads, i == 1L)
       num$num = t(t(num$num) * snpwt[(start[i]+1):end[i]])
       res = list(numer = unname(rowMeans(num$num, na.rm = TRUE)), cnt = c(num$cnt))
     }
     if(!f4mode) {
-      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads)
+      den = cpp_aftable_to_dstatden(at, p1, p2, p3, p4, modelvec, block_usesnps, allsnps, poly_only, omp_threads, i == 1L)
       res$denom = unname(rowMeans(den, na.rm = TRUE))
     }
     # Defense in depth: worker-side shape assertion. If a future edit to
@@ -3669,7 +3672,7 @@ f3blockdat_from_geno = function(pref, popcombs, auto_only = TRUE,
         usesnps = usesnps & usesnps2
       }
     }
-    num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only, omp_threads)
+    num = cpp_aftable_to_dstatnum(at, p1, p2, p1, p3, modelvec, usesnps, allsnps, poly_only, omp_threads, i == 1L)
     if(apply_corr || !outgroupmode) {
       gmatinv = 2-gmat
       gmatplo = gmat
