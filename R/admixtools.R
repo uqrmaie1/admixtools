@@ -89,6 +89,9 @@ NULL
   # pthread_atfork handlers can't be removed, so unmapping the image would
   # dangle the handler and crash the next fork() (e.g. plan(multicore)). The
   # accessor returns FALSE on non-OpenMP builds, where unloading is fine.
+  # Consequence for development: on an OpenMP build the .so stays mapped for the
+  # session, so after recompiling you must restart R (not just reload) to pick
+  # up the new build.
   active = tryCatch(admixtools_omp_atfork_active_(), error = function(e) FALSE)
   if (!isTRUE(active)) library.dynam.unload("admixtools", libpath)
 }
