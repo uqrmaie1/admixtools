@@ -3200,6 +3200,27 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 }
 
 
+# User-facing hard cap on the OpenMP kernel team size, or NA if unset. The
+# kernels set num_threads() explicitly (which OpenMP gives precedence over
+# OMP_NUM_THREADS), and parallelly::availableCores() does not read OMP_NUM_THREADS
+# either -- so without this helper the env var would have no effect. We honor it,
+# and the higher-precedence options(admixtools.omp_num_threads=), as a cap so
+# they behave the way users expect. OMP_NUM_THREADS may be a nested-level list
+# ("4,2"); the outermost level applies.
+omp_threads_cap = function() {
+  opt = getOption("admixtools.omp_num_threads", default = NA)
+  if(length(opt) == 1 && !is.na(opt)) {
+    optn = suppressWarnings(as.integer(opt))
+    if(!is.na(optn) && optn >= 1) return(as.integer(optn))
+  }
+  env = Sys.getenv("OMP_NUM_THREADS", unset = "")
+  if(nzchar(env)) {
+    envn = suppressWarnings(as.integer(strsplit(env, ",", fixed = TRUE)[[1]][1]))
+    if(!is.na(envn) && envn >= 1) return(as.integer(envn))
+  }
+  NA_integer_
+}
+
 # Resolve the per-task OpenMP thread budget for the parallel f-stat kernels
 # (cpp_aftable_to_dstat* and cpp_gmat_to_aftable). Call this in the main
 # process -- where parallelly::availableCores() sees the true machine /
@@ -3209,11 +3230,15 @@ extract_samples = function(inpref, outpref, inds = NULL, pops = NULL, overwrite 
 # block-level and in-block parallelism together stay at or below the core
 # count), or leave it at 1 for a serial block loop. Inside a future worker
 # availableCores() already returns 1, so the budget collapses to 1 there
-# regardless. Centralizing the rule here keeps the two call sites
-# (f4blockdat_from_geno, f3blockdat_from_geno) from drifting.
+# regardless. A user-set cap (omp_threads_cap) lowers the team size further.
+# Centralizing the rule here keeps the two call sites (f4blockdat_from_geno,
+# f3blockdat_from_geno) from drifting.
 omp_thread_budget = function(n_concurrent = 1L) {
   if(!is.finite(n_concurrent) || n_concurrent < 1) n_concurrent = 1L
-  max(1L, as.integer(parallelly::availableCores()) %/% as.integer(n_concurrent))
+  budget = max(1L, as.integer(parallelly::availableCores()) %/% as.integer(n_concurrent))
+  cap = omp_threads_cap()
+  if(!is.na(cap)) budget = min(budget, cap)
+  max(1L, as.integer(budget))
 }
 
 

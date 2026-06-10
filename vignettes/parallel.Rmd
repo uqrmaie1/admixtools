@@ -92,9 +92,11 @@ plan(multisession, workers = 4)
 
 ## Controlling how many cores are used
 
-The kernels size their thread team from `parallelly::availableCores()` divided by the number of `future` workers. To use fewer cores, lower what `availableCores()` reports, for example with `options(mc.cores = 8)` or the environment variables described in `?parallelly::availableCores`, or run under a plan with more workers, which divides the budget further.
+By default the kernels size their thread team from `parallelly::availableCores()` divided by the number of `future` workers. Three levers narrow that:
 
-`OMP_NUM_THREADS` has no effect here. The kernels set their team size with an explicit `num_threads` clause, which OpenMP gives precedence over the environment variable, so `availableCores()` is the lever, not `OMP_NUM_THREADS`.
+* **`OMP_NUM_THREADS`** caps the team size. `OMP_NUM_THREADS=1` forces the kernels to run single-threaded; any value limits each kernel call to at most that many threads. admixtools reads this variable explicitly and applies it as a cap, because `parallelly::availableCores()` does not read it and the kernels set `num_threads` directly (which OpenMP gives precedence over the environment variable).
+* **`options(admixtools.omp_num_threads = N)`** is the R-native equivalent and takes precedence over the environment variable.
+* **Lowering what `availableCores()` reports**, for example with `options(mc.cores = 8)` or the variables described in `?parallelly::availableCores`, or running under a plan with more workers, which divides the budget further.
 
 
 ## Parallelization on a compute cluster
