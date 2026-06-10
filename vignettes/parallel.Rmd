@@ -19,7 +19,7 @@ The two levels are these.
 
 The f-statistic kernels on the genotype path, the inner loops that turn genotypes into allele frequencies (`cpp_gmat_to_aftable`) and allele frequencies into f3 and f4 statistics (`cpp_aftable_to_dstat*`), are parallelized in C++ with OpenMP. This is on by default and uses all available cores even when you have set up no parallelism in R. OpenMP is an optional build dependency, so if the package was compiled without it these kernels run on a single core and everything still works. The f2 kernels that `extract_f2` uses to build an f2 cache (`cpp_mats_to_f2_arr`, `cpp_outer_array_*`) are not threaded by OpenMP; `extract_f2` instead parallelizes across population-pair chunks in R through `doParallel` when you raise its `n_cores` argument, and runs on a single core by default.
 
-The coarse-grained outer work, namely SNP blocks, sweeps of many models, and bootstrap resamples, is parallelized in R with the [`future`](https://github.com/HenrikBengtsson/future) / [`furrr`](https://github.com/DavisVaughan/furrr) framework. The default plan is sequential, so this outer layer stays in a single process until you opt in with one line.
+The coarse-grained outer work, namely SNP blocks, sweeps of many models, and bootstrap resamples, is parallelized in R with the [`future`](https://github.com/futureverse/future) / [`furrr`](https://github.com/futureverse/furrr) framework. The default plan is sequential, so this outer layer stays in a single process until you opt in with one line.
 
 ```{r, eval = FALSE}
 library(future)
@@ -112,7 +112,7 @@ plan(tweak(batchtools_slurm, workers = 50,
                             walltime = 10 * 60 * 60, partition = 'short')))
 ```
 
-It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`. This requires the [`future.batchtools`](https://github.com/HenrikBengtsson/future.batchtools) R package and a batchtools template file in the working directory, see [this example template](https://github.com/mllg/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
+It specifies that up to 50 jobs should be run at a time, with each one requesting one CPU, 1024 MB of memory, and 10 hours on the partition called `short`. This requires the [`future.batchtools`](https://github.com/futureverse/future.batchtools) R package and a batchtools template file in the working directory, see [this example template](https://github.com/mlr-org/batchtools/blob/master/inst/templates/slurm-simple.tmpl).
 
 One detail matters if you request more than one CPU per job. The kernel's thread budget is worked out in the submitting session from its own `availableCores()`, not from each job's `ncpus`. With the `ncpus = 1` example above the kernel correctly runs single-threaded in every job, but requesting `ncpus = 4` will not by itself make the kernel use four threads. The scaling here comes from spreading the 50 jobs across nodes, not from threading within a job.
 
