@@ -160,3 +160,41 @@ test_that("all-Inf is the one documented divergence: C++ drops, R lambda keeps",
   expect_false(cpp_gate_keeps(quad, 2L))   # C++ allsnps gate drops all-Inf
   expect_true(r_lambda_keeps(quad))        # R !allsnps lambda keeps all-Inf
 })
+
+# Randomized differential test: poly_only_keep must reproduce the ORIGINAL Rcpp
+# idiom it replaced -- na_omit(unique(c(w, x, y, z))) with length(uni) > 1 ||
+# (poly_only == 2 && max(uni) in (0.0001, 0.9999)) -- byte for byte. The fixtures
+# above hit the known branch classes by hand; this fuzzes many random quads
+# (mixing [0,1] values, the threshold boundaries, exact 0/1, +/-Inf, NaN, NA, and
+# duplicates) through the kernel and against a literal reimplementation of the
+# old idiom.
+old_idiom_keeps = function(quad, poly_only) {
+  if (poly_only == 0L) return(TRUE)
+  uni = unique(quad[!is.na(quad)])           # na_omit(unique(.)): drops NA & NaN, keeps +/-Inf
+  length(uni) > 1L ||
+    (poly_only == 2L && length(uni) >= 1L && max(uni) > 0.0001 && max(uni) < 0.9999)
+}
+
+test_that("poly_only_keep matches the old na_omit(unique()) idiom over random quads", {
+  set.seed(20260610L)
+  N = 10000L
+  # Pool weighted toward the branch boundaries; sampling with replacement injects
+  # duplicates (and repeated Inf/NaN/0/1) naturally. NA is intentionally excluded:
+  # a kept quad that CONTAINS an NA also yields num = NA (the product propagates
+  # it), so keep/drop is not observable from num for NA-bearing quads. NaN
+  # exercises the identical ISNAN gate path and IS observable (a kept NaN product
+  # is is.nan, distinct from the NA_REAL drop sentinel); NA-vs-NaN gate identity
+  # is pinned separately in test-cpp-aftable-poly-nan.R.
+  pool = c(runif(40), 0, 1, 1e-5, 0.0001, 0.00011, 0.9998, 0.9999, 0.99991, 0.5,
+           Inf, -Inf, NaN)
+  aft = matrix(sample(pool, 4L * N, replace = TRUE), nrow = 4L)
+  usesnps = matrix(0)                        # unused on the allsnps = TRUE path
+  for (po in 1:2) {
+    res = admixtools:::cpp_aftable_to_dstatnum(aft, 1, 2, 3, 4, 1, usesnps, TRUE, po, 1L)
+    v = as.numeric(res$num[1, ])
+    got = !(is.na(v) & !is.nan(v))           # kept iff not the NA_REAL drop sentinel
+    want = vapply(seq_len(N), function(i) old_idiom_keeps(aft[, i], po), logical(1))
+    expect_identical(got, want,
+                     info = sprintf("poly_only=%d over %d random quads", po, N))
+  }
+})
