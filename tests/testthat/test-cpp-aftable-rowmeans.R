@@ -13,29 +13,15 @@
 # (allsnps in {FALSE, TRUE}) x (poly_only in {0, 1, 2}), plus the all-NA
 # row edge case where 0/0 must propagate to NaN to match rowMeans.
 
-# Build a small synthetic aftable + popcomb table that exercises both
-# the all-pops-present and missing-data paths. Seeded so the test is
-# deterministic across runs.
+# The synthetic aftable + popcomb fixture is shared via helper-dstat-fixture.R
+# (build_dstat_fixture). This file's original 8-pop / 200-snp / 60-comb /
+# 3-model fixture is reproduced byte-for-byte by fixing nmodels = 3 and the
+# original seed and forwarding the size args, so the call sites below are
+# unchanged and the equivalence assertions see identical data.
 .build_fixture = function(npop = 8L, nsnp = 200L, ncomb = 60L,
                           na_frac = 0.05, seed = 20260520L) {
-  withr::with_seed(seed, {
-    aft = matrix(runif(npop * nsnp), nrow = npop)
-    aft[sample.int(length(aft), size = round(na_frac * length(aft)))] = NA_real_
-
-    p1 = sample.int(npop, ncomb, replace = TRUE)
-    p2 = sample.int(npop, ncomb, replace = TRUE)
-    p3 = sample.int(npop, ncomb, replace = TRUE)
-    p4 = sample.int(npop, ncomb, replace = TRUE)
-
-    # Three models so we exercise modelvec selection in the !allsnps path.
-    modelvec = sample.int(3L, ncomb, replace = TRUE)
-    # usesnps is (n_models x nsnp), 0/1 mask -- ~90% kept per model.
-    usesnps = matrix(sample(c(0, 1), 3L * nsnp, replace = TRUE,
-                            prob = c(0.1, 0.9)),
-                     nrow = 3L, ncol = nsnp)
-  })
-  list(aft = aft, p1 = p1, p2 = p2, p3 = p3, p4 = p4,
-       modelvec = modelvec, usesnps = usesnps)
+  build_dstat_fixture(npop = npop, nsnp = nsnp, ncomb = ncomb,
+                      nmodels = 3L, na_frac = na_frac, seed = seed)
 }
 
 test_that("streaming variant matches materialized + rowMeans across (allsnps x poly_only) grid", {

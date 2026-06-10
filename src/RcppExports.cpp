@@ -11,24 +11,19 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// cpp_aftable_to_dstatnum_old
-List cpp_aftable_to_dstatnum_old(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum_old(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP) {
+// admixtools_omp_atfork_active_
+bool admixtools_omp_atfork_active_();
+RcppExport SEXP _admixtools_admixtools_omp_atfork_active_() {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type aftable(aftableSEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type p1(p1SEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type p2(p2SEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type p3(p3SEXP);
-    Rcpp::traits::input_parameter< arma::vec& >::type p4(p4SEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum_old(aftable, p1, p2, p3, p4));
+    rcpp_result_gen = Rcpp::wrap(admixtools_omp_atfork_active_());
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_aftable_to_dstatnum
-List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP) {
+List cpp_aftable_to_dstatnum(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only, int nthreads, bool validate);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP, SEXP nthreadsSEXP, SEXP validateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -41,13 +36,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
     Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
     Rcpp::traits::input_parameter< int >::type poly_only(poly_onlySEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< bool >::type validate(validateSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads, validate));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_aftable_to_dstatnum_rowmeans
-List cpp_aftable_to_dstatnum_rowmeans(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum_rowmeans(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP) {
+List cpp_aftable_to_dstatnum_rowmeans(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only, int nthreads, bool validate);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatnum_rowmeans(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP, SEXP nthreadsSEXP, SEXP validateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -60,13 +57,15 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
     Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
     Rcpp::traits::input_parameter< int >::type poly_only(poly_onlySEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum_rowmeans(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< bool >::type validate(validateSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatnum_rowmeans(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads, validate));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_aftable_to_dstatden
-arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only);
-RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP) {
+arma::mat cpp_aftable_to_dstatden(arma::mat& aftable, arma::vec& p1, arma::vec& p2, arma::vec& p3, arma::vec& p4, arma::vec& modelvec, arma::mat& usesnps, bool allsnps, int poly_only, int nthreads, bool validate);
+RcppExport SEXP _admixtools_cpp_aftable_to_dstatden(SEXP aftableSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP p3SEXP, SEXP p4SEXP, SEXP modelvecSEXP, SEXP usesnpsSEXP, SEXP allsnpsSEXP, SEXP poly_onlySEXP, SEXP nthreadsSEXP, SEXP validateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -79,7 +78,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat& >::type usesnps(usesnpsSEXP);
     Rcpp::traits::input_parameter< bool >::type allsnps(allsnpsSEXP);
     Rcpp::traits::input_parameter< int >::type poly_only(poly_onlySEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    Rcpp::traits::input_parameter< bool >::type validate(validateSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_aftable_to_dstatden(aftable, p1, p2, p3, p4, modelvec, usesnps, allsnps, poly_only, nthreads, validate));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -146,14 +147,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_gmat_to_aftable
-arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec);
-RcppExport SEXP _admixtools_cpp_gmat_to_aftable(SEXP gmatSEXP, SEXP popvecSEXP) {
+arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec, int nthreads);
+RcppExport SEXP _admixtools_cpp_gmat_to_aftable(SEXP gmatSEXP, SEXP popvecSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat& >::type gmat(gmatSEXP);
     Rcpp::traits::input_parameter< arma::ivec& >::type popvec(popvecSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_gmat_to_aftable(gmat, popvec));
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_gmat_to_aftable(gmat, popvec, nthreads));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -438,16 +440,16 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_admixtools_cpp_aftable_to_dstatnum_old", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_old, 5},
-    {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 9},
-    {"_admixtools_cpp_aftable_to_dstatnum_rowmeans", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_rowmeans, 9},
-    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 9},
+    {"_admixtools_admixtools_omp_atfork_active_", (DL_FUNC) &_admixtools_admixtools_omp_atfork_active_, 0},
+    {"_admixtools_cpp_aftable_to_dstatnum", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum, 11},
+    {"_admixtools_cpp_aftable_to_dstatnum_rowmeans", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatnum_rowmeans, 11},
+    {"_admixtools_cpp_aftable_to_dstatden", (DL_FUNC) &_admixtools_cpp_aftable_to_dstatden, 11},
     {"_admixtools_cpp_outer_array_mul", (DL_FUNC) &_admixtools_cpp_outer_array_mul, 2},
     {"_admixtools_cpp_outer_array_plus", (DL_FUNC) &_admixtools_cpp_outer_array_plus, 2},
     {"_admixtools_cpp_outer_array_minus", (DL_FUNC) &_admixtools_cpp_outer_array_minus, 2},
     {"_admixtools_cpp_mats_to_f2_arr", (DL_FUNC) &_admixtools_cpp_mats_to_f2_arr, 5},
     {"_admixtools_row_prods", (DL_FUNC) &_admixtools_row_prods, 1},
-    {"_admixtools_cpp_gmat_to_aftable", (DL_FUNC) &_admixtools_cpp_gmat_to_aftable, 2},
+    {"_admixtools_cpp_gmat_to_aftable", (DL_FUNC) &_admixtools_cpp_gmat_to_aftable, 3},
     {"_admixtools_cpp_opt_A", (DL_FUNC) &_admixtools_cpp_opt_A, 5},
     {"_admixtools_cpp_opt_B", (DL_FUNC) &_admixtools_cpp_opt_B, 5},
     {"_admixtools_cpp_qpadm_weights", (DL_FUNC) &_admixtools_cpp_qpadm_weights, 7},

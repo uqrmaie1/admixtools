@@ -14,7 +14,7 @@ Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-SystemRequirements: C++17
+SystemRequirements: C++17, OpenMP (optional, for the parallel f-stat kernels)
 URL: https://github.com/uqrmaie1/admixtools
 BugReports: https://github.com/uqrmaie1/admixtools/issues
 LinkingTo: Rcpp, RcppArmadillo
@@ -29,12 +29,14 @@ Imports:
     dplyr (>= 1.1.0),
     foreach,
     furrr,
+    future,
     ggplot2,
     grDevices,
     igraph (>= 2.1.0),
     jsonlite,
     lobstr,
     magrittr,
+    parallelly,
     pgenlibr,
     quadprog,
     purrr,
@@ -49,7 +51,6 @@ Imports:
 Suggests:
     admixturegraph,
     DT,
-    future,
     genio,
     ggforce,
     gridExtra,
