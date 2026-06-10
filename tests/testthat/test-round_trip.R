@@ -31,13 +31,6 @@ test_that("read_lgo parses the golden file without error", {
   expect_equal(nrow(result), 5)
 })
 
-test_that("read_lgo errors when as='igraph' (Phase 2 scope)", {
-  expect_error(
-    read_lgo(text = "derive A from R", as = "igraph"),
-    class = "legofit_lgo_unsupported"
-  )
-})
-
 test_that("read_lgo errors when both path and text supplied", {
   expect_error(
     read_lgo(path = "x.lgo", text = "some text"),

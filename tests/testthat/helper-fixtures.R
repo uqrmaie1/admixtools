@@ -108,7 +108,6 @@ make_minimal_graph_with_outgroup <- function() {
   )
 }
 
-
 # Singular-case fixture builder for qpadm rcond / loadings tests.
 #
 # Adds a clone of `src` to a 3d f2_blocks array as a new dimname `dst`.
@@ -192,4 +191,60 @@ make_test_nodes_graph <- function() {
     admix_event_time = NA_real_
   )
   edges
+}
+
+# 3-leaf no-admix topology used by Phase 2 read_legofit_output tests.
+# Matches the topology in tests/testthat/fixtures/ourex1.lgo (which was
+# generated via graph_to_lgo(make_ourex1_graph(), time_handling = "init",
+# validate = FALSE) on 2026-05-20).
+make_ourex1_graph <- function() {
+  tibble::tribble(
+    ~from,  ~to,   ~type,    ~weight,  ~time,
+    "xyz",  "xy",  "normal", NA_real_, 1.5,
+    "xyz",  "z",   "normal", NA_real_, 2,
+    "xy",   "x",   "normal", NA_real_, 0.5,
+    "xy",   "y",   "normal", NA_real_, 0.5
+  )
+}
+
+# Multi-leaf single-admix graph for T1.3. Three leaves (x, y, m),
+# one admix event (m from A and B). Matches fixtures/multi-admix.lgo.
+make_multi_admix_graph <- function() {
+  tibble::tribble(
+    ~from,  ~to,   ~type,    ~weight,
+    "R",    "A",   "normal", NA_real_,
+    "R",    "B",   "normal", NA_real_,
+    "A",    "x",   "normal", NA_real_,
+    "B",    "y",   "normal", NA_real_,
+    "A",    "m",   "admix",  0.70,
+    "B",    "m",   "admix",  0.30
+  )
+}
+
+# Real-world LEGOFIT-fittable replacement for the unfittable make_minimal_graph
+# (which has only one leaf). 4-population out-of-Africa scenario with
+# archaic introgression into Europeans. All four leaves are sampled
+# populations, exercises a single admix event with the dest as a sampled leaf.
+#
+#         R
+#        / \
+#      out  anc
+#            / \
+#       arch_anc  hum_anc
+#         / \      / \
+#       arch  \  afr  \
+#              \      /
+#               eur  (admix: 0.03 from arch_anc + 0.97 from hum_anc)
+make_ooa_admix_graph <- function() {
+  tibble::tribble(
+    ~from,        ~to,         ~type,    ~weight,
+    "R",          "out",       "normal", 0.5,
+    "R",          "anc",       "normal", 0.1,
+    "anc",        "arch_anc",  "normal", 0.2,
+    "anc",        "hum_anc",   "normal", 0.3,
+    "arch_anc",   "arch",      "normal", 0.5,
+    "hum_anc",    "afr",       "normal", 0.4,
+    "arch_anc",   "eur",       "admix",  0.03,
+    "hum_anc",    "eur",       "admix",  0.97
+  )
 }

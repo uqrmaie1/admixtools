@@ -1,0 +1,50 @@
+########################################
+# legofit: estimate population history #
+#        version 3675373-dirty         #
+########################################
+#
+# Program was compiled: May 18 2026 12:10:55
+# Program was run: Wed May 27 06:21:13 2026
+#
+# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legofit --threads 1 -1 -d 0 tests/testthat/fixtures/ourex1-twoN-scalar.lgo /Volumes/Bioinformation/at2Contrib/legofit/src/../exmpl/ex1/ex1.opf
+# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-pr-delta
+# Stage nOptItr nSimReps
+#     0    1000        1
+# algorithm          : deterministic
+# ignoring probs <=  : 0
+# Branch length floor: 0
+# DE strategy        : 2
+#    F               : 0.3
+#    CR              : 0.8
+#    tolerance       : 3e-06
+# nthreads           : 1
+# range of 2N params : [1, 1.79769e+308]
+# range of t params  : [0, 1.79769e+308]
+# lgo input file     : tests/testthat/fixtures/ourex1-twoN-scalar.lgo
+# site pat input file: /Volumes/Bioinformation/at2Contrib/legofit/src/../exmpl/ex1/ex1.opf
+# free parameters    : 2
+# points in DE swarm : 20
+# Including singleton site patterns.
+# cost function      : KL
+Initial parameter values
+Fixed:
+       T_z = 0
+       T_x = 0
+       T_y = 0
+    shared = 1000
+Free:
+     T_xyz = 2
+      T_xy = 0.5
+legofit is finished
+DiffEv reached_goal. cost=1.62706e-01 spread=2.42541e-06
+Fitted parameter values
+Free:
+     T_xyz = 15.563
+      T_xy = 0.119662
+#       SitePat BranchLen
+              z 687.3379496
+              x 671.8945747
+              y 671.8945747
+            z:x 328.2250875
+            z:y 328.2250875
+            x:y 343.6684624
