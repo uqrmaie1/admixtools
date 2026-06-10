@@ -48,12 +48,15 @@ using namespace arma;
 // forks. Draining the pool in a pthread_atfork prepare handler makes every
 // fork start clean; the next parallel region in parent or child rebuilds it.
 // No effect on plan(sequential) or plan(multisession) (whose workers are fresh
-// spawned processes, not forks), or when OpenMP is unavailable. Uses
-// omp_pause_resource_all (present in gcc libgomp >= 9 and LLVM libomp >= 9, or
-// any runtime advertising OpenMP 5.0; gcc defaults _OPENMP to 4.5 even though
-// the function is there, so the guard keys on compiler version). On older
-// runtimes the handler is omitted and callers should prefer plan(multisession)
-// over plan(multicore).
+// spawned processes, not forks), or when OpenMP is unavailable. The drain uses
+// omp_pause_resource_all, an OpenMP 5.0 routine. The guard enables it when the
+// compiler advertises OpenMP 5.0 (_OPENMP >= 201811, e.g. recent clang / libomp,
+// including macOS) or for real gcc >= 9, whose libgomp ships the symbol even
+// though gcc pins _OPENMP to 4.5. It deliberately does NOT key on
+// __clang_major__: Apple clang's version does not track the linked libomp, so a
+// new-clang / old-libomp pairing could wrongly claim the symbol and fail to
+// compile. On runtimes outside both branches the handler is omitted and callers
+// should prefer plan(multisession) over plan(multicore).
 //
 // Handler lifecycle. pthread_atfork handlers cannot be unregistered, so the
 // image holding this handler must stay mapped: admixtools_omp_atfork_active_()
@@ -68,8 +71,8 @@ using namespace arma;
 static bool admixtools_omp_atfork_active = false;
 
 #if defined(_OPENMP) && \
-    (_OPENMP >= 201811 || (defined(__clang__) && __clang_major__ >= 9) || \
-     (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9))
+    (_OPENMP >= 201811 || \
+     (defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 9))
 #include <pthread.h>
 static void admixtools_omp_drain_pool_before_fork() {
   omp_pause_resource_all(omp_pause_hard);
