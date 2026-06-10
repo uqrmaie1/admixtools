@@ -13,11 +13,11 @@ vignette: >
 ---
 
 
-*ADMIXTOOLS 2* parallelizes on two levels that work together, and on a single machine you usually do not have to manage either one. The f-statistic kernels already use all of your cores, so for one `qpadm` or one `extract_f2` you can simply call the function. Reach for a `future` plan when you have many independent units of work, a sweep of models or a batch of resamples, or when you want to spread work across the nodes of a cluster.
+*ADMIXTOOLS 2* parallelizes on two levels that work together, and on a single machine you usually do not have to manage either one. The f3 and f4 statistic kernels on the genotype path already use all of your cores, so for one `qpadm` or one `qp3pop` you can simply call the function. Reach for a `future` plan when you have many independent units of work, a sweep of models or a batch of resamples, or when you want to spread work across the nodes of a cluster.
 
 The two levels are these.
 
-The f-statistic kernels, the inner loops that turn genotypes into allele frequencies and allele frequencies into f2, f3, and f4 statistics, are parallelized in C++ with OpenMP. This is on by default and uses all available cores even when you have set up no parallelism in R. OpenMP is an optional build dependency, so if the package was compiled without it these kernels run on a single core and everything still works.
+The f-statistic kernels on the genotype path, the inner loops that turn genotypes into allele frequencies (`cpp_gmat_to_aftable`) and allele frequencies into f3 and f4 statistics (`cpp_aftable_to_dstat*`), are parallelized in C++ with OpenMP. This is on by default and uses all available cores even when you have set up no parallelism in R. OpenMP is an optional build dependency, so if the package was compiled without it these kernels run on a single core and everything still works. The f2 kernels that `extract_f2` uses to build an f2 cache (`cpp_mats_to_f2_arr`, `cpp_outer_array_*`) are not threaded by OpenMP; `extract_f2` instead parallelizes across population-pair chunks in R through `doParallel` when you raise its `n_cores` argument, and runs on a single core by default.
 
 The coarse-grained outer work, namely SNP blocks, sweeps of many models, and bootstrap resamples, is parallelized in R with the [`future`](https://github.com/HenrikBengtsson/future) / [`furrr`](https://github.com/DavisVaughan/furrr) framework. The default plan is sequential, so this outer layer stays in a single process until you opt in with one line.
 
@@ -33,12 +33,16 @@ The two layers share one machine without fighting over it. Under `plan(multisess
 
 ## What's parallelized
 
-These functions parallelize their outer work through `future`, grouped by what that outer work is.
+Most of these functions parallelize their outer work through `future`, grouped by what that outer work is. `extract_f2` is the exception, and is described separately below.
 
 **Across SNP blocks**
 
-* **`extract_f2`** and **`f4blockdat_from_geno`** spread their SNP blocks across `future` workers. The per-block f-statistic work inside them is already threaded by OpenMP, so on one machine `plan(sequential)` is not idle, it is running the kernels on every core. The block layer adds throughput mainly when you have spare cores beyond what a single block's kernel can keep busy, or when you spread blocks across nodes.
+* **`f4blockdat_from_geno`** spreads its SNP blocks across `future` workers. The per-block f3 and f4 work inside it is already threaded by OpenMP, so on one machine `plan(sequential)` is not idle, it is running the kernels on every core. The block layer adds throughput mainly when you have spare cores beyond what a single block's kernel can keep busy, or when you spread blocks across nodes.
 * **`qpadm`**, **`qp3pop`**, **`qp4ratio`**, and **`qpfstats`** call `f4blockdat_from_geno` when the input is a genotype-file prefix, so they inherit the block layer transparently.
+
+**Across population-pair chunks**
+
+* **`extract_f2`** does not use the `future` layer. It splits the population set into memory-sized chunks and runs them through `doParallel` (`foreach`) when you pass `n_cores > 1`; the default `n_cores = 1` runs serially, and its f2 kernels are single-threaded, so by default `extract_f2` is single-core. Raise `n_cores` to use more cores, or compute the f2 cache once and reuse it. The one exception is `extract_f2(..., qpfstats = TRUE)`, which routes through `f4blockdat_from_geno` and so picks up the OpenMP kernels and the `future` block layer above.
 
 **Across models**
 
@@ -113,6 +117,6 @@ One detail matters if you request more than one CPU per job. The kernel's thread
 
 ## When parallelization doesn't help
 
-* **A single f-statistic computation on one machine.** The kernels already use all your cores under `plan(sequential)`, so wrapping one `qpadm` or one `extract_f2` in a `future` plan usually adds overhead without adding speed. Reach for the `future` layer when you have many independent units, such as a sweep of models or many resamples, or when you are spreading work across nodes.
+* **A single f3 or f4 computation on one machine.** The genotype-path kernels already use all your cores under `plan(sequential)`, so wrapping one `qpadm` or `qp3pop` in a `future` plan usually adds overhead without adding speed. `extract_f2` does not use the `future` layer at all; to give it more cores, raise its `n_cores` argument rather than setting a `future` plan. Reach for the `future` layer when you have many independent units, such as a sweep of models or many resamples, or when you are spreading work across nodes.
 * **Tiny workloads.** For a 5-pop / 10-popcomb / 100-block `extract_f2`, the sequential version finishes in under a second. The worker-spawn overhead of `multisession` can make parallel slower than serial on tiny inputs.
-* **Memory-constrained machines.** `multisession` workers each hold their own copy of the input data after R serializes-and-sends it. For a 100 GB f2 cache and 8 workers, you'd need ~100 GB × 8 of headroom. Use `multicore` (copy-on-write) on Linux, fewer workers, or stay sequential.
+* **Memory-constrained machines.** `multisession` workers each hold their own copy of the input data after R serializes-and-sends it. For a 100 GB f2 cache and 8 workers, you'd need ~100 GB x 8 of headroom. Use `multicore` (copy-on-write) on Linux, fewer workers, or stay sequential.
