@@ -1,7 +1,8 @@
 # dplyr verbs reference column names as bare symbols; declare them here so
 # R CMD check does not warn about "no visible binding for global variable".
 utils::globalVariables(c("from", "to", "type", "weight", "n",
-                         "family", "parameter", "point_estimate"))
+                         "family", "parameter", "point_estimate", "lo", "hi",
+                         "est", "low", "high", "name"))
 
 #' Default drift-to-time conversion (identity)
 #'
@@ -1815,18 +1816,17 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
   missing <- setdiff(expected_names, seen_names)
   extra   <- setdiff(seen_names, expected_names)
 
-  # Rule 4: coalescent-unit suppression
+  # Rule 4: twoN-sentinel suppression. In coalescent-unit mode (`one`) or
+  # scalar mode (`shared`) LEGOFIT emits no per-node twoN params, so the whole
+  # expected twoN set legitimately goes missing. Rule 1 already guarantees
+  # `one` and `shared` are mutually exclusive, so a single combined branch
+  # covers both modes.
   twoN_expected <- twoN_names   # already computed above, reuse
-  if (had_one && all(twoN_expected %in% missing)) {
+  if ((had_one || had_shared) && all(twoN_expected %in% missing)) {
     missing <- setdiff(missing, twoN_expected)
   }
 
-  # Rule 5: scalar-twoN suppression
-  if (had_shared && all(twoN_expected %in% missing)) {
-    missing <- setdiff(missing, twoN_expected)
-  }
-
-  # Rule 6: leaf-time suppression (only when include_fixed = FALSE)
+  # Rule 5: leaf-time suppression (only when include_fixed = FALSE)
   if (!include_fixed) {
     leaves <- setdiff(edges$to, edges$from)
     # Guard against R 4.6 paste0() recycling: paste0("T_", character(0))
@@ -1835,7 +1835,7 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
     missing <- setdiff(missing, leaf_time_params)
   }
 
-  # Rule 7: emit inform if any mismatch remains
+  # Rule 6: emit inform if any mismatch remains
   if (length(missing) > 0 || length(extra) > 0) {
     parts <- character(0)
     if (length(missing) > 0) {
