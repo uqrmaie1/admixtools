@@ -19,3 +19,10 @@ test_that("proxypred uses summarize_proxies_list (dropped summarize_graphlist)",
   g <- example_igraph
   expect_s3_class(admixtools:::proxypred(g, list(g)), "data.frame")
 })
+
+test_that("consistent_with_qpadm resolves equals() and returns a logical", {
+  g <- example_igraph
+  L <- admixtools:::get_leafnames(g)
+  res <- admixtools:::consistent_with_qpadm(g, left = L[1], right = L[2:3], target = L[4])
+  expect_type(res, "logical")
+})

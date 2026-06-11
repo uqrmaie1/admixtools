@@ -4177,7 +4177,7 @@ consistent_with_qpadm = function(graph, left, right, target) {
   pops = get_leafnames(graph)
   internal = setdiff(names(V(graph)), pops)
   graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
-    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right', to %in% target ~ 'target')) %>% group_by(from) %>% filter('right' %in% type & 'target' %in% type & !'left' %in% type) %>% nrow %>% equals(0)
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right', to %in% target ~ 'target')) %>% group_by(from) %>% filter('right' %in% type & 'target' %in% type & !'left' %in% type) %>% nrow %>% magrittr::equals(0)
 
 }
 
