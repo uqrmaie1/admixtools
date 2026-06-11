@@ -38,10 +38,14 @@ run_legofit <- function(graph_or_lgo, patterns, bin = "legofit",
   # (usage: legofit [options] --threads <x> <input.lgo> <data.txt>);
   # default to a single thread. Callers override via `args`.
 
-  # Resolve the binary: an existing path is used as-is, otherwise `bin` is
-  # treated as a command name and looked up on PATH. This handles both an
-  # explicit path and a bare name like "legofit".
-  bin <- if (nzchar(bin) && file.exists(bin)) bin else Sys.which(bin)
+  # Resolve the binary. A `bin` that contains a path separator is treated as
+  # an explicit path and used as-is; a bare command name like "legofit" is
+  # always looked up on PATH. We key off the separator rather than
+  # file.exists() so the guard agrees with how system2() resolves the
+  # command: a bare name runs via PATH even if a like-named file happens to
+  # sit in the working directory.
+  has_sep <- grepl(.Platform$file.sep, bin, fixed = TRUE)
+  bin <- if (nzchar(bin) && has_sep) bin else Sys.which(bin)
   if (!nzchar(bin) || !file.exists(bin))
     rlang::abort(
       c("Could not find the `legofit` executable.",
@@ -72,7 +76,9 @@ run_legofit <- function(graph_or_lgo, patterns, bin = "legofit",
   # With stdout/stderr as file paths, system2() returns the exit code as a
   # plain integer (0 = success); there is NO attr(., "status"). Send stderr
   # to its own file so we can surface it on failure.
-  code <- system2(shQuote(bin), c(args, shQuote(lgo_path), shQuote(patterns)),
+  # system2() shQuote()s `command` itself, so pass `bin` raw (quoting it here
+  # would double-quote the path); it does NOT quote args, so we quote those.
+  code <- system2(bin, c(args, shQuote(lgo_path), shQuote(patterns)),
                   stdout = out_path, stderr = err_path)
   if (!identical(as.integer(code), 0L)) {
     tail_err <- if (file.exists(err_path))
