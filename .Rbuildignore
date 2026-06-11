@@ -1,0 +1,9 @@
+^\.git$
+^\.github$
+^Dockerfile$
+^_pkgdown\.yml$
+^docs$
+^data-raw$
+^README\.Rmd$
+^.*\.Rproj$
+^\.Rproj\.user$
