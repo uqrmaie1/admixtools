@@ -119,7 +119,7 @@ get_rootname = function(graph) {
 get_outpop = function(graph) {
   # returns outpop, if there is an edge from the root to a leave, NULL otherwise
   #graph %>% V %>% names %>% pluck(2)
-  stopifnot(class(graph) == 'igraph')
+  stopifnot(inherits(graph, 'igraph'))
   root = get_root(graph)
   outpop = intersect(names(igraph::neighbors(graph, root)), get_leafnames(graph))
   if(length(outpop) == 1) return(outpop)
@@ -223,7 +223,7 @@ simplify_graph_old = function(graph) {
 
   if(is_simplified(graph)) return(graph)
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -250,7 +250,7 @@ simplify_graph_old = function(graph) {
 
   if(is_simplified(graph)) return(graph)
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -284,7 +284,7 @@ simplify_graph = function(graph) {
   indegree = degree(graph, mode='in')
   outdegree = degree(graph, mode='out')
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -1230,7 +1230,7 @@ find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgrap
   # else precomp = get_f2(data, pops, ...)
   precomp = get_f2(data, pops, ...)
 
-  if(class(mutfuns[[1]]) == 'character') mutfuns %<>% rlang::set_names() %>% map(get)
+  if(is.character(mutfuns[[1]])) mutfuns %<>% rlang::set_names() %>% map(get)
   if(is.null(mutprobs)) {
     if(numadmix == 0 && is.null(initgraphs)) mutfuns[c('move_admixedge_once', 'flipadmix_random')] = NULL
     mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(names(mutfuns))
@@ -1553,7 +1553,7 @@ tree_neighbors = function(tree) {
 tree_neighbors_single = function(tree, node) {
   # returns nested data frame with all trees within edit distance 1,
   # that are created by cutting all edges leading to node
-  if(class(node) != 'character') node = names(node)
+  if(!is.character(node)) node = names(node)
   downstream = subcomponent(tree, node, mode = 'out')
   root = get_root(tree)
   outgroup = neighbors(tree, root, mode = 'out') %>% igraph::intersection(get_leaves(tree))
@@ -3419,7 +3419,7 @@ graph_to_function1 = function(graph, ge = NULL) {
   body = rlang::parse_expr(paste0('{', body1, body2, '}'))
 
   args = list(x = NULL, na = 0)
-  eval(call("function", as.pairlist(args), body), env = parent.frame())
+  eval(call("function", as.pairlist(args), body), envir = parent.frame())
 }
 
 graph_to_function2 = function(graph, ge = NULL) {

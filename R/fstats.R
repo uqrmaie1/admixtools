@@ -593,7 +593,7 @@ average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
 joint_spectrum = function(afs) {
 
   afs %<>% as.matrix
-  if(class(afs[,1]) != 'numeric') stop("'afs' should only have numeric columns!")
+  if(!is.numeric(afs[,1])) stop("'afs' should only have numeric columns!")
   npop = ncol(afs)
   ps = power_set(seq_len(npop))
   allanc = rep('0', npop)

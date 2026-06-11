@@ -1077,7 +1077,7 @@ msprime_sim = function(graph, outpref = 'msprime_sim', nsnps = 1000, neff = 1000
   leaves = intersect(nodes, leaves)
 
   if(length(time) == 1) {
-    dates = pseudo_dates(graph, time, fix=fix_leaf)
+    dates = pseudo_dates(graph, time, fix_leaf=fix_leaf)
     #dates[leaves] = dates[leaves] * 0.5
     if(shorten_admixed_leaves) {
       # simulates the behavior of treemix where drift after admixture is not allowed
@@ -1260,7 +1260,7 @@ msprime_genome = function(graph, outpref = 'msprime_sim', neff = 1000, ind_per_p
   leaves = intersect(nodes, leaves)
 
   if(length(time) == 1) {
-    dates = pseudo_dates(graph, time, fix=fix_leaf)
+    dates = pseudo_dates(graph, time, fix_leaf=fix_leaf)
     #dates[leaves] = dates[leaves] * 0.5
     if(shorten_admixed_leaves) {
       # simulates the behavior of treemix where drift after admixture is not allowed
@@ -1472,12 +1472,12 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
     if (length(time) == 1){
 
       g = random_admixturegraph(leaves = nleaf, numadmix = nadmix, outpop = outpop)
-      dates = pseudo_dates(g, time, fix=fix_leaf)
+      dates = pseudo_dates(g, time, fix_leaf=fix_leaf)
     }
     else{
       for (i in 1:100){
         g = random_admixturegraph(leaves = nleaf, numadmix = nadmix, outpop = outpop)
-        dates = random_dates(g, min=time[1], max=time[2], fix=fix_leaf)
+        dates = random_dates(g, min=time[1], max=time[2], fix_leaf=fix_leaf)
         if (max(dates) <= max_depth) break
       }
     }
@@ -1485,9 +1485,9 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
   } else{
     g = random_admixturegraph(leaves = nleaf, numadmix = nadmix, outpop = outpop)
     if (length(time) == 1){
-      dates = pseudo_dates(g, time, fix=fix_leaf)
+      dates = pseudo_dates(g, time, fix_leaf=fix_leaf)
     } else{
-      dates = random_dates(g, min=time[1], max=time[2], fix=fix_leaf)
+      dates = random_dates(g, min=time[1], max=time[2], fix_leaf=fix_leaf)
     }
   }
 
