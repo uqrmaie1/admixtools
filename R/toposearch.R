@@ -2481,14 +2481,14 @@ evaluate_moreadmix = function(graph, qpgfun, maxadmix, ntry = Inf, verbose = TRU
 
   for(i in seq_len(maxadmix - nadm)) {
     if(verbose) alert_info(paste0('Testing graphs with ',nadm+i,' admixture events...\n'))
-    newgraphs = graph %>% eval_plusoneadmix(qpgfun, ntry = ntry)
-    # if(nrow(newgraphs) > 0) {
+    newgraphs = graph %>% eval_plusnadmix(qpgfun, n = 1, ntry = ntry)
+    if(nrow(newgraphs) > 0) {
       if(verbose) alert_info(paste0('Best score: ', round(min(newgraphs$score), 3),'\n'))
       graph = newgraphs %>% slice_min(score) %>% pull(graph) %>% pluck(1)
-    # } else {
-    #   warning("Can't add more admixture events!")
-    #   break
-    # }
+    } else {
+      warning("Can't add more admixture events!")
+      break
+    }
   }
   graph
 }

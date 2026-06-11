@@ -33,3 +33,9 @@ test_that("paths_from_to and the leafdist reconstructor use current igraph names
   expect_type(admixtools:::paths_from_to(g, L[1], L[2]), "list")
   expect_true(igraph::is_igraph(igraph::make_empty_graph()))
 })
+
+test_that("evaluate_moreadmix calls eval_plusnadmix, not the dropped eval_plusoneadmix", {
+  src <- paste(deparse(body(admixtools:::evaluate_moreadmix)), collapse = "\n")
+  expect_false(grepl("eval_plusoneadmix", src))
+  expect_true(grepl("eval_plusnadmix", src))
+})
