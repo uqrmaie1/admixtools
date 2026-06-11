@@ -90,7 +90,7 @@ If you get the following error:
 you might be able to solve the problem by installing
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/) for your
 version of R if you use Windows, or [Xcode command line
-tools](https://developer.apple.com/download/more/) if you use macOS.
+tools](https://developer.apple.com/download/all/) if you use macOS.
 This is also described
 [here](https://r-pkgs.org/setup.html#setup-tools).
 
@@ -277,11 +277,11 @@ of the manuscript, and some additional personal comments
   package for automatic graph inference
 - [miqoGraph](https://github.com/juliayyan/PhylogeneticTrees.jl) A Julia
   package for automatic graph inference
-- [MixMapper](http://cb.csail.mit.edu/cb/mixmapper/) Another method to
+- [MixMapper](https://cb.csail.mit.edu/mixmapper/) Another method to
   infer admixture graphs
 - [TreeMix](https://bitbucket.org/nygcresearch/treemix/wiki/Home)
   Another method to infer admixture graphs
-- [Legofit](http://content.csbs.utah.edu/~rogers/src/legofit/index.html)
+- [Legofit](https://github.com/alanrogers/legofit)
   A program to estimate the history of population size, subdivision, and
   gene flow
 - [qpBrute](https://github.com/ekirving/qpbrute) Automated graph fitting
