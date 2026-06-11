@@ -1963,19 +1963,19 @@ generate_all_trees = function(leaves) {
 
 #' Generate all graphs
 #'
-#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{\link[admixturegraph]{all_graphs}} function in the \code{admixturegraph} package, but there are a few differences:
+#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{all_graphs} function in the \code{admixturegraph} package, but there are a few differences:
 #' \itemize{
 #' \item The function does not return graphs with fewer than `nadmix` admixture events
 #' \item The function does not return most graphs which are unidentifiable and would have equal fits as simpler identifiable graphs (for example it does not return graphs where a node is expanded to a loop)
 #' \item The function does not return duplicated graphs, as identified by the \code{\link{graph_hash}} function
-#' \item The function generates unique graphs which are missing in the output of \code{\link[admixturegraph]{all_graphs}}
+#' \item The function generates unique graphs which are missing in the output of \code{all_graphs}
 #' }
 #' @export
 #' @param leaves The leaf nodes
 #' @param nadmix The number of admixture nodes
 #' @param verbose Print progress updates
 #' @return A list of graphs in `igraph` format
-#' @seealso \code{\link[admixturegraph]{all_graphs}}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
+#' @seealso \code{all_graphs}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
 #' @examples
 #' \dontrun{
 #' graphs = generate_all_graphs(letters[1:4], 1)
@@ -4497,7 +4497,7 @@ graph_boot_pval = function(bootfit) {
 #'
 #' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link[admixturegraph]{agraph}} format
+#' @param agraph An admixture graph in \code{agraph} format
 #' @return An admixture graph in \code{igraph} format
 #' @examples
 #' \dontrun{
