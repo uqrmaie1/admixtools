@@ -23,7 +23,8 @@
 #' @param graph_or_lgo An admixtools edge tibble / igraph, or a path to a
 #'   .lgo file.
 #' @param patterns Path to a LEGOFIT site-pattern (.opf) file.
-#' @param bin Path to the `legofit` binary. Default looks on `PATH`.
+#' @param bin Path to the `legofit` binary, or a bare command name to look
+#'   up on `PATH`. Defaults to `"legofit"` on `PATH`.
 #' @param args Character vector of extra flags passed to `legofit`.
 #' @param graph When `graph_or_lgo` is a .lgo path, the admixtools graph
 #'   to align the fitted parameters to (forwarded to read_legofit_output).
@@ -31,11 +32,16 @@
 #'   `graph_or_lgo` is a graph (for example `time_handling = "free"`).
 #' @return The tibble returned by [read_legofit_output()].
 #' @export
-run_legofit <- function(graph_or_lgo, patterns, bin = Sys.which("legofit"),
+run_legofit <- function(graph_or_lgo, patterns, bin = "legofit",
                         args = c("--threads", "1"), graph = NULL, ...) {
   # `--threads` is effectively required by legofit's CLI
   # (usage: legofit [options] --threads <x> <input.lgo> <data.txt>);
   # default to a single thread. Callers override via `args`.
+
+  # Resolve the binary: an existing path is used as-is, otherwise `bin` is
+  # treated as a command name and looked up on PATH. This handles both an
+  # explicit path and a bare name like "legofit".
+  bin <- if (nzchar(bin) && file.exists(bin)) bin else Sys.which(bin)
   if (!nzchar(bin) || !file.exists(bin))
     rlang::abort(
       c("Could not find the `legofit` executable.",
@@ -66,7 +72,7 @@ run_legofit <- function(graph_or_lgo, patterns, bin = Sys.which("legofit"),
   # With stdout/stderr as file paths, system2() returns the exit code as a
   # plain integer (0 = success); there is NO attr(., "status"). Send stderr
   # to its own file so we can surface it on failure.
-  code <- system2(bin, c(args, shQuote(lgo_path), shQuote(patterns)),
+  code <- system2(shQuote(bin), c(args, shQuote(lgo_path), shQuote(patterns)),
                   stdout = out_path, stderr = err_path)
   if (!identical(as.integer(code), 0L)) {
     tail_err <- if (file.exists(err_path))

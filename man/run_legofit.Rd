@@ -7,7 +7,7 @@
 run_legofit(
   graph_or_lgo,
   patterns,
-  bin = Sys.which("legofit"),
+  bin = "legofit",
   args = c("--threads", "1"),
   graph = NULL,
   ...
@@ -19,7 +19,8 @@ run_legofit(
 
 \item{patterns}{Path to a LEGOFIT site-pattern (.opf) file.}
 
-\item{bin}{Path to the \code{legofit} binary. Default looks on \code{PATH}.}
+\item{bin}{Path to the \code{legofit} binary, or a bare command name to look
+up on \code{PATH}. Defaults to \code{"legofit"} on \code{PATH}.}
 
 \item{args}{Character vector of extra flags passed to \code{legofit}.}
 
