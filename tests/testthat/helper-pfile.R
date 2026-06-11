@@ -163,7 +163,7 @@ build_pfile_fixture = function(dir, with_multi = FALSE, with_fid = TRUE,
   if(with_cm_col) {
     # Inject non-zero CM values into the .pvar header by rewriting it. plink2
     # does not synthesize CM, but downstream code paths only care that CM is
-    # numeric and non-zero — we set CM = POS / 1e6 (rough genome-average rate).
+    # numeric and non-zero - we set CM = POS / 1e6 (rough genome-average rate).
     pvar_path = paste0(pfile_pref, ".pvar")
     txt = readLines(pvar_path)
     header_lineno = which(grepl("^#[^#]", txt))[1]

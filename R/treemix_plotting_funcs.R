@@ -317,7 +317,7 @@ flip_node = function(d, n){
 }
 
 plot_modelcov = function(stem, pop_order, min = -0.009, max = 0.009, cex = 1, usemax = T){
-  c = read.table(gzfile(paste(stem, ".modelcov.gz", sep = "")), as.is = T, head = T)
+  c = read.table(gzfile(paste(stem, ".modelcov.gz", sep = "")), as.is = T, header = T)
   o = read.table(pop_order, as.is = T, comment.char = "", quote = "")
 
 
@@ -340,7 +340,7 @@ plot_modelcov = function(stem, pop_order, min = -0.009, max = 0.009, cex = 1, us
 
 
 plot_cov = function(stem, pop_order, min = -0.009, max = 0.009, cex = 1, usemax = T, wcols = ""){
-  c = read.table(gzfile(paste(stem, ".cov.gz", sep = "")), as.is = T, head = T)
+  c = read.table(gzfile(paste(stem, ".cov.gz", sep = "")), as.is = T, header = T)
   o = read.table(pop_order, as.is = T)
 
 
@@ -362,12 +362,12 @@ plot_cov = function(stem, pop_order, min = -0.009, max = 0.009, cex = 1, usemax 
 
 
 plot_resid = function(stem, pop_order, min = -0.009, max = 0.009, cex = 1, usemax = T, wcols = "r"){
-  c = read.table(gzfile(paste(stem, ".cov.gz", sep = "")), as.is = T, head = T, quote = "", comment.char = "")
-  m = read.table(gzfile(paste(stem, ".modelcov.gz", sep = "")), as.is = T, head = T, quote = "", comment.char = "")
+  c = read.table(gzfile(paste(stem, ".cov.gz", sep = "")), as.is = T, header = T, quote = "", comment.char = "")
+  m = read.table(gzfile(paste(stem, ".modelcov.gz", sep = "")), as.is = T, header = T, quote = "", comment.char = "")
   names(c) = rownames(c)
   names(m) = rownames(m)
   o = read.table(pop_order, as.is = T, comment.char = "", quote = "")
-  se = read.table(gzfile(paste(stem, ".covse.gz", sep = "")), as.is = T, head = T, quote = "", comment.char = "")
+  se = read.table(gzfile(paste(stem, ".covse.gz", sep = "")), as.is = T, header = T, quote = "", comment.char = "")
   mse = apply(se, 1, mean)
   mse = mean(mse)
   #print(mse)

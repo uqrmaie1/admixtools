@@ -4,7 +4,7 @@
 #   Step 3: as = "igraph" return type
 
 # ---------------------------------------------------------------------------
-# Step 1 — line continuation (tests 14, 15, 18)
+# Step 1 - line continuation (tests 14, 15, 18)
 # ---------------------------------------------------------------------------
 
 test_that("T14: multi-line constrained expression evaluates correctly", {
@@ -20,7 +20,7 @@ segment bar t=Ta twoN=one
 "
   result <- read_lgo(text = lgo)
   expect_s3_class(result, "tbl_df")
-  # Tfoo = 0.5 * (2 + 3 + 1) = 3 — not in the edge tibble directly,
+  # Tfoo = 0.5 * (2 + 3 + 1) = 3 - not in the edge tibble directly,
   # but the parse must succeed (no error) to get here.
   expect_equal(nrow(result), 1L)
 })
@@ -102,7 +102,7 @@ test_that("T18: EOF mid-continuation aborts with legofit_lgo_unsupported", {
 })
 
 # ---------------------------------------------------------------------------
-# Step 2 — bounded free declarations (tests 16, 17, 19)
+# Step 2 - bounded free declarations (tests 16, 17, 19)
 # ---------------------------------------------------------------------------
 
 test_that("T16: bounded free captures bounds before name", {
@@ -134,7 +134,7 @@ segment A t=T_R twoN=one
 })
 
 test_that("T17: bounds on fixed declaration errors with legofit_lgo_unsupported", {
-  # per parse.c:237-242 — only `free` accepts bounds
+  # per parse.c:237-242 - only `free` accepts bounds
   lgo <- "time fixed [0.1, 1.0] T_R=0"
   expect_error(
     read_lgo(text = lgo),
@@ -164,7 +164,7 @@ test_that("T19: malformed bounded free (unclosed bracket) errors", {
 })
 
 # ---------------------------------------------------------------------------
-# Step 3 — as = "igraph" return type (test 20)
+# Step 3 - as = "igraph" return type (test 20)
 # ---------------------------------------------------------------------------
 
 test_that("T20: as='igraph' returns igraph with same topology as as='edges'", {
@@ -214,7 +214,7 @@ segment A t=T_R twoN=one
 # Regression tests for code-review fixes
 # ---------------------------------------------------------------------------
 
-# Fix 5: parse() syntax error in constrained RHS → legofit_lgo_unsupported
+# Fix 5: parse() syntax error in constrained RHS -> legofit_lgo_unsupported
 test_that("Fix5: invalid constrained expression aborts legofit_lgo_unsupported", {
   lgo <- "
 time free T_A = 1.0
@@ -228,7 +228,7 @@ derive B from A
 
 # Fix 3: regex-metachar in dest name does not cause false ghost collapse
 test_that("Fix3: admix dest with period does not falsely collapse real segments", {
-  # Dest is "M.east" (period in name), real segment is "M_east_root" — the
+  # Dest is "M.east" (period in name), real segment is "M_east_root" - the
   # unescaped dot would previously match M_east via the ghost pattern.
   lgo <- "
 time  free T_M.east   = 1.0

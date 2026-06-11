@@ -230,7 +230,7 @@ What follows are more detailed descriptions of the different strategies for deal
 
 4. Smooth $f_2$-statistics using `qpfstats()`
 
-    `qpfstats()` takes a different approach to missingness than Options 1–3: instead of choosing which SNPs to use per *f*-statistic, it computes $f_2$, $f_3$, and $f_4$ statistics from the genotype data, then uses linear regression to recover bias-corrected pseudo-$f_2$ estimates that incorporate information from all three. The resulting "smoothed" $f_2$-statistics behave like a regular $f_2$ cache, but with bias-correction that draws on signal from $f_3$ and $f_4$. This is often more effective than Option 3 alone when populations have large amounts of missing data — each individual statistic might suffer from missingness bias, but the joint smoothing across all three regresses much of that bias out.
+    `qpfstats()` takes a different approach to missingness than Options 1-3: instead of choosing which SNPs to use per *f*-statistic, it computes $f_2$, $f_3$, and $f_4$ statistics from the genotype data, then uses linear regression to recover bias-corrected pseudo-$f_2$ estimates that incorporate information from all three. The resulting "smoothed" $f_2$-statistics behave like a regular $f_2$ cache, but with bias-correction that draws on signal from $f_3$ and $f_4$. This is often more effective than Option 3 alone when populations have large amounts of missing data - each individual statistic might suffer from missingness bias, but the joint smoothing across all three regresses much of that bias out.
 
     Like Options 2 and 3, `qpfstats()` reads directly from genotype files. The output is a 3d array of $f_2$-blocks compatible with all the downstream consumers (`qpadm`, `qpgraph`, etc.):
 
@@ -306,7 +306,7 @@ genotype_data = "/my/geno/prefix"
 f2_blocks = f2_from_geno(genotype_data)
 ```
 
-`f2_from_geno()` (and `extract_f2()`) auto-detect the genotype format from the prefix's file extensions — PACKEDPED, PLINK 2 (PFILE), PACKEDANCESTRYMAP, or EIGENSTRAT. See the [data formats vignette](io.html) for details on each.
+`f2_from_geno()` (and `extract_f2()`) auto-detect the genotype format from the prefix's file extensions - PACKEDPED, PLINK 2 (PFILE), PACKEDANCESTRYMAP, or EIGENSTRAT. See the [data formats vignette](io.html) for details on each.
 
 However, in most cases it will save you time to store $f_2$-statistics on disk in a way that lets you access only some of the population pairs. 
 

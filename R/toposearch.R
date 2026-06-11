@@ -119,7 +119,7 @@ get_rootname = function(graph) {
 get_outpop = function(graph) {
   # returns outpop, if there is an edge from the root to a leave, NULL otherwise
   #graph %>% V %>% names %>% pluck(2)
-  stopifnot(class(graph) == 'igraph')
+  stopifnot(inherits(graph, 'igraph'))
   root = get_root(graph)
   outpop = intersect(names(igraph::neighbors(graph, root)), get_leafnames(graph))
   if(length(outpop) == 1) return(outpop)
@@ -223,7 +223,7 @@ simplify_graph_old = function(graph) {
 
   if(is_simplified(graph)) return(graph)
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -250,7 +250,7 @@ simplify_graph_old = function(graph) {
 
   if(is_simplified(graph)) return(graph)
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -284,7 +284,7 @@ simplify_graph = function(graph) {
   indegree = degree(graph, mode='in')
   outdegree = degree(graph, mode='out')
   convmat = FALSE
-  if(class(graph) == 'matrix') {
+  if(is.matrix(graph)) {
     convmat = TRUE
     graph = graph_from_edgelist(graph)
   }
@@ -1230,7 +1230,7 @@ find_graphs_old = function(data, pops = NULL, outpop = NULL, numrep = 1, numgrap
   # else precomp = get_f2(data, pops, ...)
   precomp = get_f2(data, pops, ...)
 
-  if(class(mutfuns[[1]]) == 'character') mutfuns %<>% rlang::set_names() %>% map(get)
+  if(is.character(mutfuns[[1]])) mutfuns %<>% rlang::set_names() %>% map(get)
   if(is.null(mutprobs)) {
     if(numadmix == 0 && is.null(initgraphs)) mutfuns[c('move_admixedge_once', 'flipadmix_random')] = NULL
     mutprobs = matrix(1, numgen, length(mutfuns)) %>% set_colnames(names(mutfuns))
@@ -1553,7 +1553,7 @@ tree_neighbors = function(tree) {
 tree_neighbors_single = function(tree, node) {
   # returns nested data frame with all trees within edit distance 1,
   # that are created by cutting all edges leading to node
-  if(class(node) != 'character') node = names(node)
+  if(!is.character(node)) node = names(node)
   downstream = subcomponent(tree, node, mode = 'out')
   root = get_root(tree)
   outgroup = neighbors(tree, root, mode = 'out') %>% igraph::intersection(get_leaves(tree))
@@ -1963,19 +1963,19 @@ generate_all_trees = function(leaves) {
 
 #' Generate all graphs
 #'
-#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{\link[admixturegraph]{all_graphs}} function in the \code{admixturegraph} package, but there are a few differences:
+#' This functions generates all possible admixture graphs with a set number of admixture events for a given set of leaf nodes. It's pretty slow, and may not terminate in reasonable time for more than 5 leaves and 2 admixture events. The function is similar to the \code{all_graphs} function in the \code{admixturegraph} package, but there are a few differences:
 #' \itemize{
 #' \item The function does not return graphs with fewer than `nadmix` admixture events
 #' \item The function does not return most graphs which are unidentifiable and would have equal fits as simpler identifiable graphs (for example it does not return graphs where a node is expanded to a loop)
 #' \item The function does not return duplicated graphs, as identified by the \code{\link{graph_hash}} function
-#' \item The function generates unique graphs which are missing in the output of \code{\link[admixturegraph]{all_graphs}}
+#' \item The function generates unique graphs which are missing in the output of \code{all_graphs}
 #' }
 #' @export
 #' @param leaves The leaf nodes
 #' @param nadmix The number of admixture nodes
 #' @param verbose Print progress updates
 #' @return A list of graphs in `igraph` format
-#' @seealso \code{\link[admixturegraph]{all_graphs}}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
+#' @seealso \code{all_graphs}, \code{\link{generate_all_trees}}, \code{\link{graph_hash}}
 #' @examples
 #' \dontrun{
 #' graphs = generate_all_graphs(letters[1:4], 1)
@@ -2302,7 +2302,7 @@ reconstruct_from_leafdist = function(leafdist) {
   p2 %>% left_join(parents %>% select(from, d), by = 'from') %>% rowwise %>% mutate(d = list(union(to, d)), dnum = length(d), desc = paste(sort(shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup
 
 
-  graph = graph.empty()
+  graph = igraph::make_empty_graph()
   graph %<>% add_vertices(length(leaves), name = leaves)
   for(i in seq_along(leaves)) {
     l = leaves[i]
@@ -2481,14 +2481,14 @@ evaluate_moreadmix = function(graph, qpgfun, maxadmix, ntry = Inf, verbose = TRU
 
   for(i in seq_len(maxadmix - nadm)) {
     if(verbose) alert_info(paste0('Testing graphs with ',nadm+i,' admixture events...\n'))
-    newgraphs = graph %>% eval_plusoneadmix(qpgfun, ntry = ntry)
-    # if(nrow(newgraphs) > 0) {
+    newgraphs = graph %>% eval_plusnadmix(qpgfun, n = 1, ntry = ntry)
+    if(nrow(newgraphs) > 0) {
       if(verbose) alert_info(paste0('Best score: ', round(min(newgraphs$score), 3),'\n'))
       graph = newgraphs %>% slice_min(score) %>% pull(graph) %>% pluck(1)
-    # } else {
-    #   warning("Can't add more admixture events!")
-    #   break
-    # }
+    } else {
+      warning("Can't add more admixture events!")
+      break
+    }
   }
   graph
 }
@@ -3204,7 +3204,7 @@ proxypred = function(sim, graphlist, auc = FALSE) {
   out = expand_grid(pop = pops, proxy = pops) %>% filter(pop != proxy) %>%
     left_join(summarize_proxies(sim), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs = !is.na(nadmix)) %>%
-    left_join(summarize_graphlist(graphlist), by = c('pop', 'proxy')) %>%
+    left_join(summarize_proxies_list(graphlist), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs, pred = replace_na(frac, 0))
   if(auc) out = out %$% pROC::auc(obs, pred) %>% c
   out
@@ -3419,7 +3419,7 @@ graph_to_function1 = function(graph, ge = NULL) {
   body = rlang::parse_expr(paste0('{', body1, body2, '}'))
 
   args = list(x = NULL, na = 0)
-  eval(call("function", as.pairlist(args), body), env = parent.frame())
+  eval(call("function", as.pairlist(args), body), envir = parent.frame())
 }
 
 graph_to_function2 = function(graph, ge = NULL) {
@@ -4124,7 +4124,7 @@ adjlist_find_paths = function(a, n, m, path = c()) {
 
 paths_from_to = function(graph, from, to) {
   # Find paths in graph from vertex source to vertex dest
-  adj = get.adjlist(graph, mode = 'out')
+  adj = igraph::as_adj_list(graph, mode = 'out')
   nam = names(V(graph))
   adjlist_find_paths(adj, which(nam == from), which(nam == to)) %>% map(~nam[.])
 }
@@ -4177,7 +4177,7 @@ consistent_with_qpadm = function(graph, left, right, target) {
   pops = get_leafnames(graph)
   internal = setdiff(names(V(graph)), pops)
   graph %>% distances(internal, pops, mode = 'out') %>% as_tibble(rownames = 'from') %>%
-    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right', to %in% target ~ 'target')) %>% group_by(from) %>% filter('right' %in% type & 'target' %in% type & !'left' %in% type) %>% nrow %>% equals(0)
+    pivot_longer(-from, names_to = 'to', values_to = 'order') %>% filter(is.finite(order)) %>% select(-order) %>% mutate(type = case_when(to %in% left ~ 'left', to %in% right ~ 'right', to %in% target ~ 'target')) %>% group_by(from) %>% filter('right' %in% type & 'target' %in% type & !'left' %in% type) %>% nrow %>% magrittr::equals(0)
 
 }
 
@@ -4497,7 +4497,7 @@ graph_boot_pval = function(bootfit) {
 #'
 #' `agraph` is the format used by the `admixturegraph` packge. `igraph` is used by the `admixtools` package
 #' @export
-#' @param agraph An admixture graph in \code{\link[admixturegraph]{agraph}} format
+#' @param agraph An admixture graph in \code{agraph} format
 #' @return An admixture graph in \code{igraph} format
 #' @examples
 #' \dontrun{

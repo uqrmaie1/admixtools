@@ -2,7 +2,7 @@
 # and the write-time admix_<X> collision guard in generate_param_names.
 
 # ---------------------------------------------------------------------------
-# classify_legofit_param — vectorized pattern matching
+# classify_legofit_param - vectorized pattern matching
 # ---------------------------------------------------------------------------
 
 test_that("classify_legofit_param: admix_time (T_admix_*) before time (T_*)", {
@@ -73,7 +73,7 @@ test_that("collision guard: node admix_M where M is an admix dest aborts", {
 })
 
 test_that("collision guard: node admix_X where X is NOT an admix dest is OK", {
-  # admix_X exists as a node, but X is not an admix destination — no ambiguity
+  # admix_X exists as a node, but X is not an admix destination - no ambiguity
   ok <- tibble::tribble(
     ~from,     ~to,      ~type,    ~weight,
     "R",       "admix_X", "normal",  0.05,
@@ -92,6 +92,6 @@ test_that("collision guard: node admix_X where X is NOT an admix dest is OK", {
     "R",       "admix_X", "normal",  0.05,
     "admix_X", "Y",       "normal",  0.05
   )
-  # No admix-typed edges → admix_dests is empty → no collision → guard passes
+  # No admix-typed edges -> admix_dests is empty -> no collision -> guard passes
   expect_no_error(admixtools:::generate_param_names(ok2))
 })

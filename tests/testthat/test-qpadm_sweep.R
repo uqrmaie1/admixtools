@@ -11,7 +11,7 @@
 #
 # Setting the plan directly at file top is the simplest mechanism that
 # actually works. (Round-3 used withr::local_options with .local_envir =
-# parent.frame() inside a local() block — but parent.frame() inside local()
+# parent.frame() inside a local() block - but parent.frame() inside local()
 # resolves to the local()'s own frame, which exits immediately, restoring
 # the prior plan before any test runs. Empirically: "After local block:
 # plan = multisession" if multisession was active before.) The plan
@@ -26,21 +26,21 @@ if(requireNamespace("future", quietly = TRUE)) future::plan("sequential")
 #   FEASIBLE model:   target=Switzerland_Bichon.SG,
 #                     left  =c("Russia_Ust_Ishim.DG","Mbuti.DG"),
 #                     right =c("Altai_Neanderthal.DG","Chimp.REF","Denisova.DG")
-#                     → weights ≈ 0.90, 0.10 (all in [0,1])
+#                     -> weights ~ 0.90, 0.10 (all in [0,1])
 #
 #   INFEASIBLE model: target=Vindija.DG,
 #                     left  =c("Chimp.REF","Mbuti.DG"),
 #                     right =c("Altai_Neanderthal.DG","Russia_Ust_Ishim.DG","Switzerland_Bichon.SG")
-#                     → weights ≈ 2.35, -1.35 (out of [0,1])
+#                     -> weights ~ 2.35, -1.35 (out of [0,1])
 
-# ── fixtures ────────────────────────────────────────────────────────────────
+# -- fixtures ----------------------------------------------------------------
 
 .f2 = function() {
   data("example_f2_blocks", package = "admixtools", envir = environment())
   get("example_f2_blocks", envir = environment())
 }
 
-# Feasible 1×1×1 setup
+# Feasible 1x1x1 setup
 .feas_args = function() list(
   data        = .f2(),
   targets     = "Switzerland_Bichon.SG",
@@ -49,7 +49,7 @@ if(requireNamespace("future", quietly = TRUE)) future::plan("sequential")
   verbose     = FALSE
 )
 
-# Infeasible 1×1×1 setup
+# Infeasible 1x1x1 setup
 .infeas_args = function() list(
   data        = .f2(),
   targets     = "Vindija.DG",
@@ -59,13 +59,13 @@ if(requireNamespace("future", quietly = TRUE)) future::plan("sequential")
   verbose     = FALSE
 )
 
-# ── test 1: basic call returns the right dimensions and columns ──────────────
+# -- test 1: basic call returns the right dimensions and columns --------------
 
 test_that("basic call returns (n_t * n_s * n_r)-row tibble with documented columns", {
   res = do.call(qpadm_sweep, .feas_args())
 
   expect_s3_class(res, "tbl_df")
-  expect_equal(nrow(res), 1L)  # 1 target × 1 source_set × 1 right_set
+  expect_equal(nrow(res), 1L)  # 1 target x 1 source_set x 1 right_set
 
   flat_cols = c("target", "source_set", "right_set",
                 "left", "right", "f4rank", "p", "chisq", "dof", "feasible",
@@ -93,7 +93,7 @@ test_that("row count scales as n_t * n_s * n_r", {
   expect_equal(nrow(res), 1L * 1L * 2L)
 })
 
-# ── test 2: auto-naming ──────────────────────────────────────────────────────
+# -- test 2: auto-naming ------------------------------------------------------
 
 test_that("unnamed source_sets and right_sets get S1/S2... and R1/R2... labels", {
   f2 = .f2()
@@ -108,7 +108,7 @@ test_that("unnamed source_sets and right_sets get S1/S2... and R1/R2... labels",
   expect_equal(res$right_set,  "R1")
 })
 
-# ── test 3: empty-name error ─────────────────────────────────────────────────
+# -- test 3: empty-name error -------------------------------------------------
 
 test_that("empty source_sets name raises a clear error", {
   f2 = .f2()
@@ -133,7 +133,7 @@ test_that("empty right_sets name raises a clear error", {
   )
 })
 
-# ── test 4: duplicate-name error ─────────────────────────────────────────────
+# -- test 4: duplicate-name error ---------------------------------------------
 
 test_that("duplicate source_sets names raise an error", {
   f2 = .f2()
@@ -159,7 +159,7 @@ test_that("duplicate right_sets names raise an error", {
   )
 })
 
-# ── test 5: non-character-vector error ───────────────────────────────────────
+# -- test 5: non-character-vector error ---------------------------------------
 
 test_that("integer source_sets entry raises a clear error", {
   f2 = .f2()
@@ -181,7 +181,7 @@ test_that("integer right_sets entry raises a clear error", {
   )
 })
 
-# ── test 6: full_results = FALSE drops list-columns ──────────────────────────
+# -- test 6: full_results = FALSE drops list-columns --------------------------
 
 test_that("full_results = FALSE drops weights / rankdrop / loadings; keeps rcond", {
   res = do.call(qpadm_sweep, c(.feas_args(), list(full_results = FALSE)))
@@ -198,7 +198,7 @@ test_that("full_results = FALSE drops weights / rankdrop / loadings; keeps rcond
   for(col in flat_cols) expect_true(col %in% names(res), info = paste("missing column:", col))
 })
 
-# ── test 7: feasible column ──────────────────────────────────────────────────
+# -- test 7: feasible column --------------------------------------------------
 
 test_that("feasible is TRUE when all weights are in [0, 1]", {
   res = do.call(qpadm_sweep, .feas_args())
@@ -210,7 +210,7 @@ test_that("feasible is FALSE when any weight is outside [0, 1]", {
   expect_true(isFALSE(res$feasible))
 })
 
-# ── test 8: f4_var_rcond + f4_var_singular_loadings (fork issue #16) ─────────
+# -- test 8: f4_var_rcond + f4_var_singular_loadings (fork issue #16) ---------
 #
 # Coverage: shape (8a), multi-row alignment (8b), singular-positive round-trip
 # (8c), defensive not-all-NA (8d), full_results = FALSE surface (8e).
@@ -226,7 +226,7 @@ test_that("feasible is FALSE when any weight is outside [0, 1]", {
 #
 # Narrow warning muffler: silence only the two predictable-noise patterns
 # (the near-singular warning from qpadm() itself on the 8c fixture and
-# furrr's UNRELIABLE VALUE warning). Anything else surfaces — keeping the
+# furrr's UNRELIABLE VALUE warning). Anything else surfaces - keeping the
 # regression-detection signal alive.
 
 .mute_qpadm_sweep_noise = function(w) {
@@ -260,7 +260,7 @@ test_that("8a: clean-case round-trip is byte-identical to direct qpadm()", {
           verbose = FALSE),
     warning = .mute_qpadm_sweep_noise)
 
-  # Byte-identical scalar — no tolerance, anchoring the no-recompute contract.
+  # Byte-identical scalar - no tolerance, anchoring the no-recompute contract.
   expect_identical(res$f4_var_rcond[1], direct$f4_var_rcond)
   # Loadings cell matches the direct route. Either both NULL (the typical
   # clean-data case for this fixture) or both the same tibble.
@@ -270,7 +270,7 @@ test_that("8a: clean-case round-trip is byte-identical to direct qpadm()", {
 
 test_that("8b: multi-row sweep preserves per-row alignment with direct qpadm()", {
   # Pop overlap rules out a true 2x2x2 in example_f2_blocks (7 pops, 2
-  # disjoint targets eat 2, sources need ≥2 each, rights need ≥2 each,
+  # disjoint targets eat 2, sources need >=2 each, rights need >=2 each,
   # and pairwise disjointness across all (target, source_set, right_set)
   # combos quickly exhausts the pool). 2 targets x 1 source_set x 2
   # right_sets = 4 rows is the largest valid grid here, and still exercises
@@ -323,7 +323,7 @@ test_that("8b: multi-row sweep preserves per-row alignment with direct qpadm()",
   # checks "row i's inputs and row i's stored rcond are self-consistent",
   # which a row-shuffle that consistently shuffles inputs AND outputs
   # together would silently pass. This block pins the actual row order
-  # against the documented expand.grid order — base expand.grid cycles the
+  # against the documented expand.grid order - base expand.grid cycles the
   # first column fastest, so target varies inside source_set inside right_set.
   expect_identical(res$target,     expected_triples$target)
   expect_identical(res$source_set, expected_triples$source_set)
@@ -389,7 +389,7 @@ test_that("8c: singular fixture preserves the loadings tibble through the sweep"
   expect_s3_class(res$f4_var_singular_loadings[[1]], "tbl_df")
 
   # Schema pin: column names + types. Catches a future qpadm refactor that
-  # renames 'loading' to 'norm' (or adds columns) — the byte-identical
+  # renames 'loading' to 'norm' (or adds columns) - the byte-identical
   # round-trip would still pass because both routes go through the same
   # code path, but downstream consumer code (vignette example arranges by
   # `loading`) would silently break.
@@ -435,7 +435,7 @@ test_that("8c.2: verbose=TRUE + singular row emits warning without crashing (rou
   # Custom handler: capture every warning, mute it (so the test doesn't
   # spam stderr), and assert the captured set contains the near-singular
   # alert. Cannot use .mute_qpadm_sweep_noise here because it muffles
-  # "near-singular" — which is the signal we want to verify.
+  # "near-singular" - which is the signal we want to verify.
   warnings_seen = character(0)
   res = withCallingHandlers(
     suppressMessages(do.call(qpadm_sweep, args)),
@@ -457,7 +457,7 @@ test_that("8c.2: verbose=TRUE + singular row emits warning without crashing (rou
 
 test_that("8d: full_results = FALSE keeps f4_var_rcond (finite), drops loadings", {
   # Design choice pinned (and defensive all-NA guard): f4_var_rcond is a
-  # scalar diagnostic comparable to p / chisq / dof — surfaced
+  # scalar diagnostic comparable to p / chisq / dof - surfaced
   # unconditionally so a pruner using full_results = FALSE for smaller
   # outputs can still gate on rank deficiency. The is.finite() assertion
   # catches the regression scenario where a future qpadm_sweep refactor
@@ -503,7 +503,7 @@ test_that("8e: full_results = TRUE adds popdrop list-column", {
   expect_false("popdrop" %in% names(res_flat))
 })
 
-# ── test 9: n=1 edge case ────────────────────────────────────────────────────
+# -- test 9: n=1 edge case ----------------------------------------------------
 
 test_that("single target x single source-set x single right-set works without error", {
   res = do.call(qpadm_sweep, .feas_args())

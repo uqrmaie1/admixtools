@@ -105,12 +105,12 @@ snpres = qpgraph_resample_snps(example_f2_blocks, graph = example_graph, boot = 
 hist(snpres$score, 100)
 ```
 
-1000 iterations on a single core would take a while. `qpgraph_resample_snps()` parallelizes across iterations under any active `future::plan()` (see [the parallelization vignette](parallel.html)) — typically `plan(multisession, workers = N)` reduces wall time roughly N-fold.
+1000 iterations on a single core would take a while. `qpgraph_resample_snps()` parallelizes across iterations under any active `future::plan()` (see [the parallelization vignette](parallel.html)) - typically `plan(multisession, workers = N)` reduces wall time roughly N-fold.
 
 
 ### Testing whether two graphs fit significantly differently
 
-The `qpgraph_resample_snps()` function above is for estimating uncertainty on a single graph's parameters. A related question is whether one graph fits significantly better than another. `qpgraph_resample_snps2()` is the companion function for that workflow — it evaluates a graph on a list of bootstrap-resampled training f2 sets paired with their corresponding held-out test sets. Its output feeds into `compare_fits()`, which tests whether the score difference between two graphs is significantly non-zero.
+The `qpgraph_resample_snps()` function above is for estimating uncertainty on a single graph's parameters. A related question is whether one graph fits significantly better than another. `qpgraph_resample_snps2()` is the companion function for that workflow - it evaluates a graph on a list of bootstrap-resampled training f2 sets paired with their corresponding held-out test sets. Its output feeds into `compare_fits()`, which tests whether the score difference between two graphs is significantly non-zero.
 
 ```{r, eval = FALSE}
 # Build paired train/test bootstrap resamples
@@ -151,7 +151,7 @@ ggplot(indres, aes(reorder(ind, score), score, color = pop)) +
   labs(x = "leave-one-out individual", y = "qpgraph score")
 ```
 
-Outlier individuals — those whose removal substantially changes the score — flag samples worth investigating for contamination, mis-labelling, or low coverage. For populations with many individuals this can also be used to compute jackknife standard errors on derived statistics for that population.
+Outlier individuals - those whose removal substantially changes the score - flag samples worth investigating for contamination, mis-labelling, or low coverage. For populations with many individuals this can also be used to compute jackknife standard errors on derived statistics for that population.
 
 
 

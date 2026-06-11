@@ -1186,7 +1186,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 
   # f4blocks always has names on the geno path (from split(.$model)) and
   # never on the f2 path. Explicit length-aware check rather than %||%,
-  # which only triggers on strict NULL — `names()` of an unnamed list is
+  # which only triggers on strict NULL - `names()` of an unnamed list is
   # NULL, but a future change that returns a names-attributed-but-empty
   # `character(0)` would fall through %||% with character(0), producing a
   # zero-length label vector that future_map2 silently accepts.
@@ -1204,7 +1204,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 
 # Names that qpadm_multi consumes internally rather than via `...`.
 # Passing any of these via `...` is a user error (they collide with the
-# positional / named args qpadm_multi already supplies at do.call time —
+# positional / named args qpadm_multi already supplies at do.call time -
 # the round-4 dispatch helper allowed routing them silently, which round-5
 # review surfaced as the source of confusing duplicate-name errors AND
 # silent positional NULL-displacement bugs):
@@ -1235,20 +1235,20 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 # qpadm_multi's entry point rather than allowing the bad kwarg to surface
 # as a cryptic downstream do.call error:
 #
-#   1. Reserved names (see `.QPADM_MULTI_RESERVED`) are rejected — they
+#   1. Reserved names (see `.QPADM_MULTI_RESERVED`) are rejected - they
 #      would collide with the positional / named args qpadm_multi binds
 #      internally at do.call time.
 #   2. Unknown names (not in the union of non-reserved geno + fit formals)
 #      are rejected.
 #   3. Geno-only names (in geno_known but not fit_known) are rejected when
-#      `on_f2_path = TRUE` — they would otherwise be silently dropped
+#      `on_f2_path = TRUE` - they would otherwise be silently dropped
 #      because the f2-data path never calls f4blockdat_from_geno.
 #
 # Returns a list with two buckets (`$geno`, `$fit`), each holding only the
 # kwargs whose names match that callee's non-reserved formals. Each
 # callsite uses `do.call(callee, c(positional_args, dispatch$bucket))`.
 #
-# Empty names (positional kwargs supplied via `...`) are ignored — qpadm_multi
+# Empty names (positional kwargs supplied via `...`) are ignored - qpadm_multi
 # has no semantic for them and the documented contract is named-kwargs-only.
 .qpadm_multi_dispatch_dots = function(dots, fit_fun, on_f2_path) {
   geno_known = setdiff(names(formals(f4blockdat_from_geno)), .QPADM_MULTI_RESERVED)
@@ -1353,7 +1353,7 @@ qpadm_multi = function(data, models, allsnps = FALSE, full_results = TRUE, verbo
 #' upfront against the union of formals for [f4blockdat_from_geno()] (the
 #' geno-path preflight) and [qpadm()] (the per-fit call), then routes each
 #' to its respective downstream callee. Unrecognised names raise a single
-#' clear error at entry — see [qpadm_multi()]'s `...` docs for the full
+#' clear error at entry - see [qpadm_multi()]'s `...` docs for the full
 #' contract.
 #'
 #' `singular_threshold` (a [qpadm()] formal, forwarded via `...`) does not
@@ -1480,11 +1480,11 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
     out$weights  = unname(lapply(fits, `[[`, 'weights'))
     out$rankdrop = unname(lapply(fits, `[[`, 'rankdrop'))
     # popdrop is qpadm()'s table of "what happens when each left pop is
-    # dropped" — populated whenever target is non-null (always TRUE for
+    # dropped" - populated whenever target is non-null (always TRUE for
     # qpadm_sweep, which always sets target = combos$target). Surfaced as a
     # list-column for symmetry with the other diagnostic tables.
     out$popdrop = unname(lapply(fits, `[[`, 'popdrop'))
-    # f4_var_singular_loadings is a tibble (or NULL) — gated on full_results
+    # f4_var_singular_loadings is a tibble (or NULL) - gated on full_results
     # because of variable per-row payload. Each cell can be NULL for two
     # reasons: the rcond gate did not fire (the common case on clean data),
     # OR the gate fired but the eigendecomposition inside qpadm errored on a
@@ -1497,7 +1497,7 @@ qpadm_sweep = function(data, targets, source_sets, right_sets,
   # qpadm.R:317-322 never reaches the user). Surface a single sweep-level
   # alert here so callers running verbose=TRUE see how many rows tripped
   # the auto-bar without having to filter the f4_var_rcond column manually.
-  # When full_results=FALSE the loadings list-column is absent — adapt the
+  # When full_results=FALSE the loadings list-column is absent - adapt the
   # alert text so it doesn't point users at a non-existent column.
   #
   # Routed through cli::cli_warn (stderr via the R condition system) rather

@@ -7,7 +7,7 @@
 agraph_to_igraph(agraph)
 }
 \arguments{
-\item{agraph}{An admixture graph in \code{\link[admixturegraph]{agraph}} format}
+\item{agraph}{An admixture graph in \code{agraph} format}
 }
 \value{
 An admixture graph in \code{igraph} format

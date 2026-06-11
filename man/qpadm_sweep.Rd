@@ -87,7 +87,7 @@ Kwargs in \code{...} are forwarded to \code{\link[=qpadm_multi]{qpadm_multi()}},
 upfront against the union of formals for \code{\link[=f4blockdat_from_geno]{f4blockdat_from_geno()}} (the
 geno-path preflight) and \code{\link[=qpadm]{qpadm()}} (the per-fit call), then routes each
 to its respective downstream callee. Unrecognised names raise a single
-clear error at entry — see \code{\link[=qpadm_multi]{qpadm_multi()}}'s \code{...} docs for the full
+clear error at entry - see \code{\link[=qpadm_multi]{qpadm_multi()}}'s \code{...} docs for the full
 contract.
 
 \code{singular_threshold} (a \code{\link[=qpadm]{qpadm()}} formal, forwarded via \code{...}) does not

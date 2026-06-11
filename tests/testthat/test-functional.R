@@ -46,7 +46,7 @@ test_that("T1.4: multi-admixture graph round-trips (rha20 / Rogers et al. 2020)"
   # not just 1.
   g <- make_rogers2020_graph()
   expect_equal(nrow(g), 21)               # 13 normal + 8 admix
-  expect_equal(sum(g$type == "admix"), 8) # 4 events × 2 parents
+  expect_equal(sum(g$type == "admix"), 8) # 4 events x 2 parents
   expect_equal(sum(g$type == "normal"), 13)
 
   # Use init mode + the published times as the `time` column on each
@@ -141,7 +141,7 @@ test_that("T1.1: qpgraph(example_igraph) round-trips via time_handling='free'", 
   skip_if(is.null(result$edges), "qpgraph did not return edges")
   fitted_edges <- result$edges
 
-  # Validate doesn't error — confirms 'edge' type accepted.
+  # Validate doesn't error - confirms 'edge' type accepted.
   expect_no_error(validate_edge_tibble(fitted_edges))
 
   # Full export via "free" mode + topology round-trip.
@@ -257,7 +257,7 @@ test_that("T1.6: custom drift_to_time function scales output times", {
 })
 
 test_that("T1.6: drift_to_time receives correct segment_vec argument", {
-  # Custom function that errors if segment_vec is NULL — proves the
+  # Custom function that errors if segment_vec is NULL - proves the
   # second argument is being passed correctly.
   tree <- tibble::tribble(
     ~from, ~to, ~type,    ~weight,
@@ -368,7 +368,7 @@ test_that("T2.3: safe_eval_arith rejects function calls in constrained RHS", {
 
 # Review-feedback regression tests --------------------------------------
 test_that("compute_node_depths errors on unreachable nodes (cyclic input)", {
-  # A→B→A loop with no leaf: every node appears in `from`, so the leaves
+  # A->B->A loop with no leaf: every node appears in `from`, so the leaves
   # check inside compute_times will fire first. Construct a graph WITH a
   # leaf but containing a cycle to exercise the depth-walk's unreachable
   # branch via free mode directly:
@@ -378,8 +378,8 @@ test_that("compute_node_depths errors on unreachable nodes (cyclic input)", {
     "B",   "A", "normal", NA_real_,  # cycle between A and B
     "A",   "X", "normal", NA_real_   # X is a leaf
   )
-  # A is reachable from X (via A→X edge), but B is only reachable via
-  # A→B and B is also a parent of A — circular, so depth never settles.
+  # A is reachable from X (via A->X edge), but B is only reachable via
+  # A->B and B is also a parent of A - circular, so depth never settles.
   expect_error(
     compute_node_depths(cyclic_with_leaf),
     class = "legofit_invalid_input"
@@ -388,7 +388,7 @@ test_that("compute_node_depths errors on unreachable nodes (cyclic input)", {
 
 test_that("graph_to_lgo errors when node names collide with ghost-segment names", {
   # Construct a graph where a real node "M_A" exists AND there's an admix
-  # event with destination M and parent A — our writer would emit a ghost
+  # event with destination M and parent A - our writer would emit a ghost
   # named "M_A", colliding with the existing node.
   g <- tibble::tribble(
     ~from, ~to,   ~type,    ~weight,

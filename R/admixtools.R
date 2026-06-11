@@ -6,11 +6,15 @@
 #' @import ggplot2
 # @import utils
 #' @importFrom Rcpp sourceCpp
-#' @importFrom magrittr set_colnames "%$%" "%<>%"
+#' @importFrom magrittr set_colnames set_rownames "%$%" "%<>%"
 #' @importFrom abind abind
 #' @importFrom crayon blue red green bold italic
 #' @importFrom foreach foreach "%dopar%"
 #' @importFrom tibble as_tibble deframe enframe add_column rownames_to_column
+#' @importFrom grDevices colorRampPalette heat.colors rgb
+#' @importFrom graphics arrows axis lines mtext rect text
+#' @importFrom stats cancor prcomp rnorm t.test
+#' @importFrom utils read.table
 # @importFrom stats na.omit setNames runif
 #' @importFrom igraph V E neighbors subcomponent degree incident_edges all_simple_paths distances
 #' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices delete_vertices
@@ -95,10 +99,3 @@ NULL
   active = tryCatch(admixtools_omp_atfork_active_(), error = function(e) FALSE)
   if (!isTRUE(active)) library.dynam.unload("admixtools", libpath)
 }
-
-
-# a = devtools::check()
-# a$notes[[2]] %>% str_split('’\n') %>% `[[`(1) %>% str_extract_all('‘.+') %>% unlist %>% str_sub(2) %>% unique %>% paste0(., collapse = '",\n"') %>% paste0('globalVariables(c("', ., '"))') %>% write_lines('r/admixtools.R', append = T)
-# a$notes[3] %>% str_split('’\n') %>% `[[`(1) %>% str_extract_all('‘.+') %>% unlist %>% str_sub(2) %>% unique %>% paste0(., collapse = '", "') %>% paste0('globalVariables(c("', ., '"))') %>% write_lines('r/admixtools.R', append = T)
-
-globalVariables(c("from", "to", "newg", "generation", "score", "prob", "igraph", "out", "combn", "na.omit", "var", "type", "weight", ".", "column_to_rownames", "graph_from_adjacency_matrix", "value", "name", "quantile", "pop3", "pop2", "cnt", "i", "j", "itree", "isoclass", "delete_vertices", "se2", "se", "lo", "hi", "v", "k", "lab", "v_mean", "v_lo", "v_hi", "lab_mean", "lab_lo", "lab_hi", "af", "afdat", "SNP", "A1", "A2", "a1", "a2", "aa1", "aa2", "a", "miss", "maf", "CHR", "poly", "mutation", ".snpindex", "pop", "ind", "f4mat", "qinvs", "fd", "f4rank", "dof", "chisq", "pchisq", "chisqdiff", "dofdiff", "p_nested", "wt", "p", "best", ".rep", "weighted.mean", "est", ".tot", ".rel_bl", "X3", "X1", "X2", "f2dat", "sts", "z", "b", "bnew", "rray", "f3dat", "fit", "pop1", "f2_1", "f2_2", "f4dat", "block", "pop4", "admixedge", "path", "w", "edge2", "leaf2", "run", "f21", "f22", "f2fit", "c1", "c2", "c3", "c4", "x", "xend", "y", "yend", "tot", "this", "shift", "g", "irl", "node", "s1", "s2", "cov", "graph2", "vertex_attr", "tail", "edge", "leaf", "numpaths", "bl", "aa", "nn", "p1", "p2", "ind2", "ind1", "pp", "pp1", "pp2", "f2uncorr", "corr1", "corr2", "loo", "xtau", "Var1", "Var2", "Var3", "V2", "V1", "label", "result", "nfrom", "nto", "lfrom", "lto", "time", "optim", "setNames", "runif", "group", "isn", "Z", "head", "feasible", "par", "l1", "lower", "l2", "upper", "fst", "ff3fit", "w2", "weight.x", "weight.y", "se.y", "se.x", "left", "pat", "all_of", "low", "high", "xmin", "xmax", "ymin", "ymax", "e", "rownum", "lon", "lat", "eid", "admix", "iid", "long", "PC1", "PC2", "s", "FID", "IID", "index", "right", "res", "name1", "name2", "name3", "powerset", "numleft", "numoginset", "target", "f14", "f23", "f13", "f24", "coef", "lm", "as.formula", "Estimate", "fun2", ".keep", "shift1", "pathnum", "pathnum2", "pathnum3", "path2", "path3", "top", "topo", "x13", "x23", "x31", "x32", "x12", "x21", "toposet", "cor", "pt", "sumna", "numpop", "nam", "n1", "n2", "pnorm"))

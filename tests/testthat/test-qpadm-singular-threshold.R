@@ -36,7 +36,7 @@
   )
 }
 
-# ── clean case ──────────────────────────────────────────────────────────────
+# -- clean case --------------------------------------------------------------
 
 test_that("clean qpadm fit reports finite f4_var_rcond above the concern bar with no loadings table", {
   s = .example_setup()
@@ -50,7 +50,7 @@ test_that("clean qpadm fit reports finite f4_var_rcond above the concern bar wit
   expect_null(res$f4_var_singular_loadings)
 })
 
-# ── singular case, warn-only (auto-1e-8 bar) ───────────────────────────────
+# -- singular case, warn-only (auto-1e-8 bar) -------------------------------
 
 test_that("clone-pair with tiny fudge triggers the loadings table and a warning at the auto-1e-8 bar", {
   # Construct a clone of Mbuti.DG and put both copies in right[-1]. The two
@@ -86,7 +86,7 @@ test_that("clone-pair with tiny fudge triggers the loadings table and a warning 
   expect_equal(clone_loadings, c(sqrt(0.5), sqrt(0.5)), tolerance = 1e-4)
 })
 
-# ── >1-dimensional degenerate null space (two right clone pairs) ─────────────
+# -- >1-dimensional degenerate null space (two right clone pairs) -------------
 
 test_that("two right clone pairs each load sqrt(1/2) via the subspace projector", {
   # Two independent right clone pairs make the right-pop Gram's near-null
@@ -112,7 +112,7 @@ test_that("two right clone pairs each load sqrt(1/2) via the subspace projector"
   expect_equal(load_of("Switzerland_Bichon.SG"), 0, tolerance = 1e-4)
 })
 
-# ── singularity that lives purely on the LEFT (sources) ─────────────────────
+# -- singularity that lives purely on the LEFT (sources) ---------------------
 
 test_that("a purely left-side singularity yields all-zero right loadings (no fabricated offender)", {
   # Clone a LEFT (source) pop. f4_var is driven near-singular by the left
@@ -132,7 +132,7 @@ test_that("a purely left-side singularity yields all-zero right loadings (no fab
   expect_equal(ld$loading, rep(0, nrow(ld)), tolerance = 1e-4)
 })
 
-# ── missing (NA) blocks must not silently drop the loadings table ───────────
+# -- missing (NA) blocks must not silently drop the loadings table -----------
 
 test_that("near-singular loadings survive NA blocks in the resampled estimates", {
   # f4_lo retains NA on the f2 / caller-supplied-f4blocks path (est_to_loo_nafix's
@@ -161,7 +161,7 @@ test_that("near-singular loadings survive NA blocks in the resampled estimates",
   expect_setequal(top2, c("Mbuti.DG", "Mbuti_clone"))
 })
 
-# ── right-side NEAR-sister (not an exact clone) ─────────────────────────────
+# -- right-side NEAR-sister (not an exact clone) -----------------------------
 
 test_that("a right-side near-sister is attributed to the pair with unequal loadings", {
   # Mbuti_sis is a 90/10 blend of Mbuti.DG and Russia_Ust_Ishim.DG, so it shares
@@ -196,7 +196,7 @@ test_that("a right-side near-sister is attributed to the pair with unequal loadi
   expect_gt(abs(load_of("Mbuti.DG") - load_of("Mbuti_sis")), 1e-2)
 })
 
-# ── fail-loud case (singular_threshold set above the post-fudge rcond) ─────
+# -- fail-loud case (singular_threshold set above the post-fudge rcond) -----
 
 test_that("singular_threshold converts the warning into a fail-loud error with the loadings table", {
   # Same clone-pair fixture, default fudge (rcond ~ 1e-4 after regularization),
@@ -228,7 +228,7 @@ test_that("singular_threshold converts the warning into a fail-loud error with t
   expect_match(err, "Drop one and refit", fixed = TRUE)
 })
 
-# ── qpwave plumbing ─────────────────────────────────────────────────────────
+# -- qpwave plumbing ---------------------------------------------------------
 
 test_that("qpwave passes singular_threshold through to qpadm and errors the same way", {
   # qpwave is qpadm(target = NULL), so the singular_threshold gate must

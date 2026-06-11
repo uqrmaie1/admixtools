@@ -75,7 +75,7 @@ data can actually constrain. Classes: \code{"identifiable"} (data-constrained,
 e.g. mixFracs and shallow split times); \code{"structural_none"} (the value is
 arbitrary, e.g. admix-event times, whose single-lineage segment admits no
 coalescence); \code{"scale_degenerate"} (identified only up to a global scale,
-when a model has both free times and free \code{twoN} so only \code{Δt/twoN} ratios
+when a model has both free times and free \code{twoN} so only \code{dt/twoN} ratios
 are fitted); \code{"weak_identified"} and \code{"weak_unconstrained"} (a deep tree
 split time whose coalescent depth \code{t/twoN} puts it in the downward-biased
 regime, with a looser onset depth when the split has a directly attached

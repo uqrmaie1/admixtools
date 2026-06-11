@@ -758,9 +758,9 @@ matrix_jackknife_est_full = function(numer, cnt) {
 # in matrix_jackknife_est_full is column-independent.
 #
 # chunk_size:
-#   NULL (default) — auto-sized via .matrix_jackknife_chunk_size to ~5 GB
+#   NULL (default) - auto-sized via .matrix_jackknife_chunk_size to ~5 GB
 #                    peak per chunk
-#   integer        — explicit chunk size; values >= ncol(numer) skip chunking
+#   integer        - explicit chunk size; values >= ncol(numer) skip chunking
 #                    and call matrix_jackknife_est_full directly
 matrix_jackknife_est = function(numer, cnt, chunk_size = NULL) {
   np = ncol(numer)

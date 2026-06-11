@@ -93,7 +93,7 @@ save(example_opt,    file = "data/example_opt.rda",
 #   summarize_triples() over the same 7-pop dataset used for example_f2_blocks.
 #
 # example_qpgraph_ref_results
-#   qpgraph(example_f2_blocks, example_graph) — the reference fit used to
+#   qpgraph(example_f2_blocks, example_graph) - the reference fit used to
 #   sanity-check regressions in qpgraph internals.
 #
 # example_f2sim1

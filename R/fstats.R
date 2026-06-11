@@ -478,8 +478,8 @@ get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = 
     # `get_f2`'s `argnam` validator unions formals across all three back-ends, so
     # callers (e.g. qpadm) routinely pass args (auto_only, blgsize, poly_only,
     # maxmiss, ...) that only `f2_from_geno` understands. Those args have no
-    # effect on a precomputed cache — block partitioning and SNP filtering
-    # already happened at `extract_f2`-time — so we drop them silently here.
+    # effect on a precomputed cache - block partitioning and SNP filtering
+    # already happened at `extract_f2`-time - so we drop them silently here.
     # Without this, the qpadm-on-precomp path crashes with "unused arguments".
     extra = list(...)
     extra = extra[names(extra) %in% names(formals(f2_from_precomp))]
@@ -593,7 +593,7 @@ average_f4blockdat = function(f4blockdat, checkcomplete = FALSE) {
 joint_spectrum = function(afs) {
 
   afs %<>% as.matrix
-  if(class(afs[,1]) != 'numeric') stop("'afs' should only have numeric columns!")
+  if(!is.numeric(afs[,1])) stop("'afs' should only have numeric columns!")
   npop = ncol(afs)
   ps = power_set(seq_len(npop))
   allanc = rep('0', npop)
@@ -634,7 +634,7 @@ joint_sfs = function(afs, pref = NULL) {
 
   if(!is.null(pref)) {
     if(!is.null(afs)) stop("'afs' and 'pref' can't be provided at the same time!")
-    afs = geno_to_afs(pref)
+    afs = anygeno_to_aftable(pref)
   }
   popcounts = apply(afs$counts, 2, max)
   obs = (afs$afs * afs$counts) %>% as_tibble() %>% group_by_all %>% count %>% ungroup

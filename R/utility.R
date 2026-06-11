@@ -27,24 +27,24 @@ alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
 # was invisible to orchestrators tailing stderr (`Rscript ... 2>log`).
 # PR #130 routed everything through `cli::cli_inform(c(i = ...))` to fix the
 # tailing case, but as a side-effect each emission became its own scrolling
-# line in interactive sessions — visually painful for loops with thousands of
+# line in interactive sessions - visually painful for loops with thousands of
 # iterations.
 #
 # `.heartbeat()` keeps both use cases working:
 #
-#   * **TTY** (`isatty(stderr())` returns TRUE — interactive R session): writes
+#   * **TTY** (`isatty(stderr())` returns TRUE - interactive R session): writes
 #     `\r<msg>\033[K` to stderr. The CR overwrites the previous line; the
 #     `\033[K` ANSI escape clears from the cursor to end-of-line, so a shorter
 #     follow-up message doesn't leave stale chars from the previous longer one.
-#     No newline — the next emit overwrites it. The loop owner is responsible
+#     No newline - the next emit overwrites it. The loop owner is responsible
 #     for emitting `.heartbeat(done = TRUE)` after the last iteration to print
 #     a trailing newline and advance the cursor past the heartbeat line.
 #
-#   * **Non-TTY** (stderr is a file / pipe / redirect — orchestrator tailing,
+#   * **Non-TTY** (stderr is a file / pipe / redirect - orchestrator tailing,
 #     CI logs, batch jobs): emits one `cli::cli_inform(c(i = msg))` line per
 #     call. `cli` correctly strips ANSI in non-interactive contexts, so log
-#     consumers see plain UTF-8 with the ℹ bullet and a real `\n` per emit.
-#     `done = TRUE` is a no-op here (no cursor to advance — each line already
+#     consumers see plain UTF-8 with the i bullet and a real `\n` per emit.
+#     `done = TRUE` is a no-op here (no cursor to advance - each line already
 #     ended with `\n`).
 #
 # `msg` supports glue-style `{var}` interpolation, evaluated in the caller's
@@ -57,9 +57,9 @@ alert_danger = function(msg) cat(crayon::red(cli::symbol$cross, msg))
 # `suppressMessages()` only silences the non-TTY branch (which routes through
 # the R condition system via `cli::cli_inform`). The TTY branch writes via
 # `cat(file = stderr())`, which is not a message condition. Interactive users
-# who want silence should pass `verbose = FALSE` — that gates the call site
+# who want silence should pass `verbose = FALSE` - that gates the call site
 # unconditionally and works in both modes.
-# `.tty` is a test seam (leading dot — not part of the contract for production
+# `.tty` is a test seam (leading dot - not part of the contract for production
 # callers, which always omit it and let `isatty(stderr())` decide). It exists so
 # tests/testthat/test-heartbeat.R can pin both branches deterministically without
 # OS-level PTY juggling.

@@ -57,11 +57,11 @@ test_that("parse_bootci_output: malformed header aborts legofit_invalid_input", 
 })
 
 # ---------------------------------------------------------------------------
-# read_legofit_bootstrap — end-to-end
+# read_legofit_bootstrap - end-to-end
 # ---------------------------------------------------------------------------
 
 # Case 10: smoke
-test_that("T10: smoke — read_legofit_bootstrap parses ourex1.bootci", {
+test_that("T10: smoke - read_legofit_bootstrap parses ourex1.bootci", {
   expect_no_error(read_legofit_bootstrap(bootci_path()))
 })
 
@@ -124,7 +124,7 @@ test_that("point_estimate matches fitted output within tolerance", {
 # Regression tests for code-review fixes
 # ---------------------------------------------------------------------------
 
-# Fix 2: seq() descending bug — header-only file returns empty tibble not crash
+# Fix 2: seq() descending bug - header-only file returns empty tibble not crash
 test_that("Fix2: bootci file with no data rows returns empty tibble", {
   header_only <- c(
     "# bootci.py run at: 2026-05-20",
@@ -156,7 +156,7 @@ test_that("Fix7: read_legofit_bootstrap column order matches docs", {
   expect_equal(names(result)[1:5], c("parameter", "family", "point_estimate", "lo", "hi"))
 })
 
-# Finding 5: drop_ghost_params column contract — with graph supplied
+# Finding 5: drop_ghost_params column contract - with graph supplied
 test_that("Rv5: read_legofit_bootstrap with graph passes without column-name error", {
   # When graph is supplied the rename-around-drop_ghost_params path is exercised;
   # confirm the result still has the correct 'parameter' column (not 'name').

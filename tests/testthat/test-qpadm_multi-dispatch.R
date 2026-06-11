@@ -1,10 +1,10 @@
-# Tests for `.qpadm_multi_dispatch_dots()` — the private kwarg validation +
+# Tests for `.qpadm_multi_dispatch_dots()` - the private kwarg validation +
 # splitting helper that fixes the round-4/5 findings on kwarg-forwarding:
 #
-#   * unknown names → single clear error at qpadm_multi entry
-#   * reserved names (internal/positional) → rejected before reaching do.call
-#   * geno-only names on the f2 path → rejected (silent-drop prevention)
-#   * everything else → routed to $geno / $fit buckets for do.call
+#   * unknown names -> single clear error at qpadm_multi entry
+#   * reserved names (internal/positional) -> rejected before reaching do.call
+#   * geno-only names on the f2 path -> rejected (silent-drop prevention)
+#   * everything else -> routed to $geno / $fit buckets for do.call
 #
 # The helper is package-private (leading dot). Tests access it via `:::`.
 
@@ -14,7 +14,7 @@
 if(requireNamespace("future", quietly = TRUE)) future::plan("sequential")
 
 
-# ── unit tests: dispatch routing ────────────────────────────────────────────
+# -- unit tests: dispatch routing --------------------------------------------
 
 test_that(".qpadm_multi_dispatch_dots routes geno-only kwargs to $geno", {
   # cm_file is an f4blockdat_from_geno formal (geno-only). On the geno path
@@ -41,9 +41,9 @@ test_that(".qpadm_multi_dispatch_dots routes fit-only kwargs to $fit", {
 
 test_that(".qpadm_multi_dispatch_dots routes shared kwargs to both buckets", {
   # auto_only, blgsize, poly_only are in both f4blockdat_from_geno and qpadm
-  # formal lists. The helper does not deduplicate — each callee receives
+  # formal lists. The helper does not deduplicate - each callee receives
   # what it needs, and downstream functions are responsible for using the
-  # value consistently. (Same kwarg, same value → no semantic conflict.)
+  # value consistently. (Same kwarg, same value -> no semantic conflict.)
   out = admixtools:::.qpadm_multi_dispatch_dots(
     list(auto_only = FALSE, blgsize = 0.1, poly_only = TRUE),
     fit_fun = admixtools::qpadm, on_f2_path = FALSE)
@@ -58,7 +58,7 @@ test_that(".qpadm_multi_dispatch_dots routes shared kwargs to both buckets", {
 
 test_that(".qpadm_multi_dispatch_dots routes qpadm_p path correctly", {
   # qpadm_p has a smaller formal set than qpadm. singular_threshold is on
-  # qpadm but not on qpadm_p — passing it with fit_fun = qpadm_p must error
+  # qpadm but not on qpadm_p - passing it with fit_fun = qpadm_p must error
   # with the same Unknown-argument message as any other typo.
   qpadm_p = get("qpadm_p", envir = asNamespace("admixtools"))
   expect_error(
@@ -91,7 +91,7 @@ test_that(".qpadm_multi_dispatch_dots ignores positional (empty-name) kwargs", {
 })
 
 
-# ── unit tests: error layers (the round-5 hardening) ────────────────────────
+# -- unit tests: error layers (the round-5 hardening) ------------------------
 
 test_that(".qpadm_multi_dispatch_dots rejects unknown kwargs", {
   expect_error(
@@ -112,7 +112,7 @@ test_that(".qpadm_multi_dispatch_dots rejects unknown kwargs", {
 test_that(".qpadm_multi_dispatch_dots rejects reserved names with a pointed message", {
   # The reserved set (data/pref/f2_data/left/right/target/f4blocks/popcombs/
   # verbose) is filled internally by qpadm_multi. Round-4 dispatch routed
-  # them silently → do.call duplicate-name errors or silent positional
+  # them silently -> do.call duplicate-name errors or silent positional
   # NULL-displacement. Round-5 rejects them at entry with a clear message
   # naming the offending kwarg and pointing at the correct argument.
   for(reserved in admixtools:::.QPADM_MULTI_RESERVED) {
@@ -134,7 +134,7 @@ test_that(".qpadm_multi_dispatch_dots rejects reserved names with a pointed mess
 
 test_that(".qpadm_multi_dispatch_dots rejects geno-only kwargs on the f2 path", {
   # On the f2-data path, qpadm_multi never calls f4blockdat_from_geno.
-  # Round-4 dispatch routed geno-only kwargs into $geno regardless — that
+  # Round-4 dispatch routed geno-only kwargs into $geno regardless - that
   # bucket then went unused, silently dropping the user's kwarg. Round-5
   # rejects with a clear error pointing at the path mismatch.
   expect_error(
@@ -155,7 +155,7 @@ test_that(".qpadm_multi_dispatch_dots rejects geno-only kwargs on the f2 path", 
 })
 
 
-# ── integration tests: end-to-end through qpadm_multi / qpadm_sweep ────────
+# -- integration tests: end-to-end through qpadm_multi / qpadm_sweep --------
 
 test_that("qpadm_multi forwards qpadm-only kwargs to qpadm without crash", {
   data(example_f2_blocks, package = "admixtools", envir = environment())
@@ -171,7 +171,7 @@ test_that("qpadm_multi forwards qpadm-only kwargs to qpadm without crash", {
   # the same. Round-5 fixes the f2-path too.
   res = suppressMessages(suppressWarnings(
     qpadm_multi(ef, models, verbose = FALSE,
-                singular_threshold = 1e-12)))   # 1e-12 << rcond → no trip
+                singular_threshold = 1e-12)))   # 1e-12 << rcond -> no trip
   expect_length(res, 1)
   expect_true("f4_var_rcond" %in% names(res[[1]]))
   expect_true(is.finite(res[[1]]$f4_var_rcond))
@@ -236,13 +236,13 @@ test_that("qpadm_multi preserves classed errors via rlang parent chain", {
   # class-specific tryCatch can still dispatch.
   #
   # Round-6 hardening: the prior version of this test only asserted that
-  # `e$parent` was non-NULL — but furrr's own purrr_error_indexed wrapper
+  # `e$parent` was non-NULL - but furrr's own purrr_error_indexed wrapper
   # ALREADY populates $parent, so the assertion passed even if the rewrap
   # were downgraded to plain stop(). Now we inject a custom-class
   # condition into the qpadm internal call path via `local_mocked_bindings`,
   # and assert that the custom class survives the rewrap. If anyone
   # downgrades the rewrap to plain stop() in the future, the custom class
-  # is lost and the test fails — which is the contract we want to pin.
+  # is lost and the test fails - which is the contract we want to pin.
   data(example_f2_blocks, package = "admixtools", envir = environment())
   ef = get("example_f2_blocks", envir = environment())
   models = tibble::tibble(
@@ -275,7 +275,7 @@ test_that("qpadm_multi preserves classed errors via rlang parent chain", {
     })
   # The sentinel class must be reachable somewhere in the parent chain.
   # If the rewrap is downgraded to plain stop(), the sentinel is lost
-  # and this assertion fails — the actual contract we care about.
+  # and this assertion fails - the actual contract we care about.
   expect_true("my_custom_sentinel_class" %in% caught_class_chain)
 })
 
