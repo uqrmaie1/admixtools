@@ -478,8 +478,8 @@ get_f2 = function(f2_data, pops = NULL, pops2 = NULL, afprod = FALSE, verbose = 
     # `get_f2`'s `argnam` validator unions formals across all three back-ends, so
     # callers (e.g. qpadm) routinely pass args (auto_only, blgsize, poly_only,
     # maxmiss, ...) that only `f2_from_geno` understands. Those args have no
-    # effect on a precomputed cache — block partitioning and SNP filtering
-    # already happened at `extract_f2`-time — so we drop them silently here.
+    # effect on a precomputed cache - block partitioning and SNP filtering
+    # already happened at `extract_f2`-time - so we drop them silently here.
     # Without this, the qpadm-on-precomp path crashes with "unused arguments".
     extra = list(...)
     extra = extra[names(extra) %in% names(formals(f2_from_precomp))]

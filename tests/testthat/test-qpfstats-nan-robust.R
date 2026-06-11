@@ -99,7 +99,7 @@ test_that("qpfstats_regression: 50% NaN cells stress test (downdate stays well-c
 test_that("qpfstats_regression: original batched solve produces all-NaN under 1% NaN (proof of bug)", {
   # Locks in the bug demonstration: this is the behavior the PR fixes.
   # If a future refactor accidentally re-introduced the batched matmul,
-  # this test would flip from "passes" to "fails" — making the
+  # this test would flip from "passes" to "fails" - making the
   # regression visible.
   f = .make_fixture()
   set.seed(20260520L)
@@ -126,7 +126,7 @@ test_that("qpfstats_regression: all-NaN block emits b[, i] = 0 with a warning", 
   )
   expect_true(all(new$b[, 25] == 0))
   expect_true(all(is.finite(new$b)))
-  # Other blocks unaffected — only block 25 is zeroed.
+  # Other blocks unaffected - only block 25 is zeroed.
   expect_true(any(new$b[, 1] != 0))
 })
 
@@ -147,7 +147,7 @@ test_that("qpfstats_regression: bglob NaN-aware path matches reference when y ha
 test_that("qpfstats_regression: handles is.finite() input distinctions (NaN, NA, Inf)", {
   # The PR uses !is.finite() rather than is.nan(), so NA and Inf cells
   # are also dropped. Confirm each variant of non-finite input is
-  # handled identically to NaN — all should drop the popcomb from the
+  # handled identically to NaN - all should drop the popcomb from the
   # regression and produce a finite b/bglob.
   f = .make_fixture()
   set.seed(20260523L)

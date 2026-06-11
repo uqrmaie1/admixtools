@@ -582,7 +582,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 # A1 is REF, A2 is the first ALT (matching plink_to_afs's convention).
 # is_multi is TRUE iff the original ALT field had more than one allele
 # (comma-separated), in which case A2 holds the first ALT and the rest are
-# dropped — but the flag lets callers refuse / skip / proceed-with-warning.
+# dropped - but the flag lets callers refuse / skip / proceed-with-warning.
 .read_pvar = function(pvar_path) {
   # .pvar is VCF-shaped TSV. "##" lines are metadata; the column header line
   # starts with "#CHROM". For .pvar.zst we shell out to `zstd -d` (handled
@@ -607,7 +607,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
   }
   header = sub("^#", "", head_lines[header_lineno])
   header_cols = strsplit(header, "\t", fixed = TRUE)[[1]]
-  # Build the col_types spec — coerce known columns, default to character
+  # Build the col_types spec - coerce known columns, default to character
   # for unknown ones. POS / CM are numeric; everything else stays character.
   col_types = paste0(ifelse(header_cols %in% c("POS", "CM"), "d", "c"), collapse = "")
   # Skip past the header line directly via skip= rather than re-reading and
@@ -628,8 +628,8 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
     CHR = pvar$CHROM,
     cm  = if("CM" %in% header_cols) pvar$CM else rep(0, nrow(pvar)),
     POS = pvar$POS,
-    A1  = pvar$REF,    # REF allele — matches plink_to_afs's A1 == .bim col 5
-    A2  = first_alt,   # first ALT — matches plink_to_afs's A2 == .bim col 6
+    A1  = pvar$REF,    # REF allele - matches plink_to_afs's A1 == .bim col 5
+    A2  = first_alt,   # first ALT - matches plink_to_afs's A2 == .bim col 6
     is_multi = is_multi
   )
   out
@@ -663,7 +663,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 
 
 # Read a centimorgan-per-SNP companion file. PLINK 2 .pvar does not carry
-# cm by default — it is a VCF-derived format with REF/ALT/POS but no
+# cm by default - it is a VCF-derived format with REF/ALT/POS but no
 # genetic-distance column. Pipelines that need cm (e.g. for downstream
 # block-jackknife in extract_f2 with blgsize < 100) typically graft it in
 # from a separate source (genetic map / linkage disequilibrium reference /
@@ -672,7 +672,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
 # The expected file format is a TSV with at minimum a SNP-identifier
 # column and a cm column. The function auto-detects the SNP-id column
 # name from a short list of common conventions (variant_id, SNP, ID).
-# Lookup is by SNP id — the cm_file may contain additional rows; only
+# Lookup is by SNP id - the cm_file may contain additional rows; only
 # matching ones are used.
 #
 # Returns a numeric vector of length(snp_ids), with NA for any SNP id
@@ -722,7 +722,7 @@ eigenstrat_ploidy = function(genofile, nsnp, nind, indvec, ntest = 1000) {
   if(length(mu_idx_pos) > 0) {
     # Per-variant Read with allele_num=2 (first ALT). Slower than ReadIntList
     # but only triggered for sites that the user has explicitly opted into
-    # with multiallelic="first_alt" — so the cost is bounded by their input.
+    # with multiallelic="first_alt" - so the cost is bounded by their input.
     buf = pgenlibr::IntBuf(pgen)
     for(k in mu_idx_pos) {
       pgenlibr::ReadHardcalls(pgen, buf, variant_idx[k], allele_num = 2L)
@@ -861,10 +861,10 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   }
 
   # cm grafting: .pvar may carry CM (rare; .read_pvar populates pvar$cm from
-  # it when present). If cm_file is supplied, it overrides — useful when
+  # it when present). If cm_file is supplied, it overrides - useful when
   # the user has cm from a separate genetic-map source (e.g. pgen-samplebind's
   # afs_snp.tsv with grafted cm, or a HapMap recombination-rate file).
-  # If both .pvar CM and cm_file are absent, leave cm = 0 but warn —
+  # If both .pvar CM and cm_file are absent, leave cm = 0 but warn -
   # extract_f2(blgsize < 100) will silently collapse to one block otherwise.
   if (!is.null(cm_file)) {
     if (verbose) alert_info(paste0("Reading cm from ", cm_file, "...\n"))
@@ -953,7 +953,7 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   # just the samples we care about, saving I/O and memory at the pgenlibr
   # layer for the common case where pops= picks a small subset of a large
   # cohort. NOTE: this pgen handle is local to this frame. Do not pass it
-  # to fork-based parallel workers — pgenlibr external pointers don't
+  # to fork-based parallel workers - pgenlibr external pointers don't
   # survive fork(). on.exit with after=FALSE prepends to the on-exit queue
   # so resources close in inner-to-outer order even if more on.exit clauses
   # get added in future revisions.
@@ -970,7 +970,7 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
   # Mirrors the family default: ntest=1000 unless caller passed an integer
   # adjust_pseudohaploid value. Probe = read first ntest variants in the
   # range, infer per-sample ploidy from the set of observed genotypes.
-  # adjust_pseudohaploid = 0 (or FALSE) skips the probe entirely — without
+  # adjust_pseudohaploid = 0 (or FALSE) skips the probe entirely - without
   # this guard, ntest=0 reads an empty probe matrix and apply() then
   # assigns ploidy = 1 (haploid) to every sample, silently breaking the
   # AFS for diploid input.
@@ -1015,10 +1015,10 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
     # at the end to get (nvar_block x npops_present), then reorder/pad to
     # full upops width.
     # ploidy divisor convention (matches eigenstrat_to_afs / cpp_plink_to_afs):
-    #   diploid (ploidy=2): genotype {0,1,2} ÷ (3-2)=1 → {0,1,2} ALT counts,
-    #     counts_block = 2 × n_diploid_samples, ratio is allele frequency.
-    #   haploid (ploidy=1): genotype {0,2}   ÷ (3-1)=2 → {0,1} ALT counts,
-    #     counts_block = 1 × n_haploid_samples, ratio is allele frequency.
+    #   diploid (ploidy=2): genotype {0,1,2} / (3-2)=1 -> {0,1,2} ALT counts,
+    #     counts_block = 2 x n_diploid_samples, ratio is allele frequency.
+    #   haploid (ploidy=1): genotype {0,2}   / (3-1)=2 -> {0,1} ALT counts,
+    #     counts_block = 1 x n_haploid_samples, ratio is allele frequency.
     counts_block = t(rowsum(ploidy_kept * (!is.na(geno) + 0), indvec_kept))
     af_num       = t(rowsum(geno / (3 - ploidy_kept), indvec_kept, na.rm = TRUE))
     af_block     = af_num / counts_block
@@ -1051,7 +1051,7 @@ pfile_to_afs = function(pref, inds = NULL, pops = NULL, adjust_pseudohaploid = T
 
   afmatrix    = do.call(rbind, aflist)
   countmatrix = do.call(rbind, countlist)
-  # 0/0 → NaN from the divide above; canonicalize to NA for downstream f-stat
+  # 0/0 -> NaN from the divide above; canonicalize to NA for downstream f-stat
   # math, matching eigenstrat_to_afs's `afs[!is.finite(afs)] <- NA` line.
   afmatrix[!is.finite(afmatrix)] = NA
 
@@ -1283,7 +1283,7 @@ match_samples = function(haveinds, havepops, inds, pops) {
 compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
                                snpfile_kept = NULL, blgsize = 0.05, extra_args = list()) {
 
-  # Mode 1: pref is an f2 directory — read the sidecar emitted by extract_f2().
+  # Mode 1: pref is an f2 directory - read the sidecar emitted by extract_f2().
   # `cache_metadata.json` is treated as the authoritative source: extract_f2
   # writes it before `.f2_cache_id`, so a crash between the two writes leaves
   # cache_metadata.json present and recoverable. `.f2_cache_id` is a fast-read
@@ -1316,7 +1316,7 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
          'instead of the f2 directory.')
   }
 
-  # Mode 2: pref is a genotype prefix — compute fresh from inputs.
+  # Mode 2: pref is a genotype prefix - compute fresh from inputs.
   if(is.null(snpfile_kept))
     stop("'snpfile_kept' is required when computing the cache id from a genotype prefix")
 
@@ -1544,7 +1544,7 @@ read_f2 = function(f2_dir, pops = NULL, pops2 = NULL, type = 'f2',
                                 .progress = verbose,
                                 .options = furrr::furrr_options(seed = NULL))
 
-  # Assign back to the 3D array. This part is fast and serial — it's
+  # Assign back to the 3D array. This part is fast and serial - it's
   # just R array indexing, no I/O.
   for(i in seq_len(nrow(popcomb))) {
     pop1 = popcomb$pops[i]
@@ -1925,7 +1925,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                               adjust_pseudohaploid = adjust_pseudohaploid))
       }, error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
 
-      # cache_metadata.json is the authoritative sidecar — write it first so a
+      # cache_metadata.json is the authoritative sidecar - write it first so a
       # crash before the `.f2_cache_id` write leaves a recoverable outdir
       # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
       # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
@@ -1985,7 +1985,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
                                           apply_corr = apply_corr, qpfstats = qpfstats)),
     error = function(e) { warning("Could not compute f2 cache id: ", conditionMessage(e)); NA_character_ })
 
-  # cache_metadata.json is the authoritative sidecar — write it first so a
+  # cache_metadata.json is the authoritative sidecar - write it first so a
   # crash before the `.f2_cache_id` write leaves a recoverable outdir
   # (compute_f2_cache_id's mode-1 falls back to reading cache_id from here).
   # `.write_atomic` uses tempfile + rename so a SIGKILL mid-toJSON never
@@ -1994,7 +1994,7 @@ extract_f2 = function(pref, outdir, inds = NULL, pops = NULL, blgsize = 0.05, ma
   # `arrs$block_lengths_f2` is threaded out of afs_to_f2_blocks even when
   # outdir is set, so we don't readRDS the block_lengths_f2.rds we just
   # wrote. `n_snps` reports SNPs that actually contributed to f2 blocks
-  # (i.e. sum of block lengths), matching the qpfstats path's definition —
+  # (i.e. sum of block lengths), matching the qpfstats path's definition -
   # this can be smaller than nrow(afdat$snpfile) when poly_only excludes
   # non-polymorphic SNPs from f2.
   block_lengths_f2 = arrs$block_lengths_f2
@@ -3773,7 +3773,7 @@ construct_fstat_matrix = function(popcomb) {
 #'
 #' Solves `beta_i = (X_v_i^T X_v_i + ridge*I)^-1 X_v_i^T ymat_v_i` per
 #' block, where the `_v_i` index excludes rows where `ymat[, i]` is non-
-#' finite (NaN, NA, or +/-Inf). `is.finite()` is the broad-net check —
+#' finite (NaN, NA, or +/-Inf). `is.finite()` is the broad-net check -
 #' NaN is the realistic trigger (rowMeans of all-NA = 0/0), but NA and
 #' Inf would also poison the BLAS multiply and are correctly handled.
 #'
@@ -3781,7 +3781,7 @@ construct_fstat_matrix = function(popcomb) {
 #'   `lh = solve((t(x) %*% x) + ridge*I) %*% t(x)`
 #'   `b  = lh %*% ymat`
 #' which silently produces NaN-filled `b` whenever any cell of `ymat`
-#' is NaN — and `ymat` picks up NaN cells whenever some block has no
+#' is NaN - and `ymat` picks up NaN cells whenever some block has no
 #' valid SNPs for some popcomb (a common case on aDNA panels with
 #' missingness). IEEE 754 propagates NaN through BLAS DGEMM, poisoning
 #' every cell of `b`'s output column for that block.
@@ -3834,7 +3834,7 @@ construct_fstat_matrix = function(popcomb) {
 #' bias downstream `f2()$est` toward 0 for that block. A warning fires
 #' so callers can detect the pathological case. Dropping the block
 #' entirely would require plumbing a block-keep mask into the downstream
-#' jackknife — a study-by-study policy choice intentionally left to a
+#' jackknife - a study-by-study policy choice intentionally left to a
 #' separate change.
 #'
 #' @param x Numeric `npopcomb x npairs` design matrix from
@@ -4010,7 +4010,7 @@ qpfstats = function(pref, pops, include_f2 = TRUE, include_f3 = TRUE, include_f4
   #     hundreds of GB and is a hard ceiling on the workload.
   #
   #  2) consuming it: pivot_wider() below would re-materialize a
-  #     (npopcomb x nblocks) matrix that is exactly t(numer) — the same
+  #     (npopcomb x nblocks) matrix that is exactly t(numer) - the same
   #     matrix f4blockdat_from_geno already had before it expanded to
   #     long format. The matrix path avoids both round-trips.
   f4 = f4blockdat_from_geno(pref, popcomb, allsnps = TRUE, return_matrices = TRUE)
@@ -4116,7 +4116,7 @@ write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
     pp = ggplot_build(p)
     pdat = graph_to_plotdat(graph, fix=F)
 
-    # Identify layers by column presence — pp$data positional indexing silently
+    # Identify layers by column presence - pp$data positional indexing silently
     # misindexes if plot_graph or ggplot2 reorders layers.
     edge_layer = NULL
     text_layer = NULL
@@ -4130,7 +4130,7 @@ write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
            "Likely means plot_graph or ggplot2 has changed. Workaround: call write_dot(..., color=FALSE).")
     }
 
-    # Join is keyed on y; warn if any y carries multiple edge colors —
+    # Join is keyed on y; warn if any y carries multiple edge colors -
     # the right_join below would duplicate edges with conflicting colors.
     y_collisions = edge_layer %>%
       select(y, colour) %>%
@@ -4192,7 +4192,7 @@ write_dot = function(graph, outfile = stdout(), size1 = 7.5, size2 = 10,
   }
 
   # Strip `.` and `-` from node identifiers to match the same stripping
-  # applied to edge endpoints earlier — otherwise the declarations don't
+  # applied to edge endpoints earlier - otherwise the declarations don't
   # match the edge references and Graphviz rejects the file.
   int_nodes = ints %>%
     distinct() %>%

@@ -59,7 +59,7 @@ See the [data formats vignette](io.html) for the full set of `write_dot()` args 
 
 ## Admixture graph on a map
 
-`plot_graph_map()` overlays the graph on a geographic map, using per-individual coordinates (e.g., from `example_anno`) to place leaf nodes. It returns an interactive 3D plotly widget — best explored interactively rather than as a static screenshot:
+`plot_graph_map()` overlays the graph on a geographic map, using per-individual coordinates (e.g., from `example_anno`) to place leaf nodes. It returns an interactive 3D plotly widget - best explored interactively rather than as a static screenshot:
 
 ```{r, eval = FALSE}
 plot_graph_map(example_igraph, example_anno)

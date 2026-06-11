@@ -37,7 +37,7 @@ test_that("pops always serializes as a JSON array (I() preserves array shape)", 
   # `pops` is documented as an array. extract_f2 itself requires >=2 pops,
   # but the auto_unbox = TRUE call in the production code path would still
   # collapse a length-1 character vector to a JSON string scalar without the
-  # I() wrap — silently breaking the array contract for any future code path
+  # I() wrap - silently breaking the array contract for any future code path
   # that emits a single pop. Two checks:
   #   1. The extract_f2 output (2+ pops) parses as a JSON array
   #      (simplifyVector = FALSE makes the array-vs-scalar distinction visible).
@@ -67,7 +67,7 @@ test_that("cache_metadata.json cache_id matches the .f2_cache_id sidecar", {
   # The two sidecars must be consistent: a non-R orchestrator reading
   # cache_metadata.json must see the same hash the cache-key probe
   # (.f2_cache_id) emits. They come from a single compute_f2_cache_id()
-  # call but are written by separate writeLines — this guards against a
+  # call but are written by separate writeLines - this guards against a
   # future refactor that recomputes either one independently.
   withr::with_tempdir({
     fix = build_pfile_fixture(getwd(), with_fid = TRUE)
@@ -88,7 +88,7 @@ test_that("cache_metadata.json cache_id matches the .f2_cache_id sidecar", {
 test_that("compute_f2_cache_id falls back to cache_metadata.json when sidecar missing", {
   # extract_f2 writes cache_metadata.json FIRST (atomically: tempfile +
   # file.rename) and .f2_cache_id second (also atomic). A SIGKILL between the
-  # two leaves cache_metadata.json present and .f2_cache_id absent —
+  # two leaves cache_metadata.json present and .f2_cache_id absent -
   # cache_metadata.json's POSIX-atomic rename guarantees no truncation at
   # that final path. compute_f2_cache_id's mode-1 must recover the hash from
   # cache_metadata.json in that case, otherwise an orchestrator probe would
@@ -158,7 +158,7 @@ test_that("compute_f2_cache_id rejects a malformed cache_id field in JSON", {
   # The JSON parses cleanly but the cache_id field doesn't match the
   # sha256:<64hex> contract (truncated hash from a bad tool, manual edit,
   # or older incompatible schema). compute_f2_cache_id must fall through
-  # to the same stop() that fires on a missing field — not silently return
+  # to the same stop() that fires on a missing field - not silently return
   # a bogus hash that an orchestrator would then use as a cache key.
   withr::with_tempdir({
     dir.create("outdir")
@@ -172,7 +172,7 @@ test_that("compute_f2_cache_id rejects a malformed cache_id field in JSON", {
 
 test_that("cache_metadata.json is written atomically (no truncated file on disk)", {
   # `.write_atomic` uses tempfile + file.rename so the final path either
-  # holds the previous version or fully-committed new bytes — never a
+  # holds the previous version or fully-committed new bytes - never a
   # partial write. We can't simulate a SIGKILL in-process, but we can
   # verify the file ends up well-formed (the rename committed in full)
   # and that no .tmp sidecar leaks into the outdir after a successful

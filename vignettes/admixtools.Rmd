@@ -105,7 +105,7 @@ my_f2_dir = '/store/f2data/here/'
 extract_f2(prefix, my_f2_dir)
 ```
 
-This will look for genotype files in *packedancestrymap*, *PLINK*, *PLINK 2* (PFILE), or *EIGENSTRAT* format — auto-detected from the file extensions at the prefix. It computes allele frequencies and blocked $f_4$-statistics for all pairs of populations defined in the `.ind`, `.fam`, or `.psam` file, and writes them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2()`. To get a description of the arguments and to see examples of how to use it, type
+This will look for genotype files in *packedancestrymap*, *PLINK*, *PLINK 2* (PFILE), or *EIGENSTRAT* format - auto-detected from the file extensions at the prefix. It computes allele frequencies and blocked $f_4$-statistics for all pairs of populations defined in the `.ind`, `.fam`, or `.psam` file, and writes them to `my_f2_dir`. It is also possible to extract only a subset of the samples or populations by passing IDs to the `inds` and `pops` arguments in `extract_f2()`. To get a description of the arguments and to see examples of how to use it, type
 
 ```{r, eval = FALSE}
 ?extract_f2
@@ -370,9 +370,9 @@ results %>% map('weights') %>% bind_rows(.id = 'model')
 ```
 
 
-#### Sweeps over target × source × right
+#### Sweeps over target x source x right
 
-`qpadm_sweep()` covers the "many targets across a grid of source and outgroup configurations" question — the natural fit when you have a set of populations and want to score every plausible (target, source-set, right-set) combination at once. The grid is the Cartesian product of three vectors:
+`qpadm_sweep()` covers the "many targets across a grid of source and outgroup configurations" question - the natural fit when you have a set of populations and want to score every plausible (target, source-set, right-set) combination at once. The grid is the Cartesian product of three vectors:
 
 ```{r, eval = FALSE}
 targets = c(target1, target2, target3)
@@ -385,7 +385,7 @@ res = qpadm_sweep(my_geno_or_f2, targets, sources, rights)
 res %>% arrange(target, p)
 ```
 
-The output is a flat tibble with one row per combination, with `p`, `chisq`, `feasible` columns ready for filtering. Both `qpadm_multi()` and `qpadm_sweep()` parallelize across models under `future::plan()` — see [the qpWave and qpAdm vignette](qpadm.html) for the deep dive and [the parallelization vignette](parallel.html) for the two-layers-compose caveat.
+The output is a flat tibble with one row per combination, with `p`, `chisq`, `feasible` columns ready for filtering. Both `qpadm_multi()` and `qpadm_sweep()` parallelize across models under `future::plan()` - see [the qpWave and qpAdm vignette](qpadm.html) for the deep dive and [the parallelization vignette](parallel.html) for the two-layers-compose caveat.
 
 
 

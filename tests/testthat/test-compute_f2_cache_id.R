@@ -44,7 +44,7 @@ test_that("compute_f2_cache_id changes when the IID subset changes", {
 
     id_all = compute_f2_cache_id(pref, format = "plink", pops = fix$fid_pops,
                                  snpfile_kept = afdat$snpfile, blgsize = 0.05)
-    # Restrict to 4 of the 6 samples — different IID set, different cache id.
+    # Restrict to 4 of the 6 samples - different IID set, different cache id.
     # `pops = NULL` lets match_samples take population labels from the indfile.
     id_subset = compute_f2_cache_id(pref, format = "plink",
                                     inds = c("popA_1", "popA_2", "popB_1", "popB_2"),
@@ -72,7 +72,7 @@ test_that("compute_f2_cache_id changes when the variant set changes", {
     id_a = compute_f2_cache_id(pref, format = "plink", pops = fix$fid_pops,
                                snpfile_kept = afdat$snpfile, blgsize = 0.05)
 
-    # Perturb one variant's A1 — the SNP-id stays the same but the (CHR,POS,A1,A2)
+    # Perturb one variant's A1 - the SNP-id stays the same but the (CHR,POS,A1,A2)
     # tuple changes, so the variant_set hash changes and the cache id flips.
     perturbed = afdat$snpfile
     perturbed$A1[1] = "X"
@@ -154,7 +154,7 @@ test_that("PFILE .pvar parses through compute_f2_cache_id without read_table err
   # no sidecar written.
   #
   # The fix routes PFILE through .read_pvar. We exercise the same parsing
-  # path here by feeding a PFILE prefix into mode-1 compute_f2_cache_id —
+  # path here by feeding a PFILE prefix into mode-1 compute_f2_cache_id -
   # the fix to extract_f2's qpfstats branch uses the same .read_pvar helper
   # and so produces a structurally-equivalent snpfile_kept. The failure mode
   # this guards against is "any read of .pvar via read_table inside the
@@ -192,7 +192,7 @@ test_that("compute_f2_cache_id propagates get_block_lengths errors instead of re
     # provokes BEFORE the SUT error fires: tibble's "Unknown or uninitialised
     # column" warnings on `$CHR` / `$cm` access (deliberately absent in
     # bad_snp), and the pre-error "No genetic linkage map" warning from
-    # get_block_lengths(). Anything else surfaces — narrower than blanket
+    # get_block_lengths(). Anything else surfaces - narrower than blanket
     # `suppressWarnings()` so a future-added real warning in this code path
     # doesn't silently hide.
     bad_snp = tibble::tibble(POS = 1:10, A1 = "A", A2 = "G")

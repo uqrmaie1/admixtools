@@ -72,9 +72,9 @@ Onge.DG	BR_Onge-1.DG	2
 1	832918	rs28765502	T	C
 ```
 
-`.pvar` may also be supplied in Zstd-compressed form as `.pvar.zst` — *ADMIXTOOLS 2* picks up either form transparently. Reading `.pvar.zst` requires the `zstd` CLI on PATH (the genotype access via `pgenlibr` handles `.zst` natively, but the R-side metadata parser shells out to `zstd -d`).
+`.pvar` may also be supplied in Zstd-compressed form as `.pvar.zst` - *ADMIXTOOLS 2* picks up either form transparently. Reading `.pvar.zst` requires the `zstd` CLI on PATH (the genotype access via `pgenlibr` handles `.zst` natively, but the R-side metadata parser shells out to `zstd -d`).
 
-Note: `.pvar` does *not* by default carry centimorgan positions. When the `CM` column is absent *ADMIXTOOLS 2* leaves `cm = 0` for all variants and falls back to base-pair distance for block partitioning (`blgsize = 1e6` works well at typical block sizes). Alternatively you can supply an external recombination map via `cm_file =` (a TSV with a SNP-identifier column — `variant_id`, `SNP`, or `ID` — and a `cm` column).
+Note: `.pvar` does *not* by default carry centimorgan positions. When the `CM` column is absent *ADMIXTOOLS 2* leaves `cm = 0` for all variants and falls back to base-pair distance for block partitioning (`blgsize = 1e6` works well at typical block sizes). Alternatively you can supply an external recombination map via `cm_file =` (a TSV with a SNP-identifier column - `variant_id`, `SNP`, or `ID` - and a `cm` column).
 
 ### EIGENSTRAT/PACKEDANCESTRYMAP
 
@@ -134,7 +134,7 @@ geno = read_packedancestrymap("packedancestrymap/prefix", first = 1000, last = 2
 geno = read_packedancestrymap("packedancestrymap/prefix", inds = c('ind1', 'ind2'))
 ```
 
-For PFILE, there is no `read_pfile` — PFILE inputs are consumed directly by the f-statistic pipeline (`extract_f2`, `f2_from_geno`, `f4blockdat_from_geno`, `qpfstats`) which auto-detect the format from the file extensions at the prefix.
+For PFILE, there is no `read_pfile` - PFILE inputs are consumed directly by the f-statistic pipeline (`extract_f2`, `f2_from_geno`, `f4blockdat_from_geno`, `qpfstats`) which auto-detect the format from the file extensions at the prefix.
 
 
 ## Extracting populations
@@ -188,8 +188,8 @@ packedancestrymap_to_plink("packedancestrymap_input_prefix", "plink_output_prefi
 
 When `extract_f2()` writes to disk it emits two sidecar files alongside the per-pair `.rds` arrays:
 
-  * **`.f2_cache_id`** — a short text file containing a `sha256:<64hex>` hash over the inputs and filter args. Cheap to read; useful as a cache key for orchestrators that want to skip re-extraction when nothing has changed.
-  * **`cache_metadata.json`** — a schema-versioned JSON file with `n_snps`, `n_blocks`, `pops`, build timestamp, filter args, and the same `cache_id`. Written atomically (tempfile + rename) before `.f2_cache_id`, so a crash between the two writes leaves a recoverable directory.
+  * **`.f2_cache_id`** - a short text file containing a `sha256:<64hex>` hash over the inputs and filter args. Cheap to read; useful as a cache key for orchestrators that want to skip re-extraction when nothing has changed.
+  * **`cache_metadata.json`** - a schema-versioned JSON file with `n_snps`, `n_blocks`, `pops`, build timestamp, filter args, and the same `cache_id`. Written atomically (tempfile + rename) before `.f2_cache_id`, so a crash between the two writes leaves a recoverable directory.
 
 Read the metadata programmatically:
 
@@ -208,7 +208,7 @@ cached = read_f2_cache_metadata("my_f2_dir/")$cache_id
 identical(fresh, cached)  # TRUE if the cache is still valid for these inputs
 ```
 
-If only the genotype prefix and the f2 directory are available (e.g. an orchestrator probe), `compute_f2_cache_id("my_f2_dir/")` reads the hash directly from the sidecar — no genotype-file access needed.
+If only the genotype prefix and the f2 directory are available (e.g. an orchestrator probe), `compute_f2_cache_id("my_f2_dir/")` reads the hash directly from the sidecar - no genotype-file access needed.
 
 
 ## Admixture graph formats

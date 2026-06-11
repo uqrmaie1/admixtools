@@ -141,7 +141,7 @@ result_to_json = function(result, fn = NULL, args = list(), file = "",
 #'
 #' `cache_metadata.json` is written via tempfile + `file.rename`, which is
 #' atomic on POSIX filesystems: a SIGKILL mid-`extract_f2` either leaves the
-#' previous version intact or commits the new one — never a truncated file.
+#' previous version intact or commits the new one - never a truncated file.
 #'
 #' @export
 #' @param outdir Path to the f2 output directory passed to [extract_f2()].
@@ -167,7 +167,7 @@ read_f2_cache_metadata = function(outdir) {
 # Atomically write `content` to `target` via a sibling tempfile + file.rename.
 #
 # On POSIX, rename(2) is atomic within a filesystem: a SIGKILL mid-write
-# either leaves the previous `target` intact or commits the new bytes —
+# either leaves the previous `target` intact or commits the new bytes -
 # never a truncated file. This matters for cache_metadata.json: a partial
 # file would fail compute_f2_cache_id's mode-1 JSON parse, leaving the
 # orchestrator with a "malformed" warning instead of a clean "missing

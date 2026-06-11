@@ -1,4 +1,4 @@
-# Tests for pfile_to_afs() — covers the regressions called out in PR #109's
+# Tests for pfile_to_afs() - covers the regressions called out in PR #109's
 # review (error handling, poly_only filter, ploidy probe corner case, dup
 # SNP id rejection, FID-less psam) plus an equivalence check against
 # plink_to_afs() on the matching BED fixture.
@@ -69,8 +69,8 @@ test_that("FID-less .psam reads with a single 'unknown' population", {
 test_that("no .pvar CM column triggers cm = 0 + warning", {
   dir = withr::local_tempdir()
   fx = build_pfile_fixture(dir, with_multi = FALSE, with_cm_col = FALSE)
-  # alert_warning() is `cat(crayon::yellow(...))` — written to stdout, not
-  # through R's signalling system — so grab the printed output and grep.
+  # alert_warning() is `cat(crayon::yellow(...))` - written to stdout, not
+  # through R's signalling system - so grab the printed output and grep.
   out = capture.output(
     res <- pfile_to_afs(fx$pfile_pref, verbose = TRUE)
   )
@@ -114,7 +114,7 @@ test_that("adjust_pseudohaploid = 0 behaves as FALSE (diploid assumed; issue #3)
   expect_equal(with_zero$afs,    with_false$afs)
   expect_equal(with_zero$counts, with_false$counts)
   # Counts should be 2 * n_samples in each populated pop = 6 per row. rs7
-  # carries hand-injected missing data in popB so its count is < 6 — exclude
+  # carries hand-injected missing data in popB so its count is < 6 - exclude
   # it from the all-rows check, then verify it independently.
   expect_true(all(with_zero$counts[setdiff(rownames(with_zero$counts), "rs7"), "popA"] == 6))
   expect_true(all(with_zero$counts[setdiff(rownames(with_zero$counts), "rs7"), "popB"] == 6))
@@ -124,9 +124,9 @@ test_that("adjust_pseudohaploid = 0 behaves as FALSE (diploid assumed; issue #3)
 test_that("poly_only keeps locally-polymorphic SNPs and drops globally-fixed ones (issue #4)", {
   dir = withr::local_tempdir()
   fx = build_pfile_fixture(dir, with_multi = FALSE)
-  # SNP rs5 is fixed REF in popA + fixed ALT in popB — locally polymorphic
+  # SNP rs5 is fixed REF in popA + fixed ALT in popB - locally polymorphic
   # (cpp_is_polymorphic == TRUE), row-mean = 0.5 so the legacy rowMeans
-  # check would keep it too. SNP rs6 is globally fixed (all REF) — must be
+  # check would keep it too. SNP rs6 is globally fixed (all REF) - must be
   # dropped under both filters.
   res_default = pfile_to_afs(fx$pfile_pref, poly_only = FALSE, verbose = FALSE)
   res_poly    = pfile_to_afs(fx$pfile_pref, poly_only = TRUE,  verbose = FALSE)
@@ -143,7 +143,7 @@ test_that("locally-polymorphic SNP (mean = 0.5) is kept under poly_only in both 
   if(is.na(fx$bed_pref)) skip("BED conversion failed; cannot compare")
   pf = pfile_to_afs(fx$pfile_pref, poly_only = TRUE, verbose = FALSE)
   bd = plink_to_afs(fx$bed_pref,   poly_only = TRUE, verbose = FALSE)
-  # rs5 is fixed REF in popA + fixed ALT in popB — row-mean = 0.5, so the
+  # rs5 is fixed REF in popA + fixed ALT in popB - row-mean = 0.5, so the
   # legacy rowMeans filter (plink_to_afs) keeps it, and cpp_is_polymorphic
   # (pfile_to_afs after #109 review) also keeps it because the AFs differ
   # across populations.
@@ -179,7 +179,7 @@ test_that("ploidy divisor produces correct AFs for a fully-diploid fixture (issu
   # With every sample diploid, ploidy_kept = 2 and (3 - ploidy_kept) = 1, so
   # geno values pass through unchanged into the rowsum; the divisor in
   # counts_block is 2 per sample. For a SNP with 2/2 ALT homozygotes in popB
-  # (3 samples) the AF must be exactly 1.0 — anything off-by-one in the
+  # (3 samples) the AF must be exactly 1.0 - anything off-by-one in the
   # ploidy math would show up as 0.5 or NaN.
   dir = withr::local_tempdir()
   fx = build_pfile_fixture(dir, with_multi = FALSE)
@@ -240,7 +240,7 @@ test_that("anygeno_to_aftable auto-dispatches PFILE when .pvar.zst is at the pre
   expect_equal(rc, 0L)
   expect_true(file.exists(paste0(pvar_path, ".zst")))
   expect_false(file.exists(pvar_path))
-  # anygeno_to_aftable is internal — call via admixtools:::.
+  # anygeno_to_aftable is internal - call via admixtools:::.
   res = admixtools:::anygeno_to_aftable(fx$pfile_pref, verbose = FALSE)
   expect_equal(nrow(res$afs), 20L)
 })

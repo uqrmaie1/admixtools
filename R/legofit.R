@@ -80,7 +80,7 @@ coerce_to_edge_tibble <- function(x) {
     )
     for (col in schema_cols) {
       # Skip vertex-level time/admix_event_time when the same column was already
-      # extracted from edge attributes above — they carry different semantics
+      # extracted from edge attributes above - they carry different semantics
       # (branch lengths vs absolute times) and would cause false-positive errors
       # from validate_edge_tibble(strict=TRUE).
       if ((col == "time" || col == "admix_event_time") && col %in% names(edges) &&
@@ -283,7 +283,7 @@ generate_param_names <- function(edges) {
       )
     }
   }
-  # Each admix event also gets its own "admix time" parameter — the time
+  # Each admix event also gets its own "admix time" parameter - the time
   # at which the event happens. LEGOFIT requires both parent segments of
   # an admix to reference a SINGLE shared time parameter (not merely the
   # same value); per-admix-event params satisfy this constraint.
@@ -628,7 +628,7 @@ compute_times <- function(edges, time_handling, drift_to_time,
   node_time <- topology_walk_bottom_up(edges, bl, leaf_times = terminal_t)
 
   # Path B (ghost segments) means admix dests get their own t= field
-  # like any other node — they aren't omitted from time declarations.
+  # like any other node - they aren't omitted from time declarations.
   # The LEGOFIT param-sharing constraint is handled by the ghost
   # segments anchoring at T_admix_<dest> instead.
   free <- setNames(!(all_nodes %in% leaves), all_nodes)
@@ -659,7 +659,7 @@ format_time_declarations <- function(time_param_names, times,
                                      admix_time_param_names = NULL,
                                      admix_pairs = NULL,
                                      fix_times = FALSE) {
-  # Per-node time declarations (every node gets one — admix dests are no
+  # Per-node time declarations (every node gets one - admix dests are no
   # longer omitted; ghost segments handle the param-sharing constraint).
   keep <- names(time_param_names)
   fixed   <- keep[!times$free[keep]]
@@ -869,7 +869,7 @@ PARAM_RE <- paste0(
 
 # Pre-process lines: join a line ending with one of `+ - * /` (per
 # parse.c:643-668 get_one_line continuation logic) with the next line.
-# Comment stripping must have already been applied — this function sees
+# Comment stripping must have already been applied - this function sees
 # post-strip lines. Trailing whitespace is trimmed defensively (matching
 # LEGOFIT's get_one_line whitespace-strip before the suffix check).
 #' @keywords internal
@@ -1200,7 +1200,7 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
         # Condition (b): cand is a derive child (real parent in derive)
         i <- which(derive_children == cand)
         if (length(i) != 1) next
-        # Condition (c): inherent — cand appeared as a mix parent here
+        # Condition (c): inherent - cand appeared as a mix parent here
         ghost_names <- c(ghost_names, cand)
       }
     }
@@ -1331,7 +1331,7 @@ read_lgo <- function(path = NULL, text = NULL, as = c("edges", "igraph")) {
   }
 
   # Only attach param_bounds when non-empty to avoid changing the class/
-  # attribute footprint of files that have no bounded declarations — this
+  # attribute footprint of files that have no bounded declarations - this
   # keeps round-trip equality tests (which use expect_equal and compare
   # attributes) clean for standard .lgo files.
   if (length(param_bounds) > 0) attr(result, "param_bounds") <- param_bounds
@@ -1373,7 +1373,7 @@ validate_via_roundtrip <- function(lgo_text, edges) {
   )
 
   # read_lgo emits type="normal" for non-admix edges; the input may use
-  # "edge" (qpgraph convention) or "normal" (random_sim convention) —
+  # "edge" (qpgraph convention) or "normal" (random_sim convention) -
   # treat them as equivalent for the topology check.
   norm_type <- function(t) ifelse(t == "edge", "normal", t)
   expected <- edges  %>% dplyr::select(from, to, type) %>%
@@ -1435,7 +1435,7 @@ validate_via_roundtrip <- function(lgo_text, edges) {
 #'   are emitted as `time fixed` at their computed absolute values rather than
 #'   `time free`. Use this with a free `twoN` (a named `twoN=` vector) when you
 #'   need to recover **absolute** effective population sizes: with both times and
-#'   `twoN` free, site-pattern data fit only the `Δt/twoN` ratios, so the absolute
+#'   `twoN` free, site-pattern data fit only the `dt/twoN` ratios, so the absolute
 #'   scale is unidentified (the data constrain the ratios but not the overall
 #'   scale). Fixing the times removes that degeneracy. With
 #'   `"fix_admix"` or `"init"` the fixed values are the real absolute times, so
@@ -1597,7 +1597,7 @@ graph_to_lgo <- function(graph,
 }
 
 # ===========================================================================
-# Phase B — read_legofit_output helpers + public function (Steps 6-7)
+# Phase B - read_legofit_output helpers + public function (Steps 6-7)
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -1729,7 +1729,7 @@ inform_convergence_status <- function(convergence, path = NULL) {
 
 # Drop ghost-segment params from the param table.
 # Ghost segments produce T_<ghost_name> params only if LEGOFIT
-# bleeds segment naming into the param namespace — which standard LEGOFIT does
+# bleeds segment naming into the param namespace - which standard LEGOFIT does
 # NOT do (ghost segments reference T_admix_<dest>, not their own T_<ghost>).
 # This function is therefore a no-op in practice; retained for future-proofing.
 #' @keywords internal
@@ -1835,7 +1835,7 @@ surface_mismatches <- function(params, edges, include_fixed = TRUE,
   # had_one / had_shared detection is correct even when include_fixed=FALSE.
   all_for_sentinels <- union(seen_names, sentinel_names)
 
-  # Rule 1: HARD CHECK — mutual exclusion of twoN modes
+  # Rule 1: HARD CHECK - mutual exclusion of twoN modes
   if (all(c("one", "shared") %in% all_for_sentinels)) {
     rlang::abort(
       c("File mixes coalescent-unit (one=1) and scalar (shared=N) twoN modes.",
@@ -2086,7 +2086,7 @@ classify_identifiability <- function(params, edges = NULL, node_times = NULL) {
 #'     e.g. mixFracs and shallow split times); `"structural_none"` (the value is
 #'     arbitrary, e.g. admix-event times, whose single-lineage segment admits no
 #'     coalescence); `"scale_degenerate"` (identified only up to a global scale,
-#'     when a model has both free times and free `twoN` so only `Δt/twoN` ratios
+#'     when a model has both free times and free `twoN` so only `dt/twoN` ratios
 #'     are fitted); `"weak_identified"` and `"weak_unconstrained"` (a deep tree
 #'     split time whose coalescent depth `t/twoN` puts it in the downward-biased
 #'     regime, with a looser onset depth when the split has a directly attached
@@ -2186,7 +2186,7 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
   }
 
   # 6. Return raw param table when no graph supplied.
-  # Drop the internal `source` and `free` columns — they are implementation
+  # Drop the internal `source` and `free` columns - they are implementation
   # details used for sentinel detection and graph alignment, not part of the
   # public API. Documented @return columns: name, value, family.
   # Also fire the convergence inform here (same as the graph path) so callers
@@ -2221,7 +2221,7 @@ read_legofit_output <- function(path, graph = NULL, include_fixed = TRUE) {
 }
 
 # ===========================================================================
-# Phase C — read_legofit_bootstrap helpers + public function (Steps 8-9)
+# Phase C - read_legofit_bootstrap helpers + public function (Steps 8-9)
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -2353,9 +2353,9 @@ read_legofit_bootstrap <- function(path, graph = NULL) {
 
   # 1. Parse the CI table
   cis <- parse_bootci_output(lines)
-  # → tibble(parameter, est, low, high [, lbl])
+  # -> tibble(parameter, est, low, high [, lbl])
 
-  # 2. Optionally align to graph (drops ghost params — no-op currently).
+  # 2. Optionally align to graph (drops ghost params - no-op currently).
   # drop_ghost_params expects a column named 'name'; cis uses 'parameter'.
   # Rename around the call so the column contract is satisfied when the
   # function is eventually made non-trivial.

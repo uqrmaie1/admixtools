@@ -363,7 +363,7 @@ test_that("validate_edge_tibble(strict=TRUE) errors when nodes$time set but edge
     twoN = NA_real_, time_param = NA_character_,
     time = 1.5, admix_event_time = NA_real_
   )
-  # edges has no $time column — strict mode must catch this
+  # edges has no $time column - strict mode must catch this
   expect_error(
     validate_edge_tibble(edges, strict = TRUE),
     class = "admixtools_invalid_graph")

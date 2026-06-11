@@ -26,7 +26,7 @@ make_minimal_igraph <- function() {
 #
 # 18 nodes, 13 normal edges, 4 admixture events (mN, mS, mXY, mSND).
 # Internal segments that were `samples=1` in LEGOFIT (n, v, a, y2, s,
-# etc.) lose their sample status here — admixtools' edge tibble does
+# etc.) lose their sample status here - admixtools' edge tibble does
 # not model sampled internal nodes. The 3 admixtools leaves of this
 # topology are x, y, d.
 #
@@ -88,13 +88,13 @@ make_rogers2020_graph <- function() {
 
 # 7-node graph with a bifurcating root and an outgroup leaf.
 # Topology:
-#   Root → Outgroup        (the outgroup leaf)
-#   Root → IngroupRoot     (the new root after stripping)
-#     IngroupRoot → A
-#     IngroupRoot → B
+#   Root -> Outgroup        (the outgroup leaf)
+#   Root -> IngroupRoot     (the new root after stripping)
+#     IngroupRoot -> A
+#     IngroupRoot -> B
 #     A -.admix.-> M
 #     B -.admix.-> M
-#     M → X
+#     M -> X
 make_minimal_graph_with_outgroup <- function() {
   tibble::tribble(
     ~from,         ~to,            ~type,    ~weight,

@@ -48,7 +48,7 @@ millisecond precision in UTC. The \code{cache_id} value mirrors the
 
 \code{cache_metadata.json} is written via tempfile + \code{file.rename}, which is
 atomic on POSIX filesystems: a SIGKILL mid-\code{extract_f2} either leaves the
-previous version intact or commits the new one — never a truncated file.
+previous version intact or commits the new one - never a truncated file.
 }
 \examples{
 \dontrun{

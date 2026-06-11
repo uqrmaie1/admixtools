@@ -96,11 +96,11 @@ test_that("inform_convergence_status: legofit_fit_incomplete on finished_iterati
 })
 
 # ---------------------------------------------------------------------------
-# read_legofit_output — end-to-end
+# read_legofit_output - end-to-end
 # ---------------------------------------------------------------------------
 
-# Case 1: smoke — parses without error
-test_that("T1: smoke — read_legofit_output parses ourex1.legofit", {
+# Case 1: smoke - parses without error
+test_that("T1: smoke - read_legofit_output parses ourex1.legofit", {
   expect_no_error(read_legofit_output(ourex1_path()))
 })
 
@@ -112,7 +112,7 @@ test_that("T2: returns expected columns with graph", {
   expect_true(all(expected_cols %in% names(result)))
 })
 
-# Case 3: fitted times correct — T_xy = 0.5, T_xyz = 2 (from ourex1)
+# Case 3: fitted times correct - T_xy = 0.5, T_xyz = 2 (from ourex1)
 test_that("T3: fitted times attach to correct edges", {
   result <- read_legofit_output(ourex1_path(), graph = ourex1_graph())
   # T_xy = 0.5 is the time of segment xy; edges with to=xy should have time~0.5
@@ -131,7 +131,7 @@ test_that("T4: node_times attribute contains all nodes including root", {
   expect_equal(nt[["xy"]],  0.5, tolerance = 1e-4)
 })
 
-# Case 5: no admix graph — admix_event_time column is all NA
+# Case 5: no admix graph - admix_event_time column is all NA
 test_that("T5: admix_event_time is NA for no-admix graph", {
   result <- read_legofit_output(ourex1_path(), graph = ourex1_graph())
   expect_true(all(is.na(result$admix_event_time)))
@@ -233,7 +233,7 @@ test_that("read-time T_admix collision aborts legofit_invalid_input", {
 # Regression tests for code-review fixes
 # ---------------------------------------------------------------------------
 
-# Fix 1: seq() descending bug — header-is-last-line should give a clean error
+# Fix 1: seq() descending bug - header-is-last-line should give a clean error
 # not a "subscript out of bounds" crash.  The minimal trigger is a file with NO
 # Initial block (so fixed_initial is also 0 rows) and "Fitted parameter values"
 # as the very last line.
