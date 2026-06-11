@@ -2302,7 +2302,7 @@ reconstruct_from_leafdist = function(leafdist) {
   p2 %>% left_join(parents %>% select(from, d), by = 'from') %>% rowwise %>% mutate(d = list(union(to, d)), dnum = length(d), desc = paste(sort(shortest_unique_prefixes(d)), collapse = '_')) %>% ungroup
 
 
-  graph = graph.empty()
+  graph = igraph::make_empty_graph()
   graph %<>% add_vertices(length(leaves), name = leaves)
   for(i in seq_along(leaves)) {
     l = leaves[i]
@@ -4124,7 +4124,7 @@ adjlist_find_paths = function(a, n, m, path = c()) {
 
 paths_from_to = function(graph, from, to) {
   # Find paths in graph from vertex source to vertex dest
-  adj = get.adjlist(graph, mode = 'out')
+  adj = igraph::as_adj_list(graph, mode = 'out')
   nam = names(V(graph))
   adjlist_find_paths(adj, which(nam == from), which(nam == to)) %>% map(~nam[.])
 }

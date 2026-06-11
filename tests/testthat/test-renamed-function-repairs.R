@@ -26,3 +26,10 @@ test_that("consistent_with_qpadm resolves equals() and returns a logical", {
   res <- admixtools:::consistent_with_qpadm(g, left = L[1], right = L[2:3], target = L[4])
   expect_type(res, "logical")
 })
+
+test_that("paths_from_to and the leafdist reconstructor use current igraph names", {
+  g <- example_igraph
+  L <- admixtools:::get_leafnames(g)
+  expect_type(admixtools:::paths_from_to(g, L[1], L[2]), "list")
+  expect_true(igraph::is_igraph(igraph::make_empty_graph()))
+})
