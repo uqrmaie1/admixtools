@@ -41,8 +41,10 @@ vignette builds anywhere.
 ## Write: a graph to a .lgo file
 
 We start from a small three-leaf tree with no admixture. The leaves are `x`,
-`y`, and `z`; `xy` is their internal ancestor and `xyz` is the root. The
-`time` column gives node ages, oldest at the root.
+`y`, and `z`; `xy` is the ancestor of `x` and `y`, and the root `xyz` is the
+ancestor of `xy` and `z`. The `time` column gives the length of each edge;
+`graph_to_lgo()` accumulates those lengths from the leaves upward to derive the
+absolute node ages (leaves at the present, the root oldest).
 
 ```{r demo-graph}
 demo_graph <- tibble::tribble(
@@ -63,8 +65,11 @@ the `derive` relationships that wire the topology together.
 cat(graph_to_lgo(demo_graph), sep = "\n")
 ```
 
-Split times that are free to be fitted appear as `time free`, fixed leaf times
-as `time fixed`. Each leaf segment carries `samples=1`.
+Leaf times are emitted as `time fixed` (all `0` here, the present) and the
+internal split times as `time free` for the optimizer. The free values shown
+are the starting points derived from the edge lengths: `T_xy=0.5` matches the
+`xy`-to-`x` edge, and `T_xyz=2` the `xyz`-to-`z` edge above it. Each leaf
+segment carries `samples=1`.
 
 ## Fit: run LEGOFIT
 
@@ -86,7 +91,8 @@ fit <- run_legofit(
 )
 ```
 
-Instead of running it, we load the cached fit:
+Instead of running it, we load the cached result, which is exactly what that
+`run_legofit()` call returns:
 
 ```{r fit-cached}
 fit <- readRDS(ext("demo_fit.rds"))
@@ -97,10 +103,11 @@ fit
 
 `read_legofit_output()` returns the input edges with fitted values filled in.
 The `time` column now holds the LEGOFIT-fitted age of each edge's younger
-endpoint; `twoN` holds the fitted effective population size. For an
-admixture graph, `admix_prop` and `admix_event_time` would carry the fitted
-mixture fractions and admixture-event times (there is no admixture in this
-demo, so those are `NA`).
+endpoint; `twoN` holds the effective population size (fixed at `1` throughout
+this demo, so every value is `1` here; a model with free `twoN` would show the
+fitted sizes instead). For an admixture graph, `admix_prop` and
+`admix_event_time` would carry the fitted mixture fractions and
+admixture-event times (there is no admixture in this demo, so those are `NA`).
 
 Two pieces of fit metadata ride along as attributes. `node_times` is the full
 set of fitted node ages, including the root, which has no incoming edge and so
@@ -123,12 +130,13 @@ site-pattern data can actually constrain (for example, admixture-event times
 are structurally non-identifiable). See `?read_legofit_output` for the full
 classification.
 
-## Round trip: reading a real .lgo file
+## Reading a real .lgo file
 
 The write direction is only half of the interoperability story. LEGOFIT
 `.lgo` files written elsewhere can be read straight into an ADMIXTOOLS edge
-tibble with `read_lgo()`. Here we read a 20-population graph that ships as a
-cached fixture.
+tibble with `read_lgo()`. Here we read a real archaic-admixture model that
+ships as a cached fixture: 18 nodes and 21 edges, four admixture events, and
+two sampled internal nodes.
 
 ```{r read-lgo}
 rha20 <- read_lgo(ext("rha20.lgo"))
@@ -137,9 +145,9 @@ head(rha20)
 ```
 
 `read_lgo()` is pure R and needs no external tool, so this chunk runs at build
-time. The file parses into its full topology, including internal nodes that
-are themselves sampled. LEGOFIT allows a `segment` to be both an internal
-ancestor and a sampled population.
+time. The file parses into its full topology. Two of its nodes are sampled
+internal nodes: LEGOFIT allows a `segment` to be both an internal ancestor and
+a sampled population, which a leaves-only representation cannot express.
 
 When a downstream analysis needs every sampled population to sit on its own
 tip, `add_sampled_tips()` splits each sampled internal node by attaching a new
