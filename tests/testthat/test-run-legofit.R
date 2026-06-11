@@ -38,6 +38,39 @@ test_that("run_legofit errors clearly on a non-existent .lgo path", {
     class = "legofit_invalid_input")
 })
 
+test_that("run_legofit aborts (not hangs) on an unfittable graph in the default time mode", {
+  # graph_to_lgo()'s default fix_admix would loop forever on a graph whose
+  # branch lengths are NA - an admixture graph with no `time` column, exactly
+  # what read_lgo() produces. run_legofit() predicts the NA branch lengths and
+  # aborts with guidance toward time_handling = "free" before shelling out.
+  fake <- tempfile(); file.create(fake); Sys.chmod(fake, "0755")
+  pat  <- tempfile(); file.create(pat)
+  on.exit(unlink(c(fake, pat)))
+  g <- read_lgo(system.file("extdata/legofit", "rha20.lgo", package = "admixtools"))
+
+  expect_error(
+    run_legofit(g, patterns = pat, bin = fake),
+    class = "legofit_invalid_input")
+})
+
+test_that("time_handling = 'free' skips the unfittable-graph guard", {
+  # Under `free` the topology walk is bypassed, so the guard must let the call
+  # through; execution then reaches the binary, which here exits non-zero ->
+  # legofit_run_failed. (Reaching the run at all is the point: the guard would
+  # have aborted earlier with legofit_invalid_input.) Gated off Windows, whose
+  # shebang-script exec semantics differ.
+  skip_on_os("windows")
+  fake <- tempfile(); writeLines(c("#!/bin/sh", "exit 3"), fake); Sys.chmod(fake, "0755")
+  pat  <- tempfile(); file.create(pat)
+  on.exit(unlink(c(fake, pat)))
+  g <- read_lgo(system.file("extdata/legofit", "rha20.lgo", package = "admixtools"))
+
+  expect_error(
+    suppressWarnings(
+      run_legofit(g, patterns = pat, bin = fake, time_handling = "free")),
+    class = "legofit_run_failed")
+})
+
 test_that("run_legofit fits the demo graph end-to-end (real binary)", {
   # Happy path: only runs when a real legofit binary is available. Point it
   # at a build via the LEGOFIT_BIN env var, or install legofit on PATH;
@@ -75,4 +108,14 @@ test_that("run_legofit fits the demo graph end-to-end (real binary)", {
   cached <- readRDS(rds)
   expect_identical(names(fit), names(cached))
   expect_equal(fit$time, cached$time, tolerance = 2e-2)
+
+  # A .lgo *path* input returns the same edge-tibble shape: read_lgo() recovers
+  # the topology under the hood, so graph= need not be supplied. (Previously a
+  # path with no graph= yielded the raw param table instead.)
+  lgo <- system.file("extdata/legofit", "demo.lgo", package = "admixtools")
+  fit_path <- run_legofit(lgo, patterns = opf, bin = bin,
+                          args = c("--threads", "1", "-1", "-d", "0"))
+  expect_s3_class(fit_path, "tbl_df")
+  expect_true(all(c("from", "to", "time") %in% names(fit_path)))
+  expect_false(is.null(attr(fit_path, "node_times")))
 })

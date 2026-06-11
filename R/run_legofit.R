@@ -11,32 +11,44 @@
 #'
 #' @details
 #' When `graph_or_lgo` is a graph, it is written out with [graph_to_lgo()];
-#' extra arguments in `...` are forwarded there. Note that the
-#' [graph_to_lgo()] default `time_handling = "fix_admix"` is unreliable for
-#' graphs with admixture or NA drift lengths (it can fail to converge or
-#' hang); pass `time_handling = "free"` through `...` for those.
+#' extra arguments in `...` are forwarded there. The [graph_to_lgo()] default
+#' `time_handling = "fix_admix"` (and `"init"`) cannot place node times for
+#' graphs with admixture or missing drift lengths: the resulting NA branch
+#' lengths make [graph_to_lgo()]'s topology walk loop forever. `run_legofit()`
+#' detects this case up front and aborts with a `legofit_invalid_input`
+#' condition pointing you to `time_handling = "free"`, rather than hanging.
+#' Pass `time_handling = "free"` through `...` for such graphs.
 #'
-#' The default `args` run a single-threaded stochastic fit. For a
-#' deterministic run (e.g. to reproduce a cached result) pass
-#' `args = c("--threads", "1", "-1", "-d", "0")`.
+#' `--threads` is effectively required by `legofit`, so it is always passed
+#' (defaulting to `1`) even when you override `args` to add other flags; an
+#' explicit `--threads` in `args` wins. The default `args` run a
+#' single-threaded stochastic fit. For a deterministic run (e.g. to reproduce
+#' a cached result) pass `args = c("--threads", "1", "-1", "-d", "0")`.
 #'
 #' @param graph_or_lgo An admixtools edge tibble / igraph, or a path to a
 #'   .lgo file.
 #' @param patterns Path to a LEGOFIT site-pattern (.opf) file.
 #' @param bin Path to the `legofit` binary, or a bare command name to look
 #'   up on `PATH`. Defaults to `"legofit"` on `PATH`.
-#' @param args Character vector of extra flags passed to `legofit`.
-#' @param graph When `graph_or_lgo` is a .lgo path, the admixtools graph
-#'   to align the fitted parameters to (forwarded to read_legofit_output).
+#' @param args Character vector of flags passed to `legofit`. `--threads` is
+#'   always ensured (see Details).
+#' @param graph When `graph_or_lgo` is a .lgo path, the admixtools graph to
+#'   align the fitted parameters to. Defaults to the topology parsed from the
+#'   .lgo file with [read_lgo()], so a path input returns an edge tibble just
+#'   like a graph input.
 #' @param ... Additional arguments forwarded to [graph_to_lgo()] when
 #'   `graph_or_lgo` is a graph (for example `time_handling = "free"`).
-#' @return The tibble returned by [read_legofit_output()].
+#' @return An edge tibble: the input edges with the LEGOFIT-fitted values
+#'   filled in, as returned by [read_legofit_output()] (carrying the
+#'   `node_times`, `fit_convergence`, and `identifiability` attributes).
 #' @export
 run_legofit <- function(graph_or_lgo, patterns, bin = "legofit",
                         args = c("--threads", "1"), graph = NULL, ...) {
   # `--threads` is effectively required by legofit's CLI
-  # (usage: legofit [options] --threads <x> <input.lgo> <data.txt>);
-  # default to a single thread. Callers override via `args`.
+  # (usage: legofit [options] --threads <x> <input.lgo> <data.txt>). Ensure it
+  # is always present so a caller who overrides `args` to add other flags (e.g.
+  # `-1 -d 0`) need not remember to re-supply it. An explicit `--threads` wins.
+  if (!"--threads" %in% args) args <- c("--threads", "1", args)
 
   # Resolve the binary. A `bin` that contains a path separator is treated as
   # an explicit path and used as-is; a bare command name like "legofit" is
@@ -63,10 +75,44 @@ run_legofit <- function(graph_or_lgo, patterns, bin = "legofit",
       rlang::abort(sprintf(".lgo file not found: %s", graph_or_lgo),
                    class = "legofit_invalid_input")
     lgo_path <- graph_or_lgo
+    # Align the fit to an edge tibble so a .lgo path returns the same shape as
+    # a graph input. With graph = NULL, read_legofit_output() would hand back
+    # the raw param table instead; parse the .lgo we were given to recover its
+    # topology so both entry points return an edge tibble.
+    if (is.null(graph)) graph <- read_lgo(lgo_path)
   } else {
+    # Fail fast instead of hanging. graph_to_lgo()'s "fix_admix"/"init" time
+    # modes feed branch lengths into a bottom-up topology walk that loops
+    # forever when any branch length is NA: the NA-fed node never resolves yet
+    # the walk keeps reporting progress. That is exactly the admixture /
+    # missing-drift case (e.g. the column-less edge tibble from read_lgo()).
+    # Predict the branch lengths the walk would see and abort early if any are
+    # NA, rather than spinning. (`time_handling = "free"` skips the walk.)
+    dots <- list(...)
+    th <- if ("time_handling" %in% names(dots)) dots$time_handling else "fix_admix"
+    th <- tryCatch(match.arg(th, c("fix_admix", "init", "free")),
+                   error = function(cnd) NA_character_)
+    if (!is.na(th) && th %in% c("fix_admix", "init")) {
+      edg <- suppressWarnings(validate_edge_tibble(coerce_to_edge_tibble(graph_or_lgo)))
+      dtt <- if ("drift_to_time" %in% names(dots)) dots$drift_to_time
+             else default_drift_to_time
+      bl  <- if ("time" %in% names(edg))
+               ifelse(!is.na(edg$time), edg$time, dtt(edg$weight, edg$to))
+             else dtt(edg$weight, edg$to)
+      if (identical(th, "fix_admix")) bl[edg$type == "admix"] <- 0
+      if (anyNA(bl))
+        rlang::abort(
+          c(sprintf(paste("graph_to_lgo(time_handling = \"%s\") cannot place every",
+                          "node: some branch lengths are NA (admixture or missing",
+                          "drift lengths)."), th),
+            "x" = "Running as-is would hang in graph_to_lgo()'s topology walk.",
+            "i" = paste("Pass `time_handling = \"free\"` to run_legofit() to let the",
+                        "LEGOFIT optimizer fit these times instead.")),
+          class = "legofit_invalid_input")
+    }
     lgo_path <- tempfile(fileext = ".lgo")
+    on.exit(unlink(lgo_path), add = TRUE)          # register before writing
     writeLines(graph_to_lgo(graph_or_lgo, ...), lgo_path)
-    on.exit(unlink(lgo_path), add = TRUE)
     if (is.null(graph)) graph <- graph_or_lgo
   }
 

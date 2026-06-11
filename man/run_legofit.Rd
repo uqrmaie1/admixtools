@@ -22,16 +22,21 @@ run_legofit(
 \item{bin}{Path to the \code{legofit} binary, or a bare command name to look
 up on \code{PATH}. Defaults to \code{"legofit"} on \code{PATH}.}
 
-\item{args}{Character vector of extra flags passed to \code{legofit}.}
+\item{args}{Character vector of flags passed to \code{legofit}. \code{--threads} is
+always ensured (see Details).}
 
-\item{graph}{When \code{graph_or_lgo} is a .lgo path, the admixtools graph
-to align the fitted parameters to (forwarded to read_legofit_output).}
+\item{graph}{When \code{graph_or_lgo} is a .lgo path, the admixtools graph to
+align the fitted parameters to. Defaults to the topology parsed from the
+.lgo file with \code{\link[=read_lgo]{read_lgo()}}, so a path input returns an edge tibble just
+like a graph input.}
 
 \item{...}{Additional arguments forwarded to \code{\link[=graph_to_lgo]{graph_to_lgo()}} when
 \code{graph_or_lgo} is a graph (for example \code{time_handling = "free"}).}
 }
 \value{
-The tibble returned by \code{\link[=read_legofit_output]{read_legofit_output()}}.
+An edge tibble: the input edges with the LEGOFIT-fitted values
+filled in, as returned by \code{\link[=read_legofit_output]{read_legofit_output()}} (carrying the
+\code{node_times}, \code{fit_convergence}, and \code{identifiability} attributes).
 }
 \description{
 Thin convenience wrapper around the external \code{legofit} binary. Writes
@@ -45,12 +50,17 @@ argument). LEGOFIT is an external tool, not an R dependency; this
 function errors cleanly when it is not found.
 
 When \code{graph_or_lgo} is a graph, it is written out with \code{\link[=graph_to_lgo]{graph_to_lgo()}};
-extra arguments in \code{...} are forwarded there. Note that the
-\code{\link[=graph_to_lgo]{graph_to_lgo()}} default \code{time_handling = "fix_admix"} is unreliable for
-graphs with admixture or NA drift lengths (it can fail to converge or
-hang); pass \code{time_handling = "free"} through \code{...} for those.
+extra arguments in \code{...} are forwarded there. The \code{\link[=graph_to_lgo]{graph_to_lgo()}} default
+\code{time_handling = "fix_admix"} (and \code{"init"}) cannot place node times for
+graphs with admixture or missing drift lengths: the resulting NA branch
+lengths make \code{\link[=graph_to_lgo]{graph_to_lgo()}}'s topology walk loop forever. \code{run_legofit()}
+detects this case up front and aborts with a \code{legofit_invalid_input}
+condition pointing you to \code{time_handling = "free"}, rather than hanging.
+Pass \code{time_handling = "free"} through \code{...} for such graphs.
 
-The default \code{args} run a single-threaded stochastic fit. For a
-deterministic run (e.g. to reproduce a cached result) pass
-\code{args = c("--threads", "1", "-1", "-d", "0")}.
+\code{--threads} is effectively required by \code{legofit}, so it is always passed
+(defaulting to \code{1}) even when you override \code{args} to add other flags; an
+explicit \code{--threads} in \code{args} wins. The default \code{args} run a
+single-threaded stochastic fit. For a deterministic run (e.g. to reproduce
+a cached result) pass \code{args = c("--threads", "1", "-1", "-d", "0")}.
 }
