@@ -7,3 +7,10 @@ test_that("joint_sfs(pref=) builds an SFS via anygeno_to_aftable (dropped geno_t
   sfs <- suppressWarnings(joint_sfs(NULL, pref = fix$pfile_pref))
   expect_s3_class(sfs, "tbl_df")
 })
+
+test_that("f4blockdat_from_geno(allsnps='qpfs') errors clearly instead of calling a dropped function", {
+  expect_error(
+    f4blockdat_from_geno("nonexistent", left = c("A", "B"), right = c("C", "D"), allsnps = "qpfs"),
+    "qpfstats"
+  )
+})

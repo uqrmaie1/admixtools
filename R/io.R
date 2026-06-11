@@ -3284,9 +3284,7 @@ f4blockdat_from_geno = function(pref, popcombs = NULL, left = NULL, right = NULL
   stopifnot(is.null(popcombs) || is.null(left) && is.null(right))
 
   if(allsnps == 'qpfs') {
-    return(f4blockdat_from_geno_qpfs(pref, popcombs, auto_only = auto_only,
-                                     blgsize = blgsize,
-                                     block_lengths = block_lengths, f4mode = f4mode, verbose = verbose))
+    stop("allsnps = 'qpfs' is not implemented in f4blockdat_from_geno(). Use qpfstats() for qpfstats-style f-statistics.")
   }
 
   if(is.null(popcombs)) popcombs = tibble(pop1 = left[1], pop2 = left[-1]) %>%
