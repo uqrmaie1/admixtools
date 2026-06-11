@@ -3204,7 +3204,7 @@ proxypred = function(sim, graphlist, auc = FALSE) {
   out = expand_grid(pop = pops, proxy = pops) %>% filter(pop != proxy) %>%
     left_join(summarize_proxies(sim), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs = !is.na(nadmix)) %>%
-    left_join(summarize_graphlist(graphlist), by = c('pop', 'proxy')) %>%
+    left_join(summarize_proxies_list(graphlist), by = c('pop', 'proxy')) %>%
     transmute(pop, proxy, obs, pred = replace_na(frac, 0))
   if(auc) out = out %$% pROC::auc(obs, pred) %>% c
   out

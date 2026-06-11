@@ -14,3 +14,8 @@ test_that("f4blockdat_from_geno(allsnps='qpfs') errors clearly instead of callin
     "qpfstats"
   )
 })
+
+test_that("proxypred uses summarize_proxies_list (dropped summarize_graphlist)", {
+  g <- example_igraph
+  expect_s3_class(admixtools:::proxypred(g, list(g)), "data.frame")
+})
