@@ -634,7 +634,7 @@ joint_sfs = function(afs, pref = NULL) {
 
   if(!is.null(pref)) {
     if(!is.null(afs)) stop("'afs' and 'pref' can't be provided at the same time!")
-    afs = geno_to_afs(pref)
+    afs = anygeno_to_aftable(pref)
   }
   popcounts = apply(afs$counts, 2, max)
   obs = (afs$afs * afs$counts) %>% as_tibble() %>% group_by_all %>% count %>% ungroup
