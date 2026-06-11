@@ -9,7 +9,8 @@ run_legofit(
   patterns,
   bin = Sys.which("legofit"),
   args = c("--threads", "1"),
-  graph = NULL
+  graph = NULL,
+  ...
 )
 }
 \arguments{
@@ -24,6 +25,9 @@ run_legofit(
 
 \item{graph}{When \code{graph_or_lgo} is a .lgo path, the admixtools graph
 to align the fitted parameters to (forwarded to read_legofit_output).}
+
+\item{...}{Additional arguments forwarded to \code{\link[=graph_to_lgo]{graph_to_lgo()}} when
+\code{graph_or_lgo} is a graph (for example \code{time_handling = "free"}).}
 }
 \value{
 The tibble returned by \code{\link[=read_legofit_output]{read_legofit_output()}}.
@@ -38,4 +42,14 @@ admixtools edge tibble via \code{\link[=read_legofit_output]{read_legofit_output
 Requires the \code{legofit} executable on \code{PATH} (or via the \code{bin}
 argument). LEGOFIT is an external tool, not an R dependency; this
 function errors cleanly when it is not found.
+
+When \code{graph_or_lgo} is a graph, it is written out with \code{\link[=graph_to_lgo]{graph_to_lgo()}};
+extra arguments in \code{...} are forwarded there. Note that the
+\code{\link[=graph_to_lgo]{graph_to_lgo()}} default \code{time_handling = "fix_admix"} is unreliable for
+graphs with admixture or NA drift lengths (it can fail to converge or
+hang); pass \code{time_handling = "free"} through \code{...} for those.
+
+The default \code{args} run a single-threaded stochastic fit. For a
+deterministic run (e.g. to reproduce a cached result) pass
+\code{args = c("--threads", "1", "-1", "-d", "0")}.
 }

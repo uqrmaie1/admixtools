@@ -6,8 +6,8 @@
 # Program was compiled: May 18 2026 12:10:55
 # Program was run: Thu Jun 11 11:37:55 2026
 #
-# cmd: /Volumes/Bioinformation/at2Contrib/legofit/src/legofit --threads 1 -1 -d 0 inst/extdata/legofit/demo.lgo inst/extdata/legofit/demo.opf
-# curr dir: /Volumes/Bioinformation/at2Contrib/admixtools-phase3
+# cmd: legofit --threads 1 -1 -d 0 demo.lgo demo.opf
+# curr dir: .
 # Stage nOptItr nSimReps
 #     0    1000        1
 # algorithm          : deterministic

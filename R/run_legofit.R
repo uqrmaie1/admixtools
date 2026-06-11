@@ -9,6 +9,17 @@
 #' argument). LEGOFIT is an external tool, not an R dependency; this
 #' function errors cleanly when it is not found.
 #'
+#' @details
+#' When `graph_or_lgo` is a graph, it is written out with [graph_to_lgo()];
+#' extra arguments in `...` are forwarded there. Note that the
+#' [graph_to_lgo()] default `time_handling = "fix_admix"` is unreliable for
+#' graphs with admixture or NA drift lengths (it can fail to converge or
+#' hang); pass `time_handling = "free"` through `...` for those.
+#'
+#' The default `args` run a single-threaded stochastic fit. For a
+#' deterministic run (e.g. to reproduce a cached result) pass
+#' `args = c("--threads", "1", "-1", "-d", "0")`.
+#'
 #' @param graph_or_lgo An admixtools edge tibble / igraph, or a path to a
 #'   .lgo file.
 #' @param patterns Path to a LEGOFIT site-pattern (.opf) file.
@@ -16,13 +27,15 @@
 #' @param args Character vector of extra flags passed to `legofit`.
 #' @param graph When `graph_or_lgo` is a .lgo path, the admixtools graph
 #'   to align the fitted parameters to (forwarded to read_legofit_output).
+#' @param ... Additional arguments forwarded to [graph_to_lgo()] when
+#'   `graph_or_lgo` is a graph (for example `time_handling = "free"`).
 #' @return The tibble returned by [read_legofit_output()].
 #' @export
 run_legofit <- function(graph_or_lgo, patterns, bin = Sys.which("legofit"),
-                        args = c("--threads", "1"), graph = NULL) {
+                        args = c("--threads", "1"), graph = NULL, ...) {
   # `--threads` is effectively required by legofit's CLI
   # (usage: legofit [options] --threads <x> <input.lgo> <data.txt>);
-  # default to a single deterministic thread. Callers override via `args`.
+  # default to a single thread. Callers override via `args`.
   if (!nzchar(bin) || !file.exists(bin))
     rlang::abort(
       c("Could not find the `legofit` executable.",
@@ -32,13 +45,17 @@ run_legofit <- function(graph_or_lgo, patterns, bin = Sys.which("legofit"),
     rlang::abort(sprintf("Site-pattern file not found: %s", patterns),
                  class = "legofit_invalid_input")
 
-  # Resolve the .lgo: write one if handed a graph, else use the path.
-  if (is.character(graph_or_lgo) && length(graph_or_lgo) == 1 &&
-      file.exists(graph_or_lgo)) {
+  # Resolve the .lgo. A length-1 character argument is meant to be a path;
+  # if it doesn't exist, say so plainly rather than failing deep inside
+  # graph_to_lgo() trying to coerce a string to a graph.
+  if (is.character(graph_or_lgo) && length(graph_or_lgo) == 1) {
+    if (!file.exists(graph_or_lgo))
+      rlang::abort(sprintf(".lgo file not found: %s", graph_or_lgo),
+                   class = "legofit_invalid_input")
     lgo_path <- graph_or_lgo
   } else {
     lgo_path <- tempfile(fileext = ".lgo")
-    writeLines(graph_to_lgo(graph_or_lgo), lgo_path)
+    writeLines(graph_to_lgo(graph_or_lgo, ...), lgo_path)
     on.exit(unlink(lgo_path), add = TRUE)
     if (is.null(graph)) graph <- graph_or_lgo
   }
@@ -55,9 +72,9 @@ run_legofit <- function(graph_or_lgo, patterns, bin = Sys.which("legofit"),
     tail_err <- if (file.exists(err_path))
       paste(utils::tail(readLines(err_path, warn = FALSE), 5), collapse = "\n")
     else ""
+    msg <- sprintf("legofit exited with status %s.", code)
     rlang::abort(
-      c(sprintf("legofit exited with status %s.", code),
-        "i" = tail_err),
+      if (nzchar(tail_err)) c(msg, "i" = tail_err) else msg,
       class = "legofit_run_failed")
   }
 
