@@ -1,0 +1,172 @@
+---
+title: "Round-tripping admixture graphs through LEGOFIT"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Round-tripping admixture graphs through LEGOFIT}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+# Cached LEGOFIT artifacts ship under inst/extdata/legofit and are read with
+# system.file() so the vignette builds without the external binary.
+ext <- function(f) system.file("extdata/legofit", f, package = "admixtools")
+library(admixtools)
+```
+
+## Why LEGOFIT
+
+[LEGOFIT](https://github.com/alanrogers/legofit) estimates population history
+from the frequencies of nucleotide site patterns. It takes a description of an
+admixture graph (a `.lgo` file) and a file of observed site-pattern
+frequencies, then fits the free parameters of the graph (split times,
+population sizes, admixture fractions) to the data.
+
+ADMIXTOOLS 2 can now hand graphs to LEGOFIT and read fitted results back. This
+article walks the full loop: an ADMIXTOOLS edge tibble is written out to a
+`.lgo` file, LEGOFIT fits it, and the fitted parameters come back as an edge
+tibble you can keep working with. `graph_to_lgo()` provides the write
+direction and `read_legofit_output()` the read direction, with `run_legofit()`
+as a thin convenience wrapper over the external binary.
+
+LEGOFIT itself is an external command-line tool, not an R dependency. The
+chunks below that would invoke it are shown but not run; their results are
+loaded from small precomputed files that ship with the package, so this
+vignette builds anywhere.
+
+## Write: a graph to a .lgo file
+
+We start from a small three-leaf tree with no admixture. The leaves are `x`,
+`y`, and `z`; `xy` is the ancestor of `x` and `y`, and the root `xyz` is the
+ancestor of `xy` and `z`. The `time` column gives the length of each edge;
+`graph_to_lgo()` accumulates those lengths from the leaves upward to derive the
+absolute node ages (leaves at the present, the root oldest).
+
+```{r demo-graph}
+demo_graph <- tibble::tribble(
+  ~from,  ~to,   ~type,    ~weight,  ~time,
+  "xyz",  "xy",  "normal", NA_real_, 1.5,
+  "xyz",  "z",   "normal", NA_real_, 2,
+  "xy",   "x",   "normal", NA_real_, 0.5,
+  "xy",   "y",   "normal", NA_real_, 0.5
+)
+demo_graph
+```
+
+`graph_to_lgo()` turns the tibble into LEGOFIT's `.lgo` grammar: a block of
+time and population-size parameter declarations, one `segment` per node, and
+the `derive` relationships that wire the topology together.
+
+```{r write-lgo}
+cat(graph_to_lgo(demo_graph), sep = "\n")
+```
+
+Leaf times are emitted as `time fixed` (all `0` here, the present) and the
+internal split times as `time free` for the optimizer. The free values shown
+are the starting points derived from the edge lengths: `T_xy=0.5` matches the
+`xy`-to-`x` edge, and `T_xyz=2` the `xyz`-to-`z` edge above it. Each leaf
+segment carries `samples=1`.
+
+## Fit: run LEGOFIT
+
+With a `.lgo` file and a site-pattern file you call LEGOFIT. `run_legofit()`
+wraps the external binary: it writes the graph to a temporary `.lgo`, invokes
+`legofit`, and parses the fitted output back through `read_legofit_output()`.
+The site-pattern file used here (`demo.opf`) is LEGOFIT's bundled `ex1`
+example, vendored alongside the cached output.
+
+The next chunk is not evaluated when the vignette builds, because it needs the
+external `legofit` binary. It is the exact call that produced the cached
+result shown below.
+
+```{r fit, eval = FALSE}
+fit <- run_legofit(
+  demo_graph,
+  patterns = ext("demo.opf"),
+  args     = c("--threads", "1", "-1", "-d", "0")
+)
+```
+
+Instead of running it, we load the cached result, which is exactly what that
+`run_legofit()` call returns:
+
+```{r fit-cached}
+fit <- readRDS(ext("demo_fit.rds"))
+fit
+```
+
+## Read: the fitted edge tibble
+
+`read_legofit_output()` returns the input edges with fitted values filled in.
+The `time` column now holds the LEGOFIT-fitted age of each edge's younger
+endpoint; `twoN` holds the effective population size (fixed at `1` throughout
+this demo, so every value is `1` here; a model with free `twoN` would show the
+fitted sizes instead). For an admixture graph, `admix_prop` and
+`admix_event_time` would carry the fitted mixture fractions and
+admixture-event times (there is no admixture in this demo, so those are `NA`).
+
+Two pieces of fit metadata ride along as attributes. `node_times` is the full
+set of fitted node ages, including the root, which has no incoming edge and so
+does not appear in the `time` column:
+
+```{r node-times}
+attr(fit, "node_times")
+```
+
+`fit_convergence` records how the optimizer terminated. `status` is
+`"reached_goal"` when LEGOFIT converged, along with the final cost and the
+swarm spread:
+
+```{r convergence}
+attr(fit, "fit_convergence")
+```
+
+A third attribute, `identifiability`, flags which fitted values the
+site-pattern data can actually constrain (for example, admixture-event times
+are structurally non-identifiable). See `?read_legofit_output` for the full
+classification.
+
+## Reading a real .lgo file
+
+The write direction is only half of the interoperability story. LEGOFIT
+`.lgo` files written elsewhere can be read straight into an ADMIXTOOLS edge
+tibble with `read_lgo()`. Here we read a real archaic-admixture model that
+ships as a cached fixture: 18 nodes and 21 edges, four admixture events, and
+two sampled internal nodes.
+
+```{r read-lgo}
+rha20 <- read_lgo(ext("rha20.lgo"))
+nrow(rha20)
+head(rha20)
+```
+
+`read_lgo()` is pure R and needs no external tool, so this chunk runs at build
+time. The file parses into its full topology. Two of its nodes are sampled
+internal nodes: LEGOFIT allows a `segment` to be both an internal ancestor and
+a sampled population, which a leaves-only representation cannot express.
+
+When a downstream analysis needs every sampled population to sit on its own
+tip, `add_sampled_tips()` splits each sampled internal node by attaching a new
+leaf for the sample, leaving the internal node purely structural. Here it adds
+the tips for this graph's sampled internal nodes:
+
+```{r add-tips}
+nrow(rha20)
+nrow(add_sampled_tips(rha20))
+```
+
+This is the bridge to `qpgraph()` and the rest of the ADMIXTOOLS graph
+machinery, which expect sampled populations at the tips.
+
+## Availability
+
+LEGOFIT is an external tool and is not installed with ADMIXTOOLS 2. Install it
+from <https://github.com/alanrogers/legofit> and put the `legofit` binary on
+your `PATH`, or pass its location to `run_legofit(bin = ...)`. When the binary
+cannot be found, `run_legofit()` fails with a clear, typed condition
+(`legofit_binary_not_found`) rather than a raw system error, so calling code
+can detect and handle the missing tool.

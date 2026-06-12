@@ -1,0 +1,49 @@
+########################################
+# legofit: estimate population history #
+#        version 3675373-dirty         #
+########################################
+#
+# Program was compiled: May 18 2026 12:10:55
+# Program was run: Thu Jun 11 11:37:55 2026
+#
+# cmd: legofit --threads 1 -1 -d 0 demo.lgo demo.opf
+# curr dir: .
+# Stage nOptItr nSimReps
+#     0    1000        1
+# algorithm          : deterministic
+# ignoring probs <=  : 0
+# Branch length floor: 0
+# DE strategy        : 2
+#    F               : 0.3
+#    CR              : 0.8
+#    tolerance       : 3e-06
+# nthreads           : 1
+# range of 2N params : [1, 1.79769e+308]
+# range of t params  : [0, 1.79769e+308]
+# lgo input file     : inst/extdata/legofit/demo.lgo
+# site pat input file: inst/extdata/legofit/demo.opf
+# free parameters    : 2
+# points in DE swarm : 20
+# Including singleton site patterns.
+# cost function      : KL
+Initial parameter values
+Fixed:
+       T_z = 0
+       T_x = 0
+       T_y = 0
+       one = 1
+Free:
+     T_xyz = 2
+      T_xy = 0.5
+DiffEv reached_goal. cost=2.75248e-08 spread=2.52210e-06
+Fitted parameter values
+Free:
+     T_xyz = 2.00123
+      T_xy = 1.00123
+#       SitePat BranchLen
+              z  2.8786006
+              x  1.8786060
+              y  1.8786060
+            z:x  0.1226271
+            z:y  0.1226271
+            x:y  1.1226218

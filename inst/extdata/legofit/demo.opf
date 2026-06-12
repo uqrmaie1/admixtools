@@ -1,0 +1,20 @@
+#######################################
+# legosim: site pattern probabilities #
+#            version 1.89             #
+#######################################
+
+# Program was compiled: Oct 25 2020 10:29:22
+# Program was run: Sun Oct 25 13:21:23 2020
+
+# cmd: legosim -1 -d 0 a.lgo
+# input file                  : a.lgo
+# algorithm                   : deterministic
+# ignoring probs <=           : 0
+# including singleton site patterns.
+#       SitePat            Prob
+              x    0.2346716900
+              y    0.2346716900
+              z    0.3596716900
+            x:y    0.1403283100
+            x:z    0.0153283100
+            y:z    0.0153283100
