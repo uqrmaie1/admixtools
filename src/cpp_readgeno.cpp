@@ -17,9 +17,13 @@ using namespace Rcpp;
 
 
 // [[Rcpp::export]]
-NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec,
+IntegerMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec,
                                          int first, int last, bool transpose = false, bool verbose = true) {
 
+  // Returns an IntegerMatrix of genotype dosages in {0, 1, 2, NA_INTEGER},
+  // matching cpp_read_plink. Genotypes are integer-valued; an integer
+  // return halves the per-block buffer and lets the block feed
+  // cpp_gmat_to_aftable (arma::imat) without a double->int coercion copy.
   int val;
   long long len, bytespersnp;
   int readsnps = last - first;
@@ -46,8 +50,8 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
     }
   }
 
-  NumericMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
-  std::fill(geno.begin(), geno.end(), NA_REAL);
+  IntegerMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
+  std::fill(geno.begin(), geno.end(), NA_INTEGER);
 
   // char* header = new char[bytespersnp];
   // in.seekg(0, std::ifstream::beg);
@@ -91,14 +95,14 @@ NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, In
     if(!transpose) {
       for(int i = 0; i < nind; i++) {
         if(!indvec[i]) continue;
-        val = (double)tmp2[i];
+        val = tmp2[i];
         if(val != 3) geno(j, c) = val;
         c++;
       }
     } else {
       for(int i = 0; i < nind; i++) {
         if(!indvec[i]) continue;
-        val = (double)tmp2[i];
+        val = tmp2[i];
         if(val != 3) geno(c, j) = val;
         c++;
       }
@@ -285,9 +289,12 @@ List cpp_packedancestrymap_to_afs(String genofile, int nsnp, int nind, IntegerVe
 
 
 // [[Rcpp::export]]
-NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec,
+IntegerMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec,
                                   int first, int last, bool transpose = false, bool verbose = true) {
 
+  // Returns an IntegerMatrix of genotype dosages in {0, 1, 2, NA_INTEGER},
+  // matching cpp_read_plink. See that function for the rationale; the
+  // missing sentinel in EIGENSTRAT is 9 (vs 3 in BED/PACKEDANCESTRYMAP).
   int val;
   long long len, bytespersnp;
   int readsnps = last - first;
@@ -309,8 +316,8 @@ NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVe
     }
   }
 
-  NumericMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
-  std::fill(geno.begin(), geno.end(), NA_REAL);
+  IntegerMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
+  std::fill(geno.begin(), geno.end(), NA_INTEGER);
   in.seekg(first*bytespersnp, std::ifstream::beg);
   std::string tmp;
   for(int j = 0 ; j < readsnps; j++) {

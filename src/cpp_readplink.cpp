@@ -90,8 +90,15 @@ void decode_plink(unsigned char *out,
 
 
 // [[Rcpp::export]]
-NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec,
+IntegerMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec,
                              int first, int last, bool transpose = false, bool verbose = true) {
+
+  // Returns an IntegerMatrix of genotype dosages in {0, 1, 2, NA_INTEGER}
+  // (4-byte ints vs 8-byte doubles), halving the largest per-block
+  // allocation in the f4 / qpadm hot loop. NA_INTEGER (= INT_MIN) is R's
+  // missing-integer; consumers check `!= NA_INTEGER` / R-side is.na, not
+  // ISNAN. The whole-genotype read_plink() path is unaffected: R promotes
+  // the matrix to double on fix_ploidy's `xmat[,c] <- xmat[,c]/2`.
 
   int val;
   long long len, bytespersnp;
@@ -123,8 +130,8 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
     }
   }
 
-  NumericMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
-  std::fill(geno.begin(), geno.end(), NA_REAL);
+  IntegerMatrix geno(transpose?nindused:readsnps, transpose?readsnps:nindused);
+  std::fill(geno.begin(), geno.end(), NA_INTEGER);
 
   in.seekg(3+first*bytespersnp, std::ifstream::beg);
   unsigned char* tmp = new unsigned char[bytespersnp + 1];
@@ -163,14 +170,14 @@ NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector i
     if(!transpose) {
       for(int i = 0; i < nind; i++) {
         if(!indvec[i]) continue;
-        val = (double)tmp2[i];
+        val = tmp2[i];
         if(val != 3) geno(j, c) = val;
         c++;
       }
     } else {
       for(int i = 0; i < nind; i++) {
         if(!indvec[i]) continue;
-        val = (double)tmp2[i];
+        val = tmp2[i];
         if(val != 3) geno(c, j) = val;
         c++;
       }

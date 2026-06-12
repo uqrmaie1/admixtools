@@ -147,12 +147,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_gmat_to_aftable
-arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec, int nthreads);
+arma::mat cpp_gmat_to_aftable(arma::imat& gmat, arma::ivec& popvec, int nthreads);
 RcppExport SEXP _admixtools_cpp_gmat_to_aftable(SEXP gmatSEXP, SEXP popvecSEXP, SEXP nthreadsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type gmat(gmatSEXP);
+    Rcpp::traits::input_parameter< arma::imat& >::type gmat(gmatSEXP);
     Rcpp::traits::input_parameter< arma::ivec& >::type popvec(popvecSEXP);
     Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_gmat_to_aftable(gmat, popvec, nthreads));
@@ -291,7 +291,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_read_packedancestrymap
-NumericMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
+IntegerMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_packedancestrymap(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -343,7 +343,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_read_eigenstrat
-NumericMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
+IntegerMatrix cpp_read_eigenstrat(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_eigenstrat(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -361,7 +361,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_read_plink
-NumericMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
+IntegerMatrix cpp_read_plink(String bedfile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_plink(SEXP bedfileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

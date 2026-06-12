@@ -522,12 +522,12 @@ NumericVector row_prods(NumericMatrix x) {
 //
 // popvec is the 1-based per-individual pop assignment vector that
 // match() against the file's pop list produces upstream (length nind,
-// values in 1..npop). NA / NaN genotypes in gmat are skipped via R's
-// ISNAN macro (matches R's `!is.na(x)`, which returns FALSE for both
-// NA and NaN but TRUE for +/-Inf). Using std::isfinite or arma::is_finite
-// here would diverge from the R version on Inf inputs -- harmless on
-// real genotype data (values in {0,1,2,NA}) but a real semantic
-// difference, so we use ISNAN for strict equivalence.
+// values in 1..npop). gmat is an integer dosage matrix; missing cells
+// hold NA_INTEGER (INT_MIN) and are skipped via `g != NA_INTEGER`, the
+// integer analogue of R's `!is.na(x)`. A double matrix passed by an
+// older caller is coerced to integer at the R/C++ boundary (Inf/NaN ->
+// NA_INTEGER with R's "NAs introduced by coercion" warning); real
+// genotype data is {0,1,2,NA} so this is value-preserving.
 //
 // Returns an (npop x nsnp) matrix of reference-allele frequencies in
 // [0, 1], with NaN where a (pop, snp) cell had zero valid genotypes
@@ -538,7 +538,13 @@ NumericVector row_prods(NumericMatrix x) {
 // undefined behavior at the sum_g(p, s) index step.
 //
 // [[Rcpp::export]]
-arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec, int nthreads = 1) {
+arma::mat cpp_gmat_to_aftable(arma::imat& gmat, arma::ivec& popvec, int nthreads = 1) {
+  // gmat is an integer dosage matrix in {0, 1, 2, NA_INTEGER}. arma::imat
+  // (vs the previous arma::mat) lets every reader's output pass through
+  // without R coercing it to a double matrix per block: the BED/
+  // PACKEDANCESTRYMAP/EIGENSTRAT readers return IntegerMatrix and PFILE's
+  // pgenlibr::ReadIntList is already integer. Missing is checked with
+  // == NA_INTEGER (INT_MIN), the integer analogue of R's !is.na.
   const int nind = (int)gmat.n_rows;
   const int nsnp = (int)gmat.n_cols;
   if ((int)popvec.n_elem != nind) {
@@ -562,19 +568,19 @@ arma::mat cpp_gmat_to_aftable(arma::mat& gmat, arma::ivec& popvec, int nthreads 
   mat cnt   = zeros<mat>(npop, nsnp);
 
   // Parallel over SNPs. Each thread writes a distinct column of sum_g
-  // and cnt (gmat and sum_g/cnt are arma::mat, column-major), so column
-  // s is a contiguous slice owned by one thread; no cross-thread writes
-  // collide. Rcpp::stop is not callable inside the parallel region;
-  // the popvec validation above runs serially before we enter. nthreads
-  // is the caller-supplied budget (see f4blockdat_from_geno in R/io.R).
+  // and cnt (sum_g/cnt are arma::mat, column-major), so column s is a
+  // contiguous slice owned by one thread; no cross-thread writes collide.
+  // Rcpp::stop is not callable inside the parallel region; the popvec
+  // validation above runs serially before we enter. nthreads is the
+  // caller-supplied budget (see f4blockdat_from_geno in R/io.R).
   // schedule(static): per-column work is uniform (one pass over nind).
   ADMIXTOOLS_OMP_PARALLEL_FOR(nthreads, static)
   for (int s = 0; s < nsnp; ++s) {
     for (int i = 0; i < nind; ++i) {
-      const double g = gmat(i, s);
-      if (!ISNAN(g)) {
+      const int g = gmat(i, s);
+      if (g != NA_INTEGER) {
         const int p = popvec(i) - 1;   // 1-based -> 0-based
-        sum_g(p, s) += g;
+        sum_g(p, s) += (double)g;
         cnt(p, s)   += 1.0;
       }
     }
