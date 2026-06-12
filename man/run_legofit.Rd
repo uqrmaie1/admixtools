@@ -64,3 +64,37 @@ explicit \code{--threads} in \code{args} wins. The default \code{args} run a
 single-threaded stochastic fit. For a deterministic run (e.g. to reproduce
 a cached result) pass \code{args = c("--threads", "1", "-1", "-d", "0")}.
 }
+\examples{
+\dontrun{
+# Requires the external `legofit` binary on PATH (or pass `bin=`).
+# A small three-leaf tree with no admixture; the `time` column gives the
+# length of each edge, and leaf times default to the present.
+demo_graph <- tibble::tribble(
+  ~from,  ~to,   ~type,    ~weight,  ~time,
+  "xyz",  "xy",  "normal", NA_real_, 1.5,
+  "xyz",  "z",   "normal", NA_real_, 2,
+  "xy",   "x",   "normal", NA_real_, 0.5,
+  "xy",   "y",   "normal", NA_real_, 0.5
+)
+
+opf <- system.file("extdata/legofit", "demo.opf", package = "admixtools")
+
+# Deterministic flags reproduce the cached fit shipped with the package.
+fit <- run_legofit(demo_graph, patterns = opf,
+                   args = c("--threads", "1", "-1", "-d", "0"))
+fit
+attr(fit, "fit_convergence")
+
+# A .lgo path input returns the same edge-tibble shape: read_lgo() recovers
+# the topology under the hood, so `graph=` need not be supplied.
+lgo <- system.file("extdata/legofit", "demo.lgo", package = "admixtools")
+run_legofit(lgo, patterns = opf,
+            args = c("--threads", "1", "-1", "-d", "0"))
+
+# An admixture or missing-drift graph (e.g. read_lgo() output) cannot be
+# placed by the default `fix_admix` times; pass `time_handling = "free"`.
+g <- read_lgo(system.file("extdata/legofit", "rha20.lgo",
+                          package = "admixtools"))
+run_legofit(g, patterns = opf, time_handling = "free")
+}
+}
