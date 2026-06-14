@@ -77,7 +77,12 @@ test_that("cpp_aftable_to_dstatden: serial == parallel (bitwise)", {
 test_that("cpp_gmat_to_aftable: serial == parallel (bitwise)", {
   withr::with_seed(20260525L, {
     nind = 200L; nsnp = 500L; npop = 8L
-    gmat = matrix(sample(c(0, 1, 2, NA_real_), nind * nsnp, replace = TRUE,
+    # Integer dosages in {0, 1, 2, NA_INTEGER}: this is what the readers hand
+    # the kernel (cpp_read_plink -> IntegerMatrix, pgenlibr::ReadIntList ->
+    # integer), and what cpp_gmat_to_aftable's arma::imat signature takes
+    # natively. Sampling from a double vector would instead exercise R's
+    # double->integer coercion fallback at the boundary, not the native path.
+    gmat = matrix(sample(c(0L, 1L, 2L, NA_integer_), nind * nsnp, replace = TRUE,
                          prob = c(0.3, 0.4, 0.25, 0.05)),
                   nrow = nind, ncol = nsnp)
     popvec = sample.int(npop, nind, replace = TRUE)

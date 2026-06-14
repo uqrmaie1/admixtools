@@ -16,7 +16,7 @@ read_plink(pref, inds = NULL, pops = NULL, verbose = FALSE)
 \item{verbose}{Print progress updates}
 }
 \value{
-A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
+A list with the genotype data matrix (integer storage mode), the \code{.ind} file, and the \code{.snp} file
 }
 \description{
 See \href{https://www.rdocumentation.org/packages/genio}{genio} for a dedicated \code{R} package for
