@@ -2,21 +2,24 @@
 #
 # Mathematical equivalence to the R one-liner is the headline contract:
 #   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
-# The C++ kernel uses R's ISNAN (matches !is.na) rather than std::isfinite,
-# so it's strictly equivalent to R on Inf inputs too (Inf flows through to
-# the sum, matching R).
+# The C++ kernel takes an integer dosage matrix in {0, 1, 2, NA_INTEGER}
+# (the BED and PFILE readers produce one natively) and checks g != NA_INTEGER,
+# the integer analogue of R's !is.na.
 
 # Reference R implementation, the one-liner that the C++ replaces.
 .r_gmat_to_aftable = function(gmat, popvec) {
   rowsum(gmat, popvec, na.rm = TRUE) / rowsum((!is.na(gmat))+0, popvec) / 2
 }
 
-# Build a realistic synthetic genotype matrix: values in {0, 1, 2, NA}.
+# Build a realistic synthetic genotype matrix: integer values in {0, 1, 2, NA}.
+# Integer storage matches what the readers now hand the kernel (cpp_read_plink
+# -> IntegerMatrix, pgenlibr::ReadIntList -> integer), so the equivalence tests
+# exercise the native integer path rather than R's double->integer coercion.
 .synthetic_gmat = function(nind, nsnp, na_frac = 0.1, seed = 12345L) {
   withr::with_seed(seed, {
     g = sample(0:2, nind * nsnp, replace = TRUE)
-    g[sample.int(length(g), size = round(length(g) * na_frac))] = NA_real_
-    matrix(as.numeric(g), nrow = nind, ncol = nsnp)
+    g[sample.int(length(g), size = round(length(g) * na_frac))] = NA_integer_
+    matrix(as.integer(g), nrow = nind, ncol = nsnp)
   })
 }
 
@@ -79,27 +82,28 @@ test_that("cpp_gmat_to_aftable handles single-pop / single-SNP / single-ind boun
   expect_equal(cpp_out, r_out, tolerance = 0)
 })
 
-test_that("cpp_gmat_to_aftable preserves R's !is.na behavior on Inf inputs (ISNAN, not isfinite)", {
-  # The PR uses ISNAN(g) (matches R's !is.na) rather than std::isfinite,
-  # so +/-Inf is treated as a valid genotype (Inf flows through to the
-  # sum, matching the R one-liner). std::isfinite would have excluded
-  # Inf and diverged from R.
+test_that("cpp_gmat_to_aftable treats NA_INTEGER as missing (matches R's !is.na contract)", {
+  # gmat arrives as an integer matrix (the BED and PFILE readers produce
+  # IntegerMatrix natively; a double matrix from an older caller gets
+  # auto-coerced by R, with Inf -> NA per as.integer's contract). The C++
+  # side checks `g != NA_INTEGER` rather than ISNAN(g); both are the
+  # equivalent R `!is.na()` semantic on their respective types.
   gmat = matrix(c(
-    0,   1,
-    Inf, 2,
-    1,   NA_real_
+    0L, 1L,
+    NA_integer_, 2L,
+    1L, NA_integer_
   ), nrow = 3, byrow = TRUE)
   popvec = c(1L, 1L, 2L)
 
   r_out   = .r_gmat_to_aftable(gmat, popvec)
   cpp_out = admixtools:::cpp_gmat_to_aftable(gmat, popvec)
   r_out = unname(r_out)
-  # Pop 1 col 1: (0 + Inf) / 2 / 2 = Inf  (Inf is included in both versions)
+  # Pop 1 col 1: 0 / 1 / 2 = 0      (NA at row 2 dropped)
   # Pop 1 col 2: (1 + 2) / 2 / 2 = 0.75
   # Pop 2 col 1: 1 / 1 / 2 = 0.5
   # Pop 2 col 2: NA -> 0/0 -> NaN
   expect_equal(cpp_out, r_out, tolerance = 0)
-  expect_true(is.infinite(cpp_out[1, 1]))
+  expect_equal(cpp_out[1, 1], 0)
   expect_equal(cpp_out[1, 2], 0.75)
   expect_true(is.nan(cpp_out[2, 2]))
 })

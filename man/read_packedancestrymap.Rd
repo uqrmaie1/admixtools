@@ -30,7 +30,7 @@ read_packedancestrymap(
 \item{verbose}{Print progress updates}
 }
 \value{
-A list with the genotype data matrix, the \code{.ind} file, and the \code{.snp} file
+A list with the genotype data matrix (integer storage mode), the \code{.ind} file, and the \code{.snp} file
 }
 \description{
 Read genotype data from packedancestrymap files

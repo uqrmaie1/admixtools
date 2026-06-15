@@ -373,7 +373,7 @@ discard_snps = function(snpdat, maxmiss = 1, keepsnps = NULL, auto_only = TRUE, 
 #' @param last Index of last SNP to read
 #' @param transpose Transpose genotype matrix (default is `snps` x `individuals`)
 #' @param verbose Print progress updates
-#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @return A list with the genotype data matrix (integer storage mode), the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
@@ -449,7 +449,7 @@ read_packedancestrymap = function(pref, inds = NULL, pops = NULL, first = 1, las
 #'
 #' @export
 #' @inheritParams read_packedancestrymap
-#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @return A list with the genotype data matrix (integer storage mode), the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
@@ -1389,7 +1389,7 @@ compute_f2_cache_id = function(pref, format = NULL, inds = NULL, pops = NULL,
 #' @param inds Individuals for which data should be read. Defaults to all individuals
 #' @param pops Populations for which data should be read. Cannot be provided together with 'inds'
 #' @inheritParams packedancestrymap_to_afs
-#' @return A list with the genotype data matrix, the `.ind` file, and the `.snp` file
+#' @return A list with the genotype data matrix (integer storage mode), the `.ind` file, and the `.snp` file
 #' @examples
 #' \dontrun{
 #' samples = c('Ind1', 'Ind2', 'Ind3')
