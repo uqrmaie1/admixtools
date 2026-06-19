@@ -1,23 +1,29 @@
 
 
-graph_to_pwts = function(graph, leaves) {
+graph_to_pwts = function(graph, leaves, root = NULL, admixedges = NULL) {
   # input igraph object
   # output: numedges*(numpops-1) matrix 'pwts' which indicates all paths from pop to outpop; admixture edges are mapped onto parent edges and weighted
+  # root and admixedges can be supplied by the caller (qpgraph) to avoid recomputing
+  # work it already has and shares with graph_to_weightind.
 
-  root = get_root(graph)
+  if(is.null(root)) root = get_root(graph)
   pwts = matrix(0, length(E(graph)), length(leaves))
   colnames(pwts) = leaves
   rownames(pwts) = attr(E(graph), 'vnames')
 
-  admixnodes = which(degree(graph, mode='in') == 2)
-  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
+  if(is.null(admixedges)) {
+    admixnodes = which(degree(graph, mode='in') == 2)
+    admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
+  }
 
   allpaths = all_simple_paths(graph, root, leaves, mode='out')
-  pathcounts = table(names(sapply(allpaths, function(x) tail(x, 1))))
+  targetnames = names(sapply(allpaths, function(x) tail(x, 1)))
+  pathcounts = table(targetnames)
   for(i in seq_len(length(allpaths))) {
-    target = names(tail(allpaths[[i]],1))
-    ln = length(allpaths[[i]])
-    pth2 = allpaths[[i]][c(1, 1+rep(seq_len(ln-2), each=2), ln)]
+    pth = allpaths[[i]]
+    target = targetnames[i]
+    ln = length(pth)
+    pth2 = pth[c(1, 1+rep(seq_len(ln-2), each=2), ln)]
     # pth2 is already an integer vertex sequence, so pass the ids directly.
     # as_ids() returns names, forcing igraph to re-resolve them via vertex_attr on every path.
     rowind = as.vector(E(graph)[igraph::get_edge_ids(graph, as.numeric(pth2))])
@@ -57,19 +63,23 @@ expand_path = function(path) {
 }
 
 
-graph_to_weightind = function(graph) {
+graph_to_weightind = function(graph, root = NULL, admixedges = NULL) {
   # input igraph object
   # output:
   # map (leaf, edge) -> paths
   # map path -> weights
   # ultimately: indices for weights into paths, indices for paths into pwts
+  # root and admixedges can be supplied by the caller (qpgraph) to avoid
+  # recomputing work it shares with graph_to_pwts.
 
   # room for improvement here...
 
   leaves = get_leaves(graph)
-  root = get_root(graph)
-  admixnodes = which(degree(graph, mode='in') == 2)
-  admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
+  if(is.null(root)) root = get_root(graph)
+  if(is.null(admixedges)) {
+    admixnodes = which(degree(graph, mode='in') == 2)
+    admixedges = unlist(incident_edges(graph, admixnodes, mode='in'))
+  }
   normedges = setdiff(1:length(E(graph)), admixedges)
   paths = all_simple_paths(graph, root, leaves, mode='out')
   ends = sapply(paths, tail, 1)
@@ -267,7 +277,8 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   nedges = length(E(graph))
   admixnodes = which(degree(graph, mode='in') == 2)
   nadmix = length(admixnodes)
-  admixedgesfull = sapply(seq_len(nadmix), function(i) incident_edges(graph, admixnodes, mode='in')[[i]][1:2])
+  incedges = incident_edges(graph, admixnodes, mode='in')
+  admixedgesfull = sapply(seq_len(nadmix), function(i) incedges[[i]][1:2])
   normedges = setdiff(1:nedges, admixedgesfull)
 
   pops = get_leafnames(graph)
@@ -334,7 +345,11 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
   ppinv = precomp$ppinv
 
   weight = low = high = rep(NA, nedges)
-  pwts = graph_to_pwts(graph, pops)
+  # compute root and admixture edges once and share them with graph_to_pwts and
+  # graph_to_weightind (both recompute the same values from the same graph).
+  root = get_root(graph)
+  admixedges = unlist(incedges)
+  pwts = graph_to_pwts(graph, pops, root = root, admixedges = admixedges)
   opt = NULL
 
   mim = .Machine$integer.max
@@ -361,7 +376,7 @@ qpgraph = function(data, graph, lambdascale = 1, boot = FALSE, diag = 1e-4, diag
     }
     parmat = matrix(runif(numstart*nadmix), numstart)
     if(verbose) alert_info(paste0('Testing ', nrow(parmat), ' combinations of admixture weight starting values...\n'))
-    weightind = graph_to_weightind(graph)
+    weightind = graph_to_weightind(graph, root = root, admixedges = admixedges)
     arglist = list(pwts, ppinv, f3_est, weightind[[1]], weightind[[2]], weightind[[3]],
                    cmb, qpsolve, elower, eupper, diag, baseind, constrained)
     oo = multistart(parmat, optimweightsfun, args = arglist, method = 'L-BFGS-B',
