@@ -92,6 +92,7 @@ test_that("graph_to_pwts is unchanged when root and admixedges are supplied", {
 })
 
 test_that("graph_to_weightind is unchanged when root and admixedges are supplied", {
+  checked <- 0
   for (case in graph_battery) {
     g <- case$g
     if (numadmix(g) == 0) next               # qpgraph calls weightind only when nadmix > 0
@@ -101,7 +102,11 @@ test_that("graph_to_weightind is unchanged when root and admixedges are supplied
       admixtools:::graph_to_weightind(g),
       admixtools:::graph_to_weightind(g, root = root, admixedges = ae),
       info = case$label)
+    checked <- checked + 1
   }
+  # guard against the battery silently degrading to all nadmix == 0 graphs,
+  # which would make every iteration skip and pass this test vacuously.
+  expect_gt(checked, 0)
 })
 
 # ---- 163  path edge resolution and id assignment invariance ----------------
