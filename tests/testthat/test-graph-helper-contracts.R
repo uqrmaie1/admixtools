@@ -160,3 +160,72 @@ test_that("graph_to_pwts is invariant to vertex id assignment", {
   # confirm the battery actually exercised a changed id assignment
   expect_true(saw_relabel)
 })
+
+# ---- Tier 2  graph_to_weightind base-R index tables ------------------------
+# The dplyr pipeline that built path_edge_table and path_admixedge_table was
+# replaced with base-R vector ops. The output must be unchanged. Pin it two
+# ways: an independent oracle rebuilds path_edge_table (the cnt < numpaths keep
+# rule) from the raw edge list, and the empty (tree) case is checked explicitly
+# because qpgraph never routes a zero-admixture graph here so nothing else
+# exercises the zero-row branch.
+
+test_that("graph_to_weightind path_edge_table matches an independent oracle", {
+  # Recompute path_edge_table from scratch: resolve each path's edges from the
+  # unnamed edge list, drop admixture edges, and keep (path, edge) rows for
+  # edges that lie on some but not all of a leaf's paths.
+  oracle <- function(g) {
+    root <- admixtools:::get_root(g)
+    leaves <- admixtools:::get_leaves(g)
+    nE <- length(igraph::E(g))
+    admixnodes <- which(igraph::degree(g, mode = 'in') == 2)
+    admixedges <- unlist(igraph::incident_edges(g, admixnodes, mode = 'in'))
+    normedges <- setdiff(seq_len(nE), admixedges)
+    elf <- igraph::as_edgelist(g, names = FALSE)
+    edge_of <- function(a, b) which(elf[, 1] == a & elf[, 2] == b)
+    paths <- igraph::all_simple_paths(g, root, leaves, mode = 'out')
+    ends <- vapply(paths, function(p) as.numeric(p)[length(p)], numeric(1))
+    rows <- list()
+    for (i in seq_along(paths)) {
+      v <- as.numeric(paths[[i]])
+      eids <- vapply(seq_len(length(v) - 1), function(k) edge_of(v[k], v[k + 1]), integer(1))
+      for (e in eids) {
+        e2 <- match(e, normedges)
+        if (is.na(e2)) next
+        rows[[length(rows) + 1]] <- c(path = i, edge2 = e2, leaf2 = match(ends[i], as.numeric(leaves)))
+      }
+    }
+    m <- do.call(rbind, rows)
+    if (is.null(m)) return(m)
+    # cnt per (leaf2, edge2)
+    key <- paste(m[, 'leaf2'], m[, 'edge2'])
+    cnt <- ave(seq_len(nrow(m)), key, FUN = length)
+    np_per_row <- as.vector(table(ends)[as.character(ends[m[, 'path']])])
+    m[cnt < np_per_row, c('path', 'edge2', 'leaf2'), drop = FALSE]
+  }
+  checked <- 0
+  for (case in graph_battery) {
+    g <- case$g
+    if (numadmix(g) == 0) next
+    wi <- admixtools:::graph_to_weightind(g)
+    got <- wi[[1]][, c('path', 'edge2', 'leaf2'), drop = FALSE]
+    exp <- oracle(g)
+    ord <- function(x) x[order(x[, 'path'], x[, 'edge2'], x[, 'leaf2']), , drop = FALSE]
+    expect_equal(unname(ord(got)), unname(ord(exp)), info = case$label)
+    checked <- checked + 1
+  }
+  expect_gt(checked, 0)
+})
+
+test_that("graph_to_weightind returns empty tables with a stable shape on trees", {
+  # A zero-admixture graph yields no surviving (path, edge) rows: every edge is
+  # on all (= 1) of its leaf's paths. qpgraph never calls weightind on such a
+  # graph, but the zero-row contract (columns and storage mode) is pinned here.
+  tree <- graph_battery[[which(vapply(graph_battery, function(c) numadmix(c$g) == 0, logical(1)))[1]]]$g
+  wi <- admixtools:::graph_to_weightind(tree)
+  expect_equal(nrow(wi[[1]]), 0L)
+  expect_equal(nrow(wi[[2]]), 0L)
+  expect_identical(colnames(wi[[1]]),
+                   c('path', 'edge', 'edge2', 'leaf', 'leaf2', 'numpaths', 'cnt', 'keep'))
+  expect_identical(colnames(wi[[2]]), c('path', 'admixedge'))
+  expect_type(wi[[3]], 'integer')
+})
