@@ -336,7 +336,7 @@ All of this means that we shouldn't assume that once we have found a model with 
 1. How can we identify what the range of feasible models is?
 2. Assuming there is a large number of feasible models, how can we tell which features they share?
 
-In *ADMIXTOOLS 2*, we can use [`find_graphs` and other functions](#exploring-different-graphs-1) to identify the range of feasible models, and we can use [several other functions](#summarizing-graphs-1) to identify features shared by these models.
+In *ADMIXTOOLS 2*, we can use [`find_graphs` and other functions](#exploring-different-graphs) to identify the range of feasible models, and we can use [several other functions](#summarizing-graphs) to identify features shared by these models.
 
 
 #### Incorporating prior information
@@ -488,6 +488,14 @@ example_graph %>% mutate(lower = ifelse(from == 'N3N3', 0.3, NA), upper = lower)
   qpgraph(example_f2_blocks, .) %$% edges %>% plotly_graph
 ```
 
+### Drift edges fitted at zero
+
+Drift edge labels in the graph plots are the fitted weight multiplied by 1000 and rounded, so a branch shown as `0` may be exactly zero or merely very short. Check the `weight` column of the `edges` output for the actual value before reading anything into it.
+
+A drift edge that really sits at zero has hit its lower bound, since drift is constrained to be non-negative in the default fit. For an internal branch, this usually means the split order at that node is wrong, or that two splits happened too close in time to be resolved given the data. It is not by itself evidence that the broader graph is poorly supported. The first thing to try is reordering the splits at that node and refitting; if the alternative orders all fit about equally well, those lineages form an unresolved polytomy. A zero on a terminal branch is different. It means that population carries little drift of its own since its split, which is common for single-sample or pseudohaploid groups.
+
+To compare the alternatives formally, evaluate each against the original with `qpgraph_resample_multi()` and pass the resulting `score_test` columns to `compare_fits()`. You can also pin the edge to a small positive value through its `lower` and `upper` columns. Because graphs in *ADMIXTOOLS 2* are binary, you test an unresolved node by comparing these binary alternatives, rather than by fitting a single node with three or more children. This is distinct from unidentifiable edges, which the data cannot constrain even in principle.
+
 ### Confidence intervals
 
 In *ADMIXTOOLS 2*, you can compute confidence intervals for the estimated drift lengths and admixture weights. This is done by fitting the same graph many times using different random subsets of SNP blocks. This makes it slow compared to fitting a graph just once on all SNPs, but it can give you a sense of how robust the estimates on the different edges are.
@@ -553,9 +561,19 @@ plot_graph(winner$edges[[1]])
 
 <br>
 
+#### Optimizing worst residual instead of score
+
+By default `find_graphs()` minimizes the *qpGraph* likelihood score. Passing `opt_worst_residual = TRUE` instead minimizes the worst residual, defined as the largest absolute $f_4$-statistic residual z-score. By convention, a worst residual below about 3 SE is treated as a good absolute fit. The two criteria can favor different topologies, so when a single large residual dominates an otherwise good fit it can help to run both and compare the resulting graphs. Computing the worst residual requires the fitted $f_4$-statistics, so the search runs slower than under the default.
+
+```{r, eval = FALSE}
+opt_results = find_graphs(example_f2_blocks, numadmix = 3, outpop = 'Chimp.REF',
+                          stop_gen = 100, opt_worst_residual = TRUE)
+```
+
+
 #### Constraining the search space
 
-Sometimes it is useful to not search for any graphs that fit the data, but to incorporate prior knowledge by constraining the set of graphs that should be considered. This can be done by passing additional arguments to `find_graphs()`, which end in `_constraints`. More on this [here](#summarizing-graphs-1).
+Sometimes it is useful to not search for any graphs that fit the data, but to incorporate prior knowledge by constraining the set of graphs that should be considered. This can be done by passing additional arguments to `find_graphs()`, which end in `_constraints`. More on this [here](#summarizing-graphs).
 
 The following example shows how could specify that we only want to consider models in which the first two populations are unadmixed (setting the maximum to 0), and the third population is admixed (setting the minimum to 1).
 
@@ -660,6 +678,13 @@ graph2 = example_opt %>% pluck('graph', 100)
 fits = qpgraph_resample_multi(example_f2_blocks, list(graph1, graph2), nboot = 100)
 compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
 ```
+
+
+### Choosing the number of admixture events
+
+One way to choose the number of admixture events is to run `find_graphs()` separately at several values of `numadmix` and inspect how the out-of-sample score changes. As more admixture events are added the score on the training blocks keeps dropping, but the out-of-sample score levels off or rises once the extra events fit noise rather than signal. By the parsimony argument in [Modeling demographic history](#modeling-demographic-history) above, we prefer the smallest `numadmix` at which the out-of-sample score stops improving.
+
+Two caveats. `find_graphs()` can get stuck in local optima, so an out-of-sample plateau at a given `numadmix` may reflect search difficulty rather than the underlying truth, and running multiple seeds per `numadmix` value helps. The out-of-sample score also only ranks models against each other on the same blocks. A graph can have the best out-of-sample score in your candidate set and still be a poor absolute fit, so it is worth weighing it against the worst residual of the chosen graph. AIC and BIC are not a reliable substitute here, because the effective number of parameters in an admixture graph depends on the topology, not just the edge count.
 
 
 
