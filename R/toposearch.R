@@ -32,13 +32,24 @@ doublefactorial = function(n) {
   out
 }
 
+# In/out degree as plain unnamed integer vectors, indexed by vertex id.
+# Equivalent to unname(igraph::degree(graph, mode=)), but avoids degree()
+# naming its result on a named graph, which forces a vertex_attr lookup that
+# the hot validators below never use. as_edgelist(names=FALSE) returns id pairs
+# (no name resolution), and tabulate counts targets (in) and sources (out).
+inout_degree = function(graph) {
+  el = igraph::as_edgelist(graph, names = FALSE)
+  n  = igraph::vcount(graph)
+  list(indeg = tabulate(el[, 2], n), outdeg = tabulate(el[, 1], n))
+}
+
 #' Count number of admixture nodes
 #'
 #' @export
 #' @param graph An admixture graph
 #' @return Number of admixture nodes
 numadmix = function(graph) {
-  sum(degree(graph, mode='in') == 2)
+  sum(inout_degree(graph)$indeg == 2)
 }
 
 #' Test if an admixture graph is valid
@@ -48,8 +59,9 @@ numadmix = function(graph) {
 #' @return `TRUE` if graph is valid, otherwise `FALSE`
 is_valid = function(graph) {
 
-  indegree = igraph::degree(graph, mode = 'in')
-  outdegree = igraph::degree(graph, mode = 'out')
+  deg = inout_degree(graph)
+  indegree = deg$indeg
+  outdegree = deg$outdeg
 
   igraph::is_simple(graph) &&
     igraph::is_connected(graph) &&
@@ -62,8 +74,9 @@ is_valid = function(graph) {
 }
 
 is_simplified = function(graph) {
-  indeg = degree(graph, mode = 'in')
-  outdeg = degree(graph, mode = 'out')
+  deg = inout_degree(graph)
+  indeg = deg$indeg
+  outdeg = deg$outdeg
   sum(indeg == 1 & outdeg == 1) == 0 && max(indeg + outdeg) == 3 && igraph::is_simple(graph)
 }
 
@@ -82,11 +95,11 @@ edges_to_igraph = function(edges) {
 #' @param graph An admixture graph
 #' @return Population names
 get_leafnames = function(graph) {
-  graph %>% V %>% {names(which(degree(graph, ., mode='out') == 0))}
+  igraph::vertex_attr(graph, 'name')[inout_degree(graph)$outdeg == 0]
 }
 
 get_leaves = function(graph) {
-  graph %>% V %>% {.[degree(graph, ., mode='out') == 0]}
+  igraph::V(graph)[inout_degree(graph)$outdeg == 0]
 }
 
 get_leaves2 = function(graph) {
@@ -97,7 +110,7 @@ get_leaves2 = function(graph) {
 
 
 get_root = function(graph) {
-  root = V(graph)[igraph::degree(graph, mode = 'in') == 0]
+  root = igraph::V(graph)[inout_degree(graph)$indeg == 0]
   #if(length(root) != 1) stop(paste0('Root problem ', paste0(names(root), collapse = ' ')))
   root
 }
