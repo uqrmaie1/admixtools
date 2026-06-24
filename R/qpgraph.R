@@ -26,7 +26,10 @@ graph_to_pwts = function(graph, leaves, root = NULL, admixedges = NULL) {
     pth2 = pth[c(1, 1+rep(seq_len(ln-2), each=2), ln)]
     # pth2 is already an integer vertex sequence, so pass the ids directly.
     # as_ids() returns names, forcing igraph to re-resolve them via vertex_attr on every path.
-    rowind = as.vector(E(graph)[igraph::get_edge_ids(graph, as.numeric(pth2))])
+    # get_edge_ids already returns the integer edge ids that index pwts rows;
+    # wrapping them in E(graph)[...] only to as.vector back allocates an edge
+    # sequence per path. Index by the ids directly (rowind names are unused).
+    rowind = igraph::get_edge_ids(graph, as.numeric(pth2))
     pwts[rowind,target] = pwts[rowind,target] + 1/pathcounts[target]
   }
 
@@ -85,19 +88,31 @@ graph_to_weightind = function(graph, root = NULL, admixedges = NULL) {
   ends = sapply(paths, tail, 1)
   # pass the integer vertex ids directly; as_ids() would return names and force
   # igraph to re-resolve them via vertex_attr on every path.
-  edge_per_path = paths %>% map(expand_path) %>% map(~igraph::get_edge_ids(graph, as.numeric(.)))
-  weight_per_path = edge_per_path %>% map(~(which(admixedges %in% .)))
+  edge_per_path = lapply(paths, function(p) igraph::get_edge_ids(graph, as.numeric(expand_path(p))))
+  weight_per_path = lapply(edge_per_path, function(e) which(admixedges %in% e))
 
-  path_edge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
-                                          function(i) tibble(path=i, edge=c(edge_per_path[[i]])))) %>%
-    mutate(edge2 = match(edge, normedges)) %>% filter(!is.na(edge2)) %>%
-    mutate(leaf = as.vector(ends[path]), leaf2 = match(leaf, leaves)) %>%
-    left_join(enframe(c(table(ends))) %>% transmute(leaf=as.numeric(name), numpaths=value), by='leaf') %>%
-    group_by(leaf2, edge2) %>% mutate(cnt = n(), keep = cnt < numpaths) %>% filter(keep) %>% as.matrix
+  # path_edge_table: one row per (path, edge), keeping only edges that lie on
+  # some but not all of a leaf's paths (cnt < numpaths). Built in base R to
+  # avoid per-graph dplyr allocation; byte-identical to the former pipeline of
+  # tibble / mutate / left_join / group_by / filter / as.matrix.
+  path  = rep(seq_along(edge_per_path), lengths(edge_per_path))
+  edge  = unlist(edge_per_path); if(is.null(edge)) edge = integer(0)
+  edge2 = match(edge, normedges); ok = !is.na(edge2)
+  path = path[ok]; edge = edge[ok]; edge2 = edge2[ok]
+  leaf  = as.vector(ends[path]); leaf2 = match(leaf, leaves)
+  numpaths = as.vector(table(ends)[as.character(leaf)])
+  cnt   = ave(seq_along(edge2), paste(leaf2, edge2, sep = '\r'), FUN = length)
+  keep  = cnt < numpaths
+  path_edge_table = cbind(path = path, edge = edge, edge2 = edge2, leaf = leaf,
+                          leaf2 = leaf2, numpaths = numpaths, cnt = cnt,
+                          keep = as.numeric(keep))[keep, , drop = FALSE]
 
-  path_admixedge_table = do.call(rbind, lapply(seq_len(length(weight_per_path)),
-                                               function(i) tibble(path=i, admixedge=c(weight_per_path[[i]])))) %>%
-    as.matrix
+  path_admixedge_table = cbind(path = rep(seq_along(weight_per_path), lengths(weight_per_path)),
+                               admixedge = as.integer(unlist(weight_per_path)))
+  # match the former as.matrix(empty tibble) storage mode on zero-row results
+  # (only reachable for nadmix==0 graphs, which qpgraph never routes here)
+  if(nrow(path_edge_table) == 0L) storage.mode(path_edge_table) <- 'logical'
+  if(nrow(path_admixedge_table) == 0L) storage.mode(path_admixedge_table) <- 'logical'
   list(path_edge_table, path_admixedge_table, length(paths))
 }
 
