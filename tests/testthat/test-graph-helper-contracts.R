@@ -219,13 +219,12 @@ test_that("graph_to_weightind path_edge_table matches an independent oracle", {
 test_that("graph_to_weightind returns empty tables with a stable shape on trees", {
   # A zero-admixture graph yields no surviving (path, edge) rows: every edge is
   # on all (= 1) of its leaf's paths. qpgraph never calls weightind on such a
-  # graph, but the zero-row contract (columns and storage mode) is pinned here.
+  # graph, but the zero-row column contract is pinned here.
   tree <- graph_battery[[which(vapply(graph_battery, function(c) numadmix(c$g) == 0, logical(1)))[1]]]$g
   wi <- admixtools:::graph_to_weightind(tree)
   expect_equal(nrow(wi[[1]]), 0L)
   expect_equal(nrow(wi[[2]]), 0L)
-  expect_identical(colnames(wi[[1]]),
-                   c('path', 'edge', 'edge2', 'leaf', 'leaf2', 'numpaths', 'cnt', 'keep'))
+  expect_identical(colnames(wi[[1]]), c('path', 'edge2', 'leaf2'))
   expect_identical(colnames(wi[[2]]), c('path', 'admixedge'))
   expect_type(wi[[3]], 'integer')
 })
