@@ -59,9 +59,10 @@ arma::mat cpp_fill_pwts(arma::mat& pwts, const arma::vec& weights,
     if(admixedge % 2 == 0) pathweights(path) *= weights(admixedge/2);
     else pathweights(path) *= 1-weights(admixedge/2);
   }
+  // path_edge_table columns are path(0), edge2(1), leaf2(2)
   for(int i=0; i<path_edge_table.n_rows; i++) {
-    row = path_edge_table(i, 2)-1;
-    column = path_edge_table(i, 4)-1;
+    row = path_edge_table(i, 1)-1;
+    column = path_edge_table(i, 2)-1;
     path = path_edge_table(i, 0)-1;
     elem = row + pwts.n_rows*column;
     pwtsfill(elem) += pathweights(path);

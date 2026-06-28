@@ -92,27 +92,21 @@ graph_to_weightind = function(graph, root = NULL, admixedges = NULL) {
   weight_per_path = lapply(edge_per_path, function(e) which(admixedges %in% e))
 
   # path_edge_table: one row per (path, edge), keeping only edges that lie on
-  # some but not all of a leaf's paths (cnt < numpaths). Built in base R to
-  # avoid per-graph dplyr allocation; byte-identical to the former pipeline of
-  # tibble / mutate / left_join / group_by / filter / as.matrix.
+  # some but not all of a leaf's paths (cnt < numpaths). Only path, edge2 and
+  # leaf2 are emitted: those are the three columns the consumers read
+  # (cpp_fill_pwts by position, fill_pwts by name). numpaths, cnt and the raw
+  # edge / leaf are intermediate values used only to compute the keep mask.
   path  = rep(seq_along(edge_per_path), lengths(edge_per_path))
-  edge  = unlist(edge_per_path); if(is.null(edge)) edge = integer(0)
-  edge2 = match(edge, normedges); ok = !is.na(edge2)
-  path = path[ok]; edge = edge[ok]; edge2 = edge2[ok]
+  edge2 = match(unlist(edge_per_path), normedges); ok = !is.na(edge2)
+  path = path[ok]; edge2 = edge2[ok]
   leaf  = as.vector(ends[path]); leaf2 = match(leaf, leaves)
   numpaths = as.vector(table(ends)[as.character(leaf)])
   cnt   = ave(seq_along(edge2), paste(leaf2, edge2, sep = '\r'), FUN = length)
   keep  = cnt < numpaths
-  path_edge_table = cbind(path = path, edge = edge, edge2 = edge2, leaf = leaf,
-                          leaf2 = leaf2, numpaths = numpaths, cnt = cnt,
-                          keep = as.numeric(keep))[keep, , drop = FALSE]
+  path_edge_table = cbind(path = path, edge2 = edge2, leaf2 = leaf2)[keep, , drop = FALSE]
 
   path_admixedge_table = cbind(path = rep(seq_along(weight_per_path), lengths(weight_per_path)),
                                admixedge = as.integer(unlist(weight_per_path)))
-  # match the former as.matrix(empty tibble) storage mode on zero-row results
-  # (only reachable for nadmix==0 graphs, which qpgraph never routes here)
-  if(nrow(path_edge_table) == 0L) storage.mode(path_edge_table) <- 'logical'
-  if(nrow(path_admixedge_table) == 0L) storage.mode(path_admixedge_table) <- 'logical'
   list(path_edge_table, path_admixedge_table, length(paths))
 }
 
