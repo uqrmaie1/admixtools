@@ -99,6 +99,24 @@ By default the kernels size their thread team from `parallelly::availableCores()
 * **Lowering what `availableCores()` reports**, for example with `options(mc.cores = 8)` or the variables described in `?parallelly::availableCores`, or running under a plan with more workers, which divides the budget further.
 
 
+## The BLAS library
+
+Before reaching for more cores it is worth checking which BLAS library R is linked against, because it is often the single largest performance lever. The `qpgraph` optimizer and the f-statistic kernels are dominated by dense linear algebra, and that work is handed to whatever BLAS R was built with. R's bundled reference (netlib) BLAS is single threaded and unoptimized, and is commonly ten times slower or more than an optimized BLAS such as [OpenBLAS](https://www.openblas.net), Intel MKL, Apple Accelerate, or BLIS. On some platforms, notably the default macOS CRAN build, R ships with the reference BLAS, so it is easy to be paying this cost without realizing it.
+
+Check what you have with
+
+```{r, eval = FALSE}
+sessionInfo()$BLAS
+```
+
+If the path names or resolves to `libRblas` (R's bundle) or the generic netlib `libblas`, you are likely on the reference BLAS. A name alone is not always conclusive, because on Debian and Ubuntu the same `libblas.so.3` name is a symlink that points at whichever backend is selected, so the optimized library is only visible once the link is followed. To switch, install an optimized BLAS and point R at it. The mechanics depend on the platform.
+
+* **Linux (Debian and Ubuntu)**: install `libopenblas-dev` and select it with `update-alternatives --config libblas.so.3-x86_64-linux-gnu`. No reinstall of R is needed.
+* **macOS**: link R's BLAS to the system Accelerate framework. This overwrites R's bundled `libRblas.dylib`, so back it up first, for example `cp "$(R RHOME)/lib/libRblas.dylib" "$(R RHOME)/lib/libRblas.dylib.bak"` and then `ln -sf /System/Library/Frameworks/Accelerate.framework/Versions/Current/Frameworks/vecLib.framework/libBLAS.dylib "$(R RHOME)/lib/libRblas.dylib"`. A Homebrew OpenBLAS works too.
+* **Conda**: `conda install "libblas=*=*openblas"`.
+
+admixtools emits a one time note at attach time when it detects the reference BLAS. It resolves symlinks first and recognizes the common optimized backends, including the desktop ones above and the vendor HPC libraries (Cray LibSci, IBM ESSL, Arm Performance Libraries, NVIDIA NVPL, Fujitsu SSL2, NEC NLC), so a cluster build on an optimized BLAS is not flagged. Silence the note with `options(admixtools.blas_check = FALSE)` or `suppressPackageStartupMessages(library(admixtools))`.
+
 ## Parallelization on a compute cluster
 
 Sometimes it makes more sense to parallelize across compute nodes rather than across cores. This can be done either in the traditional way of writing an R script and submitting it many times in parallel as separate jobs, or interactively from within R again using the `furrr` / `future` framework. The interactive route is more complicated to set up than parallelization across cores.
