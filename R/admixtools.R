@@ -13,12 +13,12 @@
 #' @importFrom tibble as_tibble deframe enframe add_column rownames_to_column
 #' @importFrom grDevices colorRampPalette heat.colors rgb
 #' @importFrom graphics arrows axis lines mtext rect text
-#' @importFrom stats cancor prcomp rnorm t.test
+#' @importFrom stats ave cancor prcomp rnorm t.test
 #' @importFrom utils read.table
 # @importFrom stats na.omit setNames runif
 #' @importFrom igraph V E neighbors subcomponent degree incident_edges all_simple_paths distances
-#' graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices delete_vertices
-#' add_edges delete_edges difference set_vertex_attr
+#' @importFrom igraph graph_from_edgelist as_edgelist shortest_paths adjacent_vertices is.dag as_ids add_vertices delete_vertices
+#' @importFrom igraph add_edges delete_edges difference set_vertex_attr
 #' @useDynLib admixtools
 
 TRUE
@@ -39,10 +39,7 @@ TRUE
 #'
 #' @seealso
 #' \url{https://uqrmaie1.github.io/admixtools/index.html}
-#'
-#' @docType package
-#' @name admixtools
-NULL
+"_PACKAGE"
 
 
 #' Blocked f2-statistics for 7 populations

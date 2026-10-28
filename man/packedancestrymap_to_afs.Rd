@@ -33,7 +33,10 @@ packedancestrymap_to_afs(
 A list with three data frames: allele frequency data, allele counts, and SNP metadata
 }
 \description{
-Read allele frequencies from packedancestrymap files
+Reads allele frequencies and allele counts per population from a \code{.geno}/\code{.ind}/\code{.snp} triplet.
+Both packedancestrymap layouts are supported: the original \code{GENO} layout (one row per SNP) and
+the transposed \code{TGENO} layout (one row per individual) that recent AADR releases (v62.0.p1 and
+v66 onwards) distribute. The layout is detected from the \code{.geno} header.
 }
 \examples{
 \dontrun{

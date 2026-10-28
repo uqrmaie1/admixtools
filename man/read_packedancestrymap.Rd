@@ -25,7 +25,7 @@ read_packedancestrymap(
 
 \item{last}{Index of last SNP to read}
 
-\item{transpose}{Transpose genotype matrix (default is \code{snps} x \code{individuals})}
+\item{transpose}{Transpose the returned genotype matrix (default is \code{snps} x \code{individuals})}
 
 \item{verbose}{Print progress updates}
 }
@@ -33,7 +33,10 @@ read_packedancestrymap(
 A list with the genotype data matrix (integer storage mode), the \code{.ind} file, and the \code{.snp} file
 }
 \description{
-Read genotype data from packedancestrymap files
+Reads a \code{.geno}/\code{.ind}/\code{.snp} triplet in either packedancestrymap layout: the original \code{GENO}
+layout (one row per SNP) or the transposed \code{TGENO} layout (one row per individual) that recent
+AADR releases (v62.0.p1 and v66 onwards) distribute. The layout is detected from the \code{.geno}
+header, and a file whose size does not match its header is rejected instead of being misread.
 }
 \examples{
 \dontrun{

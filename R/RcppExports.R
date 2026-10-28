@@ -77,6 +77,14 @@ cpp_get_pairindex <- function(perm) {
     .Call('_admixtools_cpp_get_pairindex', PACKAGE = 'admixtools', perm)
 }
 
+cpp_packedancestrymap_header <- function(genofile) {
+    .Call('_admixtools_cpp_packedancestrymap_header', PACKAGE = 'admixtools', genofile)
+}
+
+cpp_count_text_rows <- function(file) {
+    .Call('_admixtools_cpp_count_text_rows', PACKAGE = 'admixtools', file)
+}
+
 cpp_read_packedancestrymap <- function(genofile, nsnp, nind, indvec, first, last, transpose = FALSE, verbose = TRUE) {
     .Call('_admixtools_cpp_read_packedancestrymap', PACKAGE = 'admixtools', genofile, nsnp, nind, indvec, first, last, transpose, verbose)
 }
