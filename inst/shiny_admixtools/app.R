@@ -1842,7 +1842,7 @@ server = function(input, output, session) {
 
     gg = eg %>% mutate(rownum = 1:n()) %>%
       ggplot(aes(x=x, xend=xend, y=y, yend=yend, from=from, to=to)) +
-      geom_segment(aes_string(linetype = 'type', col = 'as.factor(y)', text = segtext),
+      geom_segment(aes(linetype = type, col = as.factor(y), text = !!rlang::parse_expr(segtext)),
                    arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches'))) +
       geom_point(data = allnodes, aes(x, y, text = from), col = 'black', alpha = 0) +
       annotate('text', x = min(nodes$x), y = max(nodes$yend), hjust = 0, vjust = 1,
@@ -1862,13 +1862,13 @@ server = function(input, output, session) {
     if('highlight_unidentifiable' %in% input$plotopt) {
       unid = unidentifiable_edges(global$graph)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
-      gg = gg + geom_segment(aes_string(linetype = 'type'), col = 'red', size = 1, data = unid2)
+      gg = gg + geom_segment(aes(linetype = type), col = 'red', linewidth = 1, data = unid2)
     }
 
     gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
                 size = textsize) +
-              geom_text(data = nodes, aes_string(label = 'name', col = 'as.factor(yend)',
-                                         from = NA, text = 'text'), size = textsize)
+              geom_text(data = nodes, aes(label = name, col = as.factor(yend),
+                                         from = NA, text = text), size = textsize)
 
     print('plotly_graph 4')
     plt = plotly::ggplotly(gg, source = 'src', tooltip=c('text'))
