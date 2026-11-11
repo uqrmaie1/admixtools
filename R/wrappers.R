@@ -1581,7 +1581,7 @@ plot_ellout = function(evecfile, ellfile) {
   evec %>% left_join(elldat %>% select(-x0, -y0), by = 'id') %>%
     mutate(col = ifelse(is.na(a), pop, id)) %>%
     ggplot() + geom_point(aes(x, y, col = col, shape = pop), size=1) +
-    ggforce::geom_ellipse(aes(x0=x, y0=y, a=a, b=b, angle=angle, fill = col, col = col), size=0.05, alpha = 0.05) +
+    ggforce::geom_ellipse(aes(x0=x, y0=y, a=a, b=b, angle=angle, fill = col, col = col), linewidth=0.05, alpha = 0.05) +
     theme(panel.background = element_blank(), axis.line = element_line(), legend.title = element_blank()) + xlab('Eigenvector 1') + ylab('Eigenvector 2') + guides(col='none')
 
 }

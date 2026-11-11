@@ -238,7 +238,7 @@ plot_graph = function(graph, fix = NULL, title = '', color = TRUE, textsize = 2.
     else g = edges_to_igraph(graph)
     unid = unidentifiable_edges(g)
     unid2 = pdat$eg %>% rename(from = name) %>% right_join(unid %>% select(-type), by = c('from', 'to'))
-    layers$highlight = geom_segment(aes(linetype = type), col = 'red', size = 1, data = unid2,
+    layers$highlight = geom_segment(aes(linetype = type), col = 'red', linewidth = 1, data = unid2,
                                     arrow=arrow(type = 'closed', angle = 10, length=unit(0.15, 'inches')))
   }
 
@@ -707,7 +707,7 @@ make_favicon = function() {
 
   eg %>%
     ggplot(aes(x=x, xend=xend, y=y, yend=yend)) +
-    geom_segment(aes(col = as.factor(y)), size=12) +
+    geom_segment(aes(col = as.factor(y)), linewidth=12) +
     # arrow=arrow(type = 'closed', angle = 20, length=unit(0.15, 'inches'))
     theme(panel.background = element_rect(fill = "transparent"),
           rect = element_rect(fill = "transparent"),
@@ -915,7 +915,7 @@ plotly_graph = function(graph, collapse_threshold = 0, fix = FALSE,
     if(highlight_unidentifiable) {
       unid = unidentifiable_edges(graph)
       unid2 = eg %>% right_join(unid %>% select(-type), by = c('from', 'to'))
-      gg = gg + geom_segment(aes(linetype = type), col = 'red', data = unid2, size = 1)
+      gg = gg + geom_segment(aes(linetype = type), col = 'red', data = unid2, linewidth = 1)
     }
     gg = gg + geom_text(aes(x = (x+xend)/2, y = (y+yend)/2, label = label, text = paste(from, to, sep = ' -> ')),
                             size = textsize) +
