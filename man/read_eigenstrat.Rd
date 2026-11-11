@@ -25,7 +25,7 @@ read_eigenstrat(
 
 \item{last}{Index of last SNP to read}
 
-\item{transpose}{Transpose genotype matrix (default is \code{snps} x \code{individuals})}
+\item{transpose}{Transpose the returned genotype matrix (default is \code{snps} x \code{individuals})}
 
 \item{verbose}{Print progress updates}
 }

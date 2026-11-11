@@ -79,6 +79,7 @@ Note: `.pvar` does *not* by default carry centimorgan positions. When the `CM` c
 ### EIGENSTRAT/PACKEDANCESTRYMAP
 
 *EIGENSTRAT* and *PACKEDANCESTRYMAP* use the same format for the metadata. The only difference is that the genotype data is stored in a text file in *EIGENSTRAT*, but in a binary file in *PACKEDANCESTRYMAP*.
+*PACKEDANCESTRYMAP* comes in two binary layouts, the original `GENO` layout (one row per SNP) and the transposed `TGENO` layout (one row per individual) that recent AADR releases distribute; both are detected from the `.geno` header and read by the same functions.
 
 The `.ind` file has 3 out of the 6 columns in the `.fam` file, in different order:
 

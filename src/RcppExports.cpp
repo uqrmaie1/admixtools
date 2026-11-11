@@ -290,6 +290,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_packedancestrymap_header
+List cpp_packedancestrymap_header(String genofile);
+RcppExport SEXP _admixtools_cpp_packedancestrymap_header(SEXP genofileSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type genofile(genofileSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_packedancestrymap_header(genofile));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_count_text_rows
+List cpp_count_text_rows(String file);
+RcppExport SEXP _admixtools_cpp_count_text_rows(SEXP fileSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< String >::type file(fileSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_count_text_rows(file));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_read_packedancestrymap
 IntegerMatrix cpp_read_packedancestrymap(String genofile, int nsnp, int nind, IntegerVector indvec, int first, int last, bool transpose, bool verbose);
 RcppExport SEXP _admixtools_cpp_read_packedancestrymap(SEXP genofileSEXP, SEXP nsnpSEXP, SEXP nindSEXP, SEXP indvecSEXP, SEXP firstSEXP, SEXP lastSEXP, SEXP transposeSEXP, SEXP verboseSEXP) {
@@ -459,6 +481,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_admixtools_cpp_fill_pwts", (DL_FUNC) &_admixtools_cpp_fill_pwts, 5},
     {"_admixtools_cpp_optimweightsfun", (DL_FUNC) &_admixtools_cpp_optimweightsfun, 2},
     {"_admixtools_cpp_get_pairindex", (DL_FUNC) &_admixtools_cpp_get_pairindex, 1},
+    {"_admixtools_cpp_packedancestrymap_header", (DL_FUNC) &_admixtools_cpp_packedancestrymap_header, 1},
+    {"_admixtools_cpp_count_text_rows", (DL_FUNC) &_admixtools_cpp_count_text_rows, 1},
     {"_admixtools_cpp_read_packedancestrymap", (DL_FUNC) &_admixtools_cpp_read_packedancestrymap, 8},
     {"_admixtools_cpp_packedancestrymap_ploidy", (DL_FUNC) &_admixtools_cpp_packedancestrymap_ploidy, 5},
     {"_admixtools_cpp_packedancestrymap_to_afs", (DL_FUNC) &_admixtools_cpp_packedancestrymap_to_afs, 9},

@@ -1539,7 +1539,6 @@ random_sim = function(nleaf, nadmix, outpref = "random_sim", max_depth = NULL, i
 #'
 #' This function generates an msprime simulation script, executes it in python,
 #' and turns the resulting genotype data into f2-statistics
-#' @inheritParams msprime_sim
 #' @param ... Arguments passed to \code{\link{msprime_sim}}.
 #' @param blgsize SNP block size in Morgan for computing f2-statistics (default 0.05).
 #' @param cleanup Delete temporary simulation files after reading (default `TRUE`).
