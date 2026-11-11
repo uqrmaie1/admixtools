@@ -256,6 +256,14 @@ Note: 18 new functions are exported in this release (see the lists below).
 * `plotly_comparison()` no longer clips a long title on the horizontal axis in
   the interactive plot (its bottom margin was increased) (#0f75732).
 
+* **ggplot2 3.4+ compatibility.** Under ggplot2 4.0, which turned the soft
+  deprecation into a warning, `plot_graph(highlight_unidentifiable = TRUE)`
+  printed "Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0".
+  The unidentifiable-edge highlight in `plot_graph()`, `plotly_graph()`, and the
+  Shiny GUI now sets `linewidth` instead of `size`, and the GUI no longer calls
+  the deprecated `aes_string()`. Plots are unchanged. DESCRIPTION now requires
+  `ggplot2 (>= 3.4.0)` (#176, #175).
+
 * **igraph 2.1.x compatibility.** `qpgraph()` broke under igraph 2.1.4 and
   later, which tightened `get.edge.ids()`. The qpgraph helpers now call the
   modern `igraph::get_edge_ids()`, DESCRIPTION requires `igraph (>= 2.1.0)`, and
@@ -292,5 +300,8 @@ Note: 18 new functions are exported in this release (see the lists below).
 
 * New Imports: `jsonlite` (JSON output) and `pgenlibr` (PLINK 2 PFILE reading).
 * `igraph` now requires `>= 2.1.0`.
+* `ggplot2` now requires `>= 3.4.0`, and the suggested `plotly` and `ggforce`
+  require `>= 4.10.1` and `>= 0.4.2`, the first versions that handle
+  `linewidth`.
 * `SystemRequirements`: `C++17, OpenMP (optional, for the parallel f-stat
   kernels)`.
